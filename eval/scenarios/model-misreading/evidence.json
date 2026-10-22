@@ -1,0 +1,45 @@
+{
+  "caseId": "EVAL-PUP-02",
+  "records": [
+    {
+      "id": "EV-TRK-201",
+      "caseId": "EVAL-PUP-02",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier tracking API"
+      },
+      "observedAt": "2026-09-02T05:30:00Z",
+      "content": "Status: DELIVERED. Delivered to pickup point: Sturt St Newsagency, Ballarat.",
+      "facts": {
+        "carrier.status": "delivered",
+        "delivery.location": "pickup_point"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier tracking API",
+        "recordRef": "ev-trk-201",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-PUP-202",
+      "caseId": "EVAL-PUP-02",
+      "source": {
+        "system": "pickup",
+        "name": "Pickup point system"
+      },
+      "observedAt": "2026-09-06T08:00:00Z",
+      "content": "Parcel PCL-5512 still on the shelf, not collected. Second reminder SMS sent to the customer.",
+      "facts": {
+        "parcel.collected": "false",
+        "customer.notified": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Pickup point system",
+        "recordRef": "ev-pup-202",
+        "author": "pickup-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

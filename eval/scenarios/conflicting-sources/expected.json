@@ -1,0 +1,13 @@
+{
+  "id": "conflicting-sources",
+  "category": "conflict",
+  "description": "Two equally reliable sources disagree; nothing resolves it.",
+  "checkpoints": [
+    {
+      "afterStage": "day",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": []
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "correction-supersedes",
+  "category": "correction",
+  "description": "A bank return reverses the payment the ledger relied on.",
+  "checkpoints": [
+    {
+      "afterStage": "before-return",
+      "conclusion": "H-PAID",
+      "notCurrent": [
+        "H-PARTIAL"
+      ],
+      "unsupported": [
+        "H-UNPAID",
+        "H-PARTIAL"
+      ]
+    },
+    {
+      "afterStage": "after-return",
+      "conclusion": "H-UNPAID",
+      "notCurrent": [
+        "H-PAID",
+        "H-PARTIAL"
+      ],
+      "unsupported": [
+        "H-PAID",
+        "H-PARTIAL"
+      ]
+    }
+  ]
+}

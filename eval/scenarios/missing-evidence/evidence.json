@@ -1,0 +1,43 @@
+{
+  "caseId": "EVAL-WTY-03",
+  "records": [
+    {
+      "id": "EV-WCF-301",
+      "caseId": "EVAL-WTY-03",
+      "source": {
+        "system": "claims",
+        "name": "Warranty claim form"
+      },
+      "observedAt": "2026-09-10T09:00:00Z",
+      "content": "Customer: the pump stopped working three months after purchase. Machine used daily.",
+      "facts": {
+        "customer.reports_fault": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Warranty claim form",
+        "recordRef": "ev-wcf-301",
+        "author": "claims-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-SVC-302",
+      "caseId": "EVAL-WTY-03",
+      "source": {
+        "system": "service",
+        "name": "Service centre system"
+      },
+      "observedAt": "2026-09-11T04:00:00Z",
+      "content": "Unit SN 77-1042 received at the service centre. Inspection scheduled for 18 Sep.",
+      "facts": {
+        "service.status": "received"
+      },
+      "provenance": {
+        "systemOfRecord": "Service centre system",
+        "recordRef": "ev-svc-302",
+        "author": "service-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

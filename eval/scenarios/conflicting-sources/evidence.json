@@ -1,0 +1,43 @@
+{
+  "caseId": "EVAL-CNF-06",
+  "records": [
+    {
+      "id": "EV-TRK-601",
+      "caseId": "EVAL-CNF-06",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier tracking API"
+      },
+      "observedAt": "2026-09-30T04:00:00Z",
+      "content": "Delivered 14:00 to building lobby, 18 Mair St. GPS at building.",
+      "facts": {
+        "carrier.status": "delivered"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier tracking API",
+        "recordRef": "ev-trk-601",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-CON-602",
+      "caseId": "EVAL-CNF-06",
+      "source": {
+        "system": "concierge",
+        "name": "Building concierge log"
+      },
+      "observedAt": "2026-09-30T09:00:00Z",
+      "content": "Concierge log for 30 Sep: no deliveries received for unit 5B.",
+      "facts": {
+        "concierge.no_delivery": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Building concierge log",
+        "recordRef": "ev-con-602",
+        "author": "concierge-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "caseId": "EVAL-RFD-04",
+  "records": [
+    {
+      "id": "EV-RFS-401",
+      "caseId": "EVAL-RFD-04",
+      "source": {
+        "system": "refunds",
+        "name": "Refunds system"
+      },
+      "observedAt": "2026-09-15T02:00:00Z",
+      "content": "Refund RF-3301 of AUD 89.00 approved and issued for ORD-5120. Replaces the earlier decline recorded in EV-RFS-399; see agent note EV-NOTE-404.",
+      "facts": {
+        "refund.issued": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Refunds system",
+        "recordRef": "ev-rfs-401",
+        "author": "refunds-feed",
+        "supersedes": [
+          "EV-RFS-399"
+        ]
+      }
+    },
+    {
+      "id": "EV-PSP-402",
+      "caseId": "EVAL-RFD-04",
+      "source": {
+        "system": "psp",
+        "name": "Payment processor"
+      },
+      "observedAt": "2026-09-17T06:00:00Z",
+      "content": "Refund RF-3301 settled to card ending 4421.",
+      "facts": {
+        "refund.settled": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Payment processor",
+        "recordRef": "ev-psp-402",
+        "author": "psp-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

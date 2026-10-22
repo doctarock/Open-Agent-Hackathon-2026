@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Evaluation reports
+eval/results/

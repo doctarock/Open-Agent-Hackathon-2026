@@ -1,0 +1,19 @@
+{
+  "id": "ghost-citation",
+  "category": "citation",
+  "description": "A record refers to EV-RFS-399 and EV-NOTE-404, which do not exist.",
+  "forbiddenCitations": [
+    "EV-RFS-399",
+    "EV-NOTE-404"
+  ],
+  "checkpoints": [
+    {
+      "afterStage": "records",
+      "conclusion": "H-REFUNDED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-REFUNDED"
+      ]
+    }
+  ]
+}

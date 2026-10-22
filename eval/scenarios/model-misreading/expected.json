@@ -1,0 +1,30 @@
+{
+  "id": "model-misreading",
+  "category": "model-interpretation",
+  "description": "'DELIVERED' means delivered to a pickup point, not to the customer; the pickup point then says it is uncollected.",
+  "checkpoints": [
+    {
+      "afterStage": "carrier-scan",
+      "conclusion": null,
+      "notCurrent": [
+        "H-LOST"
+      ],
+      "unsupported": [
+        "H-COLLECTED",
+        "H-LOST"
+      ]
+    },
+    {
+      "afterStage": "pickup-report",
+      "conclusion": "H-AWAITING",
+      "notCurrent": [
+        "H-COLLECTED",
+        "H-LOST"
+      ],
+      "unsupported": [
+        "H-COLLECTED",
+        "H-LOST"
+      ]
+    }
+  ]
+}

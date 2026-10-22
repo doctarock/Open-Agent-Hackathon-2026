@@ -1,0 +1,35 @@
+{
+  "id": "eval-provider-failure",
+  "caseId": "EVAL-ERR-07",
+  "title": "Provider failure",
+  "question": "Was order ORD-9001 delivered?",
+  "sources": {
+    "carrier": {
+      "name": "Carrier tracking API",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DELIVERED",
+      "statement": "Order ORD-9001 was delivered.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "carrier.status",
+          "equals": "delivered",
+          "direction": "supports"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "only",
+      "label": "Only stage",
+      "asOf": "2026-10-01T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

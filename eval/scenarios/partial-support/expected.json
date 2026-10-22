@@ -1,0 +1,18 @@
+{
+  "id": "partial-support",
+  "category": "partial-support",
+  "description": "Damage on arrival supports transit damage, but nothing establishes the carrier's liability.",
+  "checkpoints": [
+    {
+      "afterStage": "arrival",
+      "conclusion": null,
+      "notCurrent": [
+        "H-PRE-EXISTING"
+      ],
+      "unsupported": [
+        "H-SHIPPER-PACKING",
+        "H-PRE-EXISTING"
+      ]
+    }
+  ]
+}

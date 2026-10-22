@@ -1,0 +1,81 @@
+{
+  "id": "eval-missing-evidence",
+  "caseId": "EVAL-WTY-03",
+  "title": "Warranty claim WC-880",
+  "question": "The pump of espresso machine SN 77-1042 failed after three months. Is it a manufacturing defect?",
+  "sources": {
+    "claims": {
+      "name": "Warranty claim form",
+      "reliability": 0.5
+    },
+    "service": {
+      "name": "Service centre system",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DEFECT",
+      "statement": "The pump failed because of a manufacturing defect.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "service.finding",
+          "equals": "manufacturing_defect",
+          "direction": "supports"
+        },
+        {
+          "fact": "customer.reports_fault",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-MISUSE",
+      "statement": "The pump failed because of misuse or lack of descaling.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "service.finding",
+          "equals": "misuse",
+          "direction": "supports"
+        },
+        {
+          "fact": "service.finding",
+          "equals": "manufacturing_defect",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-NO-FAULT",
+      "statement": "No fault can be found in the pump.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "service.finding",
+          "equals": "no_fault_found",
+          "direction": "supports"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-FINDING",
+      "text": "What did the service inspection find?",
+      "answeredBy": "service.finding"
+    }
+  ],
+  "stages": [
+    {
+      "id": "claim",
+      "label": "Claim lodged",
+      "asOf": "2026-09-12T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

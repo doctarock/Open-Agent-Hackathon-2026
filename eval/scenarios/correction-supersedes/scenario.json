@@ -1,0 +1,102 @@
+{
+  "id": "eval-correction-supersedes",
+  "caseId": "EVAL-PAY-01",
+  "title": "Was invoice INV-77 paid?",
+  "question": "Accounts receivable marked invoice INV-77 (AUD 4,200) as paid. Was it actually paid?",
+  "sources": {
+    "bank": {
+      "name": "Bank statement feed",
+      "reliability": 0.95
+    },
+    "ledger": {
+      "name": "Accounts ledger",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "Invoice INV-77 has been paid in full.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.status",
+          "equals": "paid",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-UNPAID",
+      "statement": "Invoice INV-77 remains unpaid.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.status",
+          "equals": "reopened",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-PARTIAL",
+      "statement": "Only part of invoice INV-77 has been paid.",
+      "prior": 0.2,
+      "rules": [
+        {
+          "fact": "payment.amount_matches",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.amount_matches",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-REPAID",
+      "text": "Has the customer paid again after the return?",
+      "answeredBy": "payment.repaid"
+    }
+  ],
+  "stages": [
+    {
+      "id": "before-return",
+      "label": "Payment received (5 Sep)",
+      "asOf": "2026-09-06T00:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "after-return",
+      "label": "Bank return (9 Sep)",
+      "asOf": "2026-09-10T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

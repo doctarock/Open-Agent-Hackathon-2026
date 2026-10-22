@@ -1,0 +1,17 @@
+{
+  "id": "missing-evidence",
+  "category": "abstention",
+  "description": "No inspection result yet; nothing establishes the cause.",
+  "checkpoints": [
+    {
+      "afterStage": "claim",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-DEFECT",
+        "H-MISUSE",
+        "H-NO-FAULT"
+      ]
+    }
+  ]
+}

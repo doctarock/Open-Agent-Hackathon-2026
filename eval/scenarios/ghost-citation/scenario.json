@@ -1,0 +1,67 @@
+{
+  "id": "eval-ghost-citation",
+  "caseId": "EVAL-RFD-04",
+  "title": "Refund for order ORD-5120",
+  "question": "The customer says their refund for order ORD-5120 never arrived. Was it refunded?",
+  "sources": {
+    "refunds": {
+      "name": "Refunds system",
+      "reliability": 0.9
+    },
+    "psp": {
+      "name": "Payment processor",
+      "reliability": 0.95
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-REFUNDED",
+      "statement": "The refund was issued and settled to the customer's card.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "refund.issued",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "refund.settled",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "refund.failed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-REFUNDED",
+      "statement": "The refund was never completed.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "refund.failed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "refund.settled",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "records",
+      "label": "Refund records",
+      "asOf": "2026-09-20T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

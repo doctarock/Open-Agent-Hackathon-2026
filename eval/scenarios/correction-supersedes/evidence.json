@@ -1,0 +1,84 @@
+{
+  "caseId": "EVAL-PAY-01",
+  "records": [
+    {
+      "id": "EV-BNK-101",
+      "caseId": "EVAL-PAY-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-09-05T01:10:00Z",
+      "content": "Credit AUD 4,200.00 from Hollis Cafe Pty Ltd, reference INV-77.",
+      "facts": {
+        "payment.received": "true",
+        "payment.amount_matches": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "ev-bnk-101",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-LDG-102",
+      "caseId": "EVAL-PAY-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-09-05T03:00:00Z",
+      "content": "Invoice INV-77 matched to bank credit and marked paid.",
+      "facts": {
+        "ledger.status": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "ev-ldg-102",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-BNK-103",
+      "caseId": "EVAL-PAY-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-09-09T00:40:00Z",
+      "content": "Debit AUD 4,200.00: payment reference INV-77 returned unpaid (dishonoured, insufficient funds). Reverses the credit of 5 Sep.",
+      "facts": {
+        "payment.reversed": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "ev-bnk-103",
+        "author": "bank-feed",
+        "supersedes": [
+          "EV-BNK-101"
+        ]
+      }
+    },
+    {
+      "id": "EV-LDG-104",
+      "caseId": "EVAL-PAY-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-09-09T02:15:00Z",
+      "content": "Invoice INV-77 reopened after the bank returned the payment.",
+      "facts": {
+        "ledger.status": "reopened"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "ev-ldg-104",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

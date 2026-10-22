@@ -1,0 +1,81 @@
+{
+  "id": "eval-partial-support",
+  "caseId": "EVAL-DMG-05",
+  "title": "Damaged pallet PL-204",
+  "question": "Pallet PL-204 arrived damaged. Was it damaged in transit with the carrier liable?",
+  "sources": {
+    "receiving": {
+      "name": "Receiving dock log",
+      "reliability": 0.9
+    },
+    "wms": {
+      "name": "Shipper dispatch system",
+      "reliability": 0.7
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-CARRIER-LIABLE",
+      "statement": "The pallet was damaged in transit and the carrier is liable for it.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "receiving.damage_noted",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "carrier.liability_accepted",
+          "equals": "true",
+          "direction": "supports"
+        }
+      ]
+    },
+    {
+      "key": "H-SHIPPER-PACKING",
+      "statement": "The pallet was damaged because the shipper packed it inadequately.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "inspection.packing",
+          "equals": "inadequate",
+          "direction": "supports"
+        }
+      ]
+    },
+    {
+      "key": "H-PRE-EXISTING",
+      "statement": "The goods were already damaged before dispatch.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "dispatch.photo_shows_damage",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "dispatch.photo_shows_damage",
+          "equals": "false",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-LIABILITY",
+      "text": "Has the carrier accepted liability?",
+      "answeredBy": "carrier.liability_accepted"
+    }
+  ],
+  "stages": [
+    {
+      "id": "arrival",
+      "label": "Arrival",
+      "asOf": "2026-09-25T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

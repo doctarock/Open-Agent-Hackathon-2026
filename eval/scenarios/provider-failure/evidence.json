@@ -1,0 +1,24 @@
+{
+  "caseId": "EVAL-ERR-07",
+  "records": [
+    {
+      "id": "EV-TRK-701",
+      "caseId": "EVAL-ERR-07",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier tracking API"
+      },
+      "observedAt": "2026-09-30T04:00:00Z",
+      "content": "Delivered.",
+      "facts": {
+        "carrier.status": "delivered"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier tracking API",
+        "recordRef": "ev-trk-701",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

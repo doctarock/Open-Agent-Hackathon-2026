@@ -1,0 +1,93 @@
+{
+  "id": "eval-model-misreading",
+  "caseId": "EVAL-PUP-02",
+  "title": "Has parcel PCL-5512 been collected?",
+  "question": "The tracking page for PCL-5512 says DELIVERED. Has the customer actually got the parcel?",
+  "sources": {
+    "carrier": {
+      "name": "Carrier tracking API",
+      "reliability": 0.85
+    },
+    "pickup": {
+      "name": "Pickup point system",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-COLLECTED",
+      "statement": "The customer has collected the parcel.",
+      "prior": 0.45,
+      "rules": [
+        {
+          "fact": "parcel.collected",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "parcel.collected",
+          "equals": "false",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-AWAITING",
+      "statement": "The parcel is at the pickup point awaiting collection.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "delivery.location",
+          "equals": "pickup_point",
+          "direction": "supports"
+        },
+        {
+          "fact": "parcel.collected",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "parcel.collected",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-LOST",
+      "statement": "The parcel was lost in transit.",
+      "prior": 0.15,
+      "rules": [
+        {
+          "fact": "delivery.location",
+          "equals": "pickup_point",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-NOTIFIED",
+      "text": "Was the customer notified that the parcel is ready?",
+      "answeredBy": "customer.notified"
+    }
+  ],
+  "stages": [
+    {
+      "id": "carrier-scan",
+      "label": "Carrier scan (2 Sep)",
+      "asOf": "2026-09-03T00:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "pickup-report",
+      "label": "Pickup point report (6 Sep)",
+      "asOf": "2026-09-07T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

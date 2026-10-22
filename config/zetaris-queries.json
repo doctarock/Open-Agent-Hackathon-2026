@@ -1,0 +1,10 @@
+{
+  "database": "EVIDENCE_DESK",
+  "columns": "id, case_id, source_system, source_name, observed_at, content, facts_json, record_ref, system_of_record, author, supersedes",
+  "sources": [
+    { "system": "oms", "table": "EVIDENCE_DESK.order_events" },
+    { "system": "wms", "table": "EVIDENCE_DESK.warehouse_scans" },
+    { "system": "carrier", "table": "EVIDENCE_DESK.carrier_events" },
+    { "system": "support", "table": "EVIDENCE_DESK.support_messages" }
+  ]
+}

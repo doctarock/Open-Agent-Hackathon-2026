@@ -1,0 +1,17 @@
+{
+  "id": "provider-failure",
+  "category": "provider-failure",
+  "description": "Evidence comes from Zetaris live mode and Zetaris is unreachable. The fixture file exists only to show that it is not used.",
+  "provider": "zetaris-unreachable",
+  "expectError": "evidence",
+  "checkpoints": [
+    {
+      "afterStage": "only",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-DELIVERED"
+      ]
+    }
+  ]
+}

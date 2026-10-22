@@ -1,0 +1,61 @@
+{
+  "id": "eval-conflicting-sources",
+  "caseId": "EVAL-CNF-06",
+  "title": "Delivery to unit 5B",
+  "question": "Was the parcel for unit 5B delivered on 30 Sep?",
+  "sources": {
+    "carrier": {
+      "name": "Carrier tracking API",
+      "reliability": 0.8
+    },
+    "concierge": {
+      "name": "Building concierge log",
+      "reliability": 0.8
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DELIVERED",
+      "statement": "The parcel was delivered to the building on 30 Sep.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "carrier.status",
+          "equals": "delivered",
+          "direction": "supports"
+        },
+        {
+          "fact": "concierge.no_delivery",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-DELIVERED",
+      "statement": "The parcel was not delivered on 30 Sep.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "concierge.no_delivery",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "carrier.status",
+          "equals": "delivered",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "day",
+      "label": "30 Sep records",
+      "asOf": "2026-10-01T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

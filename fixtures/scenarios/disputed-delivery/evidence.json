@@ -1,0 +1,59 @@
+{
+  "caseId": "DISPUTE-1042",
+  "records": [
+    {
+      "id": "EV-OMS-001",
+      "caseId": "DISPUTE-1042",
+      "source": { "system": "oms", "name": "Shopfront order system" },
+      "observedAt": "2026-10-10T02:14:00Z",
+      "content": "Order ORD-1042 placed by customer C-7731: 1 x espresso grinder, ship to 41 Lydiard St South, Ballarat VIC 3350. Paid AUD 389.00.",
+      "facts": { "order.id": "ORD-1042", "order.ship_to": "41 Lydiard St South, Ballarat VIC 3350" },
+      "provenance": { "systemOfRecord": "Shopfront OMS", "recordRef": "orders/ORD-1042", "author": "oms-checkout", "supersedes": [] }
+    },
+    {
+      "id": "EV-WMS-002",
+      "caseId": "DISPUTE-1042",
+      "source": { "system": "wms", "name": "Warehouse management system" },
+      "observedAt": "2026-10-11T23:40:00Z",
+      "content": "Parcel PCL-88412 for ORD-1042 packed, weighed 3.2 kg, and scanned onto carrier manifest MAN-5521 at dock 3.",
+      "facts": { "parcel.id": "PCL-88412", "warehouse.handover": "true" },
+      "provenance": { "systemOfRecord": "Ballarat DC WMS", "recordRef": "scans/dock3/MAN-5521/PCL-88412", "author": "scanner-D3-02", "supersedes": [] }
+    },
+    {
+      "id": "EV-CAR-003",
+      "caseId": "DISPUTE-1042",
+      "source": { "system": "carrier", "name": "Carrier tracking API" },
+      "observedAt": "2026-10-13T03:02:00Z",
+      "content": "Tracking PCL-88412: DELIVERED 14:02 AEDT 13 Oct. Left at front door. Driver D-219.",
+      "facts": { "carrier.status": "delivered", "carrier.driver": "D-219" },
+      "provenance": { "systemOfRecord": "Carrier tracking API", "recordRef": "tracking/PCL-88412/events/7", "author": "driver-app/D-219", "supersedes": [] }
+    },
+    {
+      "id": "EV-SUP-004",
+      "caseId": "DISPUTE-1042",
+      "source": { "system": "support", "name": "Customer support inbox" },
+      "observedAt": "2026-10-13T22:30:00Z",
+      "content": "Customer C-7731: \"Tracking says it was delivered yesterday but nothing arrived. I was home all afternoon and nobody knocked.\"",
+      "facts": { "customer.reports_non_receipt": "true" },
+      "provenance": { "systemOfRecord": "Support inbox", "recordRef": "tickets/T-55190/messages/1", "author": "customer/C-7731", "supersedes": [] }
+    },
+    {
+      "id": "EV-CAR-005",
+      "caseId": "DISPUTE-1042",
+      "source": { "system": "carrier", "name": "Carrier tracking API" },
+      "observedAt": "2026-10-15T05:20:00Z",
+      "content": "Proof-of-delivery review for PCL-88412: delivery GPS fix recorded 380 m from the ship-to address, at 41 Lydiard St North. Delivery scan amended to 'delivered to incorrect address'.",
+      "facts": { "delivery.address_match": "false", "delivery.gps_distance_m": "380", "delivery.actual_address": "41 Lydiard St North, Ballarat VIC 3350" },
+      "provenance": { "systemOfRecord": "Carrier tracking API", "recordRef": "tracking/PCL-88412/pod-review/1", "author": "carrier-claims/R-04", "supersedes": ["EV-CAR-003"] }
+    },
+    {
+      "id": "EV-SUP-006",
+      "caseId": "DISPUTE-1042",
+      "source": { "system": "support", "name": "Customer support inbox" },
+      "observedAt": "2026-10-15T23:05:00Z",
+      "content": "Resident of 41 Lydiard St North called: a parcel addressed to 41 Lydiard St South arrived on 13 Oct and they are holding it for collection.",
+      "facts": { "parcel.held_by_third_party": "true", "parcel.location": "41 Lydiard St North (held by resident)" },
+      "provenance": { "systemOfRecord": "Support inbox", "recordRef": "calls/C-90233", "author": "support-agent/A-17", "supersedes": [] }
+    }
+  ]
+}

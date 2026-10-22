@@ -1,0 +1,30 @@
+{
+  "name": "evidence-desk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Speck Evidence Desk: investigating conflicting, changing evidence with persistent cognition",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "imports": {
+    "#speck": "./speck/dist/index.js"
+  },
+  "scripts": {
+    "setup": "npm ci && npm --prefix speck ci && npm --prefix speck run build",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "dev": "npm run build && node --watch-path=dist dist/src/server.js",
+    "test": "npm run build && node --test --test-concurrency=1 \"dist/test/**/*.test.js\"",
+    "db:reset": "npm run build && node dist/src/scripts/reset-db.js",
+    "zetaris:seed": "npm run build && node dist/src/scripts/zetaris-seed.js",
+    "zetaris:check": "npm run build && node dist/src/scripts/zetaris-check.js",
+    "model:check": "npm run build && node dist/src/scripts/model-check.js",
+    "eval": "npm run build && node dist/src/scripts/eval.js",
+    "eval:live": "npm run build && node dist/src/scripts/eval.js --live"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.9.3"
+  }
+}

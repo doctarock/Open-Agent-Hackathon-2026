@@ -1,0 +1,63 @@
+{
+  "id": "disputed-delivery",
+  "caseId": "DISPUTE-1042",
+  "title": "Disputed delivery of order ORD-1042",
+  "question": "The customer says order ORD-1042 never arrived, but carrier tracking says it was delivered. What happened to the parcel?",
+  "sources": {
+    "oms": { "name": "Shopfront order system", "reliability": 0.95 },
+    "wms": { "name": "Warehouse management system", "reliability": 0.9 },
+    "carrier": { "name": "Carrier tracking API", "reliability": 0.85 },
+    "support": { "name": "Customer support inbox", "reliability": 0.6 }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DELIVERED",
+      "statement": "The carrier delivered the parcel to the customer's address; any loss happened after delivery.",
+      "prior": 0.5,
+      "rules": [
+        { "fact": "carrier.status", "equals": "delivered", "direction": "supports" },
+        { "fact": "customer.reports_non_receipt", "equals": "true", "direction": "contradicts", "strength": 0.5 },
+        { "fact": "delivery.address_match", "equals": "false", "direction": "contradicts", "decisive": true }
+      ]
+    },
+    {
+      "key": "H-MISDELIVERED",
+      "statement": "The carrier delivered the parcel to the wrong address.",
+      "prior": 0.35,
+      "rules": [
+        { "fact": "customer.reports_non_receipt", "equals": "true", "direction": "supports", "strength": 0.5 },
+        { "fact": "delivery.address_match", "equals": "false", "direction": "supports" },
+        { "fact": "parcel.held_by_third_party", "equals": "true", "direction": "supports" },
+        { "fact": "delivery.address_match", "equals": "true", "direction": "contradicts", "decisive": true }
+      ]
+    },
+    {
+      "key": "H-NOT-SHIPPED",
+      "statement": "The parcel never left the warehouse.",
+      "prior": 0.15,
+      "rules": [
+        { "fact": "warehouse.handover", "equals": "true", "direction": "contradicts", "decisive": true },
+        { "fact": "carrier.status", "equals": "delivered", "direction": "contradicts" }
+      ]
+    }
+  ],
+  "questions": [
+    { "id": "Q-ADDRESS", "text": "Was the parcel left at the correct address?", "answeredBy": "delivery.address_match" },
+    { "id": "Q-LOCATION", "text": "Where is the parcel now?", "answeredBy": "parcel.location" },
+    { "id": "Q-RECEIVED", "text": "Has the customer now received the parcel or a replacement?", "answeredBy": "customer.received" }
+  ],
+  "stages": [
+    {
+      "id": "initial",
+      "label": "Initial evidence (14 Oct)",
+      "asOf": "2026-10-14T00:00:00Z",
+      "description": "Order, warehouse handover, carrier delivery scan, and the customer's complaint."
+    },
+    {
+      "id": "carrier-correction",
+      "label": "Carrier proof-of-delivery review (16 Oct)",
+      "asOf": "2026-10-16T00:00:00Z",
+      "description": "The carrier's proof-of-delivery review amends its delivery scan, and a neighbour reports holding the parcel."
+    }
+  ]
+}

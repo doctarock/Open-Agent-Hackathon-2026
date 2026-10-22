@@ -1,0 +1,43 @@
+{
+  "caseId": "EVAL-DMG-05",
+  "records": [
+    {
+      "id": "EV-DSP-501",
+      "caseId": "EVAL-DMG-05",
+      "source": {
+        "system": "wms",
+        "name": "Shipper dispatch system"
+      },
+      "observedAt": "2026-09-22T23:00:00Z",
+      "content": "Dispatch photo of pallet PL-204: wrapping and corners intact.",
+      "facts": {
+        "dispatch.photo_shows_damage": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Shipper dispatch system",
+        "recordRef": "ev-dsp-501",
+        "author": "wms-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-RCV-502",
+      "caseId": "EVAL-DMG-05",
+      "source": {
+        "system": "receiving",
+        "name": "Receiving dock log"
+      },
+      "observedAt": "2026-09-24T01:30:00Z",
+      "content": "Pallet PL-204 received with a crushed corner; damage noted on the proof of delivery.",
+      "facts": {
+        "receiving.damage_noted": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Receiving dock log",
+        "recordRef": "ev-rcv-502",
+        "author": "receiving-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}
