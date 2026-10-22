@@ -64,13 +64,18 @@ function renderStatus() {
 function renderEvidence(listing) {
   const pending = new Set(listing.pending);
   $("evidence-summary").textContent = `${listing.records.length} record(s) available at stage "${listing.stage.label}" from ${listing.provider.label}; ${pending.size} not yet assessed.`;
-  $("evidence-list").replaceChildren(...listing.records.map((record) => el("li", { className: record.supersededBy ? "superseded" : "" },
+  $("evidence-list").replaceChildren(...listing.records.map((record) => el("li", { className: record.invalidation || record.supersededBy ? "superseded" : "" },
     el("div", { className: "record-head" },
       el("strong", {}, record.id),
       badge(record.retrieval.mode === "zetaris" ? "via Zetaris" : "fixture", record.retrieval.mode),
       record.assessed ? badge("assessed", "ok") : badge("not yet assessed", "pending"),
       record.supersededBy ? badge(`superseded by ${record.supersededBy}`, "warn") : null,
-      el("span", { className: "muted" }, `${record.source.name} - ${when(record.observedAt)}`)),
+      record.invalidation ? badge(record.invalidation.kind === "withdrawn" ? "withdrawn: no longer counts" : "no longer counts", "bad") : null,
+      el("span", { className: "muted" }, `${record.source.name} - ${when(record.observedAt)}`),
+      record.assessed && record.invalidation?.kind !== "withdrawn"
+        ? el("button", { type: "button", className: "link", "data-withdraw": record.id }, "Withdraw")
+        : null),
+    record.invalidation?.kind === "withdrawn" ? el("div", { className: "meta" }, `Withdrawn ${when(record.invalidation.at)}: ${record.invalidation.reason}`) : null,
     el("p", { className: "content" }, record.content),
     el("div", { className: "meta" }, badge("stated by source", "ok"), ` ${record.source.name}: ${Object.entries(record.facts).map(([key, value]) => `${key}=${value}`).join(", ") || "no structured facts"}`),
     renderAssessment(record),
@@ -88,16 +93,58 @@ function renderAssessment(record) {
     a.judgments.length
       ? el("ul", { className: "refs" }, a.judgments.map((j) => el("li", {},
           badge(j.basis === "rule" ? "deterministic rule" : "model interpretation", j.basis === "rule" ? "ok" : "warn"),
-          ` ${j.direction} `, el("code", {}, j.hypothesisKey), j.decisive ? " decisively" : "", j.basis === "model" ? ` (strength ${j.strength})` : "", ` - ${j.rationale}`)))
+          ` ${j.direction} `, el("code", {}, j.hypothesisKey), j.decisive ? " decisively" : "", j.basis === "model" ? ` (strength ${j.strength})` : "", ` - ${j.rationale} `,
+          effectBadge(j))))
       : "no bearing on any hypothesis");
 }
 
+// Whether a judgment counts towards current belief now.
+function effectBadge(judgment) {
+  if (judgment.effect === "withheld") return badge(`withheld: ${judgment.refutedBy} refutes ${judgment.hypothesisKey} decisively`, "warn");
+  if (judgment.effect === "void") return badge("void: its record no longer counts", "bad");
+  return badge("in effect", "ok");
+}
+
+const signed = (delta) => (delta > 0 ? `+${delta}` : String(delta));
+
+// Each record that currently counts, with the judgment behind it and the
+// change Speck made to the current belief when it applied it.
 const refList = (refs) => refs.length
   ? el("ul", { className: "refs" }, refs.map((ref) => el("li", {}, el("code", {}, ref.recordId),
       ` ${ref.sourceName}, ${when(ref.observedAt)} (${ref.retrievalMode})`,
-      ref.reliability !== undefined ? ` - weighed at reliability ${ref.reliability}${ref.judgedBy === "model" ? " (model-judged, capped by Speck)" : ""}` : "",
+      ref.judgment ? [" ", badge(ref.judgment.basis === "rule" ? "deterministic rule" : "model interpretation", ref.judgment.basis === "rule" ? "ok" : "warn"),
+        ref.judgment.decisive ? " decisive" : "", ` - ${ref.judgment.rationale}`] : "",
+      ref.delta !== null && ref.delta !== undefined ? ` - ${signed(ref.delta)} confidence` : "",
+      ref.reliability !== undefined ? ` at reliability ${ref.reliability}${ref.judgedBy === "model" ? " (model-judged, capped by Speck)" : ""}` : "",
       ref.supersededBy ? ` - superseded by ${ref.supersededBy}` : "")))
   : el("p", { className: "muted" }, "none");
+
+// Why current belief differs from what was believed before: records that no
+// longer count, and hypotheses rebuilt without them. Shown as history; none
+// of it is current reasoning.
+function renderRevisions(c, history) {
+  const recomputations = history?.recomputations ?? [];
+  const replaced = history?.replaced ?? [];
+  if (!c.noLongerCounted?.length && !recomputations.length) return null;
+  return el("section", { className: "outcome historical" },
+    el("h3", {}, "Why this changed"),
+    c.noLongerCounted?.length
+      ? el("ul", {}, c.noLongerCounted.map((item) => el("li", {}, el("code", {}, item.recordId), " no longer counts: ",
+          item.invalidation.kind === "superseded" ? `its source superseded it with ${item.invalidation.by}.` : `withdrawn (${item.invalidation.reason}).`)))
+      : null,
+    recomputations.map((r) => el("details", {},
+      el("summary", {}, `Recomputation ${r.version} (${when(r.at)}): ${r.hypotheses.map((h) => h.key).join(", ")} rebuilt from their priors`),
+      el("ul", {}, r.hypotheses.map((h) => el("li", {},
+        el("code", {}, h.key), ` was ${h.previous.status} ${h.previous.confidence} (no longer held). Cause: ${h.cause}.`,
+        h.dropped.length ? ` Stopped applying: ${h.dropped.map((d) => `${d.recordId} ${d.direction}`).join(", ")}.` : "",
+        h.added.filter((a) => a.reinstated).length ? ` Counts again: ${h.added.filter((a) => a.reinstated).map((a) => `${a.recordId} ${a.direction}`).join(", ")}.` : "",
+        ` Replayed: ${h.replayed.join(", ") || "nothing (prior only)"}.`))))),
+    replaced.length
+      ? [el("h3", {}, "Earlier beliefs, no longer held"),
+         el("ul", { className: "refs" }, replaced.map((h) => el("li", {}, badge("historical", "warn"), " ", el("code", {}, h.key),
+           ` had reached ${h.statusWhenReplaced} ${h.confidence}; replaced in recomputation ${h.recomputation ?? "?"}`)))]
+      : null);
+}
 
 // What the evidence shows and how firmly it is justified are separate
 // outcomes: evidence can point clearly at an explanation it does not justify.
@@ -154,7 +201,7 @@ function renderExplanation(run, current) {
   ];
 }
 
-function renderConclusion(c, run, pending) {
+function renderConclusion(c, run, pending, history) {
   if (!c || !run) { $("conclusion").replaceChildren(el("p", { className: "muted" }, "No investigation has been run yet.")); return; }
   const u = c.uncertainty;
   // The hypothesis the evidence is about: the conclusion, or the explanation
@@ -167,8 +214,9 @@ function renderConclusion(c, run, pending) {
     el("p", { className: "headline" }, c.headline),
     renderDirection(c.direction),
     renderJustification(c.justification),
-    el("h3", {}, subject ? `Supporting evidence for ${subject.key}` : "Supporting evidence"), refList(subject?.supporting ?? []),
-    el("h3", {}, subject ? `Contradicting evidence for ${subject.key}` : "Contradicting evidence"), refList(subject?.contradicting ?? []),
+    el("h3", {}, subject ? `Evidence currently supporting ${subject.key}` : "Supporting evidence"), refList(subject?.supporting ?? []),
+    el("h3", {}, subject ? `Evidence currently against ${subject.key}` : "Contradicting evidence"), refList(subject?.contradicting ?? []),
+    renderRevisions(c, history),
     el("h3", {}, "Unresolved questions"),
     c.openQuestions.length ? el("ul", {}, c.openQuestions.map((q) => el("li", {}, q.text))) : el("p", { className: "muted" }, "none"),
     c.answeredQuestions.length ? [el("h3", {}, "Answered by evidence"), el("ul", {}, c.answeredQuestions.map((q) => el("li", {}, `${q.text} ${q.answer} (`, el("code", {}, q.recordId), ")")))] : null,
@@ -178,7 +226,7 @@ function renderConclusion(c, run, pending) {
       u.notes.map((note) => el("li", {}, note))),
     el("h3", {}, "Current beliefs (still held by Speck)"),
     held.length ? el("ul", { className: "refs" }, held.map(hypothesisLine)) : el("p", { className: "muted" }, "none"),
-    el("h3", {}, "No longer held (refuted or superseded)"),
+    el("h3", {}, "Ruled out by the evidence that counts now"),
     c.rejected.length ? el("ul", { className: "refs" }, c.rejected.map(hypothesisLine)) : el("p", { className: "muted" }, "none"),
     ...renderExplanation(run, c),
     el("h3", {}, "How this run executed"),
@@ -200,9 +248,9 @@ let timeline = [];
 function renderTimeline() {
   const all = $("timeline-all").checked;
   const shown = timeline.filter((entry) => all || entry.significant || ["stage", "conclusion"].includes(entry.kind));
-  $("timeline").replaceChildren(...(shown.length ? shown : []).map((entry) => el("li", { className: `kind-${entry.kind}${entry.significant ? " significant" : ""}` },
+  $("timeline").replaceChildren(...(shown.length ? shown : []).map((entry) => el("li", { className: `kind-${entry.kind}${entry.significant ? " significant" : ""}${entry.historical ? " historical" : ""}` },
     el("div", { className: "when" }, `${when(entry.at)} - #${entry.sequence}${entry.runNumber ? ` - run ${entry.runNumber}` : ""} - ${entry.actor}`),
-    el("div", { className: "title" }, entry.title),
+    el("div", { className: "title" }, entry.historical ? [badge("historical: belief since replaced", "warn"), " "] : null, entry.title),
     entry.detail ? el("div", { className: "detail" }, entry.detail) : null)));
   if (!shown.length) $("timeline").replaceChildren(el("li", { className: "muted" }, "Nothing has happened yet."));
 }
@@ -219,7 +267,7 @@ async function refresh() {
     try {
       listing = await api("/api/evidence");
     } finally {
-      renderConclusion(investigation.current, investigation.latestRun, listing?.pending ?? null);
+      renderConclusion(investigation.current, investigation.latestRun, listing?.pending ?? null, investigation.history);
     }
     renderEvidence(listing);
     showError(null);
@@ -247,6 +295,23 @@ async function act(button, path) {
 $("run-button").addEventListener("click", () => act($("run-button"), "/api/run"));
 $("update-button").addEventListener("click", () => act($("update-button"), "/api/update"));
 $("timeline-all").addEventListener("change", renderTimeline);
+
+// Withdrawing a record recomputes the beliefs that rested on it.
+$("evidence-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-withdraw]");
+  if (!button) return;
+  const recordId = button.dataset.withdraw;
+  const reason = window.prompt(`Withdraw ${recordId} from this case? Beliefs that rest on it will be recomputed without it. Reason:`);
+  if (!reason?.trim()) return;
+  button.disabled = true;
+  try {
+    await api("/api/evidence/withdraw", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ recordId, reason }) });
+    await refresh();
+  } catch (error) {
+    await refresh();
+    showError(error);
+  }
+});
 
 const events = new EventSource("/api/events");
 events.addEventListener("progress", (event) => {

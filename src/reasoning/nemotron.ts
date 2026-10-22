@@ -118,6 +118,7 @@ export class NemotronReasoner implements Reasoner {
       maxAttempts: 2
     });
     const structured = response.structured as { judgments: Array<Record<string, unknown>>; summary: string };
+    const answered = new Set<string>();
     for (const raw of structured.judgments) {
       const recordId = String(raw.evidence_id);
       // Models sometimes echo the whole "H-KEY: statement" line as the key.
@@ -128,6 +129,7 @@ export class NemotronReasoner implements Reasoner {
         notes.push(`Discarded a model judgment about unknown ${!ids.includes(recordId) ? `evidence "${recordId}"` : `hypothesis "${key}"`}.`);
         continue;
       }
+      answered.add(recordId);
       if (relation === "neutral") continue;
       const existing = judgments[recordId]!.find((judgment) => judgment.hypothesisKey === key);
       if (existing) {
@@ -148,7 +150,15 @@ export class NemotronReasoner implements Reasoner {
         rationale: String(raw.rationale ?? "").slice(0, 400)
       });
     }
-    const lines = input.batch.map((record) => describeJudgments(record, judgments[record.id]!));
+    // A record the model said nothing about (not even "neutral") is left
+    // unjudged rather than passed off as having no bearing; the desk keeps it
+    // pending for the next run.
+    for (const id of ids) {
+      if (answered.has(id)) continue;
+      delete judgments[id];
+      notes.push(`The model returned no judgment for ${id}.`);
+    }
+    const lines = input.batch.filter((record) => judgments[record.id]).map((record) => describeJudgments(record, judgments[record.id]!));
     return { judgments, notes, narrative: [String(structured.summary ?? "").trim(), ...lines].filter(Boolean).join("\n") };
   }
 

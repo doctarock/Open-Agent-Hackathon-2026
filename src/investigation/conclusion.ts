@@ -1,6 +1,8 @@
 import { hypothesisStatus, type MentalObject } from "#speck";
 import type { EvidenceRecord } from "../evidence/types.js";
+import type { RelationJudgment } from "../reasoning/types.js";
 import type { QuestionSpec } from "../scenario.js";
+import { describeInvalidation, type Invalidation } from "./basis.js";
 
 // The conclusion is read from Speck's belief state, never written by a model:
 // Speck's ranked hypotheses, their status and confidence, and the evidence
@@ -24,6 +26,10 @@ export interface EvidenceRef {
   // The reliability Speck applied, after its cap for model-judged evidence.
   reliability: number;
   judgedBy: "rules" | "model";
+  // The judgment behind this relation, and the confidence change Speck made
+  // when it applied it to the current hypothesis.
+  judgment: Pick<RelationJudgment, "basis" | "decisive" | "strength" | "rationale"> | null;
+  delta: number | null;
 }
 
 export interface HypothesisView {
@@ -67,6 +73,8 @@ export interface Conclusion {
   justification: Justification;
   openQuestions: Array<{ id: string; text: string }>;
   answeredQuestions: Array<{ id: string; text: string; answer: string; recordId: string }>;
+  // Assessed records that no longer count towards any current belief.
+  noLongerCounted: Array<{ recordId: string; invalidation: Invalidation; reason: string }>;
   uncertainty: {
     speckConfidence: number | null;
     speckStatus: string | null;
@@ -94,26 +102,40 @@ const OUT = new Set(["rejected", "superseded"]);
 export function deriveConclusion(input: {
   ranked: readonly MentalObject[];
   assessed: readonly EvidenceRecord[];
-  evidenceFor: (mentalObjectId: string) => { record: EvidenceRecord; reliability: number; judgedBy: "rules" | "model" } | undefined;
+  evidenceFor: (mentalObjectId: string, hypothesisKey: string) => {
+    record: EvidenceRecord; reliability: number; judgedBy: "rules" | "model"; judgment?: RelationJudgment | undefined;
+  } | undefined;
   questions: readonly QuestionSpec[];
   belief: BeliefSettings;
+  // Records that no longer count. Without it, supersession is read from the
+  // records' own claims.
+  invalidated?: ReadonlyMap<string, Invalidation>;
 }): Conclusion {
+  const invalidated = input.invalidated ?? new Map<string, Invalidation>();
   const supersededBy = new Map<string, string>();
-  for (const record of input.assessed) for (const id of record.provenance.supersedes) supersededBy.set(id, record.id);
-  const ref = (id: string): EvidenceRef[] => {
-    const found = input.evidenceFor(id);
-    if (!found) return [];
-    const { record } = found;
-    return [{
-      recordId: record.id, sourceSystem: record.source.system, sourceName: record.source.name,
-      observedAt: record.observedAt, retrievalMode: record.retrieval.mode, supersededBy: supersededBy.get(record.id) ?? null,
-      reliability: found.reliability, judgedBy: found.judgedBy
-    }];
-  };
+  if (input.invalidated) {
+    for (const [id, invalidation] of invalidated) if (invalidation.kind === "superseded") supersededBy.set(id, invalidation.by);
+  } else {
+    for (const record of input.assessed) for (const id of record.provenance.supersedes) supersededBy.set(id, record.id);
+  }
   const views = input.ranked.map((object): HypothesisView => {
-    const history = Array.isArray(object.data.revisionHistory) ? object.data.revisionHistory as Array<{ previousConfidence?: number }> : [];
+    const key = String(object.data.key ?? object.id);
+    const history = Array.isArray(object.data.revisionHistory) ? object.data.revisionHistory as Array<{ previousConfidence?: number; evidenceId?: string; delta?: number }> : [];
+    const ref = (id: string): EvidenceRef[] => {
+      const found = input.evidenceFor(id, key);
+      if (!found) return [];
+      const { record, judgment } = found;
+      const delta = history.find((entry) => entry.evidenceId === id)?.delta;
+      return [{
+        recordId: record.id, sourceSystem: record.source.system, sourceName: record.source.name,
+        observedAt: record.observedAt, retrievalMode: record.retrieval.mode, supersededBy: supersededBy.get(record.id) ?? null,
+        reliability: found.reliability, judgedBy: found.judgedBy,
+        judgment: judgment ? { basis: judgment.basis, decisive: judgment.decisive, strength: judgment.strength, rationale: judgment.rationale } : null,
+        delta: typeof delta === "number" ? round(delta) : null
+      }];
+    };
     return {
-      key: String(object.data.key ?? object.id),
+      key,
       statement: object.content,
       status: hypothesisStatus(object.data.status),
       confidence: round(object.confidence),
@@ -136,8 +158,10 @@ export function deriveConclusion(input: {
 
   const answeredQuestions: Conclusion["answeredQuestions"] = [];
   const openQuestions: Conclusion["openQuestions"] = [];
+  // Only records that still count can answer a question.
+  const counting = input.assessed.filter((record) => !invalidated.has(record.id));
   for (const question of input.questions) {
-    const answering = [...input.assessed].reverse().find((record) => record.facts[question.answeredBy] !== undefined);
+    const answering = [...counting].reverse().find((record) => record.facts[question.answeredBy] !== undefined);
     if (answering) answeredQuestions.push({ id: question.id, text: question.text, answer: answering.facts[question.answeredBy]!, recordId: answering.id });
     else openQuestions.push({ id: question.id, text: question.text });
   }
@@ -152,6 +176,13 @@ export function deriveConclusion(input: {
   if (top?.contradicting.length) notes.push(`${top.key} is contested by ${top.contradicting.map((item) => item.recordId).join(", ")}.`);
   const supersededSupport = top?.supporting.filter((item) => item.supersededBy) ?? [];
   if (supersededSupport.length) notes.push(`Support from ${supersededSupport.map((item) => `${item.recordId} (superseded by ${item.supersededBy})`).join(", ")} has been replaced by its source.`);
+  const noLongerCounted = input.assessed.flatMap((record) => {
+    const invalidation = invalidated.get(record.id);
+    return invalidation ? [{ recordId: record.id, invalidation, reason: describeInvalidation(record.id, invalidation) }] : [];
+  });
+  if (noLongerCounted.length) {
+    notes.push(`No longer counted: ${noLongerCounted.map((item) => item.reason).join("; ")}. Current beliefs were recomputed from the remaining evidence; what these records contributed before is in the history, not here.`);
+  }
   if (openQuestions.length) notes.push(`${openQuestions.length} question(s) remain unanswered by any evidence.`);
   if (!input.assessed.length) notes.push("No evidence has been assessed yet.");
 
@@ -169,6 +200,7 @@ export function deriveConclusion(input: {
     justification,
     openQuestions,
     answeredQuestions,
+    noLongerCounted,
     uncertainty: {
       speckConfidence: top ? top.confidence : null,
       speckStatus: top ? top.status : null,
@@ -240,7 +272,7 @@ function justify(input: {
     }
     for (const item of subject.contradicting) {
       reasons.push(item.supersededBy
-        ? `${item.recordId} is still counted against it, although its source has superseded it with ${item.supersededBy}. Speck does not undo a revision already made.`
+        ? `${item.recordId} is still counted against it, although its source has superseded it with ${item.supersededBy}. This belief has not been recomputed since.`
         : `${item.recordId} (${item.sourceName}) counts against it.`);
     }
     if (input.openQuestions.length) reasons.push(`Unanswered: ${input.openQuestions.map((question) => question.text).join(" ")}`);

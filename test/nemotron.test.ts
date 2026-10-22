@@ -96,6 +96,30 @@ test("model judgments go through Speck; decisive rules win; invented citations a
   }
 });
 
+test("a record the model says nothing about stays pending instead of counting as no bearing", async () => {
+  // Answers every pair except those about EV-WMS-002, whose decisive rule
+  // judgment would otherwise be recorded as if the model had agreed.
+  const endpoint = await fakeEndpoint((prompt) => {
+    if (prompt.includes("cited_evidence")) return { explanation: "Unresolved.", cited_evidence: [], stated_conclusion: "unresolved", stated_established: false };
+    const ids = chunkIds(prompt).filter((id) => id !== "EV-WMS-002");
+    return { judgments: ids.map((id) => ({ evidence_id: id, hypothesis: "H-DELIVERED", relation: "neutral", strength: 0.1, rationale: "no bearing" })), summary: "" };
+  });
+  try {
+    await withDesk(testConfig({}, nemotronEnv(endpoint.url)), async (desk) => {
+      const run = await desk.run();
+      assert.ok(!run.assessed.some((item) => item.record.id === "EV-WMS-002"));
+      assert.deepEqual(run.unprocessed, ["EV-WMS-002"]);
+      assert.ok(run.notes.some((note) => /The model returned no judgment for EV-WMS-002/.test(note)));
+      assert.deepEqual((await desk.listEvidence()).pending, ["EV-WMS-002"]);
+      const notShipped = desk.hypotheses().find((view) => view.key === "H-NOT-SHIPPED")!;
+      assert.equal(notShipped.status, "proposed", "neither refuted nor supported by a record that was never judged");
+      assert.deepEqual(notShipped.contradicting, []);
+    });
+  } finally {
+    endpoint.close();
+  }
+});
+
 test("a non-Nemotron or unset model is refused before anything runs", async () => {
   await withDesk(testConfig({}, { REASONER: "nemotron" }), async (desk) => {
     assert.equal(desk.reasoner.describe().ready, false);

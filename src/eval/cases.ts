@@ -19,6 +19,11 @@ export interface Checkpoint {
   // Hypotheses the evidence does not support at all: concluding one is an
   // unsupported claim.
   unsupported: string[];
+  // Regression cases only. Records the investigator withdraws before this
+  // checkpoint's run, and records that no longer count by this checkpoint
+  // (withdrawn or superseded): none may support what is presented as current.
+  withdrawBefore?: Array<{ recordId: string; reason: string }>;
+  invalidated?: string[];
 }
 
 export interface EvalCase {
@@ -34,6 +39,9 @@ export interface EvalCase {
 }
 
 export const EVAL_DIR = path.join(ROOT_DIR, "eval", "scenarios");
+// Correction-sequence regression cases (Build 3), reported apart from the
+// held-out cases above.
+export const REGRESSION_DIR = path.join(ROOT_DIR, "eval", "regression");
 export const DEV_FIXTURES_DIR = path.join(ROOT_DIR, "fixtures", "scenarios");
 
 export function loadEvalCases(dir = EVAL_DIR): EvalCase[] {
@@ -53,7 +61,11 @@ function loadCase(dir: string): EvalCase {
   const stages = scenario.stages.map((stage) => stage.id);
   const checkpoints = expected.checkpoints as Checkpoint[];
   if (!checkpoints?.length) throw new Error(`${where}: expected.json needs checkpoints`);
+  const recordIds = new Set((JSON.parse(fs.readFileSync(path.join(dir, "evidence.json"), "utf8")) as { records: Array<{ id: string }> }).records.map((record) => record.id));
   for (const checkpoint of checkpoints) {
+    for (const id of [...(checkpoint.withdrawBefore ?? []).map((item) => item.recordId), ...(checkpoint.invalidated ?? [])]) {
+      if (!recordIds.has(id)) throw new Error(`${where}: unknown record ${id}`);
+    }
     if (!stages.includes(checkpoint.afterStage)) throw new Error(`${where}: unknown stage ${checkpoint.afterStage}`);
     for (const key of [checkpoint.conclusion, ...checkpoint.notCurrent, ...checkpoint.unsupported]) {
       if (key !== null && !keys.has(key)) throw new Error(`${where}: unknown hypothesis ${key}`);

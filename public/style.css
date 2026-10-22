@@ -158,3 +158,13 @@ meter { width: 100%; max-width: 320px; }
 details { margin-top: 12px; }
 summary { cursor: pointer; color: var(--accent); }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; }
+
+button.link {
+  padding: 0 6px;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--accent);
+}
+.outcome.historical, .timeline li.historical { color: var(--muted); }
+.timeline li.historical { border-left-style: dashed; }
+.timeline li.kind-recomputation { border-left-color: var(--warn); }

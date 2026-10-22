@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { DEV_FIXTURES_DIR, EVAL_DIR, leakage, loadEvalCases } from "../src/eval/cases.js";
+import { DEV_FIXTURES_DIR, EVAL_DIR, leakage, loadEvalCases, REGRESSION_DIR } from "../src/eval/cases.js";
 import { runEvaluation, systemsFor } from "../src/eval/harness.js";
 import { scoreSystem } from "../src/eval/metrics.js";
 import type { CheckpointOutcome } from "../src/eval/systems.js";
@@ -37,8 +37,21 @@ test("the fixture evaluation is deterministic", async () => {
   }
 });
 
+test("correction-sequence regression cases load apart from the held-out set and evaluate deterministically", async () => {
+  const regression = loadEvalCases(REGRESSION_DIR);
+  assert.deepEqual(regression.map((item) => item.category).sort(), ["correction-independent-chain", "correction-withdrawn", "invalidated-support"]);
+  assert.deepEqual(leakage(regression), []);
+  const heldOut = new Set(loadEvalCases().flatMap((item) => [item.id, item.scenario.caseId]));
+  assert.ok(regression.every((item) => !heldOut.has(item.id) && !heldOut.has(item.scenario.caseId)));
+  assert.ok(regression.some((item) => item.checkpoints.some((checkpoint) => checkpoint.withdrawBefore?.length)));
+  const first = await runEvaluation("fixture", regression, systemsFor("fixture"));
+  const second = await runEvaluation("fixture", regression, systemsFor("fixture"));
+  assert.deepEqual(first, second);
+  for (const system of first.systems) assert.ok(system.metrics.invalidatedExcluded.of > 0);
+});
+
 const outcome = (overrides: Partial<CheckpointOutcome>): CheckpointOutcome => ({
-  stage: "only", error: null, conclusion: null, tentative: null, presentedAsCurrent: [], citations: [], supportCitations: [],
+  stage: "only", error: null, conclusion: null, tentative: null, presentedAsCurrent: [], citations: [], supportCitations: [], presentedSupport: [],
   visibleEvidence: ["EV-A", "EV-B"], explanationAgrees: null, executionStatus: null, ...overrides
 });
 

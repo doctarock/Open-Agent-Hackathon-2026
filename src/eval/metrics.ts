@@ -20,6 +20,8 @@ export interface CheckpointScore {
   invalidCitations: string[];
   forbiddenCited: string[];
   presentedRefuted: string[];
+  // Records labelled as no longer counting that still support what is presented.
+  staleSupport: string[];
   explanationAgrees: boolean | null;
   executionStatus: string | null;
 }
@@ -36,6 +38,9 @@ export interface SystemScore {
     // Checkpoints with refuted or superseded hypotheses where none of them
     // was presented as current or favoured.
     correctionHandling: Rate;
+    // Checkpoints with withdrawn or superseded records (regression cases)
+    // where none of them supports what is presented as current or favoured.
+    invalidatedExcluded: Rate;
     // Checkpoints labelled "abstain" where the system abstained.
     appropriateAbstention: Rate;
     // Checkpoints labelled with a conclusion where the system abstained.
@@ -79,6 +84,7 @@ export function scoreSystem(system: string, results: Array<{ item: EvalCase; res
         invalidCitations: invalid,
         forbiddenCited: outcome.citations.filter((id) => item.forbiddenCitations.includes(id)),
         presentedRefuted: outcome.presentedAsCurrent.filter((key) => label.notCurrent.includes(key)),
+        staleSupport: outcome.presentedSupport.filter((id) => (label.invalidated ?? []).includes(id)),
         explanationAgrees: outcome.explanationAgrees,
         executionStatus: outcome.executionStatus
       });
@@ -87,6 +93,7 @@ export function scoreSystem(system: string, results: Array<{ item: EvalCase; res
   const normal = checkpoints.filter((score) => !score.expected?.startsWith("error:"));
   const failures = checkpoints.filter((score) => score.expected?.startsWith("error:"));
   const withRefuted = results.flatMap(({ item }) => item.expectError ? [] : item.checkpoints.map((label) => label.notCurrent.length > 0));
+  const withInvalidated = results.flatMap(({ item }) => item.expectError ? [] : item.checkpoints.map((label) => (label.invalidated ?? []).length > 0));
   const committed = normal.filter((score) => score.concluded !== null);
   const abstainLabels = normal.filter((score) => score.expected === null);
   const concludeLabels = normal.filter((score) => score.expected !== null);
@@ -99,6 +106,7 @@ export function scoreSystem(system: string, results: Array<{ item: EvalCase; res
       validCitations: rate(citationsValid, citationsTotal),
       unsupportedClaims: rate(committed.filter((score) => score.unsupportedClaim).length, committed.length),
       correctionHandling: rate(normal.filter((score, index) => withRefuted[index] && score.presentedRefuted.length === 0).length, withRefuted.filter(Boolean).length),
+      invalidatedExcluded: rate(normal.filter((score, index) => withInvalidated[index] && score.staleSupport.length === 0).length, withInvalidated.filter(Boolean).length),
       appropriateAbstention: rate(abstainLabels.filter((score) => score.concluded === null && !score.error).length, abstainLabels.length),
       overAbstention: rate(concludeLabels.filter((score) => score.concluded === null).length, concludeLabels.length),
       failureSurfaced: rate(failures.filter((score) => score.correct).length, failures.length),

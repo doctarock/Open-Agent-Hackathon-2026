@@ -103,8 +103,13 @@ test("claims Speck has refuted are not presented as current", async () => {
     assert.equal(delivered?.status, "rejected");
     assert.ok(delivered?.contradicting.some((ref) => ref.recordId === "EV-CAR-005"));
     // The revision is Speck's: its belief state and event log, not this app's bookkeeping.
-    const speckView = desk.runtime.rankHypotheses(desk.runtime.listWorkers()[0]!.id).find((object) => object.data.key === "H-DELIVERED")!;
+    // EV-CAR-005 supersedes the delivery scan, so H-DELIVERED was rebuilt without
+    // it; the earlier hypothesis stays in Speck, marked superseded.
+    const speckViews = desk.runtime.rankHypotheses(desk.runtime.listWorkers()[0]!.id).filter((object) => object.data.key === "H-DELIVERED");
+    const speckView = speckViews.find((object) => object.data.status !== "superseded")!;
     assert.equal(speckView.data.status, "rejected");
+    assert.equal(desk.currentHypotheses().get("H-DELIVERED")?.id, speckView.id);
+    assert.ok(speckViews.some((object) => object.data.status === "superseded" && object.data.supersededBy === speckView.id));
     const timeline = desk.timeline();
     const revision = timeline.find((entry) => entry.kind === "revision" && entry.hypothesisKey === "H-DELIVERED" && entry.recordId === "EV-CAR-005");
     assert.ok(revision, "the timeline shows the revision and the evidence responsible");
@@ -176,8 +181,13 @@ test("later support cannot revive a decisively refuted hypothesis", async () => 
     const run = await desk.run();
     const delivered = run.conclusion.rejected.find((view) => view.key === "H-DELIVERED");
     assert.equal(delivered?.status, "rejected", "EV-2's support did not move it back to active");
-    assert.deepEqual(run.assessed.find((item) => item.record.id === "EV-2")?.judgments, []);
-    assert.ok(run.notes.some((note) => /Withheld from Speck: EV-2 supports H-DELIVERED \(rule\), which EV-1 already refuted decisively/.test(note)));
+    assert.deepEqual(delivered?.supporting, [], "the support never reached Speck");
+    // The judgment is kept as given and withheld by derivation, so it would
+    // apply again if EV-1 were ever invalidated.
+    assert.deepEqual(run.assessed.find((item) => item.record.id === "EV-2")?.judgments.map((judgment) => [judgment.hypothesisKey, judgment.direction]), [["H-DELIVERED", "supports"]]);
+    const listed = (await desk.listEvidence()).records.find((record) => record.id === "EV-2")!;
+    assert.deepEqual(listed.assessment?.judgments.map((judgment) => [judgment.effect, judgment.refutedBy]), [["withheld", "EV-1"]]);
+    assert.ok(run.notes.some((note) => /Withheld from Speck: EV-2 supports H-DELIVERED \(rule\), which EV-1 refutes decisively/.test(note)));
     assert.equal(run.conclusion.direction.pointsTo?.key, "H-WRONG");
   });
 });

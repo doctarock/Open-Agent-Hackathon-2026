@@ -6,6 +6,7 @@ import { loadConfig, type AppConfig, type NemotronConfig } from "../config.js";
 import { FixtureEvidenceProvider } from "../evidence/fixture-provider.js";
 import { byObservation, EvidenceProviderError, type EvidenceProvider, type EvidenceRecord } from "../evidence/types.js";
 import { ZetarisEvidenceProvider } from "../evidence/zetaris-provider.js";
+import type { Conclusion } from "../investigation/conclusion.js";
 import { EvidenceDesk, type RunSnapshot } from "../investigation/desk.js";
 import { NemotronProcessor, NemotronReasoner } from "../reasoning/nemotron.js";
 import { ruleJudgments } from "../reasoning/rules.js";
@@ -28,6 +29,8 @@ export interface CheckpointOutcome {
   // Every evidence id the system cited, and those it cited for its conclusion.
   citations: string[];
   supportCitations: string[];
+  // Records cited as support for anything presented as current or favoured.
+  presentedSupport: string[];
   visibleEvidence: string[];
   // Speck systems with a model: whether the explanation matched Speck's state.
   explanationAgrees: boolean | null;
@@ -73,17 +76,20 @@ function caseConfig(item: EvalCase, reasoner: ReasonerChoice): AppConfig {
   });
 }
 
-function speckOutcome(stage: string, run: RunSnapshot, visible: string[]): CheckpointOutcome {
-  const c = run.conclusion;
+// Scored on Speck's current conclusion, which equals the run's own unless
+// records were withdrawn after it.
+function speckOutcome(stage: string, c: Conclusion, run: RunSnapshot, visible: string[]): CheckpointOutcome {
   const views = [c.hypothesis, ...c.alternatives, ...c.rejected].flatMap((view) => (view ? [view] : []));
   const concluded = c.state === "supported" ? c.hypothesis : null;
+  const presented = [...new Set([c.hypothesis?.key, c.direction.pointsTo?.key].filter((key): key is string => Boolean(key)))];
   return {
     stage, error: null,
     conclusion: concluded?.key ?? null,
     tentative: concluded ? null : c.hypothesis?.key ?? c.direction.pointsTo?.key ?? null,
-    presentedAsCurrent: [...new Set([c.hypothesis?.key, c.direction.pointsTo?.key].filter((key): key is string => Boolean(key)))],
+    presentedAsCurrent: presented,
     citations: [...new Set([...views.flatMap((view) => [...view.supporting, ...view.contradicting].map((ref) => ref.recordId)), ...(run.explanation?.citedEvidence ?? [])])],
     supportCitations: concluded ? concluded.supporting.map((ref) => ref.recordId) : [],
+    presentedSupport: [...new Set(views.filter((view) => presented.includes(view.key)).flatMap((view) => view.supporting.map((ref) => ref.recordId)))],
     visibleEvidence: visible,
     explanationAgrees: run.explanation ? run.explanation.agreement.agrees : null,
     executionStatus: run.execution.status
@@ -93,7 +99,7 @@ function speckOutcome(stage: string, run: RunSnapshot, visible: string[]): Check
 function errorOutcome(stage: string, error: unknown): CheckpointOutcome {
   return {
     stage, error: error instanceof EvidenceProviderError ? `evidence: ${error.message}` : `error: ${error instanceof Error ? error.message : String(error)}`,
-    conclusion: null, tentative: null, presentedAsCurrent: [], citations: [], supportCitations: [], visibleEvidence: [],
+    conclusion: null, tentative: null, presentedAsCurrent: [], citations: [], supportCitations: [], presentedSupport: [], visibleEvidence: [],
     explanationAgrees: null, executionStatus: null
   };
 }
@@ -112,6 +118,11 @@ function mergeStats(stats: Array<ModelStats | null>): ModelStats | null {
     contractValid: present.reduce((sum, item) => sum + item.contractValid, 0),
     servedModels: [...new Set(present.flatMap((item) => item.servedModels))]
   };
+}
+
+// Records the investigator has withdrawn by the given checkpoint (regression cases).
+function withdrawnBy(item: EvalCase, index: number): Array<{ recordId: string; reason: string }> {
+  return item.checkpoints.slice(0, index + 1).flatMap((checkpoint) => checkpoint.withdrawBefore ?? []);
 }
 
 async function visibleIds(desk: EvidenceDesk): Promise<string[]> {
@@ -139,8 +150,9 @@ export function speckDesk(reasoner: ReasonerChoice): EvalSystem {
         for (const checkpoint of item.checkpoints) {
           while (desk.currentStage().id !== checkpoint.afterStage) await desk.introduceNextUpdate();
           try {
+            for (const withdrawal of checkpoint.withdrawBefore ?? []) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
             const run = await desk.run();
-            checkpoints.push(speckOutcome(checkpoint.afterStage, run, await visibleIds(desk)));
+            checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk)));
           } catch (error) {
             checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           }
@@ -163,13 +175,15 @@ export function speckFresh(reasoner: ReasonerChoice): EvalSystem {
     async run(item) {
       const checkpoints: CheckpointOutcome[] = [];
       const stats: Array<ModelStats | null> = [];
-      for (const checkpoint of item.checkpoints) {
+      for (const [index, checkpoint] of item.checkpoints.entries()) {
         const config = caseConfig(item, reasoner);
         const desk = await EvidenceDesk.open(config, deskOptions(item, config, reasoner));
         try {
           while (desk.currentStage().id !== checkpoint.afterStage) await desk.introduceNextUpdate();
           const run = await desk.run();
-          checkpoints.push(speckOutcome(checkpoint.afterStage, run, await visibleIds(desk)));
+          // Everything is assessed at once, then every withdrawal so far applied.
+          for (const withdrawal of withdrawnBy(item, index)) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
+          checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk)));
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
         } finally {
@@ -182,10 +196,13 @@ export function speckFresh(reasoner: ReasonerChoice): EvalSystem {
   };
 }
 
-async function visibleAt(item: EvalCase, provider: EvidenceProvider, stageId: string): Promise<EvidenceRecord[]> {
-  const stage = item.scenario.stages.find((candidate) => candidate.id === stageId)!;
+// The stateless baselines see what is visible at the checkpoint, less what the
+// investigator has withdrawn by then.
+async function visibleAt(item: EvalCase, provider: EvidenceProvider, index: number): Promise<EvidenceRecord[]> {
+  const stage = item.scenario.stages.find((candidate) => candidate.id === item.checkpoints[index]!.afterStage)!;
+  const withdrawn = new Set(withdrawnBy(item, index).map((withdrawal) => withdrawal.recordId));
   return (await provider.fetchCaseEvidence(item.scenario.caseId))
-    .filter((record) => Date.parse(record.observedAt) <= Date.parse(stage.asOf)).sort(byObservation);
+    .filter((record) => Date.parse(record.observedAt) <= Date.parse(stage.asOf) && !withdrawn.has(record.id)).sort(byObservation);
 }
 
 // A stateless baseline with the scenario's fact rules: at each checkpoint it
@@ -200,10 +217,10 @@ export function statelessRules(): EvalSystem {
       const config = caseConfig(item, { kind: "rules" });
       const provider = providerFor(item, config);
       const checkpoints: CheckpointOutcome[] = [];
-      for (const checkpoint of item.checkpoints) {
+      for (const [index, checkpoint] of item.checkpoints.entries()) {
         let records: EvidenceRecord[];
         try {
-          records = await visibleAt(item, provider, checkpoint.afterStage);
+          records = await visibleAt(item, provider, index);
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           continue;
@@ -224,7 +241,7 @@ export function statelessRules(): EvalSystem {
         const cited = chosen ? support.get(chosen) ?? [] : [];
         checkpoints.push({
           stage: checkpoint.afterStage, error: null, conclusion: chosen, tentative: null,
-          presentedAsCurrent: chosen ? [chosen] : [], citations: cited, supportCitations: cited,
+          presentedAsCurrent: chosen ? [chosen] : [], citations: cited, supportCitations: cited, presentedSupport: cited,
           visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null
         });
       }
@@ -261,10 +278,10 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
       let attempts = 0;
       let valid = 0;
       const checkpoints: CheckpointOutcome[] = [];
-      for (const checkpoint of item.checkpoints) {
+      for (const [index, checkpoint] of item.checkpoints.entries()) {
         let records: EvidenceRecord[];
         try {
-          records = await visibleAt(item, provider, checkpoint.afterStage);
+          records = await visibleAt(item, provider, index);
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           continue;
@@ -290,7 +307,7 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
         const cited = (parsed.cited_evidence as unknown[]).map(String);
         checkpoints.push({
           stage: checkpoint.afterStage, error: null, conclusion, tentative: null,
-          presentedAsCurrent: conclusion ? [conclusion] : [], citations: cited, supportCitations: conclusion ? cited : [],
+          presentedAsCurrent: conclusion ? [conclusion] : [], citations: cited, supportCitations: conclusion ? cited : [], presentedSupport: conclusion ? cited : [],
           visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null
         });
       }

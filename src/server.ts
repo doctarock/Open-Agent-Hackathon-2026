@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ConfigError, loadConfig, loadDotEnv, type AppConfig } from "./config.js";
 import { EvidenceProviderError } from "./evidence/types.js";
-import { EvidenceDesk, MARKOVIAN_SOURCE, ReasonerNotReadyError, RunInProgressError, relativeDataPath } from "./investigation/desk.js";
+import { EvidenceDesk, MARKOVIAN_SOURCE, ReasonerNotReadyError, RunInProgressError, WithdrawalError, relativeDataPath } from "./investigation/desk.js";
 
 // A small HTTP server: JSON API under /api, the static UI from public/, and
 // run progress (Meterless progress events) as server-sent events.
@@ -24,6 +24,7 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
     currentChunk: state.currentChunk, maxChunks: state.maxChunks, logs: state.logs
   }));
   desk.on("run", (summary) => broadcast("run", summary));
+  desk.on("revision", (summary) => broadcast("revision", summary));
 
   const routes: Record<string, (request: http.IncomingMessage, response: http.ServerResponse) => Promise<void>> = {
     "GET /api/status": async (_request, response) => json(response, 200, status(desk, config)),
@@ -41,10 +42,20 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
           evidenceMode: run.evidence.mode, reasoner: run.reasoner.kind, model: run.reasoner.model
         })),
         hypotheses: desk.hypotheses(),
+        // Beliefs no longer held because what they rested on was invalidated:
+        // history, kept apart from the current state above.
+        history: { recomputations: desk.recomputations(), replaced: desk.replacedHypotheses() },
         timeline: desk.timeline()
       });
     },
     "POST /api/run": async (_request, response) => json(response, 200, await desk.run()),
+    "POST /api/evidence/withdraw": async (request, response) => {
+      const body = await readJson(request) as { recordId?: unknown; reason?: unknown };
+      if (typeof body.recordId !== "string" || typeof body.reason !== "string") {
+        return json(response, 400, { error: "recordId and reason are required", kind: "request" });
+      }
+      json(response, 200, { recomputation: await desk.withdrawRecord(body.recordId, body.reason) });
+    },
     "POST /api/update": async (_request, response) => json(response, 200, { stage: await desk.introduceNextUpdate(), next: desk.nextStage() }),
     "GET /api/events": async (request, response) => {
       response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
@@ -87,7 +98,23 @@ function sendError(response: http.ServerResponse, error: unknown): void {
   }
   if (error instanceof RunInProgressError) return json(response, 409, { error: error.message, kind: "busy" });
   if (error instanceof ReasonerNotReadyError) return json(response, 503, { error: error.message, hint: error.hint, kind: "reasoner" });
+  if (error instanceof RequestError || error instanceof WithdrawalError) return json(response, 400, { error: error.message, kind: "request" });
   json(response, 500, { error: error instanceof Error ? error.message : String(error), kind: "internal" });
+}
+
+class RequestError extends Error {}
+
+async function readJson(request: http.IncomingMessage): Promise<unknown> {
+  let body = "";
+  for await (const chunk of request) {
+    body += chunk;
+    if (body.length > 16_384) throw new RequestError("Request body too large");
+  }
+  try {
+    return JSON.parse(body || "{}");
+  } catch {
+    throw new RequestError("Request body is not valid JSON");
+  }
 }
 
 function json(response: http.ServerResponse, status: number, body: unknown): void {
