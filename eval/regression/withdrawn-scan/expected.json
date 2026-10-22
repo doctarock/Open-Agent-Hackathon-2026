@@ -1,0 +1,42 @@
+{
+  "id": "withdrawn-scan",
+  "category": "invalidated-support",
+  "description": "The receipt scan is withdrawn as belonging to another return; only the carrier's dock delivery remains, then an audit conflicts with it.",
+  "checkpoints": [
+    {
+      "afterStage": "scans",
+      "conclusion": "H-RECEIVED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-RECEIVED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "withdrawn",
+      "withdrawBefore": [
+        {
+          "recordId": "EV-RV2-02",
+          "reason": "The scan was for RMA-56 and was attached to this case in error."
+        }
+      ],
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-RECEIVED"
+      ],
+      "invalidated": [
+        "EV-RV2-02"
+      ]
+    },
+    {
+      "afterStage": "audit",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": [
+        "EV-RV2-02"
+      ]
+    }
+  ]
+}

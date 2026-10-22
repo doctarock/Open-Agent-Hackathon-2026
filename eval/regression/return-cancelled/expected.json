@@ -1,0 +1,43 @@
+{
+  "id": "return-cancelled",
+  "category": "correction-withdrawn",
+  "description": "A bank return supersedes a payment, then the bank cancels the return: the payment counts again.",
+  "checkpoints": [
+    {
+      "afterStage": "credit",
+      "conclusion": "H-PAID",
+      "notCurrent": [],
+      "unsupported": [
+        "H-UNPAID"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "return",
+      "conclusion": "H-UNPAID",
+      "notCurrent": [
+        "H-PAID"
+      ],
+      "unsupported": [
+        "H-PAID"
+      ],
+      "invalidated": [
+        "EV-RV1-01"
+      ]
+    },
+    {
+      "afterStage": "return-cancelled",
+      "conclusion": "H-PAID",
+      "notCurrent": [
+        "H-UNPAID"
+      ],
+      "unsupported": [
+        "H-UNPAID"
+      ],
+      "invalidated": [
+        "EV-RV1-03",
+        "EV-RV1-04"
+      ]
+    }
+  ]
+}

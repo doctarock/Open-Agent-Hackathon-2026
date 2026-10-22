@@ -1,0 +1,125 @@
+{
+  "caseId": "EVAL-REV-01",
+  "records": [
+    {
+      "id": "EV-RV1-01",
+      "caseId": "EVAL-REV-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-08-03T01:00:00Z",
+      "content": "Credit AUD 1,850.00 from Marlow Joinery, reference INV-310.",
+      "facts": {
+        "payment.received": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "ev-rv1-01",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-RV1-02",
+      "caseId": "EVAL-REV-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-08-03T04:00:00Z",
+      "content": "Invoice INV-310 matched to bank credit and marked paid.",
+      "facts": {
+        "ledger.status": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "ev-rv1-02",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-RV1-03",
+      "caseId": "EVAL-REV-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-08-07T00:30:00Z",
+      "content": "Debit AUD 1,850.00: payment reference INV-310 returned unpaid. Reverses the credit of 3 Aug.",
+      "facts": {
+        "payment.reversed": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "ev-rv1-03",
+        "author": "bank-feed",
+        "supersedes": [
+          "EV-RV1-01"
+        ]
+      }
+    },
+    {
+      "id": "EV-RV1-04",
+      "caseId": "EVAL-REV-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-08-07T02:00:00Z",
+      "content": "Invoice INV-310 reopened after the bank returned the payment.",
+      "facts": {
+        "ledger.status": "reopened"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "ev-rv1-04",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-RV1-05",
+      "caseId": "EVAL-REV-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-08-11T00:20:00Z",
+      "content": "The return of 7 Aug was posted in error and has been cancelled; the credit of 3 Aug stands.",
+      "facts": {
+        "payment.return_cancelled": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "ev-rv1-05",
+        "author": "bank-feed",
+        "supersedes": [
+          "EV-RV1-03"
+        ]
+      }
+    },
+    {
+      "id": "EV-RV1-06",
+      "caseId": "EVAL-REV-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-08-11T03:00:00Z",
+      "content": "Invoice INV-310 re-marked paid after the bank cancelled the return.",
+      "facts": {
+        "ledger.status": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "ev-rv1-06",
+        "author": "ledger-feed",
+        "supersedes": [
+          "EV-RV1-04"
+        ]
+      }
+    }
+  ]
+}

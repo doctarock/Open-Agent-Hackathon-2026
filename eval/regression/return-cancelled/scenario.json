@@ -1,0 +1,95 @@
+{
+  "id": "reg-return-cancelled",
+  "caseId": "EVAL-REV-01",
+  "title": "Was invoice INV-310 paid?",
+  "question": "Invoice INV-310 (AUD 1,850) was marked paid, then reopened after a bank return. Is it paid?",
+  "sources": {
+    "bank": {
+      "name": "Bank statement feed",
+      "reliability": 0.95
+    },
+    "ledger": {
+      "name": "Accounts ledger",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "Invoice INV-310 has been paid in full.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.status",
+          "equals": "paid",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.return_cancelled",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-UNPAID",
+      "statement": "Invoice INV-310 remains unpaid.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.status",
+          "equals": "reopened",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "payment.return_cancelled",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "credit",
+      "label": "Payment received (3 Aug)",
+      "asOf": "2026-08-04T00:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "return",
+      "label": "Bank return (7 Aug)",
+      "asOf": "2026-08-08T00:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "return-cancelled",
+      "label": "Return cancelled (11 Aug)",
+      "asOf": "2026-08-12T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

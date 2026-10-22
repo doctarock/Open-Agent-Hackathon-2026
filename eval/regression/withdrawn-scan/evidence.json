@@ -1,0 +1,62 @@
+{
+  "caseId": "EVAL-REV-02",
+  "records": [
+    {
+      "id": "EV-RV2-01",
+      "caseId": "EVAL-REV-02",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier tracking API"
+      },
+      "observedAt": "2026-07-14T01:00:00Z",
+      "content": "Return parcel delivered to warehouse dock 3.",
+      "facts": {
+        "carrier.return_delivered": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier tracking API",
+        "recordRef": "ev-rv2-01",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-RV2-02",
+      "caseId": "EVAL-REV-02",
+      "source": {
+        "system": "warehouse",
+        "name": "Warehouse management system"
+      },
+      "observedAt": "2026-07-14T05:00:00Z",
+      "content": "Return scan: RMA-55 received in returns bay.",
+      "facts": {
+        "warehouse.return_scanned": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Warehouse management system",
+        "recordRef": "ev-rv2-02",
+        "author": "warehouse-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "EV-RV2-03",
+      "caseId": "EVAL-REV-02",
+      "source": {
+        "system": "warehouse",
+        "name": "Warehouse management system"
+      },
+      "observedAt": "2026-07-19T06:00:00Z",
+      "content": "Returns bay audit: RMA-55 not found.",
+      "facts": {
+        "warehouse.return_found": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Warehouse management system",
+        "recordRef": "ev-rv2-03",
+        "author": "warehouse-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "id": "reg-withdrawn-scan",
+  "caseId": "EVAL-REV-02",
+  "title": "Was return RMA-55 received?",
+  "question": "The customer returned item RMA-55 for a refund. Has the warehouse received it back?",
+  "sources": {
+    "warehouse": {
+      "name": "Warehouse management system",
+      "reliability": 0.9
+    },
+    "carrier": {
+      "name": "Carrier tracking API",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-RECEIVED",
+      "statement": "The warehouse has received returned item RMA-55.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "warehouse.return_scanned",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "carrier.return_delivered",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "warehouse.return_found",
+          "equals": "false",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-RECEIVED",
+      "statement": "Returned item RMA-55 has not reached the warehouse.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "warehouse.return_found",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "warehouse.return_scanned",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "scans",
+      "label": "Return scans (14 Jul)",
+      "asOf": "2026-07-15T00:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "withdrawn",
+      "label": "Scan withdrawn (16 Jul)",
+      "asOf": "2026-07-16T00:00:00Z",
+      "description": "No new records. The investigator withdraws the warehouse scan, which belongs to another return."
+    },
+    {
+      "id": "audit",
+      "label": "Returns bay audit (19 Jul)",
+      "asOf": "2026-07-20T00:00:00Z",
+      "description": ""
+    }
+  ]
+}

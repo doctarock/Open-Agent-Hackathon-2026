@@ -1,0 +1,34 @@
+{
+  "id": "misattributed-scan",
+  "category": "correction-independent-chain",
+  "description": "A misattributed delivery scan is corrected; the warehouse handover that rules out non-shipment is independent and must still count.",
+  "checkpoints": [
+    {
+      "afterStage": "scan",
+      "conclusion": "H-DELIVERED",
+      "notCurrent": [
+        "H-NOT-SHIPPED"
+      ],
+      "unsupported": [
+        "H-NOT-SHIPPED",
+        "H-IN-DEPOT"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "correction",
+      "conclusion": "H-IN-DEPOT",
+      "notCurrent": [
+        "H-DELIVERED",
+        "H-NOT-SHIPPED"
+      ],
+      "unsupported": [
+        "H-DELIVERED",
+        "H-NOT-SHIPPED"
+      ],
+      "invalidated": [
+        "EV-RV3-02"
+      ]
+    }
+  ]
+}

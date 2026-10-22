@@ -1,0 +1,100 @@
+{
+  "id": "reg-misattributed-scan",
+  "caseId": "EVAL-REV-03",
+  "title": "Where is parcel PCL-7310?",
+  "question": "The customer says parcel PCL-7310 never arrived. Where is it?",
+  "sources": {
+    "wms": {
+      "name": "Warehouse management system",
+      "reliability": 0.9
+    },
+    "carrier": {
+      "name": "Carrier tracking API",
+      "reliability": 0.85
+    },
+    "depot": {
+      "name": "Carrier depot inventory",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DELIVERED",
+      "statement": "PCL-7310 was delivered to the customer.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "carrier.status",
+          "equals": "delivered",
+          "direction": "supports"
+        },
+        {
+          "fact": "carrier.status",
+          "equals": "in_depot",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "depot.holds_parcel",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-IN-DEPOT",
+      "statement": "PCL-7310 is still at the carrier's depot.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "carrier.status",
+          "equals": "in_depot",
+          "direction": "supports"
+        },
+        {
+          "fact": "depot.holds_parcel",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "carrier.status",
+          "equals": "delivered",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-SHIPPED",
+      "statement": "PCL-7310 never left the warehouse.",
+      "prior": 0.2,
+      "rules": [
+        {
+          "fact": "warehouse.handover",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "carrier.status",
+          "equals": "delivered",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "scan",
+      "label": "Delivery scan (2 Jun)",
+      "asOf": "2026-06-03T00:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "correction",
+      "label": "Carrier correction (5 Jun)",
+      "asOf": "2026-06-06T00:00:00Z",
+      "description": ""
+    }
+  ]
+}
