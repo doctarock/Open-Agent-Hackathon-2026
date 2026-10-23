@@ -14,7 +14,7 @@ import { ROOT_DIR } from "../config.js";
 //               runs in, and still loads when Speck's tests copy plugins/
 //               elsewhere (reinstall if the repository moves)
 //   fixtures/, eval/scenarios/, config/   the cases' data
-//   public/app.js, public/tour.js, public/style.css, plugin/ui/   the tab's page
+//   public/app.js, tour.js, status.js, style.css, plugin/ui/   the tab's page
 //   .env, data/  kept from an earlier install (settings, Meterless history)
 // Then it approves the plugin in Speck's allowlist
 // (speck/plugins/.runtime/plugin-trust.json), as Speck's plugin README asks
@@ -54,7 +54,7 @@ export function installPlugin(options: { rootDir?: string; speckDir?: string; se
   for (const part of ["fixtures", path.join("eval", "scenarios"), "config", path.join("plugin", "ui")]) {
     copyTree(path.join(rootDir, part), path.join(target, part));
   }
-  for (const file of ["app.js", "tour.js", "style.css"]) {
+  for (const file of ["app.js", "tour.js", "status.js", "style.css"]) {
     fs.mkdirSync(path.join(target, "public"), { recursive: true });
     fs.copyFileSync(path.join(rootDir, "public", file), path.join(target, "public", file));
   }

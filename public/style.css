@@ -200,6 +200,14 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
   border-left: 3px solid var(--edk-accent);
   font-size: 0.88rem;
 }
+.edk .progress p { margin: 4px 0; }
+.edk .progress .next { font-weight: 600; }
+.edk .progress.outcome-ok { border-left-color: var(--edk-good); }
+.edk .progress.outcome-warn { border-left-color: var(--edk-warn); }
+.edk .progress.outcome-warn > strong { color: var(--edk-warn); }
+.edk .progress.outcome-error { border-left-color: var(--edk-bad); }
+.edk .progress.outcome-error > strong { color: var(--edk-bad); }
+.edk .header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
 
 /* Conclusion beside evidence when there is room; the conclusion first. */
 .edk .workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -305,9 +313,11 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
   right: 16px;
   bottom: 16px;
   z-index: 40;
+  display: flex;
+  flex-direction: column;
   width: min(400px, calc(100vw - 32px));
   max-height: min(70vh, 560px);
-  overflow-y: auto;
+  overflow: hidden;
   padding: 16px 18px;
   border: 1px solid var(--edk-accent);
   border-radius: 10px;
@@ -318,10 +328,18 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .coach-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .edk .coach.collapsed { max-height: none; padding: 10px 14px; }
 .edk .coach.collapsed h2 { margin: 0; font-size: 0.95rem; }
-@media (max-width: 600px) {
-  .edk .coach { right: 8px; bottom: 8px; width: calc(100vw - 16px); max-height: 48vh; }
+/* When the workspace is one column (the same 980px as .workspace), the tour
+   is a bottom sheet across the width, capped so the case stays visible above. */
+@container edk (max-width: 979px) {
+  .edk .coach { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 42vh; padding: 12px 14px; border-radius: 12px; }
+  .edk .coach h2 { font-size: 0.98rem; margin-bottom: 4px; }
+  .edk .coach-body { font-size: 0.88rem; }
+  .edk .coach-actions { margin-top: 8px; }
+  .edk .coach-actions button { min-height: 40px; }
 }
-.edk .coach-body { font-size: 0.92rem; }
+/* The step text scrolls; the header, status and buttons stay in view. */
+.edk .coach-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; font-size: 0.92rem; }
+.edk .coach > :not(.coach-body) { flex: none; }
 .edk .coach-body ul { margin: 4px 0; padding-left: 18px; }
 .edk .coach-status { margin: 10px 0 0; padding: 6px 10px; border-radius: 6px; font-size: 0.88rem; font-weight: 600; }
 .edk .coach-status.waiting { background: var(--edk-accent-soft); color: var(--edk-accent); }
@@ -385,4 +403,9 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 
 /* Inside Speck: dock the tour above Speck's floating message bar. */
 .edk.edk-in-speck .coach { bottom: 112px; max-height: calc(100vh - 200px); }
-@media (max-width: 600px) { .edk.edk-in-speck .coach { bottom: 150px; max-height: calc(100vh - 230px); } }
+@container edk (max-width: 979px) {
+  .edk.edk-in-speck .coach { left: 100px; bottom: 112px; max-height: min(42vh, calc(100vh - 200px)); }
+}
+@media (max-width: 600px) {
+  .edk.edk-in-speck .coach { left: 8px; bottom: 150px; max-height: min(40vh, calc(100vh - 230px)); }
+}

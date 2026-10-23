@@ -213,7 +213,8 @@ export const TOUR_STEPS = [
       "Withdraw: any record can be withdrawn, for example one filed against the wrong case. Beliefs that rested on it are recomputed without it. It cannot be undone from this page, so the tour does not do it.",
       "Failed assessments and recovery: a record that cannot be assessed stays \"not yet assessed\" and is retried on the next run; nothing is guessed for it. Judgments are saved before evidence enters Speck, so an interrupted run is reconciled on the next run or restart.",
       "Execution trace: what each component did in each run, read back from what was saved.",
-      "The Guide button reopens this tour and lists every feature, marking the ones this case has actually demonstrated."
+      "The Guide button reopens this tour and lists every feature, marking the ones this case has actually demonstrated.",
+      "Reset demo case starts a fresh copy of the case for the next person, without deleting anything."
     ]
   }
 ];
@@ -257,6 +258,9 @@ export const FEATURES = [
     text: "Speck's event log for the case: stages, records and belief changes, with replaced beliefs marked historical." },
   { id: "trace", title: "Execution trace", target: "trace",
     text: "What the evidence source, the execution engine, the assessor and Speck did in each run, read back from saved state." },
+  { id: "reset", title: "Reset the demo case", target: "reset-button",
+    text: "Starts a fresh copy of the case at its first stage. Nothing is deleted: the previous copy is kept in Speck, suspended, with its history.",
+    demonstrated: (view) => (view.status?.case?.generation ?? 1) > 1 },
   { id: "zetaris", title: "Live evidence from Zetaris", target: "evidence",
     text: "Records queried live from a Zetaris platform, each with its query token.",
     available: (view) => view.status?.evidence?.mode === "zetaris"
@@ -297,6 +301,10 @@ export function progressStore(storage, scope) {
     tourStep: () => { const step = read("tour-step", null); return Number.isInteger(step) && step >= 0 && step < TOUR_STEPS.length ? step : null; },
     setTourStep: (step) => write("tour-step", step),
     viewed: () => new Set(read("viewed", [])),
-    markViewed: (id) => { const set = new Set(read("viewed", [])); set.add(id); write("viewed", [...set]); }
+    markViewed: (id) => { const set = new Set(read("viewed", [])); set.add(id); write("viewed", [...set]); },
+    coachCollapsed: () => read("coach-collapsed", false) === true,
+    setCoachCollapsed: (collapsed) => write("coach-collapsed", Boolean(collapsed)),
+    // After the demo case is reset: the next person starts from the introduction.
+    resetForDemo: () => { write("intro-dismissed", false); write("tour-step", null); write("viewed", []); write("coach-collapsed", false); }
   };
 }

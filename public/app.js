@@ -10,6 +10,7 @@
 // (./tour.js) read the same state the page renders.
 
 import { CONFIDENCE_MEANING, FEATURES, STATE_MEANING, TOUR_STEPS, featureStatus, progressStore, recordToInspect, stepDone } from "./tour.js";
+import { describeFailure, describeProgress, describeRun } from "./status.js";
 
 function el(tag, attributes = {}, ...children) {
   const node = document.createElement(tag);
@@ -68,7 +69,10 @@ const TEMPLATE = `
     <p id="edk-case-question" class="question"></p>
     <p id="edk-sources" class="sources"></p>
   </div>
-  <button id="edk-guide-button" class="secondary" type="button" aria-controls="edk-guide" aria-expanded="false">Guide</button>
+  <div class="header-actions">
+    <button id="edk-reset-button" class="link" type="button" aria-haspopup="dialog">Reset demo case…</button>
+    <button id="edk-guide-button" class="secondary" type="button" aria-controls="edk-guide" aria-expanded="false">Guide</button>
+  </div>
 </header>
 
 <section id="edk-intro" class="intro" aria-labelledby="edk-intro-title" hidden>
@@ -100,7 +104,7 @@ const TEMPLATE = `
       <p id="edk-update-hint" class="hint"></p>
     </div>
   </div>
-  <p id="edk-progress" class="progress" role="status" aria-live="polite" hidden></p>
+  <div id="edk-progress" class="progress" role="status" aria-live="polite" hidden></div>
 </section>
 
 <div class="workspace">
@@ -138,6 +142,7 @@ const TEMPLATE = `
 <aside id="edk-coach" class="coach" aria-labelledby="edk-coach-title" hidden></aside>
 <section id="edk-guide" class="guide" aria-labelledby="edk-guide-title" hidden></section>
 <dialog id="edk-withdraw" class="withdraw-dialog" aria-labelledby="edk-withdraw-title"></dialog>
+<dialog id="edk-reset" class="withdraw-dialog reset-dialog" aria-labelledby="edk-reset-title"></dialog>
 `;
 
 // Mounts the page into root. apiBase: where the JSON API lives (/api
@@ -223,6 +228,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const working = Boolean(busy) || status.running;
     $("run-button").disabled = working;
     $("update-button").disabled = working || !status.nextStage;
+    $("reset-button").disabled = working;
     $("run-button").textContent = busy === "run" || status.running ? "Running…" : "Run investigation";
     $("update-button").textContent = busy === "update" ? "Introducing…" : status.nextStage ? "Introduce prepared update" : "No further updates";
     $("run-hint").textContent = pending.length
@@ -641,31 +647,69 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   }
 
   function setProgress(text) {
-    $("progress").hidden = !text;
-    $("progress").textContent = text ?? "";
+    const box = $("progress");
+    box.hidden = !text;
+    box.className = "progress";
+    box.textContent = text ?? "";
   }
 
-  const WORKING = {
-    run: () => view.status?.reasoner?.kind === "nemotron" || view.status?.evidence?.mode === "zetaris"
-      ? "Running the investigation… a live run can take up to about 35 seconds."
-      : "Running the investigation…",
-    update: () => "Introducing the next update…"
-  };
+  // An outcome: what happened, in a tone, and what to do next.
+  function showOutcome(outcome) {
+    const box = $("progress");
+    if (!outcome) { setProgress(null); return; }
+    box.hidden = false;
+    box.className = `progress outcome-${outcome.tone}`;
+    box.replaceChildren(...el("div", {},
+      el("strong", {}, outcome.title),
+      outcome.lines.map((line) => el("p", {}, line)),
+      outcome.next ? el("p", { className: "next" }, outcome.next) : null).childNodes);
+  }
+
+  const liveRun = () => view.status?.reasoner?.kind === "nemotron" || view.status?.evidence?.mode === "zetaris";
+  let engineProgress = null;
+  let workingText = "";
+
+  // While an action runs: elapsed time, and the execution engine's own
+  // progress when the host provides it (a stream standalone, polling in Speck).
+  function startWorking(kind) {
+    const began = Date.now();
+    engineProgress = null;
+    const tick = async () => {
+      if (kind === "run" && !eventsUrl) {
+        try { engineProgress = (await api("/api/progress")).progress ?? engineProgress; } catch { /* keep the last report */ }
+      }
+      if (busy !== kind) return;
+      workingText = describeProgress(kind, Date.now() - began, engineProgress && engineProgress.at && Date.parse(engineProgress.at) >= began - 1000 ? engineProgress : null)
+        + (kind === "run" && liveRun() ? " A live run can take up to about 35 seconds." : "");
+      setProgress(workingText);
+      const status = root.querySelector(".coach-status.working");
+      if (status) status.textContent = workingText;
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }
 
   async function act(kind, path) {
     busy = kind;
     renderWorkflow();
     renderTour();
-    setProgress(WORKING[kind]());
+    const stop = startWorking(kind);
     try {
       await api(path, { method: "POST" });
+      stop();
       await refresh();
-      const run = view.investigation?.latestRun;
-      setProgress(kind === "run" && run ? `Run ${run.runNumber} finished (${run.execution.status}).` : kind === "update" ? `Introduced: ${view.status?.stage.label}.` : null);
+      if (kind === "run") showOutcome(describeRun(view));
+      else {
+        const pending = view.listing?.pending ?? [];
+        showOutcome({ tone: "ok", title: `Introduced: ${view.status?.stage.label}.`,
+          lines: pending.length ? [`${pending.length} new record(s) are waiting to be assessed: ${pending.join(", ")}. The conclusion does not include them yet.`] : [],
+          next: pending.length ? "Run the investigation to assess them." : null });
+      }
     } catch (error) {
+      stop();
       await refresh();
-      setProgress(null);
-      showError(error);
+      showOutcome(describeFailure(kind, error));
     } finally {
       busy = null;
       if (view.status) renderWorkflow();
@@ -674,6 +718,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   }
 
   $("run-button").addEventListener("click", () => act("run", "/api/run"));
+  $("reset-button").addEventListener("click", () => openReset());
   $("update-button").addEventListener("click", () => act("update", "/api/update"));
   $("timeline-all").addEventListener("change", renderTimeline);
 
@@ -723,6 +768,61 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     reason.focus();
   }
 
+  // Resetting the demo case: a fresh copy becomes current; nothing is
+  // deleted. What changes and what does not is said before anything happens.
+  function openReset() {
+    const dialog = $("reset");
+    const generation = view.status?.case.generation ?? 1;
+    const form = el("form", { method: "dialog" },
+      el("h2", { id: "edk-reset-title" }, "Reset the demo case?"),
+      el("p", {}, "This starts a fresh copy of this case: its evidence back at the first stage with nothing assessed, the competing explanations at their starting priors, no runs and no history. The guided tour starts again from the introduction."),
+      el("p", {}, el("strong", {}, "Nothing is deleted. "),
+        `The current copy (copy ${generation}) is kept in Speck, suspended, with its full history. Other cases, Speck's other work and the evidence source (the fixture file or Zetaris) are not touched.`),
+      el("div", { className: "dialog-actions" },
+        el("button", { type: "button", className: "secondary", "data-cancel": "" }, "Cancel"),
+        el("button", { type: "submit", className: "primary" }, "Reset demo case")));
+    dialog.replaceChildren(form);
+    form.querySelector("[data-cancel]").addEventListener("click", () => dialog.close());
+    form.addEventListener("submit", (event) => { event.preventDefault(); dialog.close(); resetCase(); });
+    dialog.showModal();
+    form.querySelector("[type=submit]").focus();
+  }
+
+  async function resetCase() {
+    busy = "reset";
+    renderWorkflow();
+    const stop = startWorking("reset");
+    try {
+      const result = await api("/api/reset", { method: "POST" });
+      stop();
+      await refresh();
+      // Success is claimed only for what the API now shows.
+      const firstStage = view.status?.stages?.[0]?.id;
+      const fresh = view.status?.case.generation === result.generation && (view.investigation?.runs?.length ?? -1) === 0 && view.status?.stage.id === firstStage;
+      if (!fresh) {
+        showOutcome({ tone: "error", title: "The reset could not be confirmed.", lines: ["The server answered, but the page does not show a fresh case at its first stage."], next: "Reload the page to see the case as Speck holds it now." });
+        return;
+      }
+      progress.resetForDemo();
+      tourStep = null;
+      coachCollapsed = false;
+      renderTour();
+      $("intro").hidden = false;
+      showOutcome(result.restarted
+        ? { tone: "ok", title: `Demo case reset: fresh copy ${result.generation} is at "${view.status.stage.label}".`, lines: [`Copy ${result.previousGeneration} is kept in Speck, suspended, with its history.`], next: "Start the guided investigation above, or run the investigation." }
+        : { tone: "ok", title: "The demo case is already at its starting state.", lines: ["Nothing was changed."], next: "Start the guided investigation above, or run the investigation." });
+      $("intro-start").focus();
+    } catch (error) {
+      stop();
+      await refresh();
+      showOutcome(describeFailure("reset", error));
+    } finally {
+      busy = null;
+      if (view.status) renderWorkflow();
+      renderTour();
+    }
+  }
+
   // ----- Guided investigation -----
 
   const TARGETS = {
@@ -735,14 +835,17 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     timeline: () => $("timeline-panel"),
     trace: () => $("trace-panel"),
     "guide-button": () => $("guide-button"),
+    "reset-button": () => $("reset-button"),
     record: () => {
       const record = recordToInspect(view);
       return record ? root.querySelector(`[data-record-id="${CSS.escape(record.id)}"]`) : $("evidence-panel");
     }
   };
   const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  // The workspace's one-column layout (see style.css: the same 980px container width).
+  const oneColumn = () => root.getBoundingClientRect().width < 980;
   let tourStep = progress.tourStep();
-  let coachCollapsed = false;
+  let coachCollapsed = progress.coachCollapsed();
   let spotlit = null;
   // The step last scrolled to: a refresh re-renders the step without moving the page.
   let scrolledFor = null;
@@ -752,7 +855,9 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     spotlit = target ?? null;
     if (!spotlit) return;
     spotlit.classList.add("edk-spotlight");
-    if (scroll) spotlit.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+    // In the one-column layout the tour is a bottom sheet: bring the target
+    // to the top of the view, above the sheet, instead of the centre.
+    if (scroll) spotlit.scrollIntoView({ block: oneColumn() ? "start" : "center", behavior: reducedMotion() ? "auto" : "smooth" });
   }
 
   function paragraphs(items) {
@@ -783,19 +888,46 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       el("h2", { id: "edk-coach-title", tabindex: "-1" }, step.title),
       coachCollapsed ? null : el("div", { className: "coach-body" }, paragraphs(done && step.after ? [...(step.action ? [] : step.body(view)), ...step.after(view)] : step.body(view))),
       step.action && !coachCollapsed ? el("p", { className: `coach-status ${working ? "working" : done ? "done" : "waiting"}`, role: "status" },
-        working ? "Working… the page updates when it finishes."
+        working ? (workingText || "Working… the page updates when it finishes.")
           : done ? "Done. This is the real result, read from Speck."
-          : `Waiting for you: click ${step.action === "run" ? "Run investigation" : "Introduce prepared update"} on the page.`) : null,
+          : step.action === "run" && view.investigation?.latestRun && (view.listing?.pending?.length ?? 0) && view.investigation.latestRun.stage.id === view.status?.stage.id
+            ? `Not done yet: ${view.listing.pending.length} record(s) are still pending after run ${view.investigation.latestRun.runNumber}. Click Run investigation again to retry them.`
+            : `Waiting for you: click ${step.action === "run" ? "Run investigation" : "Introduce prepared update"} on the page.`) : null,
       coachCollapsed ? null : el("div", { className: "coach-actions" },
         el("button", { type: "button", className: "secondary", "data-tour": "back", disabled: tourStep === 0 ? "" : null }, "Back"),
         waiting ? el("button", { type: "button", className: "link", "data-tour": "skip" }, "Skip this step") : null,
         el("button", { type: "button", className: "primary", "data-tour": "next", disabled: waiting || working ? "" : null },
           tourStep === TOUR_STEPS.length - 1 ? "Finish" : "Next"),
         el("button", { type: "button", className: "link", "data-tour": "exit" }, "Exit tour"))).childNodes);
+    fitCoachToHost();
     const key = `${tourStep}:${step.id === "record" ? recordToInspect(view)?.id : ""}`;
     spotlight(TARGETS[step.target]?.(), scrolledFor !== key);
     scrolledFor = key;
   }
+
+  // Inside a host page with fixed furniture (Speck's floating message bar and
+  // its rail), keep the tour clear of it by measuring where it actually is;
+  // the host moves it between layouts. With no such furniture, the
+  // stylesheet's placement stands.
+  function fitCoachToHost() {
+    const coach = $("coach");
+    coach.style.bottom = coach.style.left = coach.style.maxHeight = "";
+    if (coach.hidden) return;
+    const bar = document.querySelector("#quickComposer");
+    const box = bar?.getBoundingClientRect();
+    if (!box || !box.height || box.top >= innerHeight) return;
+    const bottom = Math.ceil(innerHeight - box.top + 8);
+    coach.style.bottom = `${bottom}px`;
+    if (oneColumn()) {
+      // A bottom sheet: never above the top 35% of the view, so the case stays visible.
+      coach.style.maxHeight = `${Math.max(160, Math.floor(Math.min(innerHeight * 0.42, box.top - 8 - innerHeight * 0.35)))}px`;
+      const rail = document.querySelector(".rail")?.getBoundingClientRect();
+      coach.style.left = rail && rail.height > rail.width && rail.right < innerWidth / 3 ? `${Math.ceil(rail.right + 8)}px` : "8px";
+    } else {
+      coach.style.maxHeight = `${Math.max(200, Math.floor(Math.min(560, box.top - 16 - innerHeight * 0.1)))}px`;
+    }
+  }
+  window.addEventListener("resize", () => { if (tourStep !== null) fitCoachToHost(); });
 
   function goToStep(step) {
     tourStep = step;
@@ -828,7 +960,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       else goToStep(tourStep + 1);
     }
     if (action === "exit") exitTour();
-    if (action === "collapse") { coachCollapsed = !coachCollapsed; renderTour(); root.querySelector("[data-tour=collapse]")?.focus(); }
+    if (action === "collapse") { coachCollapsed = !coachCollapsed; progress.setCoachCollapsed(coachCollapsed); renderTour(); root.querySelector("[data-tour=collapse]")?.focus(); }
   });
 
   // ----- First-run introduction and the feature guide -----
@@ -896,10 +1028,11 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
 
   // Live run progress, where the host offers a stream (the standalone server).
   const events = eventsUrl ? new EventSource(eventsUrl) : null;
+  // The engine's report is shown by the running status's next tick.
   events?.addEventListener("progress", (event) => {
     if (busy !== "run") return;
     const state = JSON.parse(event.data);
-    setProgress(`${WORKING.run()} Meterless: ${state.phase} ${state.phaseDetail} (chunk ${state.currentChunk}/${state.maxChunks}).`);
+    engineProgress = { ...state, at: new Date().toISOString() };
   });
 
   refresh();
