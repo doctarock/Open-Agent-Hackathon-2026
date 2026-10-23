@@ -14,7 +14,8 @@ import { ROOT_DIR } from "../config.js";
 //               runs in, and still loads when Speck's tests copy plugins/
 //               elsewhere (reinstall if the repository moves)
 //   fixtures/, eval/scenarios/, config/   the cases' data
-//   public/app.js, tour.js, status.js, journey.js, style.css, plugin/ui/   the tab's page
+//   public/app.js, tour.js, status.js, journey.js, compare.js, decisive.js, style.css, plugin/ui/   the tab's page
+//   install.json the repository it came from (for eval/results/)
 //   .env, data/  kept from an earlier install (settings, Meterless history)
 // Then it approves the plugin in Speck's allowlist
 // (speck/plugins/.runtime/plugin-trust.json), as Speck's plugin README asks
@@ -54,10 +55,15 @@ export function installPlugin(options: { rootDir?: string; speckDir?: string; se
   for (const part of ["fixtures", path.join("eval", "scenarios"), "config", path.join("plugin", "ui")]) {
     copyTree(path.join(rootDir, part), path.join(target, part));
   }
-  for (const file of ["app.js", "tour.js", "status.js", "journey.js", "style.css"]) {
+  for (const file of ["app.js", "tour.js", "status.js", "journey.js", "compare.js", "decisive.js", "style.css"]) {
     fs.mkdirSync(path.join(target, "public"), { recursive: true });
     fs.copyFileSync(path.join(rootDir, "public", file), path.join(target, "public", file));
   }
+
+  // Where it was installed from: the page reads the evaluation reports and
+  // the saved comparisons from the repository's eval/results/ (git-ignored),
+  // so it always shows the latest ones without a reinstall.
+  fs.writeFileSync(path.join(target, "install.json"), `${JSON.stringify({ repository: rootDir }, null, 1)}\n`);
 
   // Settings: the standalone .env, on first install only. Never printed.
   let settings = "kept the plugin's existing .env";

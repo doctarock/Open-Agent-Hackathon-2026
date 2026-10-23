@@ -1,7 +1,9 @@
 # Evidence Desk: 3-minute demo
 
 Evidence Desk runs inside Speck as a plugin. The demo uses one Speck server and Speck's own
-interface. The **Evidence** tab in Speck's rail has two cases:
+interface. Each case page opens with **Speck beside a stateless baseline**: the same case, the
+same evidence and the same correction, run through both, with what each actually did. The
+**Evidence** tab in Speck's rail has two cases:
 - **Bank return** shows the correction story. It is deterministic, instant and works offline
   (fixture evidence and the rule assessor, whatever the settings).
 - **Disputed delivery** shows the live sponsor stack: Zetaris, Meterless, local Nemotron and
@@ -61,7 +63,7 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
 
 **The page explains itself.**
 - On first open the Evidence tab offers *Start the guided demo*. It walks both cases with the
-  real buttons (the disputed delivery, then the bank return), then opens Speck's **World** view
+  real buttons (the bank return, then the disputed delivery, each opening on the side-by-side comparison), then opens Speck's **World** view
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
   conclude.
@@ -69,14 +71,37 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
   resumes it at any time. Each case's **Guide** button lists every feature, marking which ones
   that case has demonstrated.
 
+Optionally, before the judges arrive, run `npm run compare:live` once more: the disputed
+delivery's panel then opens on a fresh live comparison (labelled with its time) instead of waiting
+30-60 s for one. Never present a comparison as live unless its badge says LIVE MODEL CALLS.
+
 ## The script
 
-**0:00 The problem (20 s).** Evidence about a case changes: a payment is reversed, a delivery
-scan is corrected. A system that only accumulates scores keeps the old evidence's effect after
-the source has retracted it. Ours did, in Build 2. Then explain how it was fixed and how the
-fix was verified.
+**0:00 The problem (15 s).** Evidence about a case changes: a payment is reversed, a delivery
+scan is corrected. A stateless model call answers from whatever it is handed; nothing ties its
+old answer to the record that was just replaced.
 
-**0:20 Bank return (70 s).** Select **Bank return** at the top of the Evidence tab.
+**0:15 The difference, side by side (45 s).** Select **Disputed delivery**. The first panel is
+**Speck beside a stateless baseline**. If its badge says LIVE MODEL CALLS with today's time, use it;
+otherwise press **Run the side-by-side comparison** and talk over the 30-60 s.
+1. Point to the six steps across the top: observe, assess, correct, revise, verify, explain.
+2. Stage 2, the correction: "EV-CAR-005 replaces EV-CAR-003". Read the two columns:
+   - **Stateless model call:** in every live sample so far it kept "delivered" and cited
+     EV-CAR-003, the scan the carrier replaced (red badge: *relies on replaced record*). Its own
+     words are shown.
+   - **Speck:** EV-CAR-003 no longer counts; it rebuilt the beliefs that rested on it and now
+     points to "delivered to the wrong address", without concluding it (the model-judged support
+     is capped). *Why it changed (recorded by Speck)* is its own state, not a summary.
+   - Do not predict the live result. Read what the panel says; `docs/comparison.md` has all six
+     earlier samples.
+3. Say: "Same records, same model, same correction. One kept the answer and the stale record;
+   the other dropped the record and can show you why. That is not a claim of better accuracy; on
+   the bank return the baseline was right more often after the return, and that's on the page
+   too."
+
+**1:00 Bank return, by hand (60 s).** Select **Bank return**. Its comparison panel is
+deterministic and instant, with the pre-registered labels; both approaches match them. Then do it
+on Speck's case yourself:
 1. Click **Run investigation**: *supported* "Invoice INV-77 has been paid in full".
 2. Click **Introduce prepared update**. The bank returns the payment (EV-BNK-103 supersedes
    EV-BNK-101). Click **Run investigation**: *supported* "Invoice INV-77 remains unpaid", at 0.66.
@@ -92,7 +117,8 @@ Say: "Build 2 left the reversed payment's −0.19 in place and stopped at 0.47. 
 are now a replay of the evidence that still counts, through Speck's own revision rule. That
 held-out checkpoint went from wrong to right, and nothing else changed."
 
-**1:30 Disputed delivery, live sponsor run (70 s).** Select **Disputed delivery**.
+**2:00 Disputed delivery, live sponsor run (40 s; shorten or skip if the comparison above ran
+live).** Select **Disputed delivery**.
 1. Point to the header:
    - **ZETARIS LIVE** at the platform's URL;
    - the Nemotron model at `127.0.0.1:11434`;
@@ -138,13 +164,40 @@ demo continues here by itself; the steps are:
    no longer counts. With the local model a run sometimes stops early and leaves records
    pending; the page says so, and the next run retries them.
 
-**2:40 Honesty (20 s).** In the terminal, show `npm run sponsors:verify`:
+**2:40 Proof and honesty (20 s).** Open **Evaluation results** (beside the cases): every report
+with its date, sample size and model, each case and checkpoint, and the saved side-by-side
+comparisons counted per configuration. In the terminal, `npm run sponsors:verify`:
 - It reports **OBSERVED** for each sponsor, checked against an independent source.
 - It reports **NOT OBSERVED** rather than simulating, when a service is off.
 
 Close with: "We don't claim that persistence improves accuracy; our evaluation shows it
-doesn't. What we do claim is that every conclusion can be traced, and every correction
-explained."
+doesn't, and Speck abstains more often than a plain model call. What we do claim is that every
+conclusion can be traced, and every correction explained, and you've just seen the difference
+that makes on the same evidence."
+
+## Slide outline (if slides are wanted)
+
+1. **The problem.** Evidence changes after the fact: a bank returns a payment, a carrier corrects
+   a scan. A stateless model call has no link between its answer and the record that was replaced.
+2. **The approach.** Speck holds the case as state: evidence ledger, competing explanations,
+   each judgment and its confidence change, every revision. Corrections rebuild the beliefs that
+   rested on the replaced record; the old ones stay as history.
+3. **Side by side, live** (a screenshot of the disputed delivery's comparison panel). Same records,
+   same model: the stateless call kept "delivered" and cited the replaced scan in 6 of 6 samples;
+   Speck dropped it and recorded why in 6 of 6.
+4. **Where Speck loses** (the bank return): it stays unresolved after the return live (0 of 6
+   matched the label, against 5 of 6 for the baseline), because model-judged evidence is capped at
+   0.4. It never made an unsupported claim; the baseline did in 3 of 6 samples before the return.
+5. **Proof.** Deterministic evaluation (held-out, regression, cross-domain), the tests (including
+   a crash at every Speck write), saved comparisons; persistence alone shows no accuracy gain.
+6. **Sponsors, as verified.** Zetaris (live SELECTs with query tokens), Meterless (engine runs
+   matched in its history), local Nemotron (served model on every call), Speck (host, state,
+   world view, memory map, chat); Cursor as a development tool.
+7. **Impact.** Defensible decisions in investigations whose evidence changes: what a decision
+   rested on, what was corrected, and what was believed before.
+
+There is no recorded video in this repository; record one from this script if the submission
+requires it.
 
 ## Fallback (no Zetaris or no Ollama)
 
@@ -171,7 +224,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 | Why is the live conclusion only "leading"? | The 0.4 cap: two model-judged records add at most +0.08 each, so live conclusions stay tentative. We left the cap unchanged rather than tune for a better demo. | README, *Evaluation* |
 | What does Meterless do here? | It runs each investigation: one bounded chunk per batch of evidence, with carryover between chunks, plus the reflection pass for the explanation. Recovery and recomputation are Evidence Desk's own code, and the trace labels them that way. | `vendor/meterless-markovian/NOTICE.md`, the trace |
 | What if the process crashes mid-run? | Judgments are saved per chunk before evidence enters Speck, and beliefs are reconciled on restart. A test kills the process at every write, and again during recovery, and checks the outcome is the same as an uninterrupted run. | `test/interruption.test.ts`, `test/recovery.test.ts` |
-| Is it better than a plain LLM? | On the 7 held-out cases, in two live samples, the stateless model baseline made 4 unsupported conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but abstained more often. These are few cases and single samples of a small model, not a general result. | README, *Evaluation*; `docs/build-3-revision.md` |
+| Is it better than a plain LLM? | On the 7 held-out cases, in two live samples, the stateless model baseline made 4 unsupported conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but abstained more often. These are few cases and single samples of a small model, not a general result. On the side-by-side comparison (6 live samples per case), the plain model call kept "delivered" and cited the replaced scan after the carrier's correction every time, while Speck dropped it every time; on the bank return the plain call matched the label after the return 5 of 6 times and Speck 0 of 6. | README, *Evaluation*; `docs/build-3-revision.md`; `docs/comparison.md` |
 | Did persistence help? | No measurable accuracy difference from recomputing from scratch. | README, *Evaluation* |
 | Can Speck's chat be trusted about a case? | It is given only the case summaries Evidence Desk published, and told to answer from them; without that, a small model invented details. The wording is still the model's, so the case page is the record. | Speck's `src/tests/investigations-component.test.ts`, `test/memory-links.test.ts` |
 | Where do the memory map's lines come from? | Evidence Desk links each case's memories with Speck's `reinforceAssociation`: derived-from, supports, contradicts, and inhibitory for a correction. | `test/memory-links.test.ts` |
@@ -179,6 +232,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 ## Do not claim
 
 - That persistence improves accuracy.
+- That Speck is generally more accurate than a model call, or eliminates invented answers. The comparison shows behaviour on two cases, in both directions.
 - That live reasoning is generally better.
 - Hosted NVIDIA inference or any other NVIDIA infrastructure.
 - That Cursor is part of the running system. It is a development tool the team reports using.

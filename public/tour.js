@@ -4,7 +4,9 @@
 // what Speck currently holds, and an action step is complete only when the
 // state shows its action happened. app.js renders it.
 //
-// view = { status, investigation, listing, trace }, any of which may be null.
+// view = { status, investigation, listing, trace, comparison }, any of which may be null.
+
+import { findings } from "./compare.js";
 
 const runs = (view) => view.investigation?.runs ?? [];
 const current = (view) => view.investigation?.current ?? null;
@@ -78,6 +80,31 @@ export const TOUR_STEPS = [
         hypotheses.map((h) => `${h.key}: ${h.statement}`),
         "Each starts from a prior the scenario sets; every record that counts then moves them up or down."
       ];
+    }
+  },
+  {
+    id: "compare",
+    title: "The difference Speck makes: the same evidence, two approaches",
+    target: "compare",
+    action: "compare",
+    actionLabel: "Run the side-by-side comparison",
+    goal: (view) => Boolean(view.comparison?.current) && !view.comparison?.running,
+    body: (view) => [
+      "This panel runs the whole case twice on the same records, stage by stage: once as a stateless baseline that answers from scratch each time (a model call when the case is live, the fact rules otherwise), and once through Speck, which keeps the evidence, its beliefs and every revision.",
+      "Watch the correction stage: whether each approach changes its answer, whether it still leans on the record that was replaced, and whether it can say why it changed.",
+      view.comparison?.willRun?.kind === "live"
+        ? "This case is live: both approaches make real model calls, so it takes about 20-60 seconds and the result can differ from run to run."
+        : "This case is deterministic (fixture evidence, fact rules), so it finishes in a second.",
+      "It runs on a temporary copy; the case below is not changed. Click Run the side-by-side comparison."
+    ],
+    after: (view) => {
+      const report = view.comparison?.current;
+      if (!report) return [];
+      return [
+        `${report.kind === "live" ? "Live" : "Deterministic"} comparison of ${new Date(report.finishedAt).toLocaleString()}:`,
+        ...findings(report).map((finding) => [`${finding.title}.`, finding.lines]),
+        "Next, do it yourself on Speck's case: run it, bring in the update, run again."
+      ].flat();
     }
   },
   {
@@ -228,6 +255,11 @@ export function stepDone(step, view) {
 // Features that exist in this product, each with a real-state test for
 // "demonstrated" and, where it depends on configuration, availability.
 export const FEATURES = [
+  { id: "compare", title: "Speck beside a stateless baseline", target: "compare",
+    text: "Runs the case twice on the same records: a stateless baseline from scratch at each stage, and Speck with its evidence, beliefs and revisions. Shows what each concludes, what it cites, and what happens at the correction.",
+    demonstrated: (view) => Boolean(view.comparison?.current) },
+  { id: "decisive", title: "Decisive mode (experimental)", target: "conclusion",
+    text: "An optional second reading beside Speck's conclusion: a stateless answer is accepted only if every record it cites still counts and Speck holds or points to the same explanation. Switch it on at the top of the conclusion. It never changes Speck's belief state, and it has not been evaluated beyond the cases it was designed on." },
   { id: "run", title: "Run an investigation", target: "run-button",
     text: "Assesses the evidence available at the current stage and updates Speck's beliefs.",
     demonstrated: (view) => runs(view).length >= 1 },

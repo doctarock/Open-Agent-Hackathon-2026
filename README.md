@@ -1,22 +1,37 @@
 # Open-Agent-Hackathon-2026 — Speck Evidence Desk
 
 > **For judges:** Evidence Desk is a **Speck plugin**. Start Speck (`npm run speck`) and open the
-> **Evidence** tab in its rail.
-> - [docs/SUBMISSION.md](docs/SUBMISSION.md): what it does, verified sponsor use, and results,
->   in one page.
-> - [DEMO.md](DEMO.md): the 3-minute walkthrough.
+> **Evidence** tab in its rail. The first panel on each case is **Speck beside a stateless
+> baseline**: one click runs the same case, with the same evidence and the same correction,
+> through both, and shows what each actually did.
+> - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
+> - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
+>   and every saved result.
+> - [DEMO.md](DEMO.md): the 3-minute walkthrough and slide outline.
 > - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
 >   could not observe.
 
-Evidence Desk investigates a disputed delivery whose evidence conflicts and changes over time.
-When a later record contradicts or replaces an earlier claim, it:
-- revises what it believes;
+**The problem.** An ordinary stateless model call answers from whatever evidence it is handed.
+When a source later corrects a record (a bank returns a payment, a carrier amends a delivery
+scan), nothing ties the old conclusion to the record that has just been replaced: the call may
+keep the old answer, may keep citing the replaced record, and cannot say what changed or why.
+
+**The approach.** Evidence Desk keeps the case in Speck as explicit state: the evidence ledger,
+the competing explanations and Speck's belief in each, the judgment behind every adjustment, and
+every revision. When a later record contradicts or replaces an earlier claim, it:
+- revises what it believes, from the evidence that still counts;
 - says which evidence caused the revision;
 - keeps the old belief on record as history, rather than presenting both claims side by side.
 
-Its evaluation finds no measurable accuracy difference between keeping beliefs across runs and
-recomputing them from scratch (see *Evaluation*). What it does provide is an auditable record of
-how and why each conclusion changed.
+**The proof.** The side-by-side comparison, a reproducible test suite, and labelled evaluation
+results, kept apart by kind (deterministic fixtures, live model samples). In live samples on the
+disputed delivery, the stateless model call kept "delivered" after the carrier's correction and
+cited the replaced scan as support, while Speck revised and recorded why (see
+[docs/comparison.md](docs/comparison.md) for every sample, including the ones that favour the
+baseline). The evaluation finds no measurable accuracy difference between keeping beliefs across
+runs and recomputing them from scratch, and Speck abstains more often than the baseline. What
+Evidence Desk adds is traceability: an auditable record of which evidence each conclusion rests
+on, and how and why it changed.
 
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
@@ -36,6 +51,78 @@ It runs inside Speck as a plugin:
   Everything else Evidence Desk needs is Speck's existing plugin system and memory API.
 
 A standalone server serving the same page remains, for development and as a fallback.
+
+### Speck beside a stateless baseline
+
+The first panel on every case runs the whole case twice, stage by stage, and shows the two side
+by side. Code: `src/compare/comparison.ts` (server), `public/compare.js` (page); tests:
+`test/compare.test.ts` and a route test in `test/plugin.test.ts`.
+
+| | Stateless baseline | Speck |
+|---|---|---|
+| What it is | The evaluation's own stateless baseline (`src/eval/systems.ts`), called afresh at every stage with no memory of its previous answer. Live: one call to the configured Nemotron endpoint with the question, the explanations and every visible record (text, facts, and "replaces …" where the source says so). Deterministic: the scenario's fact rules summed from scratch. | Evidence Desk as built: one Speck case carried across the stages, evidence assessed incrementally, beliefs revised, replaced records dropped and the beliefs that rested on them rebuilt. |
+| Evidence | Exactly the records Speck's desk lists as visible at that stage | the same |
+| Question, explanations, assessor | the same model, endpoint, temperature (0.1), output budget and reasoning effort | the same |
+
+What makes it fair, and what it does not show:
+- **Same inputs.** Both see the same records at every stage (a test checks each side equals the
+  evaluation's own system on the same case).
+- **Same checks.** Every check is computed the same way for both: whether it commits to a
+  conclusion or abstains; which records it offers as support; whether any of those was replaced by
+  a later record (derived from the records alone, with the same rule for both); whether its
+  conclusion changed since the previous stage; and, where the case is an evaluation case, whether
+  it matches the pre-registered label and whether the conclusion is unsupported (scored exactly as
+  `src/eval/metrics.ts` does).
+- **Nothing is simulated.** Each value is what the two approaches returned. The live baseline is a
+  real model call; a comparison that fails saves nothing and says so.
+- **Not persistence alone.** The difference comes from Speck's explicit evidence and revision state
+  and its conclusion policy (thresholds, decisive refutation, supersession). The evaluation's
+  `speck-fresh` system, which rebuilds from scratch at each checkpoint, reaches the same
+  conclusions as the persistent one.
+- **Single samples.** Live model judgments vary. Each live comparison is one sample, labelled as
+  such; `docs/comparison.md` lists every saved sample, including those that favour the baseline.
+- **The case on the page is not touched.** A comparison runs on its own temporary Speck database.
+
+How it is shown: the six steps (observe, assess, correct, revise, verify, explain) each
+summarised from the report; short findings; then each stage with the records both saw (the
+replaced one struck through), and the two columns side by side: conclusion, cited records,
+the baseline's own words (live) or scores (rules), and Speck's evidence for and against with each
+record's confidence change, what was ruled out, and "why it changed" as Speck recorded it. Record
+ids are buttons that jump to the record. On narrow screens the columns stack.
+
+Saved comparisons and staleness:
+- Each comparison is saved as its own file, written whole (temporary file, then rename), and
+  never overwritten: from the page beside the case's data, and from `npm run compare` /
+  `npm run compare:live` in `eval/results/comparisons/<scenario>/` (tracked in git).
+- A comparison is shown as current only if it was made with the case's current scenario,
+  fixture evidence and assessor settings (a fingerprint). Others are listed with their settings
+  and open only on request, with a warning. While a new comparison runs, the previous one is
+  dimmed and labelled as the previous one.
+- One comparison runs at a time (HTTP 409 otherwise).
+
+API (standalone under `/api`, inside Speck under `/api/plugins/evidence-desk/cases/<case>`):
+`GET comparison` (current, others, running, last failure), `POST comparison` (start),
+`GET comparison/<id>`. `GET /api/evaluation` (inside Speck `/api/plugins/evidence-desk/evaluation`)
+returns the evaluation reports and the saved comparisons, counted per configuration; the page
+shows them under **Evaluation results** (a button beside the cases inside Speck, a panel at the
+bottom of each case page).
+
+### Decisive mode (experimental)
+
+A switch at the top of each case's conclusion (and in the comparison panel) turns on an extra
+reading that combines Speck with the stateless baseline: the stateless answer is accepted only if
+every record it cites still counts and Speck holds or points to the same explanation; otherwise
+Speck's own conclusion stands, or nothing is concluded. *What is decisive mode?* beside the switch
+explains it, its cost, and that it is experimental. It is off by default, kept per viewer in the
+browser, and never changes Speck's belief state, the evidence or the history.
+
+- Rule: `public/decisive.js` (`decisive-1`, fixed as first written); tests: `test/decisive.test.ts`.
+- On the case page, after each run it asks the same stateless baseline (`GET`/`POST opinion`;
+  one model call when live) for an answer on the case as it stands, and shows the reading only
+  while that answer still matches the latest run, stage and records.
+- It was designed after looking at the saved comparisons, including a held-out case, and has not
+  been evaluated on other cases. The replay and its cost are in
+  [docs/comparison.md](docs/comparison.md#decisive-mode-experimental).
 
 ### Using the interface for the first time
 
@@ -101,9 +188,11 @@ Inside Speck the Evidence tab replaces the per-case introduction with one **guid
 offered at the top of the tab (*Start the guided demo* or *Explore on my own*), and the *Guided
 demo* link beside the case picker starts or resumes it.
 
-1. **Disputed delivery:** the case tour above, without its last overview step.
-2. **Bank return:** the explanations, a run, the prepared update (the bank's return of the
+1. **Bank return** (deterministic, instant): the explanations, then **Speck beside a stateless
+   baseline** on the whole case, then a run, the prepared update (the bank's return of the
    payment), a second run, and which record no longer counts.
+2. **Disputed delivery** (live when configured): the case tour above, opening with the
+   side-by-side comparison, without its last overview step.
 3. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
    actions (Hypothesis Proposed, Memory Recorded, Belief Revised, Association Reinforced) are laid
    out in time; right-drag travels back. The panel quotes Speck's own timeline status and each
@@ -536,6 +625,8 @@ showed this as one retry.
 |---|---|
 | `npm run setup` | Install dependencies here and in `speck/`, build Speck, and install the plugin |
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. |
+| `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
+| `npm run compare:live` | The same with the settings in `.env`: the Nemotron endpoint for both cases, and Zetaris for the disputed delivery. Exits 2 if no Nemotron endpoint is configured. |
 | `npm run eval:cross-domain` | The separate cross-domain suite (`eval/cross-domain/`): logistics, payment reversals, procurement; refuses to run if its locked expectations changed. Findings: `docs/cross-domain-evaluation.md` |
 | `npm run plugin:install` | Build, then (re)install the plugin into `speck/plugins/evidence-desk/` and approve its entry hash in Speck's allowlist. Keeps the plugin's `.env` and case data. Restart Speck afterwards. |
 | `npm run build` | Compile TypeScript to `dist/` |
@@ -611,7 +702,11 @@ before its first run. Its findings, including two defects it exposed, are in
 
 Each run prints a table per group. It writes the full per-checkpoint reports to
 `eval/results/<mode>.json` (held-out cases) and `eval/results/<mode>-regression.json`
-(correction-sequence regression cases). Both are git-ignored.
+(correction-sequence regression cases). Both are git-ignored. Before a report is replaced, the
+previous one is copied to `eval/results/history/` under its own timestamp, so rerunning a command
+never loses an earlier result (`src/eval/results.ts`; the same for the cross-domain suite and
+`sponsors:verify`). The page shows every report under **Evaluation results**, with its date,
+sample size and model, and each case and checkpoint.
 
 **Cases.** The seven held-out cases live in `eval/scenarios/`, apart from the development
 fixture in `fixtures/`:
@@ -781,7 +876,9 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 70 tests with no network access beyond localhost and no credentials:
+`npm test` runs 120 tests with no network access beyond localhost and no credentials:
+
+- **Side-by-side comparison** (`test/compare.test.ts`, and a route test in `test/plugin.test.ts`): both approaches see the same records at every stage, and each side equals the evaluation's own system on the same case; a stateless answer citing a replaced record is flagged (a stand-in model endpoint); the case on the page is untouched; saved comparisons are never overwritten, partial writes are ignored, and a comparison made with other settings is never shown as current; a failed comparison saves nothing; one runs at a time (409); the page's findings are built from the report; the evaluation summary reads the reports as written; rewriting a report archives the previous one.
 
 - **Fixture mode:** runs with an empty environment.
 - **Citations:** every cited record exists and keeps its source metadata.
@@ -910,6 +1007,13 @@ What these runs show:
   - **Persistence:** the trace is identical after a reopen and through the API.
 
 ## Known limits of this slice
+
+- **The side-by-side comparison is two cases.** Six live samples each of a small local model show
+  behaviour on these cases, in both directions; they are not rates and no significance is claimed.
+  The difference between the columns reflects Speck's whole policy (thresholds, decisive rules,
+  supersession, the 0.4 cap), not persistence alone. The bank return's evidence exists only as a
+  fixture, so its live comparison uses the model but not Zetaris. Inside Speck the panel polls
+  for progress (about once a second); it reports the stage and step, not a percentage.
 
 - **Speck's chat answers are written by a local model.** The investigations component gives it
   only the published case summaries and tells it to answer from them, which removed the invented

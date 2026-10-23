@@ -25,6 +25,8 @@
     "eval": "npm run build && node dist/src/scripts/eval.js",
     "eval:live": "npm run build && node dist/src/scripts/eval.js --live",
     "eval:cross-domain": "npm run build && node dist/src/scripts/eval-cross-domain.js",
+    "compare": "npm run build && node dist/src/scripts/compare.js",
+    "compare:live": "npm run build && node dist/src/scripts/compare.js --live",
     "sponsors:verify": "npm run build && node dist/src/scripts/sponsor-check.js",
     "plugin:install": "npm run build && node dist/src/scripts/plugin-install.js",
     "speck": "node dist/src/scripts/speck.js"

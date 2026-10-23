@@ -3,14 +3,17 @@
 // (index.html) or a tab inside Speck (the Evidence Desk plugin), which differ
 // only in where the API lives and how requests are authorised.
 //
-// Layout, top to bottom: the case and what the page is for; the steps of the
+// Layout, top to bottom: the case and what the page is for; Speck beside a
+// stateless model call on the same case (./compare.js); the steps of the
 // investigation and its two actions; the current conclusion beside the
 // evidence; then history (revision timeline, execution trace) and the
-// workspace's configuration. The guided tour and the feature guide
+// workspace's configuration, and the evaluation results. The guided tour and the feature guide
 // (./tour.js) read the same state the page renders.
 
 import { CONFIDENCE_MEANING, FEATURES, STATE_MEANING, TOUR_STEPS, featureStatus, progressStore, recordToInspect, stepDone } from "./tour.js";
 import { describeFailure, describeProgress, describeRun } from "./status.js";
+import { decisiveSwitch, jumpToRecord, renderComparison, renderEvaluation } from "./compare.js";
+import { decisivePreference, decisiveReading, opinionCurrent } from "./decisive.js";
 
 function el(tag, attributes = {}, ...children) {
   const node = document.createElement(tag);
@@ -92,6 +95,10 @@ const TEMPLATE = `
 
 <div id="edk-error" class="error" role="alert" hidden></div>
 
+<section class="panel compare-panel" id="edk-compare-panel" aria-labelledby="edk-compare-heading">
+  <div id="edk-compare"><p class="muted">Loading the comparison…</p></div>
+</section>
+
 <section class="workflow" aria-label="Investigation steps">
   <ol id="edk-stages" class="stages"></ol>
   <div class="actions">
@@ -110,6 +117,7 @@ const TEMPLATE = `
 <div class="workspace">
   <section class="panel conclusion-panel" id="edk-conclusion-panel" aria-labelledby="edk-conclusion-heading">
     <h2 id="edk-conclusion-heading">Current conclusion</h2>
+    <div id="edk-decisive" class="decisive"></div>
     <div id="edk-conclusion"><p class="muted">Loading…</p></div>
   </section>
 
@@ -135,6 +143,11 @@ const TEMPLATE = `
   <div id="edk-trace"></div>
 </section>
 
+<details class="panel evaluation" id="edk-evaluation-panel" hidden>
+  <summary><h2>Evaluation results</h2> <span class="muted">held-out cases, correction regressions, cross-domain suite, live samples and saved comparisons</span></summary>
+  <div id="edk-evaluation"><p class="muted">Loading…</p></div>
+</details>
+
 <details class="panel system" id="edk-system">
   <summary>How this workspace is configured</summary>
   <dl id="edk-configuration" class="configuration"></dl>
@@ -157,7 +170,8 @@ const TEMPLATE = `
 // (public/journey.js): { label, steps: tour step ids, finishLabel, start:
 // "first" | "last" | "resume", onFinish, onBack, onExit }.
 // onView: called with the page's state after every refresh.
-export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null } = {}) {
+// evaluationUrl: where the evaluation summary is served (none: no panel).
+export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null } = {}) {
   root.classList.add("edk");
   root.innerHTML = TEMPLATE;
   const $ = (id) => root.querySelector(`#edk-${id}`);
@@ -200,7 +214,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   $("error").addEventListener("click", (event) => { if (event.target.closest("[data-dismiss-error]")) showError(null); });
 
   // The latest state, as the API returned it; the tour and guide read this.
-  const view = { status: null, investigation: null, listing: null, trace: null };
+  const view = { status: null, investigation: null, listing: null, trace: null, comparison: null };
   let busy = null;
 
   function renderStatus() {
@@ -699,9 +713,11 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       renderStatus();
       renderTimeline();
       renderConclusion();
+      renderDecisive();
       // After the conclusion, so a fresh trace never sits beside a stale conclusion.
       view.trace = await api("/api/trace");
       renderTrace(view.trace);
+      await loadComparison();
       if (evidenceError) {
         $("evidence-summary").textContent = "The evidence could not be read; see the message above.";
         $("evidence-list").replaceChildren();
@@ -710,6 +726,8 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       renderEvidence(view.listing);
       renderAddEvidence();
       showError(null);
+      renderDecisive();
+      ensureOpinion();
     } catch (error) {
       showError(error);
     }
@@ -788,6 +806,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       busy = null;
       if (view.status) renderWorkflow();
       renderTour();
+      ensureOpinion();
     }
   }
 
@@ -898,10 +917,210 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     }
   }
 
+  // ----- Speck beside a stateless model call -----
+  // The comparison runs on the server on its own temporary copy of the case;
+  // the page polls until it finishes. A result is shown as current only when
+  // it was made with this case's current settings.
+
+  const comparisonState = { data: null, viewing: null, viewingMatches: true, starting: false, elapsedMs: 0 };
+  let comparisonTimer = null;
+
+  function drawComparison() {
+    if (destroyed) return;
+    renderComparison($("compare"), { ...comparisonState, decisive: decisiveOn });
+  }
+
+  async function loadComparison() {
+    try {
+      comparisonState.data = await api("/api/comparison");
+      view.comparison = comparisonState.data;
+    } catch (error) {
+      if (error.closed) return;
+      view.comparison = null;
+      $("compare").replaceChildren(el("div", { className: "error", role: "alert" }, el("strong", {}, "The comparison could not be loaded."), el("p", {}, error.message)));
+      return;
+    }
+    if (comparisonState.data.running && !comparisonTimer) pollComparison();
+    drawComparison();
+  }
+
+  function pollComparison() {
+    const began = Date.parse(comparisonState.data?.running?.startedAt ?? "") || Date.now();
+    comparisonState.elapsedMs = Date.now() - began;
+    comparisonTimer = window.setInterval(async () => {
+      if (destroyed) { window.clearInterval(comparisonTimer); return; }
+      comparisonState.elapsedMs = Date.now() - began;
+      try {
+        comparisonState.data = await api("/api/comparison");
+        view.comparison = comparisonState.data;
+      } catch { /* keep polling; the next answer replaces this */ }
+      if (!comparisonState.data?.running) {
+        window.clearInterval(comparisonTimer);
+        comparisonTimer = null;
+        comparisonState.viewing = null;
+        renderTour();
+      }
+      drawComparison();
+    }, 1000);
+  }
+
+  async function startComparison() {
+    comparisonState.starting = true;
+    drawComparison();
+    try {
+      await api("/api/comparison", { method: "POST" });
+      comparisonState.data = await api("/api/comparison");
+      view.comparison = comparisonState.data;
+      if (comparisonState.data.running && !comparisonTimer) pollComparison();
+    } catch (error) {
+      if (error.closed) return;
+      comparisonState.starting = false;
+      drawComparison();
+      $("compare").prepend(el("div", { className: "error", role: "alert" }, el("strong", {}, "The comparison did not start."), el("p", {}, error.message), error.body?.hint ? el("p", {}, `What to do: ${error.body.hint}`) : null));
+      return;
+    }
+    comparisonState.starting = false;
+    if (!comparisonState.data.running) comparisonState.viewing = null;
+    drawComparison();
+    renderTour();
+  }
+
+  $("compare").addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-cmp], [data-cmp-jump]");
+    if (!button) return;
+    if (button.dataset.cmpJump) { jumpToRecord($("compare"), button.dataset.cmpJump); return; }
+    const action = button.dataset.cmp;
+    if (action === "run") startComparison();
+    if (action === "current") { comparisonState.viewing = null; drawComparison(); }
+    if (action === "open") {
+      try {
+        const { report, matchesCurrent } = await api(`/api/comparison/${encodeURIComponent(button.dataset.id)}`);
+        comparisonState.viewing = report;
+        comparisonState.viewingMatches = matchesCurrent;
+        drawComparison();
+        $("compare-panel").scrollIntoView({ block: "start" });
+      } catch (error) {
+        showError(error);
+      }
+    }
+  });
+
+  // The evaluation results, loaded when first opened.
+  if (evaluationUrl) {
+    $("evaluation-panel").hidden = false;
+    let loaded = false;
+    $("evaluation-panel").addEventListener("toggle", async () => {
+      if (!$("evaluation-panel").open || loaded) return;
+      try {
+        const response = await fetchImpl(evaluationUrl);
+        const summary = await response.json();
+        if (!response.ok) throw new Error(summary.error ?? `HTTP ${response.status}`);
+        if (destroyed) return;
+        renderEvaluation($("evaluation"), summary);
+        loaded = true;
+      } catch (error) {
+        $("evaluation").replaceChildren(el("p", {}, badge(`The evaluation results could not be loaded: ${error.message}`, "bad long")));
+      }
+    });
+  }
+
+  // ----- Decisive mode (experimental; ./decisive.js) -----
+  // A second reading beside Speck's conclusion: the stateless baseline's
+  // answer on the case as it stands, accepted only where every record it
+  // cites still counts and Speck holds or points to the same explanation.
+  // Speck's belief state is never changed by it.
+
+  const decisivePref = decisivePreference(storage);
+  let decisiveOn = decisivePref.on();
+  const opinionState = { opinion: null, loading: false, error: null, requestedFor: null, fetched: false };
+
+  const opinionKey = () => [view.investigation?.latestRun?.runNumber, view.status?.stage?.id, (view.listing?.records ?? []).map((record) => record.id).join(",")].join("|");
+
+  async function ensureOpinion() {
+    if (!decisiveOn || destroyed) return;
+    if (!opinionState.fetched) {
+      opinionState.fetched = true;
+      try { opinionState.opinion = (await api("/api/opinion")).opinion; } catch { /* asked for below if needed */ }
+    }
+    const run = view.investigation?.latestRun;
+    if (!run || view.status?.running || busy || (view.listing?.pending?.length ?? 1) > 0) { renderDecisive(); return; }
+    if (opinionCurrent(opinionState.opinion, view) || opinionState.requestedFor === opinionKey()) { renderDecisive(); return; }
+    opinionState.requestedFor = opinionKey();
+    opinionState.loading = true;
+    opinionState.error = null;
+    renderDecisive();
+    try {
+      opinionState.opinion = (await api("/api/opinion", { method: "POST" })).opinion;
+    } catch (error) {
+      if (error.closed) return;
+      opinionState.error = error.message;
+    }
+    opinionState.loading = false;
+    renderDecisive();
+  }
+
+  function renderDecisive() {
+    if (destroyed) return;
+    const holder = $("decisive");
+    const parts = [decisiveSwitch(decisiveOn)];
+    if (!decisiveOn) {
+      parts.push(el("p", { className: "meta" }, "Off: Speck's conclusion below is the only reading."));
+    } else if (!view.investigation?.latestRun) {
+      parts.push(el("p", { className: "meta" }, "Run the investigation first: decisive mode reads Speck's state after a run."));
+    } else if (view.listing?.pending?.length) {
+      parts.push(el("p", { className: "meta" }, `${view.listing.pending.length} record(s) are not yet assessed. Run the investigation; decisive mode then checks again.`));
+    } else if (opinionState.loading) {
+      parts.push(el("p", { className: "meta", role: "status" }, view.status?.reasoner?.kind === "nemotron"
+        ? "Asking the stateless baseline: one live model call, usually a few seconds…" : "Asking the stateless baseline (fact rules)…"));
+    } else if (opinionState.error) {
+      parts.push(el("p", {}, badge(`The stateless answer could not be obtained: ${opinionState.error}. Speck's conclusion below stands.`, "bad long")),
+        el("button", { type: "button", className: "link", "data-decisive-retry": "" }, "Try again"));
+    } else if (!opinionCurrent(opinionState.opinion, view)) {
+      parts.push(el("p", { className: "meta" }, "Waiting for a stateless answer on the case as it stands now."));
+    } else {
+      const c = view.investigation.current;
+      const o = opinionState.opinion;
+      const reading = decisiveReading({
+        speck: { concluded: c?.state === "supported" ? c.hypothesis?.key ?? null : null, tentative: c?.hypothesis?.key ?? c?.direction?.pointsTo?.key ?? null },
+        stateless: o.answer,
+        replaced: new Map(o.replaced.map((item) => [item.recordId, item.by])),
+        visible: o.visible
+      });
+      parts.push(el("div", { className: `decisive-reading ${reading.conclusion ? "concludes" : "none"}` },
+        el("p", { className: "decisive-headline" }, badge("decisive mode reading", "warn"), " ",
+          reading.conclusion ? `Concludes ${reading.conclusion}` : "No conclusion", " ",
+          badge(reading.basis === "agreement" ? "Speck and the stateless answer agree" : reading.basis === "speck" ? "Speck's own conclusion" : "nothing established", reading.basis === "agreement" ? "ok" : "warn")),
+        reading.conclusion ? el("p", {}, (view.investigation.hypotheses ?? []).find((h) => h.key === reading.conclusion)?.statement ?? "") : null,
+        el("p", { className: "meta" }, reading.reason),
+        el("p", { className: "meta" }, `Stateless answer (${o.kind === "live" ? `live call to ${o.model?.model}` : "fact rules, no model"}, ${when(o.at)}): ${o.answer.error ? `error: ${o.answer.error}` : o.answer.concluded ?? "unresolved"}${o.answer.cited?.length ? `, citing ${o.answer.cited.join(", ")}` : ""}.`),
+        o.answer.rationale ? el("blockquote", { className: "cmp-rationale" }, badge("model's words", "warn"), " ", o.answer.rationale) : null,
+        el("p", { className: "meta" }, "Speck's belief state below is unchanged; this reading is not saved in Speck.")));
+    }
+    holder.replaceChildren(...parts);
+  }
+
+  root.addEventListener("change", (event) => {
+    const toggle = event.target.closest?.("[data-decisive-toggle]");
+    if (!toggle) return;
+    decisiveOn = toggle.checked;
+    decisivePref.set(decisiveOn);
+    opinionState.requestedFor = null;
+    renderDecisive();
+    drawComparison();
+    ensureOpinion();
+    root.querySelector(`#edk-${toggle.closest("#edk-compare") ? "compare" : "decisive"} [data-decisive-toggle]`)?.focus();
+  });
+  root.addEventListener("click", (event) => {
+    if (!event.target.closest?.("[data-decisive-retry]")) return;
+    opinionState.requestedFor = null;
+    ensureOpinion();
+  });
+
   // ----- Guided investigation -----
 
   const TARGETS = {
     case: () => $("case"),
+    compare: () => $("compare-panel"),
     "run-button": () => $("run-button"),
     "update-button": () => $("update-button"),
     conclusion: () => $("conclusion-panel"),
@@ -949,7 +1168,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const step = steps[tourStep];
     const done = stepDone(step, view);
     const waiting = step.action && !done;
-    const working = busy === step.action;
+    const working = step.action === "compare" ? Boolean(view.comparison?.running) || comparisonState.starting : busy === step.action;
     if (step.id === "record") {
       const target = TARGETS.record();
       const details = target?.querySelector?.("details.record-details");
@@ -969,7 +1188,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
           : done ? "Done. This is the real result, read from Speck."
           : step.action === "run" && view.investigation?.latestRun && (view.listing?.pending?.length ?? 0) && view.investigation.latestRun.stage.id === view.status?.stage.id
             ? `Not done yet: ${view.listing.pending.length} record(s) are still pending after run ${view.investigation.latestRun.runNumber}. Click Run investigation again to retry them.`
-            : `Waiting for you: click ${step.action === "run" ? "Run investigation" : "Introduce prepared update"} on the page.`) : null,
+            : `Waiting for you: click ${step.actionLabel ?? (step.action === "run" ? "Run investigation" : "Introduce prepared update")} on the page.`) : null,
       coachCollapsed ? null : el("div", { className: "coach-actions" },
         el("button", { type: "button", className: "secondary", "data-tour": "back", disabled: tourStep === 0 && !guided?.onBack ? "" : null }, "Back"),
         waiting ? el("button", { type: "button", className: "link", "data-tour": "skip" }, "Skip this step") : null,
@@ -1122,5 +1341,5 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   }
 
   refresh();
-  return { refresh, destroy: () => { destroyed = true; events?.close(); spotlight(null); } };
+  return { refresh, destroy: () => { destroyed = true; events?.close(); spotlight(null); if (comparisonTimer) window.clearInterval(comparisonTimer); } };
 }

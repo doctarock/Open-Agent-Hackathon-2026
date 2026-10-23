@@ -253,7 +253,7 @@ function listenOnce() {
 export async function mountPluginTab({ root, pluginAdminFetch }) {
   ensureStylesheet();
   const fetcher = pluginAdminFetch || fetch;
-  const [{ mountEvidenceDesk }, journey] = await Promise.all([import(`${ASSET_BASE}/app.js`), import(`${ASSET_BASE}/journey.js`)]);
+  const [{ mountEvidenceDesk }, journey, { renderEvaluation }] = await Promise.all([import(`${ASSET_BASE}/app.js`), import(`${ASSET_BASE}/journey.js`), import(`${ASSET_BASE}/compare.js`)]);
   demo.journey = journey;
   demo.store ??= journey.journeyStore(storage());
   demo.fetcher = fetcher;
@@ -287,6 +287,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       el("span", { className: "picker-label" }, "Prepared cases"), prepared.map(button),
       yours.length ? [el("span", { className: "picker-label" }, "Your investigations"), yours.map(button)] : null,
       el("button", { type: "button", "data-new-case": "", className: current === "new" ? "primary" : "secondary", "aria-selected": String(current === "new") }, "+ New investigation"),
+      el("button", { type: "button", "data-evaluation": "", className: current === "evaluation" ? "primary" : "secondary", "aria-selected": String(current === "evaluation") }, "Evaluation results"),
       el("button", { type: "button", "data-demo": "start", className: "link" }, demo.store.part() !== null ? "Resume the guided demo" : "Guided demo")).childNodes);
   }
 
@@ -297,7 +298,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     if (offer.hidden) return;
     offer.replaceChildren(
       el("h2", { id: "edk-demo-offer-title" }, "Take the guided demo"),
-      el("p", {}, "Two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
+      el("p", {}, "Two investigations where the evidence changes: a bank return and a disputed delivery. Each opens with Speck beside a stateless model call on the same evidence, so you can see what each does when a record is corrected. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
       el("p", { className: "meta" }, "Each step that asks you to act waits for the real result; nothing is scripted."),
       el("div", { className: "intro-actions" },
         el("button", { type: "button", className: "primary", "data-demo": "start" }, "Start the guided demo"),
@@ -313,7 +314,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     renderPicker();
     mounted = mountEvidenceDesk(page, {
       apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours",
-      intro: false, guided
+      intro: false, guided, evaluationUrl: `${API_BASE}/evaluation`
     });
   }
 
@@ -400,6 +401,27 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     form.querySelector("#edk-new-case-title").focus();
   }
 
+  // The evaluation results on their own page: every report the evaluation
+  // commands wrote, and the saved side-by-side comparisons.
+  async function openEvaluation() {
+    mounted?.destroy();
+    mounted = null;
+    current = "evaluation";
+    renderPicker();
+    page.classList.add("edk");
+    const holder = el("div", {}, el("p", { className: "muted" }, "Loading the evaluation results…"));
+    page.replaceChildren(el("section", { className: "panel evaluation-page" }, el("h2", { id: "edk-evaluation-title", tabindex: "-1" }, "Evaluation results"), holder));
+    page.querySelector("#edk-evaluation-title").focus();
+    try {
+      const response = await fetcher(`${API_BASE}/evaluation`);
+      const summary = await response.json();
+      if (!response.ok) throw new Error(summary.error ?? `HTTP ${response.status}`);
+      if (current === "evaluation") renderEvaluation(holder, summary);
+    } catch (failure) {
+      holder.replaceChildren(el("p", { className: "error" }, `The evaluation results could not be loaded: ${failure.message}`));
+    }
+  }
+
   shell.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
@@ -411,6 +433,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       renderOffer();
     } else if (target.closest(".case-picker")) {
       if (target.dataset.newCase !== undefined) openNewCase();
+      else if (target.dataset.evaluation !== undefined) openEvaluation();
       else if (target.dataset.case) show(target.dataset.case);
     }
   });

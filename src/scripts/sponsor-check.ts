@@ -4,6 +4,7 @@ import path from "node:path";
 import { loadConfig, loadDotEnv, ROOT_DIR } from "../config.js";
 import { EvidenceDesk, MARKOVIAN_ENGINE } from "../investigation/desk.js";
 import { findEngineRun, readEngineHistory, type RunTrace } from "../investigation/trace.js";
+import { writeReport } from "../eval/results.js";
 
 // npm run sponsors:verify
 //
@@ -133,6 +134,6 @@ for (const item of verdicts) {
 }
 const out = path.join(ROOT_DIR, "eval", "results", "sponsor-check.json");
 fs.mkdirSync(path.dirname(out), { recursive: true });
-fs.writeFileSync(out, `${JSON.stringify({ generatedAt: new Date().toISOString(), evidenceMode: config.evidenceMode, reasoner: config.reasoner, model: config.nemotron.model || null, verdicts, trace: runs }, null, 2)}\n`);
+writeReport(out, `${JSON.stringify({ generatedAt: new Date().toISOString(), evidenceMode: config.evidenceMode, reasoner: config.reasoner, model: config.nemotron.model || null, verdicts, trace: runs }, null, 2)}\n`);
 console.log(`\nFull report with the trace: ${path.relative(ROOT_DIR, out)}`);
 process.exit(verdicts.some((item) => item.status === "NOT OBSERVED") ? 1 : 0);

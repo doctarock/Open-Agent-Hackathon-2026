@@ -1,0 +1,487 @@
+{
+  "schema": "evidence-desk.comparison.v1",
+  "id": "2026-10-23T08-49-07-165Z-d0a000d7",
+  "startedAt": "2026-10-23T08:49:07.078Z",
+  "finishedAt": "2026-10-23T08:49:07.165Z",
+  "durationMs": 87,
+  "kind": "deterministic",
+  "case": {
+    "caseId": "EVAL-PAY-01",
+    "title": "Was invoice INV-77 paid?",
+    "question": "Accounts receivable marked invoice INV-77 (AUD 4,200) as paid. Was it actually paid?",
+    "hypotheses": [
+      {
+        "key": "H-PAID",
+        "statement": "Invoice INV-77 has been paid in full.",
+        "prior": 0.5
+      },
+      {
+        "key": "H-UNPAID",
+        "statement": "Invoice INV-77 remains unpaid.",
+        "prior": 0.3
+      },
+      {
+        "key": "H-PARTIAL",
+        "statement": "Only part of invoice INV-77 has been paid.",
+        "prior": 0.2
+      }
+    ]
+  },
+  "configuration": {
+    "evidence": {
+      "mode": "fixture",
+      "label": "Local fixtures (not Zetaris)",
+      "target": "eval/scenarios/correction-supersedes/evidence.json",
+      "ready": true,
+      "problem": null
+    },
+    "assessor": {
+      "kind": "rules",
+      "model": null,
+      "endpoint": null,
+      "temperature": null,
+      "maxTokens": null,
+      "reasoningEffort": null
+    },
+    "speck": "Evidence Desk as built: one Speck case carried across the stages on a temporary Speck database (the case on the page is not touched). Each stage's new records are assessed and Speck's beliefs revised; a record replaced by a later one stops counting and the beliefs that rested on it are rebuilt.",
+    "stateless": "The evaluation's stateless rule baseline: at each stage, the same fact rules summed from scratch (reliability × strength, contradictions negative); the top positive score is its conclusion. It keeps nothing between stages and has no notion of a replaced record.",
+    "labels": "Pre-registered labels from the case's expected.json, written before any system was run on it."
+  },
+  "fingerprint": "9d25828d2b2f3100",
+  "stages": [
+    {
+      "stage": {
+        "id": "before-return",
+        "label": "Payment received (5 Sep)",
+        "asOf": "2026-09-06T00:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "EV-BNK-101",
+          "source": "Bank statement feed",
+          "observedAt": "2026-09-05T01:10:00.000Z",
+          "content": "Credit AUD 4,200.00 from Hollis Cafe Pty Ltd, reference INV-77.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-LDG-102",
+          "source": "Accounts ledger",
+          "observedAt": "2026-09-05T03:00:00.000Z",
+          "content": "Invoice INV-77 matched to bank credit and marked paid.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "EV-BNK-101",
+        "EV-LDG-102"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "Invoice INV-77 has been paid in full.",
+        "concluded": "H-PAID",
+        "tentative": null,
+        "confidence": 0.86,
+        "support": [
+          {
+            "recordId": "EV-BNK-101",
+            "delta": 0.19,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact payment.received = true"
+          },
+          {
+            "recordId": "EV-LDG-102",
+            "delta": 0.17,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ledger.status = paid"
+          }
+        ],
+        "against": [],
+        "ruledOut": [
+          {
+            "key": "H-UNPAID",
+            "refutedBy": [
+              "EV-BNK-101"
+            ]
+          },
+          {
+            "key": "H-PARTIAL",
+            "refutedBy": [
+              "EV-BNK-101"
+            ]
+          }
+        ],
+        "noLongerCounted": [],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-PAID",
+            "status": "confirmed",
+            "confidence": 0.86
+          },
+          {
+            "key": "H-UNPAID",
+            "status": "rejected",
+            "confidence": 0.11
+          },
+          {
+            "key": "H-PARTIAL",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 1,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-PAID",
+        "cited": [
+          "EV-BNK-101",
+          "EV-LDG-102"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-PAID": 1.8,
+          "H-UNPAID": -0.95,
+          "H-PARTIAL": -0.95
+        },
+        "counted": [
+          "EV-BNK-101",
+          "EV-LDG-102"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-BNK-101",
+            "EV-LDG-102"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "first",
+          "recordsWhy": false
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-BNK-101",
+            "EV-LDG-102"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "first",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "before-return",
+          "conclusion": "H-PAID",
+          "notCurrent": [
+            "H-PARTIAL"
+          ],
+          "unsupported": [
+            "H-UNPAID",
+            "H-PARTIAL"
+          ]
+        },
+        "speck": {
+          "expected": "H-PAID",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        },
+        "stateless": {
+          "expected": "H-PAID",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        }
+      }
+    },
+    {
+      "stage": {
+        "id": "after-return",
+        "label": "Bank return (9 Sep)",
+        "asOf": "2026-09-10T00:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "EV-BNK-101",
+          "source": "Bank statement feed",
+          "observedAt": "2026-09-05T01:10:00.000Z",
+          "content": "Credit AUD 4,200.00 from Hollis Cafe Pty Ltd, reference INV-77.",
+          "supersedes": [],
+          "replacedBy": "EV-BNK-103",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-LDG-102",
+          "source": "Accounts ledger",
+          "observedAt": "2026-09-05T03:00:00.000Z",
+          "content": "Invoice INV-77 matched to bank credit and marked paid.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-BNK-103",
+          "source": "Bank statement feed",
+          "observedAt": "2026-09-09T00:40:00.000Z",
+          "content": "Debit AUD 4,200.00: payment reference INV-77 returned unpaid (dishonoured, insufficient funds). Reverses the credit of 5 Sep.",
+          "supersedes": [
+            "EV-BNK-101"
+          ],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-LDG-104",
+          "source": "Accounts ledger",
+          "observedAt": "2026-09-09T02:15:00.000Z",
+          "content": "Invoice INV-77 reopened after the bank returned the payment.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "EV-BNK-103",
+        "EV-LDG-104"
+      ],
+      "replaced": [
+        {
+          "recordId": "EV-BNK-101",
+          "by": "EV-BNK-103"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "Invoice INV-77 remains unpaid.",
+        "concluded": "H-UNPAID",
+        "tentative": null,
+        "confidence": 0.66,
+        "support": [
+          {
+            "recordId": "EV-BNK-103",
+            "delta": 0.19,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact payment.reversed = true"
+          },
+          {
+            "recordId": "EV-LDG-104",
+            "delta": 0.17,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ledger.status = reopened"
+          }
+        ],
+        "against": [],
+        "ruledOut": [
+          {
+            "key": "H-PAID",
+            "refutedBy": [
+              "EV-BNK-103"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "EV-BNK-101",
+            "explanation": "EV-BNK-103 replaces all of EV-BNK-101, not only the facts it restates. No record that still counts states payment.received=true, payment.amount_matches=true. Its judgments no longer apply: supports H-PAID; contradicts H-UNPAID; contradicts H-PARTIAL decisively. H-PARTIAL is no longer ruled out: EV-BNK-101 was its decisive refutation, and it is now proposed at 0.2.",
+            "consequences": [
+              "H-PARTIAL is no longer ruled out: EV-BNK-101 was its decisive refutation, and it is now proposed at 0.2."
+            ]
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-PAID",
+            "mode": "replaced",
+            "before": {
+              "status": "confirmed",
+              "confidence": 0.86
+            },
+            "cause": "EV-BNK-101 superseded by EV-BNK-103; support withheld: EV-BNK-103 refutes H-PAID decisively",
+            "dropped": [
+              "EV-BNK-101 (EV-BNK-101 superseded by EV-BNK-103)",
+              "EV-LDG-102 (support withheld: EV-BNK-103 refutes H-PAID decisively)"
+            ]
+          },
+          {
+            "key": "H-UNPAID",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.11
+            },
+            "cause": "EV-BNK-101 superseded by EV-BNK-103",
+            "dropped": [
+              "EV-BNK-101 (EV-BNK-101 superseded by EV-BNK-103)"
+            ]
+          },
+          {
+            "key": "H-PARTIAL",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.05
+            },
+            "cause": "EV-BNK-101 superseded by EV-BNK-103",
+            "dropped": [
+              "EV-BNK-101 (EV-BNK-101 superseded by EV-BNK-103)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-UNPAID",
+            "status": "supported",
+            "confidence": 0.66
+          },
+          {
+            "key": "H-PARTIAL",
+            "status": "proposed",
+            "confidence": 0.2
+          },
+          {
+            "key": "H-PAID",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 2,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-UNPAID",
+        "cited": [
+          "EV-BNK-103",
+          "EV-LDG-104"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-PAID": 0.85,
+          "H-UNPAID": 0.85,
+          "H-PARTIAL": -0.95
+        },
+        "counted": [
+          "EV-BNK-101",
+          "EV-BNK-103",
+          "EV-LDG-102",
+          "EV-LDG-104"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-BNK-103",
+            "EV-LDG-104"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-BNK-103",
+            "EV-LDG-104"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "revised",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "after-return",
+          "conclusion": "H-UNPAID",
+          "notCurrent": [
+            "H-PAID",
+            "H-PARTIAL"
+          ],
+          "unsupported": [
+            "H-PAID",
+            "H-PARTIAL"
+          ]
+        },
+        "speck": {
+          "expected": "H-UNPAID",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        },
+        "stateless": {
+          "expected": "H-UNPAID",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Both approaches saw the same records at every stage, the same question and explanations, and the same assessor configuration.",
+    "Speck counts a conclusion only when it holds it as supported; a leading or pointed-to explanation is tentative. The stateless baseline has no such threshold beyond answering \"unresolved\" (model) or a tie or non-positive score (rules).",
+    "Differences come from Speck's explicit evidence and revision state and its conclusion policy (thresholds, decisive refutation, supersession), not from persistence alone: the evaluation's speck-fresh system, which rebuilds from scratch each time, reaches the same conclusions as speck-desk.",
+    "Deterministic: no model was called; the same inputs give the same result every time."
+  ]
+}

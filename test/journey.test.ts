@@ -12,13 +12,13 @@ const tour = await import(pathToFileURL(path.join(ROOT_DIR, "public", "tour.js")
 const text = (items: unknown[]): string => items.flat(Infinity).filter(Boolean).join("\n");
 const part = (id: string) => journey.JOURNEY.find((item: any) => item.id === id);
 
-test("the demo runs both prepared cases, then Speck's world view, memory map and chat, then the person's own investigation", () => {
-  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["delivery", "bank", "world", "memory", "chat", "create"]);
-  assert.deepEqual([part("delivery").caseId, part("bank").caseId], ["disputed-delivery", "bank-return"]);
+test("the demo runs both prepared cases (the bank return first, each opening on the side-by-side comparison), then Speck's world view, memory map and chat, then the person's own investigation", () => {
+  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["bank", "delivery", "world", "memory", "chat", "create"]);
+  assert.deepEqual([part("bank").caseId, part("delivery").caseId], ["bank-return", "disputed-delivery"]);
   const known = new Set(tour.TOUR_STEPS.map((step: any) => step.id));
   for (const item of journey.JOURNEY.filter((entry: any) => entry.kind === "case")) {
     for (const id of item.steps) assert.ok(known.has(id), `${item.id}: ${id} is a step of the case tour`);
-    for (const action of ["run", "update", "rerun"]) assert.ok(item.steps.includes(action), `${item.id} has the ${action} step`);
+    for (const action of ["compare", "run", "update", "rerun"]) assert.ok(item.steps.includes(action), `${item.id} has the ${action} step`);
   }
   assert.ok(part("bank").steps.includes("changed"), "the bank return shows its correction");
 });

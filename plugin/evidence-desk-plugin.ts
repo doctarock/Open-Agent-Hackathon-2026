@@ -7,6 +7,7 @@ import { deskApi, errorResponse, type DeskApi } from "../src/investigation/api.j
 import { EvidenceDesk } from "../src/investigation/desk.js";
 import { FixtureEvidenceProvider } from "../src/evidence/fixture-provider.js";
 import { addUserEvidence, createUserCase, listUserCases, UserCaseError } from "../src/investigation/user-cases.js";
+import { evaluationSummary } from "../src/compare/evaluation.js";
 
 // Evidence Desk as a Speck plugin. Speck loads this file (as
 // speck/plugins/evidence-desk/dist/plugin/evidence-desk-plugin.js, put there
@@ -28,6 +29,8 @@ const ASSETS: Record<string, { file: string; type: string }> = {
   "tour.js": { file: path.join(PUBLIC_DIR, "tour.js"), type: "text/javascript" },
   "status.js": { file: path.join(PUBLIC_DIR, "status.js"), type: "text/javascript" },
   "journey.js": { file: path.join(PUBLIC_DIR, "journey.js"), type: "text/javascript" },
+  "compare.js": { file: path.join(PUBLIC_DIR, "compare.js"), type: "text/javascript" },
+  "decisive.js": { file: path.join(PUBLIC_DIR, "decisive.js"), type: "text/javascript" },
   "style.css": { file: path.join(PUBLIC_DIR, "style.css"), type: "text/css" }
 };
 
@@ -81,6 +84,8 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
   };
   return {
     list: () => specs().map((spec) => ({ id: spec.id, label: spec.label, kind: spec.yours ? "yours" : "prepared" })),
+    // The evaluation reports and saved comparisons, read from the repository.
+    evaluation: () => evaluationSummary(rootDir),
     create(input: unknown) {
       try {
         const created = createUserCase(ownDir, input);
@@ -142,6 +147,7 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
     });
   }
   app.get(`${API_BASE}/cases`, (_req, res) => res.json({ cases: cases.list() }));
+  app.get(`${API_BASE}/evaluation`, (_req, res) => res.json(cases.evaluation()));
   const plain = (operation: (req: { params: Record<string, string>; body?: unknown }) => unknown): Handler => async (req, res) => {
     try {
       res.json(await operation(req));
@@ -174,6 +180,13 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
   app.post(`${base}/evidence/withdraw`, route((api, body) => api.withdraw(body)));
   app.post(`${base}/reset`, route((api) => api.reset()));
   app.get(`${base}/progress`, route((api) => api.progress()));
+  // Speck beside the stateless baseline on this case (src/compare/comparison.ts).
+  app.get(`${base}/comparison`, route((api) => api.comparison()));
+  app.post(`${base}/comparison`, route((api) => api.compare()));
+  // Decisive mode: the stateless baseline on the case as it stands (public/decisive.js).
+  app.get(`${base}/opinion`, route((api) => api.opinion()));
+  app.post(`${base}/opinion`, route((api) => api.requestOpinion()));
+  app.get(`${base}/comparison/:reportId`, (req, res) => route((api) => api.comparisonReport(String(req.params.reportId ?? "")))(req, res));
 }
 
 export default function createEvidenceDeskPlugin() {

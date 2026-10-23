@@ -95,10 +95,34 @@ test("the plugin declares a Speck tab and runs a case on Speck's own runtime, be
     assert.equal((await call(base, `${bank}/evidence/withdraw`, "POST", { recordId: "EV-BNK-101" })).status, 400);
     assert.equal((await call(base, "/api/plugins/evidence-desk/cases/nope/status")).status, 404);
     // The tab's assets are served.
-    for (const asset of ["ui.js", "app.js", "tour.js", "status.js", "journey.js", "style.css"]) {
+    for (const asset of ["ui.js", "app.js", "tour.js", "status.js", "journey.js", "compare.js", "decisive.js", "style.css"]) {
       const response = await fetch(`${base}/plugins/evidence-desk/${asset}`);
       assert.equal(response.status, 200, asset);
     }
+  });
+});
+
+test("the side-by-side comparison and the evaluation results are served through Speck's routes", async () => {
+  await withSpeck(async ({ runtime, base }) => {
+    const bank = "/api/plugins/evidence-desk/cases/bank-return";
+    assert.equal((await call(base, `${bank}/status`)).status, 200, "the case is opened (its worker made) first");
+    const workersBefore = runtime.listWorkers().length;
+    const started = await call(base, `${bank}/comparison`, "POST");
+    assert.equal(started.status, 200);
+    assert.equal(started.body.started, true);
+    let state = (await call(base, `${bank}/comparison`)).body;
+    for (let tries = 0; state.running && tries < 200; tries += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      state = (await call(base, `${bank}/comparison`)).body;
+    }
+    assert.equal(state.running, null);
+    assert.equal(state.willRun.kind, "deterministic");
+    assert.deepEqual(state.current.stages.map((stage: any) => stage.stage.id), ["before-return", "after-return"]);
+    assert.equal(runtime.listWorkers().length, workersBefore, "the comparison ran on its own Speck database, not Speck's");
+    assert.equal((await call(base, `${bank}/comparison/${encodeURIComponent(state.current.id)}`)).body.report.id, state.current.id);
+    assert.equal((await call(base, `${bank}/comparison/missing`)).status, 404);
+    const evaluation = (await call(base, "/api/plugins/evidence-desk/evaluation")).body;
+    assert.deepEqual(evaluation.reports.map((report: any) => report.id), ["fixture", "fixture-regression", "cross-domain", "live", "live-regression"]);
   });
 });
 
@@ -152,9 +176,11 @@ test("the installer copies the plugin into Speck's plugins folder and approves e
   const target = path.join(speckDir, "plugins", "evidence-desk");
   assert.equal(first.target, target);
   for (const file of ["dist/plugin/evidence-desk-plugin.js", "dist/src/investigation/desk.js", "plugin/ui/evidence-desk-ui.js", "public/app.js", "public/style.css",
-    "fixtures/scenarios/disputed-delivery/scenario.json", "eval/scenarios/correction-supersedes/scenario.json", "config/zetaris-queries.json", "public/tour.js", "public/status.js", "public/journey.js"]) {
+    "fixtures/scenarios/disputed-delivery/scenario.json", "eval/scenarios/correction-supersedes/scenario.json", "config/zetaris-queries.json", "public/tour.js", "public/status.js", "public/journey.js", "public/compare.js", "public/decisive.js"]) {
     assert.ok(fs.existsSync(path.join(target, file)), file);
   }
+  // It records the repository it came from, where the evaluation reports are.
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(target, "install.json"), "utf8")), { repository: ROOT_DIR });
   // "#speck" now points at the stand-in Speck's own dist/index.js.
   const desk = fs.readFileSync(path.join(target, "dist", "src", "investigation", "desk.js"), "utf8");
   assert.ok(!desk.includes('"#speck"'));

@@ -1,5 +1,57 @@
 # Speck Evidence Desk: submission summary
 
+Track: **Reasoning Architecture**.
+
+## Problem
+
+An ordinary stateless model call answers from whatever evidence it is handed, from scratch each
+time. When a source later corrects a record (a bank returns a payment, a carrier amends a delivery
+scan), nothing connects the earlier conclusion to the record that has just been replaced. The call
+may keep its old answer, may keep citing the replaced record, and cannot say what changed or why.
+
+## Approach
+
+Evidence Desk keeps each case in Speck as explicit, inspectable state: the evidence ledger, the
+competing explanations and Speck's belief in each, the judgment behind every adjustment (a
+deterministic rule or a model interpretation, with the confidence change it made), and every
+revision. When a record is corrected or withdrawn, the beliefs that rested on it are rebuilt from
+the evidence that still counts, and the old beliefs stay on record as history. A conclusion is
+only drawn when Speck's belief clears its threshold; otherwise the page says what the evidence
+points to and why that is not yet enough.
+
+## Demonstration
+
+The first panel of each case runs the case twice, stage by stage, on the same records with the
+same assessor: once as the evaluation's stateless baseline (a fresh model call per stage, or the
+fact rules summed from scratch), once through Speck. It shows what each concluded, what it cited,
+what the correction replaced, whether either still leans on the replaced record, and the revision
+Speck recorded. Then the judge does it by hand on the case: run, introduce the correction, run
+again, and read "why this changed".
+
+## Proof
+
+Real outputs, clearly labelled ([comparison.md](comparison.md) has every sample):
+
+| Live, `nemotron-3-nano:4b`, 6 samples per case | Stateless model call | Speck |
+|---|---|---|
+| Disputed delivery, after the carrier's correction: concluded | "delivered" 6/6 | nothing 6/6 (pointing to "misdelivered" 5/6) |
+| ... cited the replaced delivery scan as support | 6/6 | 0/6 |
+| ... recorded why its conclusion changed | 0/6 | 6/6 |
+| Bank return, before the return: matches the pre-registered label | 3/6 (3 unsupported "unpaid" claims) | 6/6 |
+| Bank return, after the return: matches the label | 5/6 | **0/6** (unresolved: the 0.4 cap on model-judged evidence) |
+
+Deterministic fixtures, the test suite and the evaluation are below. Persistence alone shows no
+measurable accuracy benefit, and Speck abstains more often than the baseline; the consistent
+difference is traceability.
+
+## Impact
+
+Investigations whose evidence changes, such as disputed deliveries, payment reversals and
+procurement amendments, need decisions that can be defended later: which records the decision
+rested on, which were corrected, and what was believed before. Evidence Desk makes that the
+system's state rather than something reconstructed afterwards, and it says "not established"
+instead of over-committing.
+
 ## What it is
 
 Evidence Desk investigates a case whose evidence conflicts and changes over time: a disputed
@@ -22,6 +74,10 @@ The submodule is pinned to upstream Speck.
 
 ## What is worth a judge's time
 
+0. **Speck beside a stateless baseline, on the same evidence.** One click on a case page; the
+   bank return is deterministic and instant, the disputed delivery makes real Nemotron and Zetaris
+   calls. Saved comparisons are listed with their date and configuration, and counted under
+   **Evaluation results**, beside every evaluation report and each case's checkpoints.
 1. **Corrections actually retract their effect.**
    - Build 2 kept a reversed payment's −0.19 in its belief state, and stalled at 0.47 on the
      held-out bank-return case.
@@ -82,7 +138,7 @@ These are counts over these cases only, not general accuracy.
 | Held-out cases, deterministic (9 checkpoints) | 7/8 correct | 8/8 correct, 0 unsupported conclusions |
 | Correction regression cases, deterministic (8 checkpoints) | 4/8 | 8/8; withdrawn or superseded evidence never used as support (5/5) |
 | Held-out cases, live `nemotron-3-nano:4b` (single samples) | 5/8 | 5/8, identical per checkpoint |
-| Tests | 29 | 104 |
+| Tests | 29 | 120 |
 
 Across two live samples on the held-out cases, the stateless model baseline made 4 unsupported
 conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but it abstained when a
@@ -93,7 +149,8 @@ conclusion was due 3 times in 4, because of the 0.4 cap.
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 104 tests, no credentials or network needed
+npm test                 # 120 tests, no credentials or network needed
+npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups
 npm run sponsors:verify  # with Zetaris and Ollama running and configured in .env
 ```

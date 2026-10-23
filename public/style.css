@@ -435,3 +435,95 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 /* What the guided demo points at in Speck's own interface. */
 .edk-host-spotlight { outline: 3px solid #8fb4ff; outline-offset: 4px; border-radius: 10px; }
 .edk .demo-offer { margin-bottom: 14px; }
+
+/* Speck beside a stateless model call (public/compare.js). */
+.edk .compare-panel { border-top: 4px solid var(--edk-accent); }
+.edk .cmp-head { display: grid; gap: 12px; }
+@container edk (min-width: 760px) {
+  .edk .cmp-head { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); align-items: start; }
+}
+.edk .cmp-head h2 { margin: 0 0 6px; }
+.edk .cmp-pitch { margin: 0; max-width: 70ch; }
+.edk .cmp-action { display: grid; gap: 6px; }
+.edk .cmp-action button { width: 100%; }
+.edk .cmp-result { margin-top: 14px; }
+.edk .cmp-dimmed { opacity: .6; }
+.edk .cmp-provenance { margin: 0 0 10px; font-size: 0.9rem; }
+
+.edk .cmp-sequence {
+  list-style: none; margin: 0 0 14px; padding: 0;
+  display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  counter-reset: cmp-step;
+}
+.edk .cmp-sequence > li {
+  counter-increment: cmp-step;
+  padding: 8px 10px; border: 1px solid var(--edk-border); border-radius: var(--edk-radius);
+  background: var(--edk-accent-soft); font-size: 0.85rem; min-width: 0; overflow-wrap: anywhere;
+}
+.edk .cmp-sequence > li strong { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; }
+.edk .cmp-sequence > li strong::before { content: counter(cmp-step) ". "; }
+
+.edk .cmp-findings { display: grid; gap: 10px; margin-bottom: 12px; }
+@container edk (min-width: 760px) {
+  .edk .cmp-findings { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+}
+.edk .cmp-finding { padding: 10px 12px; border-left: 4px solid var(--edk-accent); background: var(--edk-surface-raised); border-radius: 0 var(--edk-radius) var(--edk-radius) 0; min-width: 0; }
+.edk .cmp-finding[data-finding="correction"] { border-left-color: var(--edk-warn); }
+.edk .cmp-finding h3 { margin: 0 0 6px; font-size: 1rem; }
+.edk .cmp-finding ul { margin: 0; padding-left: 18px; }
+.edk .cmp-finding li { margin: 3px 0; overflow-wrap: anywhere; }
+.edk .cmp-legend { margin: 0 0 10px; }
+
+.edk .cmp-stage { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--edk-border); }
+.edk .cmp-stage h3 { margin: 0 0 6px; }
+.edk .cmp-correction { margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--edk-warn); border-radius: var(--edk-radius); overflow-wrap: anywhere; }
+.edk .cmp-records { margin: 0 0 10px; font-size: 0.88rem; }
+.edk .cmp-records li { margin: 4px 0; overflow-wrap: anywhere; }
+.edk .cmp-records li.superseded > div { text-decoration: line-through; color: var(--edk-muted); }
+.edk .cmp-records li.cmp-flash { outline: 2px solid var(--edk-accent); outline-offset: 2px; }
+
+.edk .cmp-columns { display: grid; gap: 10px; }
+@container edk (min-width: 760px) {
+  .edk .cmp-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+.edk .cmp-side { min-width: 0; padding: 10px 12px; border: 1px solid var(--edk-border); border-radius: var(--edk-radius); background: var(--edk-surface-raised); overflow-wrap: anywhere; }
+.edk .cmp-speck { border-top: 3px solid var(--edk-accent); }
+.edk .cmp-stateless { border-top: 3px solid var(--edk-muted); }
+.edk .cmp-side h4 { margin: 0 0 6px; }
+.edk .cmp-verdict { margin: 0 0 8px; }
+.edk .cmp-verdict .badge { white-space: normal; }
+.edk .cmp-why { margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--edk-good); background: var(--edk-accent-soft); }
+.edk .cmp-why ul { margin: 4px 0 0; padding-left: 18px; }
+.edk .cmp-rationale { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--edk-border); font-size: 0.9rem; }
+.edk .cmp-label { margin-top: 8px; }
+.edk .chip {
+  display: inline-block; padding: 0 6px; margin: 1px 0; min-height: 0;
+  font: 600 0.8rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  border: 1px solid var(--edk-border); border-radius: 4px; background: transparent; color: var(--edk-text); cursor: pointer;
+}
+.edk .chip:hover { border-color: var(--edk-accent); }
+
+/* Evaluation results. */
+.edk .evaluation > summary h2 { display: inline; font-size: 1.15rem; }
+.edk .eval-report { margin: 10px 0; padding: 8px 10px; border: 1px solid var(--edk-border); border-radius: var(--edk-radius); }
+.edk .eval-report > summary { cursor: pointer; }
+.edk .table-wrap { overflow-x: auto; max-width: 100%; }
+.edk .eval-table { border-collapse: collapse; width: 100%; font-size: 0.86rem; margin: 8px 0; }
+.edk .eval-table th, .edk .eval-table td { padding: 5px 8px; border-bottom: 1px solid var(--edk-border); text-align: left; vertical-align: top; }
+.edk .eval-table thead th { font-size: 0.78rem; }
+.edk .eval-table tbody th { font-weight: 600; min-width: 180px; }
+.edk .eval-table td.ok { color: var(--edk-good); }
+.edk .eval-table td.bad { color: var(--edk-bad); }
+
+/* Decisive mode (public/decisive.js). */
+.edk .decisive { margin: 0 0 12px; padding: 8px 10px; border: 1px dashed var(--edk-border); border-radius: var(--edk-radius); }
+.edk .decisive-switch label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.edk .decisive-switch input { width: 18px; height: 18px; accent-color: var(--edk-accent); }
+.edk .decisive-switch .help { margin-top: 4px; }
+.edk .cmp-action .decisive-switch { margin-top: 4px; }
+.edk .decisive-reading { margin-top: 8px; padding: 8px 10px; border-left: 4px solid var(--edk-warn); background: var(--edk-accent-soft); overflow-wrap: anywhere; }
+.edk .decisive-reading.concludes { border-left-color: var(--edk-good); }
+.edk .decisive-headline { margin: 0 0 4px; font-weight: 650; }
+.edk .decisive-headline .badge { white-space: normal; }
+.edk .cmp-decisive { margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--edk-warn); border-radius: var(--edk-radius); overflow-wrap: anywhere; }
+.edk .cmp-decisive p { margin: 4px 0 0; }

@@ -1,9 +1,9 @@
-import fs from "node:fs";
 import path from "node:path";
 import { loadConfig, loadDotEnv, ROOT_DIR } from "../config.js";
 import { loadEvalCases, REGRESSION_DIR } from "../eval/cases.js";
 import { runEvaluation, systemsFor, type EvalMode, type EvalReport } from "../eval/harness.js";
 import type { Rate } from "../eval/metrics.js";
+import { writeReport } from "../eval/results.js";
 
 // npm run eval        deterministic fixture evaluation (no model, no credentials)
 // npm run eval:live   the same cases with the configured Nemotron endpoint
@@ -29,8 +29,7 @@ for (const group of [
   const report = await runEvaluation(mode, group.cases, systemsFor(mode, nemotron), (message) => { if (mode === "live") console.log(`  ${message}`); });
   print(report, group.title);
   const out = path.join(ROOT_DIR, "eval", "results", group.file);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${JSON.stringify({ generatedAt: new Date().toISOString(), group: group.title, ...report }, null, 2)}\n`);
+  writeReport(out, `${JSON.stringify({ generatedAt: new Date().toISOString(), group: group.title, ...report }, null, 2)}\n`);
   console.log(`\nFull report: ${path.relative(ROOT_DIR, out)}\n`);
 }
 

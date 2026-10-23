@@ -1,3 +1,5 @@
+import { comparisonFingerprint, loadComparisons, pageComparisonsDir, publishedComparisonsDir, runComparison, saveComparison, statelessAnswer, visibleRecords, type ComparisonProgress } from "../compare/comparison.js";
+import { NemotronProcessor } from "../reasoning/nemotron.js";
 import type { AppConfig } from "../config.js";
 import { EvidenceProviderError } from "../evidence/types.js";
 import { EvidenceDesk, MARKOVIAN_ENGINE, MARKOVIAN_SOURCE, ReasonerNotReadyError, RunInProgressError, WithdrawalError } from "./desk.js";
@@ -9,6 +11,15 @@ import { EvidenceDesk, MARKOVIAN_ENGINE, MARKOVIAN_SOURCE, ReasonerNotReadyError
 
 export class RequestError extends Error {}
 
+export class NotFoundError extends Error {}
+
+// One side-by-side comparison at a time in a process: on a live
+// configuration both approaches call the same local model.
+export class ComparisonInProgressError extends Error {
+  constructor(caseId: string) { super(`A comparison is already running (case ${caseId}); wait for it to finish`); this.name = "ComparisonInProgressError"; }
+}
+let activeComparison: string | null = null;
+
 export interface DeskApi {
   status(): unknown;
   evidence(): Promise<unknown>;
@@ -19,6 +30,18 @@ export interface DeskApi {
   withdraw(body: unknown): Promise<unknown>;
   reset(): Promise<unknown>;
   progress(): unknown;
+  // Speck beside the stateless baseline (src/compare/comparison.ts): the
+  // saved comparisons and whether one is running; start one; read one.
+  comparison(): unknown;
+  compare(): unknown;
+  comparisonReport(id: string): unknown;
+  // Settles when the comparison started by compare() has finished (tests).
+  comparisonDone(): Promise<void>;
+  // Decisive mode (public/decisive.js): the stateless baseline's answer on the
+  // case as it stands now, for the page to check against Speck's state. The
+  // last one, and a new one.
+  opinion(): unknown;
+  requestOpinion(): Promise<unknown>;
 }
 
 // speckDatabase: how to describe where the case is stored (a file path for
@@ -30,6 +53,20 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
   desk.on("progress", (state) => {
     latest = { runId: state.runId, phase: state.phase, phaseDetail: state.phaseDetail, currentChunk: state.currentChunk, maxChunks: state.maxChunks, at: new Date().toISOString() };
   });
+
+  // Comparisons run on their own temporary Speck database, never on this case.
+  const comparisonDirs = { page: pageComparisonsDir(config, desk.scenario.id), command: publishedComparisonsDir(config.rootDir, desk.scenario.id) };
+  let comparing: { startedAt: string; progress: ComparisonProgress | null } | null = null;
+  let comparingDone: Promise<void> = Promise.resolve();
+  let comparisonFailure: { at: string; error: string; kind: string } | null = null;
+  const saved = () => loadComparisons(comparisonDirs, comparisonFingerprint(config, desk.provider.describe()));
+
+  // The latest second opinion, kept for this process only; the page asks for
+  // a new one whenever the case has moved on since.
+  let opinion: Record<string, unknown> | null = null;
+  let opinionInFlight: Promise<Record<string, unknown>> | null = null;
+  const processor = config.reasoner === "nemotron" ? new NemotronProcessor(config.nemotron) : null;
+
   return {
     status: () => ({
       case: { caseId: desk.scenario.caseId, title: desk.scenario.title, question: desk.scenario.question, scenarioId: desk.scenario.id, generation: desk.generation },
@@ -80,7 +117,78 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
       latest = null;
       return { ...result, stage: desk.currentStage(), runs: desk.runs().length };
     },
-    progress: () => ({ running: desk.isRunning, progress: latest })
+    progress: () => ({ running: desk.isRunning, progress: latest }),
+    comparison: () => {
+      const { current, index, unreadable } = saved();
+      const reasoner = desk.reasoner.describe();
+      return {
+        running: comparing,
+        // The newest comparison made with this case's current settings. Ones
+        // made with other settings are listed, never presented as current.
+        current,
+        others: index.filter((entry) => entry.id !== current?.id),
+        unreadable,
+        // A failure after the newest saved comparison: nothing was saved for it.
+        failure: comparisonFailure && (!current || comparisonFailure.at > current.finishedAt) ? comparisonFailure : null,
+        willRun: {
+          kind: reasoner.kind === "nemotron" || desk.provider.mode === "zetaris" ? "live" : "deterministic",
+          evidence: desk.provider.describe(),
+          assessor: { kind: reasoner.kind, model: reasoner.model, endpoint: reasoner.endpoint, ready: reasoner.ready, problem: reasoner.problem }
+        }
+      };
+    },
+    compare: () => {
+      if (activeComparison) throw new ComparisonInProgressError(activeComparison);
+      const reasoner = desk.reasoner.describe();
+      if (!reasoner.ready) throw new ReasonerNotReadyError(reasoner.problem ?? "the assessor is not configured");
+      activeComparison = desk.scenario.caseId;
+      comparing = { startedAt: new Date().toISOString(), progress: null };
+      comparisonFailure = null;
+      comparingDone = (async () => {
+        try {
+          const report = await runComparison(config, { provider: desk.provider, onProgress: (progress) => { if (comparing) comparing.progress = progress; } });
+          saveComparison(comparisonDirs.page, report);
+        } catch (error) {
+          const { body } = errorResponse(error);
+          comparisonFailure = { at: new Date().toISOString(), error: String(body.error ?? error), kind: String(body.kind ?? "internal") };
+        } finally {
+          comparing = null;
+          activeComparison = null;
+        }
+      })();
+      return { started: true, startedAt: comparing.startedAt };
+    },
+    comparisonReport: (id) => {
+      const report = saved().byId.get(id);
+      if (!report) throw new NotFoundError(`No saved comparison "${id}" for this case`);
+      return { report, matchesCurrent: report.fingerprint === comparisonFingerprint(config, desk.provider.describe()) };
+    },
+    comparisonDone: () => comparingDone,
+    opinion: () => ({ opinion }),
+    requestOpinion: async () => {
+      if (desk.isRunning) throw new RunInProgressError();
+      // Two requests for the same state share one call.
+      opinionInFlight ??= (async () => {
+        const runNumber = desk.runs().at(-1)?.runNumber ?? null;
+        const stage = desk.currentStage().id;
+        const { records, replaced } = await visibleRecords(desk);
+        const answer = await statelessAnswer(config, desk.scenario, records, processor);
+        return {
+          at: new Date().toISOString(), runNumber, stage,
+          visible: records.map((record) => record.id),
+          replaced: [...replaced].map(([recordId, by]) => ({ recordId, by })),
+          answer,
+          kind: answer.method === "nemotron" ? "live" : "deterministic",
+          model: answer.method === "nemotron" ? { model: config.nemotron.model, endpoint: config.nemotron.baseUrl } : null
+        };
+      })();
+      try {
+        opinion = await opinionInFlight;
+        return { opinion };
+      } finally {
+        opinionInFlight = null;
+      }
+    }
   };
 }
 
@@ -89,7 +197,8 @@ export function errorResponse(error: unknown): { status: number; body: Record<st
   if (error instanceof EvidenceProviderError) {
     return { status: 502, body: { error: error.message, hint: error.hint, detail: error.detail, kind: "evidence", mode: error.mode } };
   }
-  if (error instanceof RunInProgressError) return { status: 409, body: { error: error.message, kind: "busy" } };
+  if (error instanceof RunInProgressError || error instanceof ComparisonInProgressError) return { status: 409, body: { error: error.message, kind: "busy" } };
+  if (error instanceof NotFoundError) return { status: 404, body: { error: error.message, kind: "request" } };
   if (error instanceof ReasonerNotReadyError) return { status: 503, body: { error: error.message, hint: error.hint, kind: "reasoner" } };
   if (error instanceof RequestError || error instanceof WithdrawalError) return { status: 400, body: { error: error.message, kind: "request" } };
   return { status: 500, body: { error: error instanceof Error ? error.message : String(error), kind: "internal" } };

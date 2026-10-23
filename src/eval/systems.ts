@@ -11,6 +11,7 @@ import { EvidenceDesk, type RunSnapshot } from "../investigation/desk.js";
 import { NemotronProcessor, NemotronReasoner } from "../reasoning/nemotron.js";
 import { RuleReasoner, ruleJudgments } from "../reasoning/rules.js";
 import type { Reasoner } from "../reasoning/types.js";
+import type { Scenario } from "../scenario.js";
 import type { EvalCase } from "./cases.js";
 
 // The systems the evaluation compares. Each takes a case and returns, for
@@ -246,6 +247,40 @@ async function visibleAt(item: EvalCase, provider: EvidenceProvider, index: numb
 // scores every hypothesis afresh as the sum of reliability x strength over
 // matching rules (contradictions negative, decisive treated like any other
 // rule), and concludes the top score when positive and strictly ahead.
+// Shared with the side-by-side comparison (src/compare/comparison.ts).
+export interface StatelessRulesAnswer {
+  conclusion: string | null;
+  // Hypothesis key -> summed score, and the records whose rules supported it.
+  scores: Record<string, number>;
+  support: Record<string, string[]>;
+  // Every record a rule scored.
+  scored: string[];
+}
+
+export function statelessRulesAnswer(scenario: Scenario, records: readonly EvidenceRecord[]): StatelessRulesAnswer {
+  const scores = new Map(scenario.hypotheses.map((hypothesis) => [hypothesis.key, 0]));
+  const support = new Map<string, string[]>();
+  const scored = new Set<string>();
+  for (const record of records) {
+    const reliability = scenario.sources[record.source.system]?.reliability ?? 0.5;
+    for (const judgment of ruleJudgments(record, scenario.hypotheses)) {
+      scored.add(record.id);
+      const sign = judgment.direction === "supports" ? 1 : -1;
+      scores.set(judgment.hypothesisKey, scores.get(judgment.hypothesisKey)! + sign * reliability * judgment.strength);
+      if (sign > 0) support.set(judgment.hypothesisKey, [...(support.get(judgment.hypothesisKey) ?? []), record.id]);
+    }
+  }
+  const ranked = [...scores].sort((left, right) => right[1] - left[1]);
+  const [top, second] = ranked;
+  const chosen = top && top[1] > 0 && (!second || top[1] > second[1]) ? top[0] : null;
+  return {
+    conclusion: chosen,
+    scores: Object.fromEntries([...scores].map(([key, value]) => [key, Math.round(value * 1000) / 1000])),
+    support: Object.fromEntries(support),
+    scored: [...scored].sort()
+  };
+}
+
 export function statelessRules(): EvalSystem {
   return {
     name: "baseline-stateless/rules",
@@ -263,26 +298,13 @@ export function statelessRules(): EvalSystem {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           continue;
         }
-        const scores = new Map(item.scenario.hypotheses.map((hypothesis) => [hypothesis.key, 0]));
-        const support = new Map<string, string[]>();
-        const scored = new Set<string>();
-        for (const record of records) {
-          const reliability = item.scenario.sources[record.source.system]?.reliability ?? 0.5;
-          for (const judgment of ruleJudgments(record, item.scenario.hypotheses)) {
-            scored.add(record.id);
-            const sign = judgment.direction === "supports" ? 1 : -1;
-            scores.set(judgment.hypothesisKey, scores.get(judgment.hypothesisKey)! + sign * reliability * judgment.strength);
-            if (sign > 0) support.set(judgment.hypothesisKey, [...(support.get(judgment.hypothesisKey) ?? []), record.id]);
-          }
-        }
-        const ranked = [...scores].sort((left, right) => right[1] - left[1]);
-        const [top, second] = ranked;
-        const chosen = top && top[1] > 0 && (!second || top[1] > second[1]) ? top[0] : null;
-        const cited = chosen ? support.get(chosen) ?? [] : [];
+        const answer = statelessRulesAnswer(item.scenario, records);
+        const chosen = answer.conclusion;
+        const cited = chosen ? answer.support[chosen] ?? [] : [];
         checkpoints.push({
           stage: checkpoint.afterStage, error: null, conclusion: chosen, tentative: null,
           presentedAsCurrent: chosen ? [chosen] : [], citations: cited, supportCitations: cited, presentedSupport: cited,
-          influencing: [...scored].sort(),
+          influencing: answer.scored,
           visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null
         });
       }
@@ -305,7 +327,45 @@ const baselineContract = (keys: string[]): StructuredOutputContract => ({
 // with the question, the hypotheses and every visible record (text and
 // facts), asking for a conclusion or "unresolved" with citations. No Speck
 // beliefs, history or prior state; Speck's stateless JSON parser validates the
-// reply, with the same two attempts Speck's registry allows.
+// reply, with the same two attempts Speck's registry allows. Shared with the
+// side-by-side comparison (src/compare/comparison.ts).
+export interface StatelessModelAnswer {
+  // conclusion null with error null: the model answered "unresolved".
+  conclusion: string | null;
+  cited: string[];
+  rationale: string | null;
+  // Set when no attempt produced a valid reply.
+  error: string | null;
+  attempts: number;
+  valid: number;
+}
+
+export async function statelessModelAnswer(processor: NemotronProcessor, config: NemotronConfig, scenario: Scenario, records: readonly EvidenceRecord[]): Promise<StatelessModelAnswer> {
+  const contract = baselineContract(scenario.hypotheses.map((hypothesis) => hypothesis.key));
+  const prompt = baselinePrompt(scenario, records, contract);
+  let parsed: Record<string, unknown> | null = null;
+  let lastError = "";
+  let attempts = 0;
+  let valid = 0;
+  for (let attempt = 1; attempt <= 2 && !parsed; attempt += 1) {
+    attempts += 1;
+    try {
+      const completion = await processor.infer({ prompt, temperature: 0.1, timeoutMs: config.timeoutMs, contract });
+      parsed = parseModelCompletion(completion.text, contract).structured;
+      valid += 1;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+  }
+  if (!parsed) return { conclusion: null, cited: [], rationale: null, error: `model: ${lastError}`, attempts, valid };
+  return {
+    conclusion: parsed.conclusion === "unresolved" ? null : String(parsed.conclusion),
+    cited: (parsed.cited_evidence as unknown[]).map(String),
+    rationale: typeof parsed.rationale === "string" ? parsed.rationale : null,
+    error: null, attempts, valid
+  };
+}
+
 export function statelessModel(config: NemotronConfig): EvalSystem {
   return {
     name: "baseline-stateless/nemotron",
@@ -314,8 +374,6 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
       const appConfig = caseConfig(item, { kind: "nemotron", config });
       const provider = providerFor(item, appConfig);
       const processor = new NemotronProcessor(config);
-      const keys = item.scenario.hypotheses.map((hypothesis) => hypothesis.key);
-      const contract = baselineContract(keys);
       let attempts = 0;
       let valid = 0;
       const checkpoints: CheckpointOutcome[] = [];
@@ -328,25 +386,14 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           continue;
         }
-        const prompt = baselinePrompt(item, records, contract);
-        let parsed: Record<string, unknown> | null = null;
-        let lastError = "";
-        for (let attempt = 1; attempt <= 2 && !parsed; attempt += 1) {
-          attempts += 1;
-          try {
-            const completion = await processor.infer({ prompt, temperature: 0.1, timeoutMs: config.timeoutMs, contract });
-            parsed = parseModelCompletion(completion.text, contract).structured;
-            valid += 1;
-          } catch (error) {
-            lastError = error instanceof Error ? error.message : String(error);
-          }
-        }
-        if (!parsed) {
-          checkpoints.push(errorOutcome(checkpoint.afterStage, new Error(`model: ${lastError}`)));
+        const answer = await statelessModelAnswer(processor, config, item.scenario, records);
+        attempts += answer.attempts;
+        valid += answer.valid;
+        if (answer.error) {
+          checkpoints.push(errorOutcome(checkpoint.afterStage, new Error(answer.error)));
           continue;
         }
-        const conclusion = parsed.conclusion === "unresolved" ? null : String(parsed.conclusion);
-        const cited = (parsed.cited_evidence as unknown[]).map(String);
+        const { conclusion, cited } = answer;
         checkpoints.push({
           stage: checkpoint.afterStage, error: null, conclusion, tentative: null,
           presentedAsCurrent: conclusion ? [conclusion] : [], citations: cited, supportCitations: conclusion ? cited : [], presentedSupport: conclusion ? cited : [],
@@ -359,12 +406,12 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
   };
 }
 
-function baselinePrompt(item: EvalCase, records: readonly EvidenceRecord[], contract: StructuredOutputContract): string {
+function baselinePrompt(scenario: Scenario, records: readonly EvidenceRecord[], contract: StructuredOutputContract): string {
   return [
-    `QUESTION: ${item.scenario.question}`,
+    `QUESTION: ${scenario.question}`,
     "",
     "HYPOTHESES:",
-    ...item.scenario.hypotheses.map((hypothesis) => `- ${hypothesis.key}: ${hypothesis.statement}`),
+    ...scenario.hypotheses.map((hypothesis) => `- ${hypothesis.key}: ${hypothesis.statement}`),
     "",
     "EVIDENCE:",
     ...records.map((record) => [
