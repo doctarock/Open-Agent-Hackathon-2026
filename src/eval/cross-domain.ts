@@ -33,7 +33,8 @@ export function verifyLock(dir = CROSS_DOMAIN_DIR, lockFile = LOCK_FILE): { lock
   return { lockedAt: lock.lockedAt, files: present.length };
 }
 
-const sha256 = (file: string) => createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+// Line endings are normalised, so a checkout that converts them still matches.
+const sha256 = (file: string) => createHash("sha256").update(fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n")).digest("hex");
 
 export const CROSS_DOMAIN_SYSTEMS = (): EvalSystem[] => [speckDesk({ kind: "rules" }), speckFresh({ kind: "rules" }), statelessRules()];
 
