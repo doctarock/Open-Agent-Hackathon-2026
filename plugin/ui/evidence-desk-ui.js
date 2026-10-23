@@ -250,10 +250,29 @@ function listenOnce() {
 
 // ----- The tab -----
 
+function stalePluginNotice(error) {
+  return el("section", { className: "edk edk-in-speck" }, el("div", { className: "panel", role: "alert" },
+    el("h2", {}, "Evidence Desk was updated after Speck started"),
+    el("p", {}, "Speck loads plugins only when it starts, so this Speck is still running the previous version of Evidence Desk while its page files are new. They do not fit together."),
+    el("p", {}, el("strong", {}, "Restart Speck: "), "in the terminal where it runs, press Ctrl+C, then start it again the way you did before (for example npm run speck). Then reload this page. Cases and their history are kept in Speck's database."),
+    el("p", { className: "meta" }, `Detail: ${error?.message ?? error}`)));
+}
+
 export async function mountPluginTab({ root, pluginAdminFetch }) {
   ensureStylesheet();
   const fetcher = pluginAdminFetch || fetch;
-  const [{ mountEvidenceDesk }, journey, { renderEvaluation }] = await Promise.all([import(`${ASSET_BASE}/app.js`), import(`${ASSET_BASE}/journey.js`), import(`${ASSET_BASE}/compare.js`)]);
+  let modules;
+  try {
+    modules = await Promise.all([import(`${ASSET_BASE}/app.js`), import(`${ASSET_BASE}/journey.js`), import(`${ASSET_BASE}/compare.js`)]);
+  } catch (error) {
+    // Speck loads a plugin's code once, at startup, but this page's files are
+    // read from disk on each request. After npm run plugin:install, a Speck
+    // started earlier serves the new page without the files the new page
+    // needs. Say so, instead of failing without a reason.
+    root.replaceChildren(stalePluginNotice(error));
+    return { destroy() {} };
+  }
+  const [{ mountEvidenceDesk }, journey, { renderEvaluation }] = modules;
   demo.journey = journey;
   demo.store ??= journey.journeyStore(storage());
   demo.fetcher = fetcher;
