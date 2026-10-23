@@ -59,6 +59,30 @@ The page explains itself; no walkthrough from a developer is needed.
   confidence (Speck's belief-revision score, not a calibrated probability), corrections,
   withdrawal, recovery and the history.
 - **Withdrawing a record** states its consequence in a dialog first and requires a reason.
+- **Reset demo case** (top right) restarts the case for the next person, from the page.
+  - Nothing is deleted. A fresh copy of the case (a new Speck worker) becomes current: the first
+    stage, nothing assessed, the competing explanations at their priors.
+  - The previous copy is suspended in Speck with its full history. Other cases, Speck's other
+    work and the evidence source are not touched.
+  - A case still at its starting state is left alone, so a repeated reset is harmless. A reset is
+    refused while a run is in progress.
+  - Because nothing is deleted, it is safe inside Speck's shared database as well as standalone.
+  - `npm run db:reset` remains the way to wipe a standalone database entirely.
+- **Run status** shows the elapsed time while a run is in progress, and the execution engine's
+  own progress (its phase and chunk) when the host provides it: a stream standalone, polling
+  inside Speck. Nothing is estimated.
+  - Afterwards it says what happened and what to do next.
+  - A completed run with an unresolved conclusion is reported as a result, not a failure.
+  - A failed assessment is reported as a stopped run with its records pending to retry.
+  - An interrupted earlier run is called recovered only when Speck's beliefs are reconciled with
+    the evidence ledger.
+- **On narrow screens** (when the workspace is one column) the tour is a bottom sheet. Its text
+  scrolls while its controls stay in view, and inside Speck it is placed clear of Speck's message
+  bar and rail.
+- **Not built: a live recovery demonstration.** Showing recovery from the page would need a
+  fault-injection switch in the server's write path, so it was left out. Recovery is exercised
+  by `test/recovery.test.ts` and `test/interruption.test.ts` (every Speck write point of a run
+  and of a withdrawal, interrupted again during recovery).
 
 The tour's step definitions are in `public/tour.js` and are tested against real API payloads in
 `test/tour.test.ts`. Progress is kept in the browser's local storage, per case.

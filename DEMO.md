@@ -42,7 +42,11 @@ npm run plugin:install
 $env:SPECK_DB_PATH="data/demo-speck.sqlite"; npm run speck
 ```
 
-To start over, stop Speck, delete `speck/data/demo-speck.sqlite` and start it again.
+To start over between judges, use **Reset demo case…** at the top right of the Evidence tab.
+- It starts a fresh copy of the case at its first stage, and shows the introduction again.
+- Nothing is deleted: the previous copy stays in Speck, suspended.
+- To clear the demo database completely instead, stop Speck, delete
+  `speck/data/demo-speck.sqlite` and start it again.
 
 Open http://127.0.0.1:4310. Speck opens on the **Evidence** tab, first in its rail. Speck's
 other views (World, Queue and the rest) stay available, and the Speck logo returns to Evidence.
