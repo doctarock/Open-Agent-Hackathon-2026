@@ -29,6 +29,40 @@ It runs inside Speck as a plugin:
 
 A standalone server serving the same page remains, for development and as a fallback.
 
+### Using the interface for the first time
+
+The page explains itself; no walkthrough from a developer is needed.
+
+- **A first-run introduction** says what Evidence Desk is for and offers one action, *Start the
+  guided investigation*. It can be dismissed, and is not shown again to the same browser.
+- **The guided investigation** works on the real case, using the page's own buttons:
+  1. the competing explanations;
+  2. a real run;
+  3. the conclusion and its confidence;
+  4. one record's source and provenance;
+  5. the prepared update;
+  6. a second run;
+  7. which record no longer counts and why;
+  8. the history;
+  9. the remaining capabilities.
+
+  An action step completes only when the case's real state shows the action happened. Every
+  sentence about the case is read from that state, so a live run is described as it actually
+  came out. It can be stepped back, skipped, minimised, exited, and resumed after a reload. It
+  never withdraws anything.
+- **The Guide** (top right) restarts or resumes the tour, and lists each feature that exists.
+  - A feature is marked *demonstrated* only when the case's state shows it happened, and
+    *viewed* when it has been opened.
+  - It is marked *not available here*, with the reason, when its integration (live Zetaris,
+    the Nemotron assessor) is not configured.
+- **Short "What does this mean?" explanations** sit next to evidence labels, conclusion states,
+  confidence (Speck's belief-revision score, not a calibrated probability), corrections,
+  withdrawal, recovery and the history.
+- **Withdrawing a record** states its consequence in a dialog first and requires a reason.
+
+The tour's step definitions are in `public/tour.js` and are tested against real API payloads in
+`test/tour.test.ts`. Progress is kept in the browser's local storage, per case.
+
 ## The scenario
 
 Case `DISPUTE-1042` (`fixtures/scenarios/disputed-delivery/`). Order ORD-1042 shipped to

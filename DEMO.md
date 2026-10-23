@@ -47,6 +47,15 @@ To start over, stop Speck, delete `speck/data/demo-speck.sqlite` and start it ag
 Open http://127.0.0.1:4310. Speck opens on the **Evidence** tab, first in its rail. Speck's
 other views (World, Queue and the rest) stay available, and the Speck logo returns to Evidence.
 
+**The page explains itself.**
+- On first open it shows a short introduction with *Start the guided investigation*. The tour
+  walks the Disputed delivery case with the real buttons, and describes whatever the live run
+  actually concludes.
+- A judge can follow it unaided. The **Guide** button reopens it and lists every feature, marking
+  which ones this case has demonstrated.
+- To show the introduction again on a browser that has dismissed it, use **Guide → Show the
+  introduction**.
+
 ## The script
 
 **0:00 The problem (20 s).** Evidence about a case changes: a payment is reversed, a delivery

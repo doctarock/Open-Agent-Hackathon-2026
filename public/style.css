@@ -382,3 +382,7 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 
 /* Inside Speck: the case picker above the page. */
 .edk .case-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+
+/* Inside Speck: dock the tour above Speck's floating message bar. */
+.edk.edk-in-speck .coach { bottom: 112px; max-height: calc(100vh - 200px); }
+@media (max-width: 600px) { .edk.edk-in-speck .coach { bottom: 150px; max-height: calc(100vh - 230px); } }
