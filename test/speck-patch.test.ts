@@ -31,3 +31,10 @@ test("the plugin-removal patch is applied, and removes only Speck's three bundle
   for (const plugin of ["airchat", "information-agent", "social-media-manager"]) assert.ok(!fs.existsSync(path.join(ROOT_DIR, "speck", "plugins", plugin)), plugin);
   assert.ok(!files.some((file) => file.startsWith("plugins/evidence-desk") || file.startsWith("plugins/.runtime")), "Evidence Desk and Speck's trust file are never part of it");
 });
+
+test("the chat patch adds only the investigations component, its test, and its place in Speck's component list", () => {
+  const chat = path.join(ROOT_DIR, "patches", "speck-chat-investigations.patch");
+  git("apply", "--check", "--reverse", chat);
+  const files = [...fs.readFileSync(chat, "utf8").matchAll(/^diff --git a\/(\S+) b\//gm)].map((match) => match[1]).sort();
+  assert.deepEqual(files, ["src/speck/components/index.ts", "src/speck/components/investigations.ts", "src/tests/component-switches.test.ts", "src/tests/investigations-component.test.ts"]);
+});

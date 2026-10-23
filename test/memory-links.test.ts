@@ -57,3 +57,48 @@ test("the case's memories are linked in Speck's association graph, once each, wi
     assert.deepEqual(beliefs, [["H-MISDELIVERED", "supported", 0.7], ["H-NOT-SHIPPED", "rejected", 0.05], ["H-DELIVERED", "rejected", 0.05]]);
   });
 });
+
+test("the case's current state is published to Speck's shared memory as one summary, replaced on every change and cleared by a reset", async () => {
+  const summaries = (desk: EvidenceDesk) => desk.runtime.mentalObjects.listAll()
+    .filter((object) => object.workerId === null && (object.data as { evidenceDeskSummary?: unknown }).evidenceDeskSummary);
+  await withDesk(testConfig(), async (desk) => {
+    assert.equal(summaries(desk).length, 0, "nothing assessed, nothing published");
+    await desk.run();
+    await desk.introduceNextUpdate();
+    await desk.run();
+    const live = summaries(desk).filter((object) => object.status !== "archived");
+    assert.equal(live.length, 1, "one current summary");
+    assert.equal(summaries(desk).filter((object) => object.status === "archived").length, 1, "run 1's summary was archived");
+    const text = live[0]!.content;
+    assert.match(text, /Current conclusion \(after run 2, stage "Carrier proof-of-delivery review \(16 Oct\)"\): The carrier delivered the parcel to the wrong address\. Speck confidence 0\.7/);
+    assert.match(text, /EV-CAR-005 \(Carrier tracking API\): "Proof-of-delivery review/);
+    assert.match(text, /No longer counts: EV-CAR-003, replaced by its source with EV-CAR-005\./);
+    assert.match(text, /History: run 1 at stage "Initial evidence \(14 Oct\)" concluded: Leading, not established: .*; then run 2 .* concluded: The carrier delivered the parcel to the wrong address\./);
+    assert.doesNotMatch(text, /Not yet assessed/);
+    await desk.restartCase();
+    assert.equal(summaries(desk).filter((object) => object.status !== "archived").length, 0, "a reset leaves Speck nothing outdated to recall");
+  });
+});
+
+test("records a run could not assess are named in the summary, so their absence is not read as no new evidence", async () => {
+  let current: EvidenceDesk | null = null;
+  const failing = {
+    kind: "rules" as const,
+    describe: () => ({ kind: "rules" as const, label: "test", provider: "none", model: null, endpoint: null, ready: true, problem: null }),
+    usage: () => null,
+    async assess(input: { batch: Array<{ id: string }> }) {
+      if (input.batch.some((record) => record.id === "EV-CAR-005")) throw new Error("model output unparseable");
+      const { ruleJudgments } = await import("../src/reasoning/rules.js");
+      return { judgments: Object.fromEntries(input.batch.map((record) => [record.id, ruleJudgments(record as never, current!.scenario.hypotheses)])), notes: [], narrative: "" };
+    }
+  };
+  await withDesk(testConfig(), async (desk) => {
+    current = desk;
+    await desk.run();
+    await desk.introduceNextUpdate();
+    await desk.run();
+    const text = desk.caseSummary();
+    assert.match(text, /Not yet assessed \(they do not count until a run assesses them\): EV-CAR-005; EV-SUP-006\./);
+    assert.match(text, /Leading, not established/);
+  }, { reasoner: failing as never });
+});

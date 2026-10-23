@@ -1,0 +1,196 @@
+diff --git a/src/speck/components/index.ts b/src/speck/components/index.ts
+index 3ea4f54..55781e2 100644
+--- a/src/speck/components/index.ts
++++ b/src/speck/components/index.ts
+@@ -6,6 +6,7 @@
+ 
+ import type { Component } from "../component.js";
+ import { files } from "./files.js";
++import { investigations } from "./investigations.js";
+ import { ledger } from "./ledger.js";
+ import { makeMind, mind, mindAblations } from "./mind.js";
+ import { pages, web } from "./web.js";
+@@ -18,6 +19,9 @@ export const ADMITTED: ReadonlyArray<{ component: Component; admittedBy: string
+   // runtime's activation, context assembly, belief revision and consolidation
+   // apply. It keeps the id "memory" (switch and path names carry over).
+   { component: makeMind("memory", { activation: true, context: true, beliefs: true, consolidation: true }), admittedBy: "docs/REINTEGRATION.md, gate results 2026-10-22 (mind-set/1, held-out mind-set/2, memory-set/1-2), replacing the shared-memory component" },
++  // Evidence Desk's investigations (a project-local addition, not upstream):
++  // the cases' current state as the plugin publishes it to shared memory.
++  { component: investigations, admittedBy: "Evidence Desk project patch patches/speck-chat-investigations.patch (2026-10-23); not an upstream gate result" },
+   { component: files, admittedBy: "docs/REINTEGRATION.md, gate results 2026-10-21 (tools-set/1 and held-out tools-set/2)" },
+   { component: pages, admittedBy: "docs/REINTEGRATION.md, gate results 2026-10-22 (web-set/1 and web-set/2)" }
+ ];
+diff --git a/src/speck/components/investigations.ts b/src/speck/components/investigations.ts
+new file mode 100644
+index 0000000..e2bb5ab
+--- /dev/null
++++ b/src/speck/components/investigations.ts
+@@ -0,0 +1,60 @@
++// Investigations recorded in Speck by the Evidence Desk plugin. Each case
++// publishes one shared memory with its current state (data.evidenceDeskSummary:
++// its conclusion, the records for and against it, what is ruled out and what
++// no longer counts), replaced whenever its beliefs change. When a message is
++// about an investigation, the answering model is shown the matching
++// summaries and told to answer from them only. A failure recalls nothing and
++// never fails the turn.
++
++import type { Component } from "../component.js";
++
++// A message is about an investigation when it says so, or names an
++// identifier a case summary contains (a case, order, parcel or invoice id).
++// Shared-memory recall alone ranks the nearest memory however unrelated, so
++// it is never enough on its own.
++const ABOUT_A_CASE = /\b(investigat\w*|dispute\w*|evidence)\b/i;
++const IDENTIFIER = /\b[A-Z]{2,}(?:-[A-Z0-9]+)*-\d+\b/g;
++const LIMIT = 4;
++
++interface InvestigationsRecord { recalled: string[] }
++
++export const investigations: Component = {
++  id: "investigations",
++  option: {
++    label: "Evidence Desk investigations",
++    description: "Answers questions about investigations from the cases' current state as Evidence Desk recorded it in Speck: their conclusions, the evidence for and against, and what no longer counts.",
++    cost: "under 0.1 s per message",
++    enabledByDefault: true
++  },
++
++  async contribute(context) {
++    const runtime = context.runtime;
++    if (!runtime) return null;
++    try {
++      const isSummary = (data: Record<string, unknown>) => Boolean(data.evidenceDeskSummary);
++      const current = runtime.mentalObjects.listAll()
++        .filter((object) => object.workerId === null && object.status !== "archived" && isSummary(object.data))
++        .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
++      let summaries = current.filter((object) => [...new Set(object.content.match(IDENTIFIER) ?? [])].some((id) => context.message.includes(id)));
++      if (!summaries.length && ABOUT_A_CASE.test(context.message)) {
++        const recalled = (await runtime.retrieveSharedMemories({ query: context.message, limit: 8 }))
++          .map((entry) => entry.object).filter((object) => isSummary(object.data));
++        summaries = recalled.length ? recalled : current;
++      }
++      summaries = summaries.slice(0, LIMIT);
++      if (!summaries.length) return null;
++      const record: InvestigationsRecord = { recalled: summaries.map((object) => String((object.data.evidenceDeskSummary as { caseId?: unknown }).caseId ?? object.id)) };
++      context.scratch.set("investigations.record", record);
++      return [
++        "Investigations recorded in Speck by Evidence Desk, each as it currently stands (read from Speck's beliefs). Answer questions about these investigations only from these notes. Name the evidence by its record id and say what the record states. Do not add evidence, confirmations, signatures, dates or other details the notes do not state. If the notes do not answer the question, say so.",
++        ...summaries.map((object) => `---\n${object.content}`)
++      ].join("\n");
++    } catch {
++      return null;
++    }
++  },
++
++  record(context) {
++    return (context.scratch.get("investigations.record") as InvestigationsRecord | undefined) as unknown as Record<string, unknown> ?? {};
++  }
++};
+diff --git a/src/tests/component-switches.test.ts b/src/tests/component-switches.test.ts
+index 356046f..ec164a8 100644
+--- a/src/tests/component-switches.test.ts
++++ b/src/tests/component-switches.test.ts
+@@ -11,14 +11,14 @@ import { admittedComponents, componentSwitches, normalizeComponentSwitches } fro
+ const ids = (switches?: Record<string, boolean>) => admittedComponents(switches).map((component) => component.id);
+ 
+ test("feature components are switchable and on by default; rule learning has no switch", () => {
+-  assert.deepEqual(ids(), ["rule", "memory", "files", "pages"]);
+-  assert.deepEqual(componentSwitches().map((entry) => [entry.id, entry.enabled]), [["memory", true], ["files", true], ["pages", true]]);
++  assert.deepEqual(ids(), ["rule", "memory", "investigations", "files", "pages"]);
++  assert.deepEqual(componentSwitches().map((entry) => [entry.id, entry.enabled]), [["memory", true], ["investigations", true], ["files", true], ["pages", true]]);
+   assert.ok(componentSwitches().every((entry) => entry.label && entry.description && entry.cost));
+ });
+ 
+ test("a switched-off component leaves the path; the rule component cannot be switched off", () => {
+-  assert.deepEqual(ids({ files: false }), ["rule", "memory", "pages"]);
+-  assert.deepEqual(ids({ memory: false, files: false, pages: false, rule: false }), ["rule"]);
++  assert.deepEqual(ids({ files: false }), ["rule", "memory", "investigations", "pages"]);
++  assert.deepEqual(ids({ memory: false, investigations: false, files: false, pages: false, rule: false }), ["rule"]);
+   assert.deepEqual(normalizeComponentSwitches({ files: false, rule: false, unknown: true, memory: "no" }), { files: false });
+ });
+ 
+diff --git a/src/tests/investigations-component.test.ts b/src/tests/investigations-component.test.ts
+new file mode 100644
+index 0000000..6308e30
+--- /dev/null
++++ b/src/tests/investigations-component.test.ts
+@@ -0,0 +1,79 @@
++// The investigations component (Evidence Desk project patch): a question
++// about an investigation is answered from the cases' current summaries, as
++// Evidence Desk publishes them to shared memory; any other message is left
++// untouched, and an archived (outdated) summary is never shown.
++
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import test from "node:test";
++import type { TurnContext } from "../speck/component.js";
++import { investigations } from "../speck/components/investigations.js";
++import { emptyRuleLearning } from "../speck/rule-learning.js";
++import { SpeckRuntime } from "../runtime/speck-runtime.js";
++
++async function withRuntime(body: (runtime: SpeckRuntime) => Promise<void>): Promise<void> {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "speck-investigations-"));
++  const runtime = new SpeckRuntime({ databasePath: path.join(directory, "speck.sqlite") });
++  await runtime.initialize();
++  try {
++    await body(runtime);
++  } finally {
++    runtime.close();
++    fs.rmSync(directory, { recursive: true, force: true });
++  }
++}
++
++function turn(runtime: SpeckRuntime, message: string): TurnContext {
++  return {
++    session: { id: "test", turns: [], rules: emptyRuleLearning(), log: [] }, message, turn: 0, history: [],
++    registry: runtime.modelRegistry, runtime, readerProcessorId: "", chat: { baseUrl: "", model: "" } as TurnContext["chat"], scratch: new Map()
++  };
++}
++
++async function publish(runtime: SpeckRuntime, caseId: string, content: string) {
++  const worker = await runtime.createWorker(`Case ${caseId}`, [], {});
++  return runtime.recordSharedMemory({ type: "semantic", content, sourceWorkerId: worker.id, data: { evidenceDeskSummary: { caseId } } });
++}
++
++test("a question about an investigation gets the case's summary; other messages are untouched", async () => {
++  await withRuntime(async (runtime) => {
++    await publish(runtime, "DISPUTE-1042", "Evidence Desk investigation DISPUTE-1042. Order ORD-1042. Current conclusion: unresolved.");
++    await publish(runtime, "EVAL-PAY-01", "Evidence Desk investigation EVAL-PAY-01. Invoice INV-77. Current conclusion: supported, unpaid.");
++
++    // Named by an identifier the summary contains: only that case.
++    const named = turn(runtime, "What did the investigation for ORD-1042 conclude?");
++    const notes = await investigations.contribute!(named);
++    assert.match(notes ?? "", /DISPUTE-1042/);
++    assert.doesNotMatch(notes ?? "", /EVAL-PAY-01/);
++    assert.match(notes ?? "", /only from these notes/);
++    assert.deepEqual(investigations.record!(named), { recalled: ["DISPUTE-1042"] });
++
++    // Plainly about an investigation, naming none: the current summaries.
++    assert.match(await investigations.contribute!(turn(runtime, "Why did the investigation change its conclusion?")) ?? "", /Evidence Desk investigation/);
++
++    // Anything else is left to the plain model.
++    for (const message of ["What is the capital of France?", "Can you help me write a cover letter?", "My order of operations is wrong, help"]) {
++      const context = turn(runtime, message);
++      assert.equal(await investigations.contribute!(context), null, message);
++      assert.deepEqual(investigations.record!(context), {});
++    }
++  });
++});
++
++test("an archived summary is never shown, and a failure recalls nothing without failing the turn", async () => {
++  await withRuntime(async (runtime) => {
++    const old = await publish(runtime, "DISPUTE-1042", "Evidence Desk investigation DISPUTE-1042. Order ORD-1042. Current conclusion: leading, delivered.");
++    await runtime.archiveSharedMemory(old.id);
++    assert.equal(await investigations.contribute!(turn(runtime, "What did ORD-1042's investigation conclude?")), null);
++    await publish(runtime, "DISPUTE-1042", "Evidence Desk investigation DISPUTE-1042. Order ORD-1042. Current conclusion: supported, wrong address.");
++    const notes = await investigations.contribute!(turn(runtime, "What did ORD-1042's investigation conclude?"));
++    assert.match(notes ?? "", /wrong address/);
++    assert.doesNotMatch(notes ?? "", /leading, delivered/);
++
++    const broken = { ...turn(runtime, "What did ORD-1042's investigation conclude?"), runtime: { mentalObjects: { listAll: () => { throw new Error("store down"); } } } as unknown as SpeckRuntime };
++    assert.equal(await investigations.contribute!(broken), null);
++    assert.equal(await investigations.contribute!({ ...broken, runtime: undefined }), null);
++  });
++});

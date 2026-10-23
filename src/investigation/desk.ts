@@ -416,7 +416,13 @@ export class EvidenceDesk extends EventEmitter {
       subject?.contradicting.length ? `Evidence against it: ${subject.contradicting.map((ref) => quote(ref.recordId)).join("; ")}.` : null,
       c.rejected.length ? `Ruled out: ${c.rejected.map((view) => `${view.statement}${view.contradicting.length ? ` (refuted by ${view.contradicting.map((ref) => ref.recordId).join(", ")})` : ""}`).join("; ")}.` : null,
       c.noLongerCounted.length ? `No longer counts: ${c.noLongerCounted.map((item) => `${item.recordId}, ${item.invalidation.kind === "superseded" ? `replaced by its source with ${item.invalidation.by}` : `withdrawn (${item.invalidation.reason})`}`).join("; ")}.` : null,
-      c.openQuestions.length ? `Still open: ${c.openQuestions.map((q) => q.text).join(" ")}` : null
+      c.openQuestions.length ? `Still open: ${c.openQuestions.map((q) => q.text).join(" ")}` : null,
+      // How it got here: each run's conclusion in order, so a change can be explained.
+      this.runs().length > 1 ? `History: ${this.runs().map((run) => `run ${run.runNumber} at stage "${run.stage.label}" concluded: ${run.conclusion.headline}`).join("; then ")}.` : null,
+      c.noLongerCounted.length ? "The conclusion changed because records that no longer count were taken out and every belief that rested on them was rebuilt from the evidence that still counts." : null,
+      // Records the last run could not assess do not count yet; say so, so
+      // their absence is not read as "no new evidence".
+      this.runs().at(-1)?.unprocessed.length ? `Not yet assessed (they do not count until a run assesses them): ${this.runs().at(-1)!.unprocessed.map((id) => quote(id)).join("; ")}.` : null
     ];
     return lines.filter(Boolean).join("\n");
   }
