@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadConfig, loadDotEnv, ROOT_DIR } from "../config.js";
+import { loadConfig, loadDotEnv } from "../config.js";
 import { validateEvidenceRecord } from "../evidence/types.js";
 import type { ZetarisQueryConfig } from "../evidence/zetaris-provider.js";
 
@@ -19,9 +19,7 @@ import type { ZetarisQueryConfig } from "../evidence/zetaris-provider.js";
 
 loadDotEnv();
 const config = loadConfig();
-// The per-source tables this script creates, whatever ZETARIS_QUERY_CONFIG
-// selects for reading (the default reads the USL built on top by npm run zetaris:usl).
-const queries = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "config", "zetaris-queries.json"), "utf8")) as Required<Pick<ZetarisQueryConfig, "database" | "sources">>;
+const queries = JSON.parse(fs.readFileSync(config.zetaris.queryConfigPath, "utf8")) as ZetarisQueryConfig;
 const container = process.env.ZETARIS_DRIVER_CONTAINER?.trim() || "zetaris-driver-1";
 const remoteRoot = "/home/zetaris/customer-data/shared/evidence_desk";
 

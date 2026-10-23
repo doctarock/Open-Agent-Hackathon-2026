@@ -122,7 +122,7 @@ its runtime, with routes and a tab in its interface.
 | Concern | Owner | How it is used |
 |---|---|---|
 | Cognition | **Speck** (`speck/`, imported as `#speck`; its cognition is unmodified) | The case is a Speck worker. Hypotheses come from `proposeHypothesis`. Evidence goes into the ledger through `recordEvidence`, which caps reliability for model-judged evidence. The relations that currently take effect are applied through `reviseHypothesesFromEvidence`, which runs Speck's belief revision with decisive refutation. When invalidated evidence makes that necessary, a hypothesis is replaced and the relations are replayed (see *Revision* below). Withdrawals use `withdrawEvidence`. Ranking uses `rankHypotheses`. The released evidence stage is held with `setWorldState`, and each run's outcome is saved as episodic memory through `recordMemory`. The timeline is Speck's event log (`belief.revised`, `evidence.recorded`, …). Model calls go through Speck's model registry, which validates contracts and retries. All of this persists in one Speck SQLite database. |
-| Federated evidence | **Zetaris** | `EvidenceProvider` interface with a fixture implementation and a live Zetaris adapter (`src/evidence/zetaris-provider.ts`). In live mode the adapter reads the case's evidence from a **Zetaris Unified Semantic Layer**: one SELECT, through the platform's REST API (`/api/auth/login`, then `/api/proxy/query/sql/start`), on `lightning.metastore.evidence_desk.evidence_usl.case_evidence`. The USL maps four source systems, each in its own native shape, into the evidence model (`zetaris/usl/`, `config/zetaris-usl-queries.json`). The per-source tables remain available (`config/zetaris-queries.json`). `EVIDENCE_MODE` selects the mode explicitly, and there is never a fallback. Every record carries its retrieval mode, the USL table and the Zetaris query token. |
+| Federated evidence | **Zetaris** | `EvidenceProvider` interface with a fixture implementation and a live Zetaris adapter (`src/evidence/zetaris-provider.ts`). The adapter uses the platform's REST API (`/api/auth/login`, then `/api/proxy/query/sql/start`) with one SELECT per source table, configured in `config/zetaris-queries.json`. `EVIDENCE_MODE` selects the mode explicitly, and there is never a fallback. Every record carries its retrieval mode, table and Zetaris query token. |
 | Execution | **Meterless** Markovian engine | The Apache-2.0 reference implementation, vendored unmodified at `vendor/meterless-markovian/` (pinned commit and hashes are in its `NOTICE.md`). Each run is a `Markovian.run`. The injected generator assesses one bounded batch of new evidence per chunk and ends each chunk with a `[STATE_CHECKPOINT]` carryover block, or `[TASK_COMPLETE]` on the last one. `maxChunks` caps the run. Run history goes to `data/meterless/history.json`. Progress events stream to the UI. In Nemotron mode, the reflection pass produces the model's explanation. |
 | Reasoning model | **NVIDIA Nemotron** | `src/reasoning/nemotron.ts`: a model processor for any OpenAI-compatible chat endpoint, called through a private instance of Speck's `ModelRegistry` (Speck's contract validation and retries, without adding a model to Speck's own runtime). The model judges how each evidence item bears on each hypothesis, and decisive rules still take precedence. Speck records model-judged evidence as `model`-provenance and caps its reliability at 0.4. The explanation's citations are checked against the real evidence ids. The model name the endpoint reports serving is recorded with every run. |
 
@@ -144,32 +144,16 @@ recovery after an interrupted run, withdrawals and recomputations.
 ### Zetaris
 
 - **Code:** `src/evidence/zetaris-provider.ts`.
-- **What it does:** logs in (`/api/auth/login`), then sends one SELECT through
-  `/api/proxy/query/sql/start` to the **Unified Semantic Layer** table
-  `lightning.metastore.evidence_desk.evidence_usl.case_evidence`. Each record carries that table
-  and the Zetaris query token.
-- **The USL:** four source systems, onboarded in their native shapes (order system JSON,
-  warehouse CSV, carrier JSON, support CSV), plus a dispute register, mapped into the evidence
-  model:
-  - each record's case is resolved through the register;
-  - its facts are derived from native fields;
-  - the carrier's amendment link becomes a supersession;
-  - each record keeps its source's own reference.
-
-  Built and checked by `npm run zetaris:usl`: record for record against the per-source tables,
-  and the full investigation identical from either. A data-quality rule runs on the layer. See
-  `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md`.
-- **Per-source tables:** `ZETARIS_QUERY_CONFIG=config/zetaris-queries.json` reads them instead,
-  one SELECT per table.
-- **Shown in the page and trace:**
-  - the header reads **Evidence: Zetaris USL (live)**, and every record is badged **Zetaris USL**;
-  - the trace shows each SELECT with row count, measured latency and query token.
+- **What it does:** logs in (`/api/auth/login`), then sends one SELECT per source table through
+  `/api/proxy/query/sql/start` (tables in `config/zetaris-queries.json`). Each record carries the
+  table and Zetaris query token it came from.
+- **Shown in the trace:** every SELECT of the run, including tables that returned no rows, with
+  row count, measured latency and query token.
 - **Fixture mode is unmistakable.** It is labelled FIXTURE FILE - NOT ZETARIS in the header, on
   every record and in the trace, and the trace says no Zetaris query was made. There is never a
   fallback: if Zetaris fails, the API returns 502 and nothing is recorded.
 - **Verified:**
-  - against a local Zetaris platform (`npm run zetaris:check`; live runs on 2026-10-22, and
-    through the USL on 2026-10-23);
+  - against a local Zetaris platform (`npm run zetaris:check`, and live runs on 2026-10-22);
   - in tests, through a stand-in HTTP layer that exercises the real adapter.
 
 ### Meterless
@@ -423,17 +407,15 @@ and Ollama running.
    npm run zetaris:check
    npm run model:check
    ```
-   `zetaris:check` should report 6 records for DISPUTE-1042 from
-   `lightning.metastore.evidence_desk.evidence_usl.case_evidence` (run `npm run zetaris:usl`
-   first if the USL is not built). `model:check` should print the served model, e.g.
-   `nemotron-3-nano:4b`.
+   `zetaris:check` should report 6 records for DISPUTE-1042. `model:check` should print the
+   served model, e.g. `nemotron-3-nano:4b`.
 2. Set `EVIDENCE_MODE=zetaris` and `REASONER=nemotron` in `speck/plugins/evidence-desk/.env`.
    Then run `npm run speck` and open the Evidence tab's Disputed delivery case. (Standalone:
    set them in `.env` and use `npm start`, after `npm run db:reset` for a clean case.)
 3. Check the header and records:
-   - the header shows **Evidence: Zetaris USL (live)** and the Nemotron model, and the
-     configuration names the USL table, the endpoint, and the Meterless engine and commit;
-   - every record is labelled **Zetaris USL**, with the USL table and query token.
+   - the header shows **ZETARIS LIVE**, the Nemotron model and endpoint, and the Meterless
+     engine and commit;
+   - every record is labelled **Zetaris live**, with its table and query token.
 4. Run, introduce the update, and run again. Each run takes tens of seconds on a small local
    model.
 5. Open **Execution trace**. The latest run shows:
@@ -464,7 +446,7 @@ showed this as one retry.
 | `npm run db:reset` | Delete Evidence Desk's Speck database and Meterless history. Stop the server first. |
 | `npm run zetaris:seed` | Load the scenario's evidence into a local Zetaris platform (see below) |
 | `npm run zetaris:check` | Exercise the live Zetaris path: login, probe query, case evidence |
-| `npm run zetaris:usl` | Onboard the native sources and build the Zetaris Unified Semantic Layer that live mode reads. Checks it record for record and belief for belief against the per-source tables, and runs the data-quality rule. See `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md` |
+| `npm run zetaris:usl` | Build and check the Zetaris Unified Semantic Layer over a warehouse and a carrier source, with a data-quality rule (separate from the live path). See `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md` |
 | `npm run model:check` | One call to the Nemotron endpoint; prints the model it reports serving |
 | `npm run sponsors:verify` | Runs a real two-stage investigation with the services in `.env`, on throwaway storage (`data/` is untouched). Checks each sponsor's contribution against an independent source and prints OBSERVED or NOT OBSERVED for each. Exits 1 if any configured sponsor was not observed. Saves the report and trace to `eval/results/sponsor-check.json`. |
 
@@ -489,14 +471,11 @@ with placeholders. There are no credential defaults in code.
    one JSON file per row and registers one Lightning file-store table per source system
    (`EVIDENCE_DESK.order_events`, `warehouse_scans`, `carrier_events`, `support_messages`),
    using the platform's documented `CREATE LIGHTNING DATABASE` / `FILESTORE TABLE` DDL.
-4. Run `npm run zetaris:usl`. It onboards the native-format sources into `EVIDENCE_DESK_SOURCES`,
-   compiles and activates the Unified Semantic Layer that live mode reads, and checks it against
-   the per-source tables.
-5. Run `npm run zetaris:check`, then `npm start` (or `npm run speck`).
+4. Run `npm run zetaris:check`, then `npm start`.
 
-All of this data originates from this repository's fixture records, marked as sample data. Live
-mode really does read it through Zetaris, which is what the page's labels show. To read the
-per-source tables instead of the USL, set `ZETARIS_QUERY_CONFIG=config/zetaris-queries.json`.
+The seeded rows originate from this repository's fixture file. Live mode really does read them
+back through Zetaris, which is what the UI labels show. To investigate other data, point
+`config/zetaris-queries.json` at tables with the same columns.
 
 If Zetaris is unreachable, rejects the login, or lacks a table, the API returns HTTP 502 and
 the page shows the error, the server's message and what to do. No run is recorded and no
@@ -703,7 +682,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 86 tests with no network access beyond localhost and no credentials:
+`npm test` runs 70 tests with no network access beyond localhost and no credentials:
 
 - **Fixture mode:** runs with an empty environment.
 - **Citations:** every cited record exists and keeps its source metadata.

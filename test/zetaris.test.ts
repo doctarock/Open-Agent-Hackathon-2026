@@ -6,12 +6,9 @@ import { ZetarisEvidenceProvider } from "../src/evidence/zetaris-provider.js";
 import { createServer } from "../src/server.js";
 import { testConfig, withDesk } from "./helpers.js";
 
-// Most tests here exercise the per-source table path (config/zetaris-queries.json);
-// the semantic-layer path, the default, is covered at the end.
 const liveConfig = (env: NodeJS.ProcessEnv = {}): AppConfig => testConfig({}, {
   EVIDENCE_MODE: "zetaris", ZETARIS_BASE_URL: "http://zetaris.invalid:3000",
-  ZETARIS_USERNAME: "analyst@example.test", ZETARIS_PASSWORD: "placeholder-not-a-secret",
-  ZETARIS_QUERY_CONFIG: "config/zetaris-queries.json", ...env
+  ZETARIS_USERNAME: "analyst@example.test", ZETARIS_PASSWORD: "placeholder-not-a-secret", ...env
 });
 
 type Handler = (url: string, init: RequestInit) => Response | Promise<Response>;
@@ -150,46 +147,4 @@ test("the API returns a Zetaris failure as a visible 502, not data", async () =>
       server.close();
     }
   }, { fetchImpl: refused });
-});
-
-// The default: one SELECT on the Unified Semantic Layer's evidence table
-// (config/zetaris-usl-queries.json), whose rows already come from every source.
-const uslConfig = (env: NodeJS.ProcessEnv = {}): AppConfig => liveConfig({ ZETARIS_QUERY_CONFIG: "", ...env });
-const uslRow = (id: string, system: string, supersedes = "") => ({
-  id, case_id: "DISPUTE-1042", source_system: system, source_name: `${system} source`, observed_at: "2026-10-13T03:02:00Z",
-  content: `${id} content`, facts_json: "{\"carrier.status\":\"delivered\"}", record_ref: id.slice(id.indexOf(":") + 1),
-  system_of_record: system, author: "test", supersedes
-});
-
-test("by default, live mode reads the Unified Semantic Layer with one SELECT and keeps each record's source", async () => {
-  const config = uslConfig();
-  assert.match(config.zetaris.queryConfigPath, /zetaris-usl-queries\.json$/);
-  const selects: string[] = [];
-  const provider = new ZetarisEvidenceProvider(config.zetaris, fakeFetch((url, init) => {
-    if (url.endsWith("/api/auth/login")) return loginOk();
-    selects.push(JSON.parse(String(init.body)).select);
-    return jsonResponse(200, { records: [uslRow("carrier:tracking/7", "carrier"), uslRow("support:tickets/1", "support"), uslRow("carrier:tracking/9", "carrier", "carrier:tracking/7")], totalCount: 3, queryToken: "q-usl" });
-  }));
-  assert.match(provider.describe().label, /^Zetaris Unified Semantic Layer lightning\.metastore\.evidence_desk\.evidence_usl\.case_evidence \(live\)$/);
-  const records = await provider.fetchCaseEvidence("DISPUTE-1042");
-  assert.deepEqual(selects, ["SELECT id, case_id, source_system, source_name, observed_at, content, facts_json, record_ref, system_of_record, author, supersedes FROM lightning.metastore.evidence_desk.evidence_usl.case_evidence WHERE case_id = 'DISPUTE-1042'"]);
-  assert.deepEqual(records.map((record) => [record.id, record.source.system, record.retrieval.location, record.retrieval.queryToken]), [
-    ["carrier:tracking/7", "carrier", "lightning.metastore.evidence_desk.evidence_usl.case_evidence", "q-usl"],
-    ["carrier:tracking/9", "carrier", "lightning.metastore.evidence_desk.evidence_usl.case_evidence", "q-usl"],
-    ["support:tickets/1", "support", "lightning.metastore.evidence_desk.evidence_usl.case_evidence", "q-usl"]
-  ]);
-  assert.deepEqual(records.find((record) => record.id === "carrier:tracking/9")!.provenance.supersedes, ["carrier:tracking/7"]);
-  assert.deepEqual(provider.lastFetch()!.sources, [{ location: "lightning.metastore.evidence_desk.evidence_usl.case_evidence", rows: 3, queryToken: "q-usl", latencyMs: provider.lastFetch()!.sources[0]!.latencyMs }]);
-});
-
-test("a semantic layer that is not built says how to build it, and is never replaced with other data", async () => {
-  const provider = new ZetarisEvidenceProvider(uslConfig().zetaris, fakeFetch((url) => url.endsWith("/api/auth/login")
-    ? loginOk()
-    : jsonResponse(400, { msg: "table(metastore.evidence_desk.evidence_usl.case_evidence) is not activated" })));
-  await assert.rejects(provider.fetchCaseEvidence("DISPUTE-1042"), (error: unknown) => {
-    assert.ok(error instanceof EvidenceProviderError);
-    assert.match(error.hint, /npm run zetaris:usl/);
-    assert.match(error.hint, /config\/zetaris-queries\.json/);
-    return true;
-  });
 });

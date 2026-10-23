@@ -51,7 +51,7 @@ one. Its last run, on 2026-10-22, reported:
 
 | Sponsor | What it does in Evidence Desk | Observed in the live run |
 |---|---|---|
-| **Zetaris** | Federated evidence through a **Unified Semantic Layer**. Four source systems, onboarded in their native shapes, are mapped by a USL into the evidence model: case resolution, derived facts, supersession and source references (`zetaris/usl/`). Evidence Desk reads it with one SELECT through the REST API (`src/evidence/zetaris-provider.ts`). A data-quality rule runs on the layer. | 1 SELECT per run on `lightning.metastore.evidence_desk.evidence_usl.case_evidence`, returning 6 records; every assessed record carried that run's query token. Checked record for record against the per-source tables, with identical beliefs from either. |
+| **Zetaris** | Federated evidence: login, then one SELECT per source table through the platform's REST API (`src/evidence/zetaris-provider.ts`). | 4 SELECTs per run against the local platform. Every assessed record carried one of that run's query tokens. |
 | **Meterless** | Execution engine: the Markovian reference engine (`@meterless/markovian-reference@0.1.0`, commit `1742dec`, vendored unmodified) runs each investigation as bounded chunks with carryover, plus a reflection pass for the explanation. | Run ids, status and chunk counts matched the engine's own `history.json`. Runs are matched by id and the engine's timestamp, because the engine restarts its ids in each process. |
 | **NVIDIA Nemotron** (local) | Judges how each record bears on each hypothesis, and writes the explanation (`src/reasoning/nemotron.ts`). Every reply is validated by Speck's contract and retried once; decisive rules override it; Speck caps its evidence at 0.4. | `nemotron-3-nano:4b` on local Ollama, reported by the endpoint on every call. All model-judged evidence was at reliability ≤ 0.4. Retries were visible: in one run a contract rejection, in another an empty reply. |
 | **Speck** | Hosts Evidence Desk as a plugin (a tab, routes and its runtime), and holds each case as a worker with its beliefs, revisions and history (submodule pinned to upstream `29d5bb3`; cognition unmodified; a project-local patch adds the `SPECK_HOME_VIEW` interface setting). | Every belief revision in Speck's event log appears in the trace, exactly once. Inside Speck, the case's events appear in Speck's World view, and the case waits in Speck's task queue without blocking it. |
@@ -70,7 +70,7 @@ These are counts over these cases only, not general accuracy.
 | Held-out cases, deterministic (9 checkpoints) | 7/8 correct | 8/8 correct, 0 unsupported conclusions |
 | Correction regression cases, deterministic (8 checkpoints) | 4/8 | 8/8; withdrawn or superseded evidence never used as support (5/5) |
 | Held-out cases, live `nemotron-3-nano:4b` (single samples) | 5/8 | 5/8, identical per checkpoint |
-| Tests | 29 | 86 |
+| Tests | 29 | 67 |
 
 Across two live samples on the held-out cases, the stateless model baseline made 4 unsupported
 conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but it abstained when a
@@ -81,7 +81,7 @@ conclusion was due 3 times in 4, because of the 0.4 cap.
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 86 tests, no credentials or network needed
+npm test                 # 67 tests, no credentials or network needed
 npm run eval             # deterministic evaluation, both groups
 npm run sponsors:verify  # with Zetaris and Ollama running and configured in .env
 ```

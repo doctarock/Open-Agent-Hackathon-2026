@@ -1,7 +1,0 @@
-{
-  "columns": "id, case_id, source_system, source_name, observed_at, content, facts_json, record_ref, system_of_record, author, supersedes",
-  "semanticLayer": {
-    "table": "lightning.metastore.evidence_desk.evidence_usl.case_evidence",
-    "description": "Unified Semantic Layer over the order system, warehouse, carrier and support sources (zetaris/usl/README.md)"
-  }
-}

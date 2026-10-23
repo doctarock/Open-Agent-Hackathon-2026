@@ -81,19 +81,16 @@ held-out checkpoint went from wrong to right, and nothing else changed."
 
 **1:30 Disputed delivery, live sponsor run (70 s).** Select **Disputed delivery**.
 1. Point to the header:
-   - **Evidence: Zetaris USL (live)**: one query to a Zetaris Unified Semantic Layer that
-     maps the order system, warehouse, carrier and support sources into one evidence model;
+   - **ZETARIS LIVE** at the platform's URL;
    - the Nemotron model at `127.0.0.1:11434`;
    - the Meterless engine and its commit.
 
-   Every record is labelled **Zetaris USL**, with the USL table and query token. Open one: its
-   provenance keeps the source's own reference.
+   Every record is labelled **Zetaris live**, with its table and query token.
 2. Click **Run investigation**. In rehearsal inside Speck it took about 15 s; it can take up to
    about 35 s when the model's reply is rejected and retried. The tab has no live progress
    stream, so talk over it.
 3. Open **Execution trace**, Run 1:
-   - **Zetaris:** one SELECT on `lightning.metastore.evidence_desk.evidence_usl.case_evidence`,
-     with row count, latency and query token.
+   - **Zetaris:** four SELECTs, each with row count, latency and query token.
    - **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
    - **Per chunk, Nemotron:** served model, contract covering all 6 evidence/hypothesis pairs,
      temperature 0.1, attempts, latency, and judgments kept, neutral or overruled by a
@@ -139,8 +136,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 |---|---|---|
 | Did you modify Speck? | Only locally, for this project: a patch kept in this repository (`patches/speck-home-view.patch`) adds a general `SPECK_HOME_VIEW` setting, so Speck opens on the Evidence tab. Nothing is committed to Speck; the submodule is pinned to upstream. Evidence Desk itself is a plugin in `speck/plugins/evidence-desk/`, approved by hash in Speck's plugin allowlist. Speck's cognition is unmodified. | `npm run plugin:install`, `test/plugin.test.ts`, Speck's `src/tests/genesis-host.test.ts` |
 | Does it interfere with Speck's other work? | Each case is a worker left *waiting*, so it never holds up Speck's queue. Changes take Speck's foreground lease, so background cognition cannot overwrite a revision; we wrote a test that shows the overwrite happening without it. | `test/plugin.test.ts`, `test/speck-compat.test.ts` |
-| Is the Zetaris data real? | It is the scenario's records, as sample data in native formats for four source systems, onboarded into a local Zetaris platform. A Unified Semantic Layer maps them into the evidence model, and Evidence Desk reads that layer through the REST API. Each record carries the platform's query token. | `npm run zetaris:usl`, `npm run zetaris:check`, `npm run sponsors:verify`, `test/zetaris.test.ts` |
-| What does the USL actually do? | It resolves each record's case through a dispute register, derives its facts from native fields (for example the carrier's `DELIVERED_INCORRECT_ADDRESS` becomes `delivery.address_match=false`), turns the carrier's amendment link into a supersession, and keeps each source's own reference. The investigation reaches identical beliefs from the USL as from the per-source tables. | `zetaris/usl/README.md`, `npm run zetaris:usl` |
+| Is the Zetaris data real? | It is the scenario's records, seeded into a local Zetaris platform and read back through its REST API. Each record carries the platform's query token. | `npm run zetaris:check`, `npm run sponsors:verify`, `test/zetaris.test.ts` |
 | Which NVIDIA model, where? | `nemotron-3-nano:4b` on local Ollama. No hosted NVIDIA inference was used. | `npm run model:check` (served model), the trace |
 | How do you stop the model from inventing things? | Speck validates each reply against a contract with enumerated ids, covering every pair, and retries once. Unknown ids are discarded, and deterministic decisive rules always win. Speck caps model-judged evidence at reliability 0.4. Explanation citations are checked against real record ids. | `test/nemotron.test.ts`, the trace's per-call accounting |
 | Why is the live conclusion only "leading"? | The 0.4 cap: two model-judged records add at most +0.08 each, so live conclusions stay tentative. We left the cap unchanged rather than tune for a better demo. | README, *Evaluation* |

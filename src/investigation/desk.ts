@@ -1064,12 +1064,9 @@ function numberOrNull(value: unknown): number | null {
 }
 
 // The evidence record a Speck evidence object was recorded for.
-// Evidence is recorded with source "<system>/<record id>". A system name has
-// no "/", but a record id may (ids derived from a source's own references, as
-// the Zetaris USL makes them), so the id is everything after the first "/".
 function recordIdOf(object: MentalObject): string {
   const source = String(object.data.source ?? "");
-  return source.slice(source.indexOf("/") + 1);
+  return source.slice(source.lastIndexOf("/") + 1);
 }
 
 // The relations Speck has applied to a hypothesis, in order, from its own

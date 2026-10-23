@@ -13,10 +13,6 @@ const pending = (view) => view.listing?.pending ?? [];
 const stages = (view) => view.status?.stages ?? [];
 const stageMoved = (view) => Boolean(view.status && stages(view).length && view.status.stage.id !== stages(view)[0].id);
 const records = (view) => view.listing?.records ?? [];
-// Live evidence read through a Zetaris Unified Semantic Layer: the provider
-// names the USL table it queries.
-export const uslTable = (view) => /Unified Semantic Layer (\S+)/.exec(view.status?.evidence?.label ?? "")?.[1] ?? null;
-const throughUsl = (record) => Boolean(record?.retrieval?.location?.startsWith("lightning.metastore."));
 
 // The explanation the conclusion is about: the conclusion itself, or the one
 // the evidence points to while it is not yet established.
@@ -38,9 +34,7 @@ function modeLines(view) {
   const reasoner = view.status?.reasoner;
   return [
     evidence?.mode === "zetaris"
-      ? uslTable(view)
-        ? `Evidence is queried live from a Zetaris Unified Semantic Layer with one query to ${uslTable(view)}. The layer maps the order system, warehouse, carrier and support sources into one evidence model: it resolves each record's case and derives its facts from the source's own fields.`
-        : "Evidence is queried live from Zetaris, one table per source system."
+      ? "Evidence is queried live from Zetaris for this case."
       : "Evidence comes from this case's local fixture file (not from Zetaris).",
     reasoner?.kind === "nemotron"
       ? "Records are weighed by the local Nemotron model, with the scenario's decisive rules taking precedence. A live run can take up to about 35 seconds."
@@ -138,9 +132,7 @@ export const TOUR_STEPS = [
         judgments.length
           ? `How it was weighed: ${judgments.map((j) => `${j.basis === "rule" ? "a deterministic rule" : "a model interpretation"} says it ${j.direction} ${j.hypothesisKey}${j.decisive ? " decisively" : ""}`).join("; ")}.`
           : "It has no bearing on any explanation.",
-        `Provenance: ${record.provenance.systemOfRecord}, the source's own reference ${record.provenance.recordRef}, author ${record.provenance.author}. ${throughUsl(record)
-          ? `Read live through the Zetaris Unified Semantic Layer (${record.retrieval.location}), which derived its id and facts from that source record.`
-          : record.retrieval.mode === "zetaris" ? "Read live from Zetaris." : "Read from the local fixture file."}`
+        `Provenance: ${record.provenance.systemOfRecord}, reference ${record.provenance.recordRef}, author ${record.provenance.author}. Read ${record.retrieval.mode === "zetaris" ? "live from Zetaris" : "from the local fixture file"}.`
       ];
     }
   },
@@ -265,14 +257,6 @@ export const FEATURES = [
     text: "Speck's event log for the case: stages, records and belief changes, with replaced beliefs marked historical." },
   { id: "trace", title: "Execution trace", target: "trace",
     text: "What the evidence source, the execution engine, the assessor and Speck did in each run, read back from saved state." },
-  { id: "usl", title: "Zetaris Unified Semantic Layer", target: "evidence",
-    text: "Live evidence is read with one query from a Zetaris USL that maps the order system, warehouse, carrier and support sources into one evidence model, resolving each record's case and deriving its facts. Each record keeps its source's own reference.",
-    available: (view) => uslTable(view)
-      ? { ok: true }
-      : { ok: false, note: view.status?.evidence?.mode === "zetaris"
-        ? "Live mode is reading the per-source tables (ZETARIS_QUERY_CONFIG=config/zetaris-queries.json)."
-        : "This case reads its local fixture file. The USL is what live Zetaris mode reads (EVIDENCE_MODE=zetaris, after npm run zetaris:usl)." },
-    demonstrated: (view) => records(view).some(throughUsl) },
   { id: "zetaris", title: "Live evidence from Zetaris", target: "evidence",
     text: "Records queried live from a Zetaris platform, each with its query token.",
     available: (view) => view.status?.evidence?.mode === "zetaris"

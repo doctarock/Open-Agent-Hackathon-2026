@@ -1,3 +1,0 @@
-contact_id,linked_order_no,received_at_utc,channel,from_party,category,location_reported,message
-tickets/T-55190/messages/1,ORD-1042,2026-10-13T22:30:00Z,email,customer/C-7731,NON_RECEIPT,,"Customer C-7731: ""Tracking says it was delivered yesterday but nothing arrived. I was home all afternoon and nobody knocked."""
-calls/C-90233,ORD-1042,2026-10-15T23:05:00Z,phone,support-agent/A-17,THIRD_PARTY_HOLDING,41 Lydiard St North (held by resident),Resident of 41 Lydiard St North called: a parcel addressed to 41 Lydiard St South arrived on 13 Oct and they are holding it for collection.
