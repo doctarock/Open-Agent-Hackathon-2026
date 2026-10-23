@@ -21,11 +21,16 @@ how and why each conclusion changed.
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
 - **The page is a tab** in Speck's interface, and it is the interface's home: Speck opens on it.
-- **One project-local change to Speck:** a general `SPECK_HOME_VIEW` setting chooses the view
-  Speck's interface opens on and returns to. It is kept in this repository as
-  `patches/speck-home-view.patch` and applied by `npm run setup`. It is never committed to Speck,
-  and the submodule stays pinned to upstream Speck. Everything else Evidence Desk needs is
-  Speck's existing plugin system.
+- **Two project-local changes to Speck**, kept in this repository as patches in `patches/`. They
+  are applied by `npm run setup` and never committed to Speck; the submodule stays pinned to
+  upstream Speck.
+  - `speck-home-view.patch`: a general `SPECK_HOME_VIEW` setting chooses the view Speck's
+    interface opens on and returns to.
+  - `speck-remove-plugins.patch`: removes Speck's bundled demonstration plugins (Social Media
+    Manager, AirChat, Information Agent) and their two dedicated tests, so Evidence Desk is the
+    only plugin.
+
+  Everything else Evidence Desk needs is Speck's existing plugin system.
 
 A standalone server serving the same page remains, for development and as a fallback.
 
@@ -227,8 +232,10 @@ recovery after an interrupted run, withdrawals and recomputations.
 ### Speck
 
 - **Repository:** `speck/`, a submodule pinned to upstream Speck `29d5bb3`. This project patches
-  its working tree with one change, the `SPECK_HOME_VIEW` interface setting
-  (`patches/speck-home-view.patch`). Belief revision, memory and the event log are as upstream.
+  its working tree in two ways: the `SPECK_HOME_VIEW` interface setting
+  (`patches/speck-home-view.patch`), and removing Speck's other bundled plugins
+  (`patches/speck-remove-plugins.patch`). Belief revision, memory and the event log are as
+  upstream.
 - **Role:** holds the case, beliefs and history.
 - **Shown in the trace, per chunk:** evidence recorded, every belief revision (marked when the
   belief has since been replaced), and recomputations.
@@ -837,8 +844,8 @@ What these runs show:
 ## Known limits of this slice
 
 - **Project-local Speck patch.**
-  - `npm run speck:patch` applies `patches/speck-home-view.patch` to `speck/`'s working tree,
-    and is safe to run again. The submodule therefore always shows as modified, and the patch is
+  - `npm run speck:patch` applies the patches in `patches/` to `speck/`'s working tree, and is
+    safe to run again. The submodule therefore always shows as modified, and the patch is
     never committed there.
   - If the Speck pin moves, the patch may need updating; the command says so rather than
     applying it partly.

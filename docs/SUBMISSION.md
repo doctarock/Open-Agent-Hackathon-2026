@@ -11,9 +11,12 @@ system believed before.
 It runs inside Speck as a plugin and is Speck's main interface here: Speck opens on its
 **Evidence** tab, with Speck's other views beside it. Each case is a Speck worker, and its
 evidence, beliefs and revisions live in Speck's database. The plugin is approved by hash in
-Speck's plugin allowlist. The one change to Speck is a general `SPECK_HOME_VIEW` setting for the
-view its interface opens on. It is kept in this repository as a patch that setup applies, and is
-not committed to Speck; the submodule is pinned to upstream Speck.
+Speck's plugin allowlist. Speck is changed in two small ways, both kept in this repository as
+patches that setup applies, never committed to Speck:
+- a general `SPECK_HOME_VIEW` setting for the view its interface opens on;
+- removing Speck's other bundled plugins, so Evidence Desk is the only one.
+
+The submodule is pinned to upstream Speck.
 
 ## What is worth a judge's time
 

@@ -1,0 +1,3152 @@
+diff --git a/plugins/README.md b/plugins/README.md
+index fe9c430..52e20b7 100644
+--- a/plugins/README.md
++++ b/plugins/README.md
+@@ -1,23 +1,5 @@
+-# Optional assistant plugins
++# Plugins
+ 
+-Speck loads the local plugins in this directory through Genesis. The migrated plugins are independent of the cognitive core and can be enabled or disabled in the Plugins view. Their entrypoint hashes are pinned in `.runtime/plugin-trust.json`; update that file after reviewing a plugin change.
++Speck loads the local plugins in this directory through Genesis. Their entrypoint hashes are pinned in `.runtime/plugin-trust.json`; update that file after reviewing a plugin change.
+ 
+-## Social Media Manager
+-
+-The plugin manages several **properties**: the businesses, brands or sites you promote. Each property has its own products, channels, voice, guidelines, posts, opportunities and replies. Its channels are the platforms it posts to. Drafts can only be written for a property's enabled channels; without a platform, a draft goes to the property's first channel. Records saved before properties existed join a property called "Default property", which can be renamed.
+-
+-The **Social** view in Speck's rail is the interface. Use it to create properties, edit their settings and channel lists, add products, draft posts, edit, approve and publish them, review replies and set each channel's webhook. Its data routes under `/api/plugins/social-media-manager/` need the admin token. Pressing Publish in the view is the approval for that post.
+-
+-Workers use the `social_*` tools. Pass `propertyId` (an id or a name) when more than one property exists. Drafts must be marked `approved` before `social_publish_post` can submit them. Publishing through the tool is high-risk and uses Speck's normal approval flow.
+-
+-Publishing uses an installed `browser.externalAction` capability when a publishing target applies. That is a target named by ID, or an active target for the post's platform. A property's own target is preferred over one shared by all properties. Otherwise, publishing uses a webhook: set `social.<property-id>.<platform>.webhook-url` in Speck Secrets (the Channels section can set it), or `social.<platform>.webhook-url` for all properties. Each URL must be an HTTPS endpoint. The matching `...webhook-token` adds bearer authentication. The endpoint receives JSON with `postId`, `propertyId`, `platform`, `title`, `body`, and `productId`. It should return JSON containing a published `url`, `publishedUrl`, or `verified: true`. Browser publication requires `verified: true` from the adapter. Without verification, Speck marks the post `submitted` so it cannot be sent twice accidentally; confirm it with `social_update_post` and a `publishedUrl`. The plugin does not import the archive's hard-coded campaign, image generator, or autonomous publishing schedule.
+-
+-## AirChat
+-
+-Set `airchat.url` and `airchat.token` in Speck Secrets. The `airchat_*` tools expose messages, tasks, shared notes, agent discovery and fleet models through the archived MCP client. Outbound actions use Speck's normal approval flow. Inbound board content is available through read tools; automatic mention ingestion is not enabled, so external agents cannot silently create Speck workers.
+-
+-The plugins keep their state under the Genesis plugin runtime. No archived credentials or live campaign records are copied into this repository.
+-
+-## Information Agent
+-
+-The `info_agent_*` tools save interests and public web sources, scan due sources on request, and list or acknowledge change summaries. This is useful for competitor research and social campaign monitoring. Source fetching checks host addresses and redirects, has a 25-second timeout and a 1 MB response limit. It does not run autonomous background scans.
++In this project the only plugin is Evidence Desk, installed here by `npm run plugin:install` from the parent repository. Speck's other bundled plugins (Social Media Manager, AirChat, Information Agent) were removed for the Evidence Desk demonstration; see `patches/speck-remove-plugins.patch` in the parent repository.
+diff --git a/plugins/airchat/airchat-plugin.js b/plugins/airchat/airchat-plugin.js
+deleted file mode 100644
+index 25f8bef..0000000
+--- a/plugins/airchat/airchat-plugin.js
++++ /dev/null
+@@ -1,89 +0,0 @@
+-import { createAirchatClient } from "./lib/airchat-client.js";
+-
+-const tools = [
+-  ["airchat_check_work", "check_work", {}, "Check mentions and tasks waiting on this agent."],
+-  ["airchat_check_board", "check_board", {}, "Summarise recent board activity."],
+-  ["airchat_list_channels", "list_channels", { type: "string" }, "List available channels."],
+-  ["airchat_read_messages", "read_messages", { channel: "string", limit: "number", before: "string", full: "boolean" }, "Read recent channel messages."],
+-  ["airchat_search_messages", "search_messages", { query: "string", channel: "string" }, "Search board messages."],
+-  ["airchat_find_agents", "find_agents", { capability: "string", active_within: "string" }, "Find agents by capability."],
+-  ["airchat_send_message", "send_message", { channel: "string", content: "string", parent_message_id: "string" }, "Send a channel message."],
+-  ["airchat_send_direct_message", "send_direct_message", { target_agent: "string", content: "string" }, "Send a direct message to an agent."],
+-  ["airchat_mark_mentions_read", "mark_mentions_read", { mention_ids: "array" }, "Mark handled mentions read."],
+-  ["airchat_post_task", "post_task", { channel: "string", title: "string", body: "string", capability_tags: "array" }, "Post a task for another agent."],
+-  ["airchat_check_tasks", "check_tasks", { status: "string", capability: "string", mine: "string", channel: "string", limit: "number" }, "Review AirChat tasks."],
+-  ["airchat_update_task", "update_task", { task_id: "string", action: "string", result: "string" }, "Claim, complete or cancel a task."],
+-  ["airchat_read_note", "read_note", { slug: "string", channel: "string", full: "boolean" }, "Read a shared note."],
+-  ["airchat_write_note", "write_note", { slug: "string", title: "string", body_md: "string", channel: "string" }, "Write a shared note."],
+-  ["airchat_list_notes", "list_notes", { channel: "string", query: "string", limit: "number" }, "List or search shared notes."],
+-  ["airchat_list_models", "list_models", {}, "List models on the AirChat fleet."],
+-  ["airchat_run_model", "run_model", { prompt: "string", model: "string", wait_seconds: "number" }, "Run a one-shot fleet model prompt."]
+-];
+-
+-const readOnly = new Set(["check_work", "check_board", "list_channels", "read_messages", "search_messages", "find_agents", "check_tasks", "read_note", "list_notes", "list_models"]);
+-
+-export default function createAirchatPlugin() {
+-  return {
+-    id: "airchat",
+-    name: "AirChat",
+-    version: "2.0.0",
+-    description: "AirChat board messages, tasks, notes and fleet models over MCP.",
+-    manifest: {
+-      schemaVersion: 1,
+-      permissions: { routes: false, uiPanels: false, data: false, capabilities: [], hooks: [], runtimeContext: [], tools: ["airchat_status", ...tools.map(([name]) => name)] },
+-      dependencies: { requiredCapabilities: ["speck:secret-get"], optionalCapabilities: [] },
+-      security: { isolation: "inprocess" },
+-      // What this plugin is about (Genesis core API 1.5.0): read by the host to
+-      // decide when to offer its tools.
+-      topics: {
+-        "keywords": [
+-          "AirChat",
+-          "agent message board",
+-          "channels",
+-          "mentions",
+-          "direct messages to other agents",
+-          "tasks for other agents",
+-          "claiming and completing agent tasks",
+-          "shared notes",
+-          "agent discovery",
+-          "agent fleet",
+-          "fleet models"
+-        ],
+-        "examples": [
+-          "What is new on the AirChat board?",
+-          "Tell the agents in the ops channel that the deploy is done",
+-          "Is any agent asking me for something?",
+-          "Hand this job to an agent that can translate",
+-          "Read the team runbook note on AirChat",
+-          "Run this prompt on one of the fleet models"
+-        ]
+-      }
+-    },
+-    init(api) {
+-      const getSecret = api.getCapability("speck:secret-get");
+-      let cached = null;
+-      const connection = async () => {
+-        const url = String(await getSecret({ handle: "airchat.url" }) || "").trim();
+-        const token = String(await getSecret({ handle: "airchat.token" }) || "").trim();
+-        if (!url || !token) throw new Error("configure airchat.url and airchat.token in Speck secrets");
+-        const endpoint = new URL(url);
+-        if (endpoint.protocol !== "https:" && !(endpoint.protocol === "http:" && ["localhost", "127.0.0.1"].includes(endpoint.hostname))) {
+-          throw new Error("AirChat endpoint must be HTTPS or local HTTP");
+-        }
+-        if (!cached || cached.url !== url || cached.token !== token) cached = { url, token, client: createAirchatClient({ url, token, clientName: "speck" }) };
+-        return cached.client;
+-      };
+-      api.registerTool({ name: "airchat_status", description: "Check whether AirChat credentials are configured.", scopes: ["worker"], parameters: {} }, async () => ({
+-        configured: Boolean(await getSecret({ handle: "airchat.url" }) && await getSecret({ handle: "airchat.token" }))
+-      }));
+-      for (const [name, remoteName, parameters, description] of tools) {
+-        api.registerTool({ name, description, scopes: ["worker"], risk: readOnly.has(remoteName) ? "read-only" : "high", parameters }, async (args) => {
+-          const client = await connection();
+-          const clean = Object.fromEntries(Object.entries(args || {}).filter(([, value]) => value !== undefined && value !== null && value !== ""));
+-          if (typeof clean.channel === "string") clean.channel = clean.channel.replace(/^#/, "").toLowerCase();
+-          return client.callTool(remoteName, clean, { timeoutMs: remoteName === "run_model" ? 620000 : 30000 });
+-        });
+-      }
+-    }
+-  };
+-}
+diff --git a/plugins/airchat/lib/airchat-client.js b/plugins/airchat/lib/airchat-client.js
+deleted file mode 100644
+index a95ed1b..0000000
+--- a/plugins/airchat/lib/airchat-client.js
++++ /dev/null
+@@ -1,133 +0,0 @@
+-const PROTOCOL_VERSION = "2025-06-18";
+-
+-// AirChat wraps tool output in an untrusted-data fence; strip it before parsing.
+-const DATA_FENCE_START = /^\s*\[AIRCHAT DATA[^\]]*\]\s*/;
+-const DATA_FENCE_END = /\s*\[END AIRCHAT DATA\]\s*$/;
+-
+-function parseSseJsonBody(text = "", id) {
+-  const candidates = [String(text), ...String(text).split(/\r?\n\r?\n/).map((event) =>
+-    event.split(/\r?\n/).filter((line) => line.startsWith("data:"))
+-      .map((line) => line.slice(5).trimStart()).join("\n"))];
+-  for (const payload of candidates) {
+-    try {
+-      const json = JSON.parse(payload);
+-      if (json?.id === id && ("result" in json || "error" in json)) return json;
+-    } catch {
+-      continue;
+-    }
+-  }
+-  return null;
+-}
+-
+-export function unwrapAirchatText(text = "") {
+-  const inner = String(text || "").replace(DATA_FENCE_START, "").replace(DATA_FENCE_END, "");
+-  try {
+-    return JSON.parse(inner);
+-  } catch {
+-    return inner;
+-  }
+-}
+-
+-export function createAirchatClient({ url = "", token = "", clientName = "speck" } = {}) {
+-  const endpoint = String(url || "").trim();
+-  const bearer = String(token || "").trim();
+-  let sessionId = "";
+-  let initialized = false;
+-  let initializing = null;
+-  let requestId = 0;
+-
+-  async function post(body, { timeoutMs = 30000 } = {}) {
+-    if (!endpoint || !bearer) {
+-      throw new Error("AirChat url/token not configured");
+-    }
+-    const headers = {
+-      "Content-Type": "application/json",
+-      Accept: "application/json, text/event-stream",
+-      Authorization: `Bearer ${bearer}`,
+-      "mcp-protocol-version": PROTOCOL_VERSION
+-    };
+-    if (sessionId) {
+-      headers["mcp-session-id"] = sessionId;
+-    }
+-    const res = await fetch(endpoint, {
+-      method: "POST",
+-      headers,
+-      body: JSON.stringify(body),
+-      signal: AbortSignal.timeout(timeoutMs)
+-    });
+-    const returnedSessionId = res.headers.get("mcp-session-id");
+-    if (returnedSessionId) {
+-      sessionId = returnedSessionId;
+-    }
+-    const text = await res.text();
+-    return { status: res.status, text };
+-  }
+-
+-  async function rpc(method, params = {}, options = {}) {
+-    const id = ++requestId;
+-    const { status, text } = await post({ jsonrpc: "2.0", id, method, params }, options);
+-    if (status === 404 && sessionId) {
+-      // Session expired server-side; caller retries after re-initialising.
+-      sessionId = "";
+-      initialized = false;
+-      const error = new Error("AirChat session expired");
+-      error.sessionExpired = true;
+-      throw error;
+-    }
+-    if (status < 200 || status >= 300) {
+-      throw new Error(`AirChat HTTP ${status}: ${String(text || "").slice(0, 200)}`);
+-    }
+-    const json = parseSseJsonBody(text, id);
+-    if (!json) {
+-      throw new Error("could not parse AirChat MCP response");
+-    }
+-    if (json.error) {
+-      throw new Error(json.error.message || "AirChat MCP error");
+-    }
+-    return json.result;
+-  }
+-
+-  async function ensureSession() {
+-    if (initialized) {
+-      return;
+-    }
+-    if (initializing) return initializing;
+-    initializing = (async () => {
+-      await rpc("initialize", {
+-        protocolVersion: PROTOCOL_VERSION,
+-        capabilities: {},
+-        clientInfo: { name: clientName, version: "1.0.0" }
+-      });
+-      await post({ jsonrpc: "2.0", method: "notifications/initialized" }).catch(() => null);
+-      initialized = true;
+-    })();
+-    try {
+-      await initializing;
+-    } finally {
+-      initializing = null;
+-    }
+-  }
+-
+-  async function callTool(name, args = {}, options = {}) {
+-    await ensureSession();
+-    let result;
+-    try {
+-      result = await rpc("tools/call", { name, arguments: args }, options);
+-    } catch (error) {
+-      if (!error?.sessionExpired) {
+-        throw error;
+-      }
+-      await ensureSession();
+-      result = await rpc("tools/call", { name, arguments: args }, options);
+-    }
+-    const text = Array.isArray(result?.content)
+-      ? result.content.filter((entry) => entry?.type === "text").map((entry) => entry.text).join("\n")
+-      : "";
+-    if (result?.isError) {
+-      throw new Error(text || `AirChat tool ${name} failed`);
+-    }
+-    return result?.structuredContent ?? (text ? unwrapAirchatText(text) : result);
+-  }
+-
+-  return { callTool };
+-}
+diff --git a/plugins/information-agent/information-agent-plugin.js b/plugins/information-agent/information-agent-plugin.js
+deleted file mode 100644
+index 9e60bbf..0000000
+--- a/plugins/information-agent/information-agent-plugin.js
++++ /dev/null
+@@ -1,113 +0,0 @@
+-import dns from "node:dns/promises";
+-import net from "node:net";
+-import { createInformationAgentDomain } from "./lib/information-agent-domain.js";
+-
+-const definitions = [
+-  { name: "info_agent_save_interest", description: "Save a topic to monitor for assistant or campaign research.", parameters: { id: "string", name: "string", prompt: "string", keywords: "array|string", categories: "array|string", priority: "number" } },
+-  { name: "info_agent_add_source", description: "Add a public web source to a monitored topic.", parameters: { interestId: "string", id: "string", type: "blog|news|social|finance|shopping|web", label: "string", url: "string", intervalMinutes: "number" } },
+-  { name: "info_agent_run_scan", description: "Scan due sources and report changes.", parameters: { sourceId: "string", limit: "number", emitBaseline: "boolean" } },
+-  { name: "info_agent_list_updates", description: "List monitored sources and recent changes.", parameters: { onlyUnacknowledged: "boolean", limit: "number" } },
+-  { name: "info_agent_ack_update", description: "Acknowledge an information update.", parameters: { updateId: "string", acknowledged: "boolean" } }
+-];
+-
+-export default function createInformationAgentPlugin() {
+-  return {
+-    id: "information-agent",
+-    name: "Information Agent",
+-    version: "2.0.0",
+-    description: "On-demand monitoring of chosen public web sources for assistant and campaign research.",
+-    manifest: {
+-      schemaVersion: 1,
+-      permissions: { routes: false, uiPanels: false, data: true, capabilities: [], hooks: [], runtimeContext: [], tools: definitions.map((tool) => tool.name) },
+-      dependencies: { requiredCapabilities: [], optionalCapabilities: [] },
+-      security: { isolation: "inprocess" },
+-      // What this plugin is about (Genesis core API 1.5.0): read by the host to
+-      // decide when to offer its tools.
+-      topics: {
+-        "keywords": [
+-          "monitoring websites",
+-          "watching pages for changes",
+-          "competitor tracking",
+-          "following news",
+-          "price changes",
+-          "change summaries",
+-          "monitored sources",
+-          "research interests"
+-        ],
+-        "examples": [
+-          "Let me know when this page changes",
+-          "Track a competitor pricing page",
+-          "Follow news on a topic for me",
+-          "What changed on the sites you are watching?",
+-          "Check the monitored sources now"
+-        ]
+-      }
+-    },
+-    init(api) {
+-      const domain = createInformationAgentDomain({ dataApi: api.data, broadcast: (event) => api.broadcast(event) });
+-      const actions = {
+-        info_agent_save_interest: (args) => domain.saveInterest(args),
+-        info_agent_add_source: async (args) => {
+-          await assertPublicUrl(args.url, false);
+-          return domain.saveSource(args);
+-        },
+-        info_agent_run_scan: (args) => args.sourceId
+-          ? domain.scanSource(args.sourceId, { fetchText: fetchPublicText, emitBaseline: args.emitBaseline === true })
+-          : domain.runDueScans({ fetchText: fetchPublicText, limit: args.limit, emitBaseline: args.emitBaseline === true }),
+-        info_agent_list_updates: async (args) => {
+-          const state = await domain.listState();
+-          return { ...state, updates: state.updates.filter((update) => !args.onlyUnacknowledged || !update.acknowledged).slice(0, Math.min(100, Math.max(1, Number(args.limit || 25)))) };
+-        },
+-        info_agent_ack_update: (args) => domain.acknowledgeUpdate(args.updateId, args.acknowledged)
+-      };
+-      for (const tool of definitions) api.registerTool({ ...tool, scopes: ["worker"], risk: tool.name === "info_agent_list_updates" ? "normal" : "medium" }, actions[tool.name]);
+-    }
+-  };
+-}
+-
+-async function assertPublicUrl(value, resolveDns = true) {
+-  const url = new URL(String(value || ""));
+-  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) throw new Error("source must be a public HTTP(S) URL without credentials");
+-  const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) throw new Error("private source URL is not allowed");
+-  if (!resolveDns && !net.isIP(host)) return url;
+-  const addresses = net.isIP(host) ? [{ address: host }] : await dns.lookup(host, { all: true });
+-  if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) throw new Error("private source URL is not allowed");
+-  return url;
+-}
+-
+-function isPrivateAddress(address) {
+-  const value = String(address).toLowerCase();
+-  if (value.includes(":")) return value === "::" || value === "::1" || value.startsWith("fc") || value.startsWith("fd") || value.startsWith("fe80") || value.startsWith("::ffff:") || value.startsWith("2001:db8:");
+-  const parts = value.split(".").map(Number);
+-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return true;
+-  return parts[0] === 0 || parts[0] === 10 || parts[0] === 127 || parts[0] >= 224 || (parts[0] === 169 && parts[1] === 254)
+-    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168);
+-}
+-
+-async function fetchPublicText(source) {
+-  let url = await assertPublicUrl(source.url);
+-  for (let redirects = 0; redirects <= 3; redirects += 1) {
+-    const response = await fetch(url, { redirect: "manual", headers: { accept: "text/html,text/plain", "user-agent": "Speck Information Agent/2.0" }, signal: AbortSignal.timeout(25000) });
+-    if (response.status >= 300 && response.status < 400) {
+-      const location = response.headers.get("location");
+-      if (!location) throw new Error("source redirect has no location");
+-      url = await assertPublicUrl(new URL(location, url).toString());
+-      continue;
+-    }
+-    if (!response.ok) throw new Error(`source returned HTTP ${response.status}`);
+-    const reader = response.body?.getReader();
+-    if (!reader) throw new Error("source returned no content");
+-    const chunks = [];
+-    let size = 0;
+-    for (;;) {
+-      const { done, value } = await reader.read();
+-      if (done) break;
+-      size += value.byteLength;
+-      if (size > 1_000_000) { await reader.cancel(); throw new Error("source exceeds 1 MB"); }
+-      chunks.push(value);
+-    }
+-    return new TextDecoder().decode(Buffer.concat(chunks));
+-  }
+-  throw new Error("source redirected too many times");
+-}
+diff --git a/plugins/information-agent/lib/information-agent-domain.js b/plugins/information-agent/lib/information-agent-domain.js
+deleted file mode 100644
+index 6dab3ec..0000000
+--- a/plugins/information-agent/lib/information-agent-domain.js
++++ /dev/null
+@@ -1,378 +0,0 @@
+-import crypto from "node:crypto";
+-
+-const DEFAULT_SCAN_INTERVAL_MINUTES = 30;
+-const MAX_UPDATES = 250;
+-const SOURCE_TYPES = new Set(["blog", "news", "social", "finance", "shopping", "web"]);
+-
+-function nowMs() {
+-  return Date.now();
+-}
+-
+-function compactText(value = "", maxLength = 800) {
+-  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+-  if (normalized.length <= maxLength) return normalized;
+-  return `${normalized.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
+-}
+-
+-function slugify(value = "", fallback = "item") {
+-  const slug = String(value || "")
+-    .trim()
+-    .toLowerCase()
+-    .replace(/[^a-z0-9._:-]+/g, "-")
+-    .replace(/^-+|-+$/g, "");
+-  return slug || fallback;
+-}
+-
+-function hashText(value = "") {
+-  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+-}
+-
+-function toList(value = []) {
+-  if (Array.isArray(value)) {
+-    return value.map((entry) => String(entry || "").trim()).filter(Boolean);
+-  }
+-  return String(value || "")
+-    .split(/[,;\n]/g)
+-    .map((entry) => entry.trim())
+-    .filter(Boolean);
+-}
+-
+-function parseTimestamp(value = 0, fallback = 0) {
+-  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value);
+-  const parsed = Date.parse(String(value || ""));
+-  return Number.isFinite(parsed) ? parsed : Number(fallback || 0);
+-}
+-
+-function normalizeSourceType(value = "") {
+-  const type = String(value || "").trim().toLowerCase();
+-  return SOURCE_TYPES.has(type) ? type : "web";
+-}
+-
+-function normalizeInterest(input = {}) {
+-  const createdAt = parseTimestamp(input.createdAt, nowMs()) || nowMs();
+-  const name = compactText(input.name || input.title || input.prompt || "Watched interest", 120);
+-  return {
+-    id: slugify(input.id || name || `interest-${createdAt}`, `interest-${createdAt}`),
+-    name,
+-    prompt: compactText(input.prompt || input.description || name, 1200),
+-    keywords: toList(input.keywords),
+-    categories: toList(input.categories),
+-    priority: Math.max(1, Math.min(Number(input.priority || 3) || 3, 5)),
+-    enabled: input.enabled !== false,
+-    digestStyle: compactText(input.digestStyle || "Concise, practical, and focused on what changed.", 300),
+-    createdAt,
+-    updatedAt: parseTimestamp(input.updatedAt, createdAt) || createdAt
+-  };
+-}
+-
+-function normalizeSource(input = {}) {
+-  const createdAt = parseTimestamp(input.createdAt, nowMs()) || nowMs();
+-  const url = compactText(input.url || input.href || "", 1000);
+-  return {
+-    id: slugify(input.id || input.label || url || `source-${createdAt}`, `source-${createdAt}`),
+-    interestId: slugify(input.interestId || input.monitorId || "", ""),
+-    type: normalizeSourceType(input.type),
+-    label: compactText(input.label || input.name || url || "Source", 160),
+-    url,
+-    selector: compactText(input.selector || "", 220),
+-    useBrowser: input.useBrowser === true,
+-    enabled: input.enabled !== false,
+-    intervalMinutes: Math.max(5, Math.min(Number(input.intervalMinutes || DEFAULT_SCAN_INTERVAL_MINUTES) || DEFAULT_SCAN_INTERVAL_MINUTES, 24 * 60)),
+-    lastScanAt: parseTimestamp(input.lastScanAt, 0),
+-    lastChangedAt: parseTimestamp(input.lastChangedAt, 0),
+-    lastHash: String(input.lastHash || "").trim(),
+-    lastSignal: input.lastSignal && typeof input.lastSignal === "object" ? input.lastSignal : null,
+-    lastError: compactText(input.lastError || "", 500),
+-    createdAt,
+-    updatedAt: parseTimestamp(input.updatedAt, createdAt) || createdAt
+-  };
+-}
+-
+-function normalizeUpdate(input = {}) {
+-  const createdAt = parseTimestamp(input.createdAt, nowMs()) || nowMs();
+-  return {
+-    id: slugify(input.id || `update-${createdAt}`, `update-${createdAt}`),
+-    interestId: slugify(input.interestId || "", ""),
+-    sourceId: slugify(input.sourceId || "", ""),
+-    sourceType: normalizeSourceType(input.sourceType),
+-    sourceLabel: compactText(input.sourceLabel || "", 160),
+-    sourceUrl: compactText(input.sourceUrl || "", 1000),
+-    title: compactText(input.title || "Information update", 180),
+-    summary: compactText(input.summary || "", 1600),
+-    importance: Math.max(1, Math.min(Number(input.importance || 2) || 2, 5)),
+-    changeType: compactText(input.changeType || "content-change", 80),
+-    evidence: Array.isArray(input.evidence) ? input.evidence.map((entry) => compactText(entry, 320)).filter(Boolean).slice(0, 6) : [],
+-    acknowledged: input.acknowledged === true,
+-    createdAt
+-  };
+-}
+-
+-function normalizeState(state = {}) {
+-  const interests = Array.isArray(state.interests)
+-    ? state.interests.map(normalizeInterest).filter((entry) => entry.id)
+-    : [];
+-  const validInterestIds = new Set(interests.map((entry) => entry.id));
+-  const sources = Array.isArray(state.sources)
+-    ? state.sources.map(normalizeSource).filter((entry) => entry.id && entry.url && validInterestIds.has(entry.interestId))
+-    : [];
+-  const updates = Array.isArray(state.updates)
+-    ? state.updates.map(normalizeUpdate).filter((entry) => entry.id).slice(0, MAX_UPDATES)
+-    : [];
+-  return { version: 1, interests, sources, updates };
+-}
+-
+-function stripHtml(html = "") {
+-  return String(html || "")
+-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+-    .replace(/<[^>]+>/g, " ")
+-    .replace(/&nbsp;/gi, " ")
+-    .replace(/&amp;/gi, "&")
+-    .replace(/&quot;/gi, '"')
+-    .replace(/&#39;/gi, "'")
+-    .replace(/\s+/g, " ")
+-    .trim();
+-}
+-
+-function extractTag(html = "", pattern) {
+-  const match = String(html || "").match(pattern);
+-  return compactText(match?.[1] || "", 260);
+-}
+-
+-function extractPrices(text = "") {
+-  const matches = [];
+-  const pricePattern = /(?:[$\u00a3\u20ac]|AUD|USD|EUR|GBP)\s?\d{1,6}(?:[,.]\d{2})?/gi;
+-  for (const match of String(text || "").matchAll(pricePattern)) {
+-    const value = compactText(match[0], 40);
+-    if (!matches.includes(value)) matches.push(value);
+-    if (matches.length >= 8) break;
+-  }
+-  return matches;
+-}
+-
+-function extractSignal(raw = "", source = {}) {
+-  const content = String(raw || "");
+-  const isHtml = /<\/?[a-z][\s\S]*>/i.test(content);
+-  const title = isHtml ? extractTag(content, /<title[^>]*>([\s\S]*?)<\/title>/i) : "";
+-  const description = isHtml
+-    ? extractTag(content, /<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([^"']+)["']/i)
+-    : "";
+-  const text = compactText(isHtml ? stripHtml(content) : content, 7000);
+-  const selectedText = source.selector ? text : text;
+-  return {
+-    title: title || compactText(selectedText.split(/[.!?]\s/)[0] || source.label || "Source", 180),
+-    description,
+-    text: selectedText,
+-    prices: extractPrices(selectedText),
+-    capturedAt: nowMs()
+-  };
+-}
+-
+-function countKeywordHits(signal = {}, interest = {}) {
+-  const haystack = `${signal.title || ""}\n${signal.description || ""}\n${signal.text || ""}`.toLowerCase();
+-  const keywords = [
+-    ...toList(interest.keywords),
+-    ...toList(interest.categories)
+-  ].map((entry) => entry.toLowerCase());
+-  return keywords.filter((keyword) => keyword && haystack.includes(keyword)).length;
+-}
+-
+-function buildEvidence(previous = null, next = {}, interest = {}, source = {}) {
+-  const evidence = [];
+-  const keywordHits = countKeywordHits(next, interest);
+-  if (keywordHits) evidence.push(`${keywordHits} watched keyword match${keywordHits === 1 ? "" : "es"} found.`);
+-  if (previous?.title && next.title && previous.title !== next.title) {
+-    evidence.push(`Title changed from "${compactText(previous.title, 90)}" to "${compactText(next.title, 90)}".`);
+-  }
+-  const oldPrices = Array.isArray(previous?.prices) ? previous.prices : [];
+-  const newPrices = Array.isArray(next.prices) ? next.prices : [];
+-  const addedPrices = newPrices.filter((price) => !oldPrices.includes(price));
+-  if (addedPrices.length) evidence.push(`New price signals: ${addedPrices.slice(0, 4).join(", ")}.`);
+-  if (source.type === "finance" && /\b(up|down|gain|loss|earnings|guidance|dividend|price target)\b/i.test(next.text || "")) {
+-    evidence.push("Finance language changed around price, earnings, guidance, or market movement.");
+-  }
+-  if (source.type === "shopping" && /\b(sale|discount|back in stock|sold out|limited|deal|coupon)\b/i.test(next.text || "")) {
+-    evidence.push("Shopping language changed around stock, discount, or deal terms.");
+-  }
+-  if (!evidence.length) evidence.push("The source content hash changed since the last scan.");
+-  return evidence.slice(0, 6);
+-}
+-
+-function summarizeUpdate(previous = null, next = {}, interest = {}, source = {}) {
+-  const evidence = buildEvidence(previous, next, interest, source);
+-  const focus = interest.prompt || interest.name || "your watch";
+-  const sourceName = source.label || source.url || "source";
+-  const topText = next.description || next.title || compactText(next.text, 180);
+-  const summary = [
+-    `${sourceName} changed in a way that may matter for ${focus}.`,
+-    topText ? `Current signal: ${compactText(topText, 260)}` : "",
+-    evidence.length ? `Why it was flagged: ${evidence.join(" ")}` : ""
+-  ].filter(Boolean).join(" ");
+-  const keywordHits = countKeywordHits(next, interest);
+-  const importance = Math.max(1, Math.min(5, Number(interest.priority || 3) + Math.min(keywordHits, 2) - (previous ? 0 : 1)));
+-  return {
+-    title: `${source.type === "web" ? "Web" : source.type} update: ${next.title || source.label || interest.name}`,
+-    summary,
+-    importance,
+-    evidence
+-  };
+-}
+-
+-export function createInformationAgentDomain({
+-  dataApi = null,
+-  broadcast = () => {}
+-} = {}) {
+-  const stateKey = "information-agent-state";
+-
+-  async function readState() {
+-    if (!dataApi) return normalizeState();
+-    return normalizeState(await dataApi.readJson(stateKey, {}));
+-  }
+-
+-  async function writeState(state = {}) {
+-    const normalized = normalizeState(state);
+-    if (dataApi) await dataApi.writeJson(stateKey, normalized);
+-    return normalized;
+-  }
+-
+-  async function listState() {
+-    const state = await readState();
+-    return {
+-      ...state,
+-      summary: {
+-        interestCount: state.interests.length,
+-        sourceCount: state.sources.length,
+-        updateCount: state.updates.length,
+-        unacknowledgedCount: state.updates.filter((entry) => !entry.acknowledged).length,
+-        dueSourceCount: state.sources.filter((source) => source.enabled && (!source.lastScanAt || nowMs() - source.lastScanAt >= source.intervalMinutes * 60 * 1000)).length
+-      }
+-    };
+-  }
+-
+-  async function saveInterest(input = {}) {
+-    const state = await readState();
+-    const next = normalizeInterest({ ...input, updatedAt: nowMs() });
+-    const index = state.interests.findIndex((entry) => entry.id === next.id);
+-    if (index >= 0) state.interests[index] = { ...state.interests[index], ...next };
+-    else state.interests.push(next);
+-    await writeState(state);
+-    return next;
+-  }
+-
+-  async function saveSource(input = {}) {
+-    const state = await readState();
+-    const next = normalizeSource({ ...input, updatedAt: nowMs() });
+-    if (!next.interestId) throw new Error("interestId is required");
+-    if (!state.interests.some((entry) => entry.id === next.interestId)) throw new Error("interest not found");
+-    if (!next.url) throw new Error("url is required");
+-    const index = state.sources.findIndex((entry) => entry.id === next.id);
+-    if (index >= 0) state.sources[index] = { ...state.sources[index], ...next };
+-    else state.sources.push(next);
+-    await writeState(state);
+-    return next;
+-  }
+-
+-  async function acknowledgeUpdate(updateId = "", acknowledged = true) {
+-    const state = await readState();
+-    const id = String(updateId || "").trim();
+-    const update = state.updates.find((entry) => entry.id === id);
+-    if (!update) throw new Error("update not found");
+-    update.acknowledged = acknowledged !== false;
+-    await writeState(state);
+-    return update;
+-  }
+-
+-  async function scanSource(sourceId = "", {
+-    fetchText,
+-    emitBaseline = false
+-  } = {}) {
+-    if (typeof fetchText !== "function") throw new Error("fetchText function is required");
+-    const state = await readState();
+-    const source = state.sources.find((entry) => entry.id === String(sourceId || "").trim());
+-    if (!source) throw new Error("source not found");
+-    const interest = state.interests.find((entry) => entry.id === source.interestId);
+-    if (!interest) throw new Error("interest not found");
+-    const raw = await fetchText(source);
+-    const nextSignal = extractSignal(raw, source);
+-    const nextHash = hashText(`${nextSignal.title}\n${nextSignal.description}\n${nextSignal.text}`);
+-    const previousSignal = source.lastSignal || null;
+-    const changed = Boolean(source.lastHash && source.lastHash !== nextHash);
+-    const baseline = !source.lastHash;
+-    source.lastScanAt = nowMs();
+-    source.lastError = "";
+-    source.lastHash = nextHash;
+-    source.lastSignal = nextSignal;
+-    let update = null;
+-    if (changed || (baseline && emitBaseline)) {
+-      source.lastChangedAt = nowMs();
+-      const synthesized = summarizeUpdate(previousSignal, nextSignal, interest, source);
+-      update = normalizeUpdate({
+-        id: `info-${source.id}-${source.lastChangedAt}`,
+-        interestId: interest.id,
+-        sourceId: source.id,
+-        sourceType: source.type,
+-        sourceLabel: source.label,
+-        sourceUrl: source.url,
+-        changeType: baseline ? "baseline" : "content-change",
+-        ...synthesized,
+-        createdAt: source.lastChangedAt
+-      });
+-      state.updates.unshift(update);
+-      state.updates = state.updates.slice(0, MAX_UPDATES);
+-    }
+-    await writeState(state);
+-    if (update) {
+-      broadcast({ type: "information-agent.update", update, interest, source });
+-    }
+-    return { source, interest, changed, baseline, update };
+-  }
+-
+-  async function runDueScans({
+-    fetchText,
+-    limit = 8,
+-    emitBaseline = false,
+-    includeNotDue = false
+-  } = {}) {
+-    const state = await readState();
+-    const current = nowMs();
+-    const candidates = state.sources
+-      .filter((source) => source.enabled)
+-      .filter((source) => state.interests.some((interest) => interest.id === source.interestId && interest.enabled))
+-      .filter((source) => includeNotDue || !source.lastScanAt || current - source.lastScanAt >= source.intervalMinutes * 60 * 1000)
+-      .slice(0, Math.max(1, Math.min(Number(limit || 8) || 8, 50)));
+-    const results = [];
+-    for (const source of candidates) {
+-      try {
+-        results.push(await scanSource(source.id, { fetchText, emitBaseline }));
+-      } catch (error) {
+-        const latest = await readState();
+-        const failed = latest.sources.find((entry) => entry.id === source.id);
+-        if (failed) {
+-          failed.lastScanAt = nowMs();
+-          failed.lastError = compactText(String(error?.message || error || "scan failed"), 500);
+-          await writeState(latest);
+-        }
+-        results.push({ source, changed: false, error: String(error?.message || error || "scan failed") });
+-      }
+-    }
+-    return {
+-      scannedCount: results.length,
+-      changedCount: results.filter((entry) => entry.changed).length,
+-      updateCount: results.filter((entry) => entry.update).length,
+-      results
+-    };
+-  }
+-
+-  return {
+-    acknowledgeUpdate,
+-    listState,
+-    normalizeState,
+-    readState,
+-    runDueScans,
+-    saveInterest,
+-    saveSource,
+-    scanSource,
+-    writeState
+-  };
+-}
+diff --git a/plugins/social-media-manager/lib/social-media-manager-domain.js b/plugins/social-media-manager/lib/social-media-manager-domain.js
+deleted file mode 100644
+index 36115f8..0000000
+--- a/plugins/social-media-manager/lib/social-media-manager-domain.js
++++ /dev/null
+@@ -1,1142 +0,0 @@
+-const DEFAULT_PLATFORMS = [
+-  {
+-    id: "reddit",
+-    name: "Reddit",
+-    url: "https://www.reddit.com/search/?q={query}",
+-    strengths: ["community discussion", "niche discovery", "question answering"],
+-    risk: "high",
+-    fitKeywords: ["developer", "gaming", "ai", "tool", "software", "hobby", "community"]
+-  },
+-  {
+-    id: "linkedin",
+-    name: "LinkedIn",
+-    url: "https://www.linkedin.com/search/results/content/?keywords={query}",
+-    strengths: ["professional credibility", "B2B reach", "founder updates"],
+-    risk: "medium",
+-    fitKeywords: ["business", "b2b", "professional", "saas", "consulting", "career", "enterprise"]
+-  },
+-  {
+-    id: "product-hunt",
+-    name: "Product Hunt",
+-    url: "https://www.producthunt.com/search?q={query}",
+-    strengths: ["launch discovery", "maker feedback", "early adopters"],
+-    risk: "medium",
+-    fitKeywords: ["startup", "app", "software", "tool", "productivity", "ai", "maker"]
+-  },
+-  {
+-    id: "hacker-news",
+-    name: "Hacker News",
+-    url: "https://hn.algolia.com/?q={query}",
+-    strengths: ["technical buyers", "critical feedback", "engineering audience"],
+-    risk: "high",
+-    fitKeywords: ["developer", "engineering", "technical", "open source", "security", "ai"]
+-  },
+-  {
+-    id: "indie-hackers",
+-    name: "Indie Hackers",
+-    url: "https://www.indiehackers.com/search?q={query}",
+-    strengths: ["founder audience", "build-in-public", "growth feedback"],
+-    risk: "medium",
+-    fitKeywords: ["startup", "founder", "bootstrapped", "saas", "marketing", "creator"]
+-  },
+-  {
+-    id: "x",
+-    name: "X",
+-    url: "https://x.com/search?q={query}&src=typed_query",
+-    strengths: ["fast experiments", "public threads", "creator networking"],
+-    risk: "medium",
+-    fitKeywords: ["creator", "startup", "ai", "design", "news", "marketing", "tool"]
+-  },
+-  {
+-    id: "facebook-groups",
+-    name: "Facebook Groups",
+-    url: "https://www.facebook.com/search/groups/?q={query}",
+-    strengths: ["local groups", "consumer communities", "support threads"],
+-    risk: "high",
+-    fitKeywords: ["local", "consumer", "parent", "hobby", "community", "service"]
+-  },
+-  {
+-    id: "tiktok",
+-    name: "TikTok",
+-    url: "https://www.tiktok.com/search?q={query}",
+-    strengths: ["short demos", "consumer discovery", "visual storytelling"],
+-    risk: "medium",
+-    fitKeywords: ["visual", "consumer", "fashion", "food", "fitness", "home", "creator"]
+-  },
+-  {
+-    id: "facebook",
+-    name: "Facebook Page",
+-    url: "https://www.facebook.com/search/pages/?q={query}",
+-    strengths: ["local customers", "page followers", "event and offer posts"],
+-    risk: "low",
+-    fitKeywords: ["local", "consumer", "store", "service", "community", "events"]
+-  },
+-  {
+-    id: "instagram",
+-    name: "Instagram",
+-    url: "https://www.instagram.com/explore/search/keyword/?q={query}",
+-    strengths: ["visual products", "behind the scenes", "local discovery"],
+-    risk: "low",
+-    fitKeywords: ["visual", "consumer", "design", "maker", "food", "fashion", "home"]
+-  }
+-];
+-
+-const DEFAULT_PROPERTY_ID = "default";
+-
+-export function listPlatformCatalog() {
+-  return DEFAULT_PLATFORMS.map(({ id, name, strengths, risk }) => ({ id, name, strengths: strengths.slice(), risk }));
+-}
+-
+-function platformId(value = "") {
+-  const normalized = String(value || "").trim().toLowerCase();
+-  if (!normalized) return "";
+-  const found = DEFAULT_PLATFORMS.find((entry) => entry.id === normalized || entry.name.toLowerCase() === normalized);
+-  return found?.id || slugify(normalized, "");
+-}
+-
+-function compactText(value = "", maxLength = 500) {
+-  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+-  if (!normalized || normalized.length <= maxLength) {
+-    return normalized;
+-  }
+-  return `${normalized.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
+-}
+-
+-// Post and reply text keeps its line breaks; only runs of spaces and of
+-// blank lines are collapsed.
+-function compactParagraphs(value = "", maxLength = 4000) {
+-  const normalized = String(value || "")
+-    .replace(/\r\n?/g, "\n")
+-    .split("\n")
+-    .map((line) => line.replace(/[^\S\n]+/g, " ").trim())
+-    .join("\n")
+-    .replace(/\n{3,}/g, "\n\n")
+-    .trim();
+-  if (normalized.length <= maxLength) return normalized;
+-  return `${normalized.slice(0, Math.max(1, maxLength - 3)).trimEnd()}...`;
+-}
+-
+-function slugify(value = "", fallback = "item") {
+-  const normalized = String(value || "")
+-    .trim()
+-    .toLowerCase()
+-    .replace(/[^a-z0-9]+/g, "-")
+-    .replace(/^-+|-+$/g, "");
+-  return normalized || fallback;
+-}
+-
+-function asArray(value = []) {
+-  if (Array.isArray(value)) {
+-    return value;
+-  }
+-  if (typeof value === "string") {
+-    return value
+-      .split(/[,;\n]+/g)
+-      .map((entry) => entry.trim())
+-      .filter(Boolean);
+-  }
+-  return [];
+-}
+-
+-function uniqueStrings(values = [], limit = 24) {
+-  const seen = new Set();
+-  const out = [];
+-  for (const value of asArray(values)) {
+-    const normalized = compactText(value, 80);
+-    const key = normalized.toLowerCase();
+-    if (!normalized || seen.has(key)) {
+-      continue;
+-    }
+-    seen.add(key);
+-    out.push(normalized);
+-    if (out.length >= limit) {
+-      break;
+-    }
+-  }
+-  return out;
+-}
+-
+-function parseTimestamp(value = null, fallback = 0) {
+-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+-    return value;
+-  }
+-  const text = String(value || "").trim();
+-  if (!text) {
+-    return Number(fallback || 0);
+-  }
+-  const parsed = Date.parse(text);
+-  return Number.isFinite(parsed) ? parsed : Number(fallback || 0);
+-}
+-
+-function normalizeStatus(value = "", allowed = [], fallback = "") {
+-  const normalized = String(value || "").trim().toLowerCase();
+-  return allowed.includes(normalized) ? normalized : fallback;
+-}
+-
+-function normalizeChannel(record = {}) {
+-  const source = typeof record === "string" ? { platform: record } : record || {};
+-  const platform = platformId(source.platform || source.id || source.name || "");
+-  return {
+-    platform,
+-    label: compactText(source.label || platformName(platform), 120),
+-    handle: compactText(source.handle || source.accountId || "", 160),
+-    enabled: source.enabled !== false,
+-    notes: compactText(source.notes || "", 600)
+-  };
+-}
+-
+-function normalizeChannels(value = []) {
+-  const seen = new Set();
+-  const out = [];
+-  for (const entry of Array.isArray(value) ? value : asArray(value)) {
+-    const channel = normalizeChannel(entry);
+-    if (!channel.platform || seen.has(channel.platform)) continue;
+-    seen.add(channel.platform);
+-    out.push(channel);
+-  }
+-  return out;
+-}
+-
+-function normalizeProperty(record = {}) {
+-  const now = Date.now();
+-  const name = compactText(record.name || record.title || "", 160) || "Untitled property";
+-  return {
+-    id: propertyKey(record.id || name),
+-    name,
+-    website: compactText(record.website || record.url || "", 300),
+-    description: compactText(record.description || "", 1200),
+-    audience: compactText(record.audience || "", 600),
+-    voice: compactText(record.voice || record.tone || "", 300),
+-    keywords: uniqueStrings(record.keywords || []),
+-    guidelines: compactText(record.guidelines || record.constraints || "", 1500),
+-    channels: normalizeChannels(record.channels || record.platforms || []),
+-    status: normalizeStatus(record.status, ["active", "paused", "archived"], "active"),
+-    createdAt: Number(record.createdAt || now) || now,
+-    updatedAt: Number(record.updatedAt || record.createdAt || now) || now
+-  };
+-}
+-
+-// A property's id is a short slug: it names the property's secrets, such as
+-// social.<id>.<platform>.webhook-url, which must fit Speck's 64-character handles.
+-function propertyKey(value = "") {
+-  return slugify(value, "property").slice(0, 24).replace(/-+$/g, "") || "property";
+-}
+-
+-function uniquePropertyKey(state, value = "") {
+-  const base = propertyKey(value);
+-  const taken = new Set(state.properties.map((property) => property.id));
+-  if (!taken.has(base)) return base;
+-  for (let index = 2; ; index += 1) {
+-    const candidate = `${base.slice(0, 21)}-${index}`;
+-    if (!taken.has(candidate)) return candidate;
+-  }
+-}
+-
+-function uniqueRecordId(records = [], base = "item") {
+-  const taken = new Set(records.map((record) => record.id));
+-  const stem = compactText(base, 110);
+-  if (!taken.has(stem)) return stem;
+-  for (let index = 2; ; index += 1) {
+-    if (!taken.has(`${stem}-${index}`)) return `${stem}-${index}`;
+-  }
+-}
+-
+-function enabledChannels(property = {}) {
+-  return (property.channels || []).filter((channel) => channel.enabled);
+-}
+-
+-function normalizeProduct(record = {}) {
+-  const now = Date.now();
+-  const name = compactText(record.name || record.title || "", 160) || "Untitled product";
+-  const id = compactText(record.id || `product-${slugify(name)}-${now}`, 120);
+-  return {
+-    id,
+-    propertyId: compactText(record.propertyId || "", 120),
+-    name,
+-    url: compactText(record.url || record.productUrl || "", 300),
+-    description: compactText(record.description || "", 1200),
+-    audience: compactText(record.audience || record.targetAudience || "", 600),
+-    valueProposition: compactText(record.valueProposition || record.value || "", 600),
+-    keywords: uniqueStrings(record.keywords || record.tags || []),
+-    constraints: compactText(record.constraints || record.notes || "", 1000),
+-    sourceUrl: compactText(record.sourceUrl || record.url || "", 500),
+-    evidence: compactText(record.evidence || record.description || "", 1000),
+-    verifiedAt: Number(record.verifiedAt || record.updatedAt || record.createdAt || now) || now,
+-    status: normalizeStatus(record.status, ["active", "paused", "archived"], "active"),
+-    createdAt: Number(record.createdAt || now) || now,
+-    updatedAt: Number(record.updatedAt || record.createdAt || now) || now
+-  };
+-}
+-
+-function normalizeOpportunity(record = {}) {
+-  const now = Date.now();
+-  const platform = compactText(record.platform || record.platformId || "web", 80).toLowerCase();
+-  const title = compactText(record.title || record.name || `${platform} opportunity`, 180);
+-  return {
+-    id: compactText(record.id || `opp-${slugify(platform)}-${slugify(title)}-${now}`, 140),
+-    propertyId: compactText(record.propertyId || "", 120),
+-    productId: compactText(record.productId || "", 140),
+-    platform,
+-    platformName: compactText(record.platformName || record.name || platform, 120),
+-    title,
+-    url: compactText(record.url || "", 500),
+-    audienceFit: compactText(record.audienceFit || record.fit || "", 700),
+-    postingGuidance: compactText(record.postingGuidance || record.guidance || "", 900),
+-    angle: compactText(record.angle || "", 400),
+-    searchQuery: compactText(record.searchQuery || "", 160),
+-    score: Math.max(0, Math.min(100, Math.round(Number(record.score || 0) || 0))),
+-    status: normalizeStatus(record.status, ["candidate", "approved", "rejected", "posted"], "candidate"),
+-    risk: normalizeStatus(record.risk, ["low", "medium", "high"], "medium"),
+-    createdAt: Number(record.createdAt || now) || now,
+-    updatedAt: Number(record.updatedAt || record.createdAt || now) || now
+-  };
+-}
+-
+-function normalizePost(record = {}) {
+-  const now = Date.now();
+-  const body = compactParagraphs(record.body || record.text || record.content || "", 4000);
+-  return {
+-    id: compactText(record.id || `post-${now}-${Math.random().toString(36).slice(2, 8)}`, 140),
+-    propertyId: compactText(record.propertyId || "", 120),
+-    productId: compactText(record.productId || "", 140),
+-    opportunityId: compactText(record.opportunityId || "", 140),
+-    platform: platformId(record.platform || ""),
+-    title: compactText(record.title || "", 220),
+-    body,
+-    callToAction: compactText(record.callToAction || "", 300),
+-    url: compactText(record.url || "", 500),
+-    status: normalizeStatus(record.status, ["draft", "approved", "submitted", "published", "archived"], "draft"),
+-    publishedUrl: compactText(record.publishedUrl || "", 500),
+-    scheduledAt: parseTimestamp(record.scheduledAt, 0),
+-    publishedAt: parseTimestamp(record.publishedAt, 0),
+-    metrics: normalizeMetrics(record.metrics || {}),
+-    createdAt: Number(record.createdAt || now) || now,
+-    updatedAt: Number(record.updatedAt || record.createdAt || now) || now
+-  };
+-}
+-
+-function normalizePublishingTarget(record = {}) {
+-  const now = Date.now();
+-  const platform = platformId(record.platform || record.service || "web");
+-  const accountId = compactText(record.accountId || record.account || "default", 100).toLowerCase();
+-  const label = compactText(record.label || record.name || `${platform} ${accountId}`, 160);
+-  return {
+-    id: compactText(record.id || `target-${slugify(platform)}-${slugify(accountId)}-${slugify(label)}`, 160),
+-    propertyId: compactText(record.propertyId || "", 120),
+-    platform,
+-    accountId,
+-    label,
+-    composerUrl: compactText(record.composerUrl || record.url || "", 600),
+-    openSelector: compactText(record.openSelector || "", 180),
+-    titleSelector: compactText(record.titleSelector || "", 180),
+-    bodySelector: compactText(record.bodySelector || record.textSelector || "", 180),
+-    nextSelector: compactText(record.nextSelector || "", 180),
+-    submitSelector: compactText(record.submitSelector || "", 180),
+-    publishedUrlSelector: compactText(record.publishedUrlSelector || "", 180),
+-    monitorTextSelector: compactText(record.monitorTextSelector || "body", 180),
+-    commentSelector: compactText(record.commentSelector || "", 180),
+-    commentAuthorSelector: compactText(record.commentAuthorSelector || "", 180),
+-    commentTextSelector: compactText(record.commentTextSelector || "", 180),
+-    replySelector: compactText(record.replySelector || "", 180),
+-    replySubmitSelector: compactText(record.replySubmitSelector || "", 180),
+-    status: normalizeStatus(record.status, ["active", "paused", "archived"], "active"),
+-    notes: compactText(record.notes || "", 1000),
+-    createdAt: Number(record.createdAt || now) || now,
+-    updatedAt: Number(record.updatedAt || record.createdAt || now) || now
+-  };
+-}
+-
+-function normalizeMetrics(record = {}) {
+-  return {
+-    views: Math.max(0, Math.round(Number(record.views || 0) || 0)),
+-    likes: Math.max(0, Math.round(Number(record.likes || 0) || 0)),
+-    comments: Math.max(0, Math.round(Number(record.comments || 0) || 0)),
+-    shares: Math.max(0, Math.round(Number(record.shares || 0) || 0)),
+-    clicks: Math.max(0, Math.round(Number(record.clicks || 0) || 0))
+-  };
+-}
+-
+-function normalizeInteraction(record = {}) {
+-  const now = Date.now();
+-  const text = compactParagraphs(record.text || record.commentText || record.body || "", 2400);
+-  return {
+-    id: compactText(record.id || `interaction-${now}-${Math.random().toString(36).slice(2, 8)}`, 140),
+-    propertyId: compactText(record.propertyId || "", 120),
+-    postId: compactText(record.postId || "", 140),
+-    productId: compactText(record.productId || "", 140),
+-    platform: compactText(record.platform || "", 80).toLowerCase(),
+-    author: compactText(record.author || record.commentAuthor || "", 160),
+-    text,
+-    sentiment: normalizeStatus(record.sentiment || inferSentiment(text), ["positive", "neutral", "negative", "question"], "neutral"),
+-    intent: compactText(record.intent || inferIntent(text), 120),
+-    replyDraft: compactParagraphs(record.replyDraft || "", 2400),
+-    replyStatus: normalizeStatus(record.replyStatus, ["needs-review", "approved", "replied", "ignored"], "needs-review"),
+-    externalUrl: compactText(record.externalUrl || record.url || "", 500),
+-    createdAt: Number(record.createdAt || now) || now,
+-    updatedAt: Number(record.updatedAt || record.createdAt || now) || now
+-  };
+-}
+-
+-function normalizeState(state = {}) {
+-  return assignProperties({
+-    version: 2,
+-    properties: Array.isArray(state.properties) ? state.properties.map(normalizeProperty) : [],
+-    products: Array.isArray(state.products) ? state.products.map(normalizeProduct) : [],
+-    publishingTargets: Array.isArray(state.publishingTargets) ? state.publishingTargets.map(normalizePublishingTarget) : [],
+-    opportunities: Array.isArray(state.opportunities) ? state.opportunities.map(normalizeOpportunity) : [],
+-    posts: Array.isArray(state.posts) ? state.posts.map(normalizePost) : [],
+-    interactions: Array.isArray(state.interactions) ? state.interactions.map(normalizeInteraction) : []
+-  });
+-}
+-
+-// Every product belongs to a property, and every record made from a product
+-// carries that product's property. Records saved before properties existed
+-// join the only property, or a default one.
+-function assignProperties(state) {
+-  const known = () => new Set(state.properties.map((property) => property.id));
+-  let ids = known();
+-  const fallback = () => {
+-    if (state.properties.length === 1) return state.properties[0].id;
+-    if (!ids.has(DEFAULT_PROPERTY_ID)) {
+-      state.properties.push(normalizeProperty({ id: DEFAULT_PROPERTY_ID, name: "Default property" }));
+-      ids = known();
+-    }
+-    return DEFAULT_PROPERTY_ID;
+-  };
+-  const productProperty = new Map();
+-  for (const product of state.products) {
+-    if (!ids.has(product.propertyId)) product.propertyId = fallback();
+-    productProperty.set(product.id, product.propertyId);
+-  }
+-  const postProperty = new Map();
+-  for (const kind of ["opportunities", "posts"]) {
+-    for (const record of state[kind]) {
+-      const fromProduct = productProperty.get(record.productId);
+-      if (fromProduct) record.propertyId = fromProduct;
+-      else if (!ids.has(record.propertyId)) record.propertyId = fallback();
+-      if (kind === "posts") postProperty.set(record.id, record.propertyId);
+-    }
+-  }
+-  for (const interaction of state.interactions) {
+-    const fromRecord = postProperty.get(interaction.postId) || productProperty.get(interaction.productId);
+-    if (fromRecord) interaction.propertyId = fromRecord;
+-    else if (!ids.has(interaction.propertyId)) interaction.propertyId = fallback();
+-  }
+-  for (const target of state.publishingTargets) {
+-    if (target.propertyId && !ids.has(target.propertyId)) target.propertyId = "";
+-  }
+-  return state;
+-}
+-
+-function findProperty(state, reference = "") {
+-  const normalized = String(reference || "").trim().toLowerCase();
+-  if (!normalized) return null;
+-  return state.properties.find((property) => property.id.toLowerCase() === normalized)
+-    || state.properties.find((property) => property.name.toLowerCase() === normalized)
+-    || state.properties.find((property) => property.name.toLowerCase().includes(normalized))
+-    || null;
+-}
+-
+-function propertyChoices(state) {
+-  return state.properties.map((property) => `${property.name} (${property.id})`).join(", ");
+-}
+-
+-// The property a request is about: the one named, or the only one there is.
+-function resolveProperty(state, reference = "", { create = false } = {}) {
+-  const ref = String(reference || "").trim();
+-  if (ref) {
+-    const found = findProperty(state, ref);
+-    if (!found) throw new Error(`Property "${ref}" not found. Properties: ${propertyChoices(state) || "none saved"}.`);
+-    return found;
+-  }
+-  if (state.properties.length === 1) return state.properties[0];
+-  if (!state.properties.length && create) {
+-    const property = normalizeProperty({ id: DEFAULT_PROPERTY_ID, name: "Default property" });
+-    state.properties.push(property);
+-    return property;
+-  }
+-  if (!state.properties.length) throw new Error("Save a property before adding campaign records.");
+-  throw new Error(`Several properties exist; pass propertyId. Properties: ${propertyChoices(state)}.`);
+-}
+-
+-function scopeToProperty(state, propertyId = "") {
+-  if (!propertyId) return state;
+-  const inProperty = (record) => record.propertyId === propertyId;
+-  return {
+-    ...state,
+-    properties: state.properties.filter((property) => property.id === propertyId),
+-    products: state.products.filter(inProperty),
+-    publishingTargets: state.publishingTargets.filter((target) => !target.propertyId || target.propertyId === propertyId),
+-    opportunities: state.opportunities.filter(inProperty),
+-    posts: state.posts.filter(inProperty),
+-    interactions: state.interactions.filter(inProperty)
+-  };
+-}
+-
+-function inferSentiment(text = "") {
+-  const lower = String(text || "").toLowerCase();
+-  if (/[?]/.test(lower) || /\b(how|what|why|when|where|can|does|is it|price|cost)\b/.test(lower)) {
+-    return "question";
+-  }
+-  if (/\b(bad|broken|spam|hate|scam|expensive|confusing|annoying)\b/.test(lower)) {
+-    return "negative";
+-  }
+-  if (/\b(great|love|nice|useful|thanks|awesome|helpful|interested)\b/.test(lower)) {
+-    return "positive";
+-  }
+-  return "neutral";
+-}
+-
+-function inferIntent(text = "") {
+-  const lower = String(text || "").toLowerCase();
+-  if (/\b(price|cost|pricing|free|paid|trial)\b/.test(lower)) return "pricing";
+-  if (/\b(how|setup|install|start|use)\b/.test(lower)) return "how-to";
+-  if (/\b(compare|alternative|versus|vs)\b/.test(lower)) return "comparison";
+-  if (/\b(bug|broken|issue|error)\b/.test(lower)) return "support";
+-  if (/\b(spam|self promo|promotion)\b/.test(lower)) return "moderation-risk";
+-  return "general";
+-}
+-
+-function productSearchTerms(product = {}, extraKeywords = []) {
+-  return uniqueStrings([
+-    product.name,
+-    product.audience,
+-    product.valueProposition,
+-    ...asArray(product.keywords),
+-    ...asArray(extraKeywords)
+-  ].flatMap((entry) => String(entry || "").split(/[^a-zA-Z0-9]+/g)).filter((entry) => entry.length > 2), 10);
+-}
+-
+-function scorePlatform(platform = {}, terms = [], product = {}) {
+-  const haystack = [
+-    product.name,
+-    product.description,
+-    product.audience,
+-    product.valueProposition,
+-    ...(product.keywords || [])
+-  ].join(" ").toLowerCase();
+-  const matches = (platform.fitKeywords || []).filter((keyword) => haystack.includes(String(keyword || "").toLowerCase()));
+-  const termBonus = Math.min(16, terms.length * 2);
+-  return Math.max(30, Math.min(95, 52 + matches.length * 9 + termBonus - (platform.risk === "high" ? 8 : 0)));
+-}
+-
+-function platformName(value = "") {
+-  const normalized = String(value || "").trim().toLowerCase();
+-  const found = DEFAULT_PLATFORMS.find((entry) => entry.id === normalized || entry.name.toLowerCase() === normalized);
+-  return found?.name || normalized || "social";
+-}
+-
+-function firstSentence(value = "", fallback = "") {
+-  const normalized = compactText(value, 500);
+-  if (!normalized) return fallback;
+-  const match = normalized.match(/^(.+?[.!?])(?:\s|$)/);
+-  return compactText(match ? match[1] : normalized, 180);
+-}
+-
+-function buildPostBody({ product = {}, opportunity = {}, tone = "helpful", variant = 0, platform = "" } = {}) {
+-  const name = product.name || "this";
+-  const audience = product.audience || "people working on this problem";
+-  const value = product.valueProposition || firstSentence(product.description, "make the job easier");
+-  const angle = opportunity.angle || `A practical note for ${audience}`;
+-  const url = product.url ? `\n\n${product.url}` : "";
+-  const p = String(platform || opportunity.platform || "").trim().toLowerCase();
+-  const proof = product.description
+-    ? `\n\nThe problem it is trying to solve: ${compactText(product.description, 260)}`
+-    : "";
+-  const constraints = product.constraints ? `\n\nContext: ${compactText(product.constraints, 220)}` : "";
+-  const variantsByPlatform = {
+-    facebook: [
+-      `${name}\n\n${compactText(product.description || value, 320)}\n\n${compactText(value, 260)}${product.url ? `\n\nLearn more: ${product.url}` : ""}`,
+-      `A practical option for ${compactText(audience, 180)}.\n\n${name}: ${compactText(product.description || value, 320)}\n\n${compactText(value, 260)}${product.url ? `\n\nDetails: ${product.url}` : ""}`,
+-      `Need help with ${name.toLowerCase()}?\n\n${compactText(product.description || value, 320)}\n\n${compactText(value, 260)}${product.url ? `\n\nFind out more: ${product.url}` : ""}`
+-    ],
+-    reddit: [
+-      `I am looking for blunt feedback from people who actually deal with this.\n\n${name} is for ${audience}. It helps with: ${value}.${proof}${constraints}\n\nI do not want to do drive-by promo, so the useful question is: what would make this worth trying, and what would make you ignore it?${url}`,
+-      `Question for people here: how are you currently handling ${value}?\n\nI built ${name} for ${audience}, and I am trying to sanity-check whether the angle is actually useful for this community.${proof}\n\nHappy to share details, but mostly looking for what feels missing or overbuilt.${url}`,
+-      `${angle}\n\nI am building ${name}. The concrete use case is ${value}.${proof}\n\nIf this is relevant to your workflow, what would you need to see before trusting it?${url}`
+-    ],
+-    linkedin: [
+-      `${name} is built for ${audience}.\n\nThe practical problem: ${value}.${proof}\n\nI am looking for operators, founders, and teams who have run into this workflow and can pressure-test the positioning. The most useful feedback would be where this saves time, where it creates friction, and what proof would make it credible.${url}`,
+-      `A small product update:\n\n${name} helps ${audience} with ${value}.${proof}\n\nThe next step is not hype; it is better feedback from people close to the problem. If this maps to something your team deals with, I would value a sharp critique.${url}`,
+-      `Working on ${name}, focused on ${audience}.\n\nThe core promise is simple: ${value}.${proof}\n\nI am especially interested in what a professional buyer or daily user would need to know before taking it seriously.${url}`
+-    ],
+-    x: [
+-      `${name} is for ${audience}.\n\nIt helps with ${value}.\n\nLooking for sharp feedback from people who have this problem: what would make this immediately useful, and what would make you bounce?${url}`,
+-      `Building ${name}.\n\nAudience: ${audience}\nProblem: ${value}\n\nTrying to make the pitch clearer and the product more useful. What would you test first?${url}`,
+-      `If you deal with ${value}, I would like your read on ${name}.\n\nUseful? Too vague? Missing the real pain?\n\n${compactText(product.description, 180)}${url}`
+-    ],
+-    "hacker-news": [
+-      `I built ${name} for ${audience}. The aim is to help with ${value}.${proof}\n\nThe technical/product question I am trying to answer: is this solving a real workflow problem, or just packaging something people would rather script themselves?\n\nCritical feedback welcome.${url}`,
+-      `${name}: ${value}\n\nIt is aimed at ${audience}.${proof}\n\nI am interested in the failure modes: where would this be too brittle, too opaque, or not worth adopting?${url}`,
+-      `Show HN-style draft: ${name}\n\nIt helps ${audience} with ${value}.${proof}\n\nI would appreciate feedback on whether the problem framing is real and what technical detail should be shown up front.${url}`
+-    ],
+-    "product-hunt": [
+-      `${name} helps ${audience} ${value}.\n\nWhat it does:\n- ${compactText(value, 140)}\n- Built for ${compactText(audience, 140)}\n- Designed around practical workflow feedback${proof}\n\nI would love feedback on onboarding, positioning, and the first feature you would try.${url}`,
+-      `Launching an early version of ${name}.\n\nIt is for ${audience}, focused on ${value}.${proof}\n\nIf you try it, the question I care about most is: did it get you to value quickly enough?${url}`,
+-      `${name} is a practical tool for ${audience}.\n\nThe promise: ${value}.\n\nFeedback wanted on clarity, usefulness, and what should be added before a wider launch.${url}`
+-    ]
+-  };
+-  const generic = [
+-    `${angle}\n\n${name} is for ${audience}. It helps with ${value}.${proof}${constraints}\n\nI am looking for useful feedback from people close to the problem. What would make this worth trying?${url}`,
+-    `${name} is built around one problem: ${value}.\n\nAudience: ${audience}.${proof}\n\nI would rather get specific criticism than vague encouragement. What is unclear, unconvincing, or missing?${url}`,
+-    `Sharing ${name} because it may help ${audience}.\n\nThe useful bit: ${value}.${proof}\n\nIf this overlaps with your work, I would value a practical read on whether the promise is strong enough.${url}`
+-  ];
+-  const variants = variantsByPlatform[p] || variantsByPlatform[platformName(p).toLowerCase()] || generic;
+-  const picked = variants[Math.abs(Number(variant || 0)) % variants.length];
+-  if (String(tone || "").toLowerCase().includes("concise")) {
+-    return compactParagraphs(picked, 520);
+-  }
+-  return picked;
+-}
+-
+-function buildReplyDraft({ product = {}, interaction = {} } = {}) {
+-  const text = String(interaction.text || "");
+-  const name = product.name || "it";
+-  const value = product.valueProposition || product.description || "the core workflow";
+-  if (interaction.intent === "pricing") {
+-    return `Thanks for asking. Pricing depends on the setup, but the best next step is to check the product page or tell me what you need it for and I can point you at the right option.`;
+-  }
+-  if (interaction.intent === "support") {
+-    return `Thanks for flagging that. Could you share what happened and where you hit the issue? I would like to understand it properly before guessing.`;
+-  }
+-  if (interaction.sentiment === "negative" || interaction.intent === "moderation-risk") {
+-    return `Fair point, and I do not want this to feel like drive-by promotion. The relevant reason I shared ${name} here is that it helps with ${value}. Happy to remove or clarify if this is not a fit for the thread.`;
+-  }
+-  if (interaction.sentiment === "question" || text.includes("?")) {
+-    return `Good question. ${name} is meant to help with ${value}. The shortest way to test whether it fits is to try it against one real workflow and see where it saves time.`;
+-  }
+-  return `Thanks, I appreciate you taking a look. The part I am most interested in improving is whether ${name} actually helps with ${value} in a real workflow.`;
+-}
+-
+-function summarizeCampaign(state = {}) {
+-  const properties = state.properties.length;
+-  const products = state.products.length;
+-  const publishingTargets = state.publishingTargets.length;
+-  const opportunities = state.opportunities.length;
+-  const posts = state.posts.length;
+-  const drafts = state.posts.filter((post) => post.status === "draft").length;
+-  const approved = state.posts.filter((post) => post.status === "approved").length;
+-  const submitted = state.posts.filter((post) => post.status === "submitted").length;
+-  const published = state.posts.filter((post) => post.status === "published").length;
+-  const interactions = state.interactions.length;
+-  const needsReview = state.interactions.filter((entry) => entry.replyStatus === "needs-review").length;
+-  const totals = state.posts.reduce((acc, post) => {
+-    const metrics = normalizeMetrics(post.metrics || {});
+-    for (const key of Object.keys(metrics)) {
+-      acc[key] = Number(acc[key] || 0) + Number(metrics[key] || 0);
+-    }
+-    return acc;
+-  }, { views: 0, likes: 0, comments: 0, shares: 0, clicks: 0 });
+-  return { properties, products, publishingTargets, opportunities, posts, drafts, approved, submitted, published, interactions, needsReview, metrics: totals };
+-}
+-
+-export function createSocialMediaManagerDomain({
+-  dataApi = null,
+-  broadcast = () => {}
+-} = {}) {
+-  const dataKey = "social-media-manager-state";
+-
+-  async function readState() {
+-    const saved = dataApi ? await dataApi.readJson(dataKey, {}) : {};
+-    return normalizeState(saved);
+-  }
+-
+-  async function writeState(state = {}) {
+-    const normalized = normalizeState(state);
+-    if (dataApi) {
+-      await dataApi.writeJson(dataKey, normalized);
+-    }
+-    return normalized;
+-  }
+-
+-  async function listState(input = {}) {
+-    const state = await readState();
+-    const propertyRef = String(input.propertyId || input.property || "").trim();
+-    const property = propertyRef ? resolveProperty(state, propertyRef) : null;
+-    const scoped = scopeToProperty(state, property?.id || "");
+-    return {
+-      ...scoped,
+-      allProperties: state.properties.map((entry) => ({
+-        ...entry,
+-        summary: summarizeCampaign(scopeToProperty(state, entry.id))
+-      })),
+-      platforms: listPlatformCatalog(),
+-      summary: summarizeCampaign(scoped)
+-    };
+-  }
+-
+-  async function saveProperty(input = {}) {
+-    const suppliedName = compactText(input.name || input.title || "", 160);
+-    const explicitId = compactText(input.id || input.propertyId || "", 120);
+-    const state = await readState();
+-    const existing = explicitId
+-      ? state.properties.find((entry) => entry.id === explicitId)
+-      : state.properties.find((entry) => entry.name.toLowerCase() === suppliedName.toLowerCase());
+-    if (explicitId && !existing) throw new Error(`Property "${explicitId}" not found.`);
+-    const name = suppliedName || existing?.name || "";
+-    if (!name || /^untitled(?: property)?$/i.test(name) || (existing?.id === DEFAULT_PROPERTY_ID && !suppliedName)) {
+-      throw new Error("A property needs a real name, such as the business, brand or site it promotes.");
+-    }
+-    const now = Date.now();
+-    const patch = { ...input, name };
+-    delete patch.propertyId;
+-    if (input.platforms !== undefined && input.channels === undefined) patch.channels = input.platforms;
+-    const property = existing
+-      ? normalizeProperty({ ...existing, ...patch, id: existing.id, createdAt: existing.createdAt, updatedAt: now })
+-      : normalizeProperty({ ...patch, id: uniquePropertyKey(state, name), createdAt: now, updatedAt: now });
+-    const index = state.properties.findIndex((entry) => entry.id === property.id);
+-    if (index >= 0) state.properties[index] = property;
+-    else state.properties.push(property);
+-    await writeState(state);
+-    broadcast({ type: existing ? "social.property.updated" : "social.property.created", property });
+-    return property;
+-  }
+-
+-  // Removing a property removes everything that belongs to it.
+-  async function removeProperty(propertyId = "") {
+-    const id = compactText(propertyId, 120);
+-    if (!id) throw new Error("property id is required");
+-    const state = await readState();
+-    const index = state.properties.findIndex((entry) => entry.id === id);
+-    if (index < 0) throw new Error("property not found");
+-    const [removed] = state.properties.splice(index, 1);
+-    const counts = {};
+-    for (const kind of ["products", "opportunities", "posts", "interactions", "publishingTargets"]) {
+-      const before = state[kind].length;
+-      state[kind] = state[kind].filter((record) => record.propertyId !== id);
+-      counts[kind] = before - state[kind].length;
+-    }
+-    await writeState(state);
+-    broadcast({ type: "social.property.removed", property: removed, counts });
+-    return { property: removed, removed: counts };
+-  }
+-
+-  async function saveProduct(input = {}) {
+-    const suppliedName = compactText(input.name || input.title || "", 160);
+-    const suppliedDetail = compactText(input.url || input.productUrl || input.description || input.valueProposition || input.value || "", 1200);
+-    if (!suppliedName || /^untitled(?: product)?$/i.test(suppliedName) || !suppliedDetail) {
+-      throw new Error("A real product or service name and supporting URL, description, or value proposition are required.");
+-    }
+-    const state = await readState();
+-    const now = Date.now();
+-    const explicitId = compactText(input.id || "", 140);
+-    const existingById = explicitId ? state.products.find((entry) => entry.id === explicitId) : null;
+-    const property = existingById && !input.propertyId && !input.property
+-      ? state.properties.find((entry) => entry.id === existingById.propertyId)
+-      : resolveProperty(state, input.propertyId || input.property, { create: true });
+-    const sameProduct = existingById || (!explicitId ? state.products.find((entry) =>
+-      entry.propertyId === property.id
+-      && entry.name.toLowerCase() === suppliedName.toLowerCase()
+-      && (!input.url || entry.url.toLowerCase() === String(input.url).trim().toLowerCase())
+-    ) : null);
+-    const index = sameProduct ? state.products.findIndex((entry) => entry.id === sameProduct.id) : -1;
+-    const saved = index >= 0
+-      ? normalizeProduct({ ...state.products[index], ...input, id: sameProduct.id, propertyId: property.id, verifiedAt: now, updatedAt: now })
+-      : normalizeProduct({
+-        ...input,
+-        id: explicitId || uniqueRecordId(state.products, `product-${property.id}-${slugify(suppliedName)}`),
+-        propertyId: property.id,
+-        sourceUrl: input.sourceUrl || input.url,
+-        evidence: input.evidence || input.description || input.valueProposition,
+-        verifiedAt: now,
+-        createdAt: now,
+-        updatedAt: now
+-      });
+-    if (index >= 0) state.products[index] = saved;
+-    else state.products.push(saved);
+-    await writeState(state);
+-    broadcast({ type: index >= 0 ? "social.product.updated" : "social.product.created", product: saved });
+-    return saved;
+-  }
+-
+-  async function removeProduct(productId = "") {
+-    const id = compactText(productId, 140);
+-    if (!id) throw new Error("product id is required");
+-    const state = await readState();
+-    const index = state.products.findIndex((entry) => entry.id === id);
+-    if (index < 0) throw new Error("product not found");
+-    const [removed] = state.products.splice(index, 1);
+-    await writeState(state);
+-    broadcast({ type: "social.product.removed", product: removed });
+-    return removed;
+-  }
+-
+-  async function removeOpportunity(opportunityId = "") {
+-    const id = compactText(opportunityId, 140);
+-    if (!id) throw new Error("opportunity id is required");
+-    const state = await readState();
+-    const index = state.opportunities.findIndex((entry) => entry.id === id);
+-    if (index < 0) throw new Error("opportunity not found");
+-    const [removed] = state.opportunities.splice(index, 1);
+-    await writeState(state);
+-    broadcast({ type: "social.opportunity.removed", opportunity: removed });
+-    return removed;
+-  }
+-
+-  async function removePost(postId = "") {
+-    const id = compactText(postId, 140);
+-    if (!id) throw new Error("post id is required");
+-    const state = await readState();
+-    const index = state.posts.findIndex((entry) => entry.id === id);
+-    if (index < 0) throw new Error("post not found");
+-    const [removed] = state.posts.splice(index, 1);
+-    state.interactions = state.interactions.filter((entry) => entry.postId !== id);
+-    await writeState(state);
+-    broadcast({ type: "social.post.removed", post: removed });
+-    return removed;
+-  }
+-
+-  async function clearRecords(kind = "", propertyId = "") {
+-    const key = String(kind || "").trim();
+-    if (!["products", "publishingTargets", "opportunities", "posts"].includes(key)) throw new Error("unsupported record type");
+-    const state = await readState();
+-    const scope = String(propertyId || "").trim();
+-    const inScope = (record) => !scope || record.propertyId === scope;
+-    const removed = state[key].filter(inScope);
+-    state[key] = state[key].filter((record) => !inScope(record));
+-    await writeState(state);
+-    broadcast({ type: "social.records.cleared", kind: key, propertyId: scope, count: removed.length });
+-    return { kind: key, propertyId: scope, count: removed.length };
+-  }
+-
+-  async function savePublishingTarget(input = {}) {
+-    const required = ["platform", "accountId", "label", "composerUrl", "bodySelector", "submitSelector"];
+-    const missing = required.filter((key) => !String(input[key] || "").trim());
+-    if (missing.length) throw new Error(`Publishing target is incomplete: ${missing.join(", ")} required.`);
+-    const state = await readState();
+-    const now = Date.now();
+-    const propertyRef = String(input.propertyId || input.property || "").trim();
+-    const propertyId = propertyRef ? resolveProperty(state, propertyRef).id : "";
+-    const target = normalizePublishingTarget({ ...input, propertyId, updatedAt: now });
+-    const index = state.publishingTargets.findIndex((entry) => entry.id === target.id);
+-    if (index >= 0) {
+-      state.publishingTargets[index] = normalizePublishingTarget({ ...state.publishingTargets[index], ...input, propertyId, id: target.id, updatedAt: now });
+-    } else {
+-      state.publishingTargets.push(target);
+-    }
+-    await writeState(state);
+-    const saved = index >= 0 ? state.publishingTargets[index] : target;
+-    broadcast({ type: index >= 0 ? "social.target.updated" : "social.target.created", publishingTarget: saved });
+-    return saved;
+-  }
+-
+-  async function removePublishingTarget(targetId = "") {
+-    const id = compactText(targetId, 160);
+-    if (!id) throw new Error("publishing target id is required");
+-    const state = await readState();
+-    const index = state.publishingTargets.findIndex((entry) => entry.id === id);
+-    if (index < 0) throw new Error("publishing target not found");
+-    const [removed] = state.publishingTargets.splice(index, 1);
+-    await writeState(state);
+-    broadcast({ type: "social.target.removed", publishingTarget: removed });
+-    return removed;
+-  }
+-
+-  // A target named by id, or the active target for a platform and account.
+-  // A property's own target is preferred over one shared by all properties.
+-  async function findPublishingTarget(reference = {}) {
+-    const state = await readState();
+-    const targetId = String(reference.targetId || reference.id || "").trim();
+-    if (targetId) return state.publishingTargets.find((target) => target.id === targetId) || null;
+-    const platform = platformId(reference.platform || reference.service || "");
+-    const accountId = String(reference.accountId || "").trim().toLowerCase();
+-    const propertyId = String(reference.propertyId || "").trim();
+-    if (!platform) return null;
+-    const matches = state.publishingTargets.filter((target) =>
+-      target.platform === platform
+-      && (accountId ? target.accountId === accountId : target.status === "active")
+-      && (!target.propertyId || !propertyId || target.propertyId === propertyId)
+-    );
+-    return matches.find((target) => propertyId && target.propertyId === propertyId) || matches[0] || null;
+-  }
+-
+-  async function findProduct(reference = "") {
+-    const state = await readState();
+-    const normalized = String(reference || "").trim().toLowerCase();
+-    if (!normalized) {
+-      return null;
+-    }
+-    return state.products.find((product) =>
+-      product.id.toLowerCase() === normalized
+-      || product.name.toLowerCase() === normalized
+-      || product.name.toLowerCase().includes(normalized)
+-    ) || null;
+-  }
+-
+-  function productFor(state, input = {}) {
+-    const productId = String(input.productId || "").trim();
+-    const reference = String(input.product || input.name || "").trim().toLowerCase();
+-    const propertyRef = String(input.propertyId || input.property || "").trim();
+-    const property = propertyRef ? resolveProperty(state, propertyRef) : null;
+-    const candidates = property ? state.products.filter((entry) => entry.propertyId === property.id) : state.products;
+-    return (productId ? candidates.find((entry) => entry.id === productId) : null)
+-      || (productId ? candidates.find((entry) => entry.name.toLowerCase() === productId.toLowerCase()) : null)
+-      || (reference ? candidates.find((entry) => entry.name.toLowerCase() === reference) : null)
+-      || (reference ? candidates.find((entry) => entry.name.toLowerCase().includes(reference)) : null)
+-      || null;
+-  }
+-
+-  async function discoverOpportunities(input = {}) {
+-    const state = await readState();
+-    const product = productFor(state, input);
+-    if (!product) throw new Error("Choose a saved, verified product or service before discovering opportunities.");
+-    const candidateUrls = uniqueStrings(input.candidateUrls || input.urls || [], 20);
+-    if (!candidateUrls.length) {
+-      throw new Error("No researched candidate URLs were supplied. Inspect real communities or pages first; generic search links are not saved as opportunities.");
+-    }
+-    const generated = [];
+-    for (const url of candidateUrls) {
+-      generated.push(normalizeOpportunity({
+-        id: `opp-${product.id}-candidate-${slugify(url)}`,
+-        propertyId: product.propertyId,
+-        productId: product.id,
+-        platform: "web",
+-        platformName: "Web candidate",
+-        title: `Candidate community: ${url}`,
+-        url,
+-        searchQuery: product.name,
+-        score: 50,
+-        risk: "medium",
+-        audienceFit: `Research candidate for ${product.audience || product.name}; keep only after confirming its rules, audience, and recent activity.`,
+-        postingGuidance: "Inspect recent posts and rules before publishing. Prefer a helpful answer or case study over a direct ad.",
+-        angle: `Use a concrete example from ${product.name}.`
+-      }));
+-    }
+-    for (const opportunity of generated) {
+-      const index = state.opportunities.findIndex((entry) => entry.id === opportunity.id);
+-      if (index >= 0) {
+-        state.opportunities[index] = { ...state.opportunities[index], ...opportunity, updatedAt: Date.now() };
+-      } else {
+-        state.opportunities.push(opportunity);
+-      }
+-    }
+-    await writeState(state);
+-    broadcast({ type: "social.opportunities.discovered", product, opportunities: generated });
+-    return { product, opportunities: generated.sort((left, right) => right.score - left.score) };
+-  }
+-
+-  // The platform a draft is for: the one asked for, the opportunity's, or the
+-  // property's first channel. A property with channels only posts to them.
+-  function draftPlatform(property, requested = "", opportunity = null) {
+-    const channels = enabledChannels(property);
+-    const allowed = channels.map((channel) => channel.platform);
+-    const asked = platformId(requested);
+-    if (asked) {
+-      if (allowed.length && !allowed.includes(asked)) {
+-        throw new Error(`${platformName(asked)} is not one of ${property.name}'s channels: ${channels.map((channel) => channel.label).join(", ")}.`);
+-      }
+-      return asked;
+-    }
+-    const fromOpportunity = opportunity?.platform && opportunity.platform !== "web" ? opportunity.platform : "";
+-    if (fromOpportunity && (!allowed.length || allowed.includes(fromOpportunity))) return fromOpportunity;
+-    return allowed[0] || fromOpportunity || "";
+-  }
+-
+-  async function composePosts(input = {}) {
+-    const state = await readState();
+-    const product = productFor(state, input);
+-    if (!product) {
+-      throw new Error("product is required before composing posts");
+-    }
+-    const property = state.properties.find((entry) => entry.id === product.propertyId) || {};
+-    const opportunity = state.opportunities.find((entry) =>
+-      entry.id === String(input.opportunityId || "").trim()
+-    ) || state.opportunities.find((entry) => entry.productId === product.id);
+-    const platform = draftPlatform(property, input.platform, opportunity);
+-    const count = Math.max(1, Math.min(5, Number(input.count || 3) || 3));
+-    const created = [];
+-    for (let index = 0; index < count; index += 1) {
+-      const post = normalizePost({
+-        propertyId: product.propertyId,
+-        productId: product.id,
+-        opportunityId: opportunity?.id || "",
+-        platform,
+-        title: compactText(input.title || `${product.name} post for ${platform ? platformName(platform) : opportunity?.platformName || "social"}`, 220),
+-        body: buildPostBody({
+-          product: { ...product, url: product.url || property.website || "" },
+-          opportunity,
+-          tone: input.tone || property.voice,
+-          variant: index,
+-          platform
+-        }),
+-        callToAction: input.callToAction || "Ask for feedback from people who have the problem.",
+-        status: "draft"
+-      });
+-      state.posts.push(post);
+-      created.push(post);
+-    }
+-    await writeState(state);
+-    broadcast({ type: "social.posts.composed", posts: created });
+-    return created;
+-  }
+-
+-  async function recordMonitorSnapshot(input = {}) {
+-    const state = await readState();
+-    const postId = String(input.postId || "").trim();
+-    const post = state.posts.find((entry) => entry.id === postId) || null;
+-    if (!post) {
+-      throw new Error("post not found");
+-    }
+-    const seen = new Set(state.interactions.map((entry) => `${entry.postId}:${entry.author}:${entry.text}`.toLowerCase()));
+-    const recorded = [];
+-    for (const comment of Array.isArray(input.comments) ? input.comments : []) {
+-      const normalized = normalizeInteraction({
+-        ...comment,
+-        propertyId: post.propertyId,
+-        postId: post.id,
+-        productId: post.productId,
+-        platform: post.platform,
+-        externalUrl: comment.externalUrl || post.publishedUrl
+-      });
+-      const key = `${normalized.postId}:${normalized.author}:${normalized.text}`.toLowerCase();
+-      if (!normalized.text || seen.has(key)) {
+-        continue;
+-      }
+-      seen.add(key);
+-      const product = state.products.find((entry) => entry.id === post.productId) || null;
+-      if (!normalized.replyDraft) {
+-        normalized.replyDraft = buildReplyDraft({ product, interaction: normalized });
+-      }
+-      state.interactions.push(normalized);
+-      recorded.push(normalized);
+-    }
+-    if (input.metrics && typeof input.metrics === "object") {
+-      const index = state.posts.findIndex((entry) => entry.id === post.id);
+-      state.posts[index] = normalizePost({
+-        ...post,
+-        metrics: {
+-          ...(post.metrics || {}),
+-          ...input.metrics
+-        },
+-        updatedAt: Date.now()
+-      });
+-    }
+-    await writeState(state);
+-    broadcast({ type: "social.post.monitored", postId: post.id, recordedCount: recorded.length });
+-    return { postId: post.id, recorded, recordedCount: recorded.length };
+-  }
+-
+-  async function updatePost(postId = "", patch = {}) {
+-    const state = await readState();
+-    const id = String(postId || patch.id || "").trim();
+-    const index = state.posts.findIndex((entry) => entry.id === id);
+-    if (index < 0) {
+-      throw new Error("post not found");
+-    }
+-    // A post stays with the product and property it was drafted for.
+-    const { propertyId: _propertyId, productId: _productId, ...editable } = patch;
+-    state.posts[index] = normalizePost({ ...state.posts[index], ...editable, id, updatedAt: Date.now() });
+-    await writeState(state);
+-    broadcast({ type: "social.post.updated", post: state.posts[index] });
+-    return state.posts[index];
+-  }
+-
+-  async function recordInteraction(input = {}) {
+-    const state = await readState();
+-    const post = state.posts.find((entry) => entry.id === String(input.postId || "").trim()) || null;
+-    const product = state.products.find((entry) => entry.id === (input.productId || post?.productId)) || null;
+-    const interaction = normalizeInteraction({
+-      ...input,
+-      propertyId: post?.propertyId || product?.propertyId || input.propertyId || "",
+-      productId: input.productId || post?.productId || "",
+-      platform: input.platform || post?.platform || ""
+-    });
+-    if (!interaction.replyDraft) {
+-      interaction.replyDraft = buildReplyDraft({ product, interaction });
+-    }
+-    const index = state.interactions.findIndex((entry) => entry.id === interaction.id);
+-    if (index >= 0) {
+-      state.interactions[index] = interaction;
+-    } else {
+-      state.interactions.push(interaction);
+-    }
+-    await writeState(state);
+-    broadcast({ type: "social.interaction.recorded", interaction });
+-    return interaction;
+-  }
+-
+-  async function updateInteraction(interactionId = "", patch = {}) {
+-    const state = await readState();
+-    const id = String(interactionId || patch.id || "").trim();
+-    const index = state.interactions.findIndex((entry) => entry.id === id);
+-    if (index < 0) {
+-      throw new Error("interaction not found");
+-    }
+-    state.interactions[index] = normalizeInteraction({ ...state.interactions[index], ...patch, id, updatedAt: Date.now() });
+-    await writeState(state);
+-    broadcast({ type: "social.interaction.updated", interaction: state.interactions[index] });
+-    return state.interactions[index];
+-  }
+-
+-  async function buildReport(input = {}) {
+-    const state = await readState();
+-    const propertyRef = String(input.propertyId || input.property || "").trim();
+-    const property = propertyRef ? resolveProperty(state, propertyRef) : null;
+-    const scoped = scopeToProperty(state, property?.id || "");
+-    const productRef = String(input.productId || input.product || "").trim().toLowerCase();
+-    const platform = platformId(input.platform || "");
+-    const products = productRef
+-      ? scoped.products.filter((product) => product.id.toLowerCase() === productRef || product.name.toLowerCase().includes(productRef))
+-      : scoped.products;
+-    const productIds = new Set(products.map((product) => product.id));
+-    const matches = (entry) => (!productRef || productIds.has(entry.productId)) && (!platform || entry.platform === platform);
+-    const opportunities = scoped.opportunities.filter(matches);
+-    const posts = scoped.posts.filter(matches);
+-    const interactions = scoped.interactions.filter(matches);
+-    const summary = summarizeCampaign({ ...scoped, products, opportunities, posts, interactions });
+-    const topOpportunities = opportunities.slice().sort((left, right) => right.score - left.score).slice(0, 8);
+-    const pendingReplies = interactions.filter((entry) => entry.replyStatus === "needs-review").slice(0, 8);
+-    const propertyName = (id) => state.properties.find((entry) => entry.id === id)?.name || id;
+-    const tag = (id) => property ? "" : ` [${propertyName(id)}]`;
+-    const lines = [
+-      property ? `Social media manager report: ${property.name}` : `Social media manager report: all ${state.properties.length} properties`,
+-      `Products: ${summary.products}; publishing targets: ${summary.publishingTargets}; opportunities: ${summary.opportunities}; posts: ${summary.posts} (${summary.drafts} draft, ${summary.approved} approved, ${summary.submitted} awaiting verification, ${summary.published} published).`,
+-      `Interactions: ${summary.interactions}; replies needing review: ${summary.needsReview}.`,
+-      `Metrics: ${summary.metrics.views} views, ${summary.metrics.likes} likes, ${summary.metrics.comments} comments, ${summary.metrics.shares} shares, ${summary.metrics.clicks} clicks.`
+-    ];
+-    if (!property && state.properties.length > 1) {
+-      lines.push("By property:");
+-      for (const entry of state.properties) {
+-        const each = summarizeCampaign(scopeToProperty(state, entry.id));
+-        lines.push(`- ${entry.name}: ${each.products} products, ${each.posts} posts, ${each.published} published, ${each.needsReview} replies needing review`);
+-      }
+-    }
+-    if (topOpportunities.length) {
+-      lines.push("Top opportunities:");
+-      for (const opportunity of topOpportunities) {
+-        lines.push(`- ${opportunity.platformName}: ${opportunity.title} (${opportunity.score}/100)${tag(opportunity.propertyId)}`);
+-      }
+-    }
+-    if (pendingReplies.length) {
+-      lines.push("Replies needing review:");
+-      for (const interaction of pendingReplies) {
+-        lines.push(`- ${interaction.author || "Unknown"}: ${compactText(interaction.text, 90)}${tag(interaction.propertyId)}`);
+-      }
+-    }
+-    return { text: lines.join("\n"), summary, property, products, opportunities, posts, interactions };
+-  }
+-
+-  return {
+-    buildReport,
+-    clearRecords,
+-    composePosts,
+-    discoverOpportunities,
+-    findPublishingTarget,
+-    findProduct,
+-    listState,
+-    recordMonitorSnapshot,
+-    readState,
+-    recordInteraction,
+-    removeOpportunity,
+-    removePost,
+-    removeProduct,
+-    removeProperty,
+-    removePublishingTarget,
+-    savePublishingTarget,
+-    saveProduct,
+-    saveProperty,
+-    updateInteraction,
+-    updatePost,
+-    writeState
+-  };
+-}
+diff --git a/plugins/social-media-manager/social-media-manager-plugin.js b/plugins/social-media-manager/social-media-manager-plugin.js
+deleted file mode 100644
+index 978fe4e..0000000
+--- a/plugins/social-media-manager/social-media-manager-plugin.js
++++ /dev/null
+@@ -1,265 +0,0 @@
+-import fs from "node:fs/promises";
+-import { fileURLToPath } from "node:url";
+-import { createSocialMediaManagerDomain } from "./lib/social-media-manager-domain.js";
+-
+-const PLUGIN_ID = "social-media-manager";
+-const API_BASE = `/api/plugins/${PLUGIN_ID}`;
+-const UI_SCRIPT_URL = `/plugins/${PLUGIN_ID}/ui.js`;
+-const UI_SCRIPT_PATH = fileURLToPath(new URL("./ui/social-media-manager-ui.js", import.meta.url));
+-
+-const property = { propertyId: "string" };
+-const tools = [
+-  { name: "social_save_property", description: "Save or update a property: a business, brand or site with its own products, channels, voice and guidelines. Pass id to update one.", parameters: { id: "string", name: "string", website: "string", description: "string", audience: "string", voice: "string", platforms: "array|string", keywords: "array|string", guidelines: "string", status: "active|paused|archived" } },
+-  { name: "social_list_properties", description: "List the properties, their channels, and each property's campaign totals.", parameters: {} },
+-  { name: "social_save_product", description: "Save a real product or service of a property with supporting details.", parameters: { ...property, name: "string", url: "string", description: "string", audience: "string", valueProposition: "string", sourceUrl: "string", evidence: "string" } },
+-  { name: "social_find_posting_opportunities", description: "Record researched social posting opportunities for a product.", risk: "medium", parameters: { ...property, productId: "string", platforms: "array|string", candidateUrls: "array|string", keywords: "array|string" } },
+-  { name: "social_compose_posts", description: "Draft posts for a saved product on one of its property's channels.", parameters: { ...property, productId: "string", opportunityId: "string", platform: "string", tone: "string", count: "number", callToAction: "string" } },
+-  { name: "social_list_campaign", description: "List a property's products, drafts, publishing targets, interactions and totals, or every property's when none is named.", parameters: { ...property } },
+-  { name: "social_get_report", description: "Summarise a property's social campaign, or all properties, and the posts needing attention.", parameters: { ...property, productId: "string", platform: "string" } },
+-  { name: "social_update_post", description: "Edit, approve, or verify a post and update its schedule and metrics.", parameters: { postId: "string", status: "draft|approved|submitted|published|archived", publishedUrl: "string", title: "string", body: "string", scheduledAt: "string", metrics: "object" } },
+-  { name: "social_save_publishing_target", description: "Save a browser publishing target and its composer selectors. Pass propertyId to use it only for that property.", parameters: { ...property, id: "string", platform: "string", accountId: "string", label: "string", composerUrl: "string", bodySelector: "string", submitSelector: "string", titleSelector: "string" } },
+-  { name: "social_publish_post", description: "Publish an approved post through its property's browser target or platform webhook.", risk: "high", parameters: { postId: "string", targetId: "string" } },
+-  { name: "social_record_interaction", description: "Record a comment and prepare a suggested reply for review.", parameters: { postId: "string", author: "string", text: "string", externalUrl: "string", sentiment: "string" } },
+-  { name: "social_update_interaction", description: "Update a tracked comment or reply status.", parameters: { interactionId: "string", replyDraft: "string", replyStatus: "string" } }
+-];
+-const READ_ONLY_TOOLS = ["social_list_properties", "social_list_campaign", "social_get_report"];
+-
+-export default function createSocialMediaManagerPlugin() {
+-  let domain = null;
+-  const domainFor = (api) => {
+-    domain ||= createSocialMediaManagerDomain({ dataApi: api.data, broadcast: (event) => api.broadcast?.(event) });
+-    return domain;
+-  };
+-  return {
+-    id: PLUGIN_ID,
+-    name: "Social Media Manager",
+-    version: "3.0.0",
+-    description: "Social campaigns for several properties: products, channels, drafts, publishing, interactions and reports.",
+-    manifest: {
+-      schemaVersion: 1,
+-      permissions: {
+-        routes: true, uiPanels: true, data: true,
+-        tools: tools.map((tool) => tool.name), capabilities: [], hooks: [], runtimeContext: []
+-      },
+-      dependencies: { requiredCapabilities: [], optionalCapabilities: ["browser.externalAction", "speck:secret-get", "speck:secret-has", "speck:secret-set", "speck:secret-delete"] },
+-      security: { isolation: "inprocess" },
+-      // What this plugin is about (Genesis core API 1.5.0): read by the host to
+-      // decide when to offer its tools.
+-      topics: {
+-        "keywords": [
+-          "social media",
+-          "marketing campaign",
+-          "promoting products",
+-          "product launch",
+-          "brands and properties",
+-          "LinkedIn",
+-          "Reddit",
+-          "Hacker News",
+-          "Product Hunt",
+-          "Indie Hackers",
+-          "X",
+-          "TikTok",
+-          "Facebook",
+-          "Instagram",
+-          "post drafts",
+-          "approving and publishing posts",
+-          "comments and replies",
+-          "engagement report"
+-        ],
+-        "examples": [
+-          "Write a launch post for our new product",
+-          "Where should we promote the store online?",
+-          "Approve and publish the drafted post",
+-          "Suggest a reply to a comment on our post",
+-          "How are our posts performing?",
+-          "Add our new product to the campaign",
+-          "Add another business to the social media manager"
+-        ]
+-      }
+-    },
+-    init(api) {
+-      const domain = domainFor(api);
+-      const actions = {
+-        social_save_property: (args) => domain.saveProperty(args),
+-        social_list_properties: async () => {
+-          const state = await domain.listState();
+-          return { properties: state.allProperties, platforms: state.platforms };
+-        },
+-        social_save_product: (args) => domain.saveProduct(args),
+-        social_find_posting_opportunities: (args) => domain.discoverOpportunities(args),
+-        social_compose_posts: (args) => domain.composePosts(args),
+-        social_list_campaign: (args) => domain.listState(args),
+-        social_get_report: (args) => domain.buildReport(args),
+-        social_update_post: (args) => updatePost(domain, args.postId, args),
+-        social_save_publishing_target: (args) => domain.savePublishingTarget(args),
+-        social_record_interaction: (args) => domain.recordInteraction(args),
+-        social_update_interaction: (args) => domain.updateInteraction(args.interactionId, args),
+-        social_publish_post: (args) => publish(api, domain, args)
+-      };
+-      for (const tool of tools) api.registerTool({ ...tool, risk: tool.risk || (READ_ONLY_TOOLS.includes(tool.name) ? "read-only" : "normal"), scopes: ["worker"] }, actions[tool.name]);
+-      api.registerUiPrimaryTab?.({ id: "social", title: "Social", order: 50, scriptUrl: UI_SCRIPT_URL });
+-    },
+-    registerRoutes({ app, api }) {
+-      const domain = domainFor(api);
+-      registerUiRoutes(app, api, domain);
+-    }
+-  };
+-}
+-
+-function updatePost(domain, postId, patch = {}) {
+-  if (patch.status === "published" && !patch.publishedUrl) throw new Error("publishedUrl is required to verify a post");
+-  return domain.updatePost(postId, patch);
+-}
+-
+-// The secrets a property's channel publishes with: its own, or the platform's
+-// shared webhook when the property has none.
+-function webhookHandles(propertyId = "", platform = "") {
+-  const own = propertyId ? [`social.${propertyId}.${platform}`] : [];
+-  return [...own, `social.${platform}`].map((prefix) => ({ url: `${prefix}.webhook-url`, token: `${prefix}.webhook-token` }));
+-}
+-
+-async function publish(api, domain, args) {
+-  const state = await domain.readState();
+-  const post = state.posts.find((entry) => entry.id === String(args.postId || ""));
+-  if (!post) throw new Error("post not found");
+-  if (post.status !== "approved") throw new Error("approve the draft before publishing");
+-  const target = args.targetId
+-    ? await domain.findPublishingTarget({ targetId: args.targetId })
+-    : await domain.findPublishingTarget({ platform: post.platform, propertyId: post.propertyId });
+-  if (args.targetId && !target) throw new Error("publishing target not found");
+-  let receipt;
+-  const browserSubmission = Boolean(target);
+-  if (target) {
+-    const browserAction = api.getCapability("browser.externalAction");
+-    if (typeof browserAction !== "function") throw new Error("browser publishing capability is unavailable");
+-    const base = { service: target.platform, accountId: target.accountId, requiresApproval: false };
+-    await browserAction({ ...base, action: "navigate", url: target.composerUrl });
+-    if (target.titleSelector && post.title) await browserAction({ ...base, action: "fill", selector: target.titleSelector, value: post.title });
+-    await browserAction({ ...base, action: "fill", selector: target.bodySelector, value: post.body });
+-    receipt = await browserAction({ ...base, action: "click", selector: target.submitSelector });
+-    if (receipt?.ok === false || receipt?.success === false) throw new Error("browser publishing failed");
+-  } else {
+-    const getSecret = api.getCapability("speck:secret-get");
+-    if (typeof getSecret !== "function") throw new Error("secret store is unavailable");
+-    const platform = String(post.platform || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+-    let endpoint = "";
+-    let handles = null;
+-    for (const candidate of webhookHandles(post.propertyId, platform)) {
+-      endpoint = await getSecret({ handle: candidate.url }).catch(() => "");
+-      if (endpoint) { handles = candidate; break; }
+-    }
+-    if (!endpoint) throw new Error(`configure secret social.${post.propertyId}.${platform}.webhook-url (or social.${platform}.webhook-url) or a browser publishing target`);
+-    const url = new URL(endpoint);
+-    if (url.protocol !== "https:" || url.username || url.password) throw new Error("social webhook must be an HTTPS URL without embedded credentials");
+-    const token = await getSecret({ handle: handles.token }).catch(() => "");
+-    const response = await fetch(url, {
+-      method: "POST",
+-      headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+-      body: JSON.stringify({ postId: post.id, propertyId: post.propertyId, platform, title: post.title, body: post.body, productId: post.productId }),
+-      signal: AbortSignal.timeout(30000)
+-    });
+-    if (!response.ok) throw new Error(`social webhook returned HTTP ${response.status}`);
+-    receipt = await response.json().catch(() => ({}));
+-    if (receipt?.ok === false || receipt?.success === false) throw new Error(String(receipt.error || "social webhook rejected the post"));
+-  }
+-  const publishedUrl = String(receipt?.url || receipt?.publishedUrl || "");
+-  if (browserSubmission ? receipt?.verified !== true : !receipt?.verified && !publishedUrl) {
+-    const submitted = await domain.updatePost(post.id, { status: "submitted" });
+-    return { post: submitted, submitted: true, verificationRequired: true, receipt };
+-  }
+-  const updated = await domain.updatePost(post.id, { status: "published", publishedAt: Date.now(), publishedUrl });
+-  return { post: updated, publishedUrl, receipt };
+-}
+-
+-// Which webhook secrets each of a property's channels has. Values never leave
+-// the secret store; the UI only learns whether a handle is set.
+-async function channelSecrets(api, domain, propertyId) {
+-  const has = api.getCapability("speck:secret-has");
+-  const state = await domain.listState({ propertyId });
+-  const property = state.properties[0];
+-  const channels = [];
+-  for (const channel of property.channels) {
+-    const [own, shared] = webhookHandles(property.id, channel.platform);
+-    const check = async (handle) => typeof has === "function" ? Boolean(await has({ handle })) : false;
+-    channels.push({
+-      platform: channel.platform,
+-      handles: own,
+-      sharedHandles: shared,
+-      webhookUrl: await check(own.url),
+-      webhookToken: await check(own.token),
+-      sharedWebhookUrl: await check(shared.url)
+-    });
+-  }
+-  return { propertyId: property.id, channels, available: typeof has === "function" };
+-}
+-
+-async function setChannelSecret(api, domain, propertyId, body = {}) {
+-  const state = await domain.listState({ propertyId });
+-  const property = state.properties[0];
+-  const platform = String(body.platform || "");
+-  if (!property.channels.some((channel) => channel.platform === platform)) throw new Error(`${platform || "That platform"} is not one of ${property.name}'s channels`);
+-  const kind = body.kind === "token" ? "token" : "url";
+-  const [own] = webhookHandles(property.id, platform);
+-  const handle = own[kind];
+-  const value = String(body.value ?? "").trim();
+-  if (!value) {
+-    const remove = api.getCapability("speck:secret-delete");
+-    if (typeof remove !== "function") throw new Error("secret store is unavailable");
+-    await remove({ handle });
+-    return { handle, set: false };
+-  }
+-  if (kind === "url") {
+-    const url = new URL(value);
+-    if (url.protocol !== "https:" || url.username || url.password) throw new Error("social webhook must be an HTTPS URL without embedded credentials");
+-  }
+-  const set = api.getCapability("speck:secret-set");
+-  if (typeof set !== "function") throw new Error("secret store is unavailable");
+-  await set({ handle, value });
+-  return { handle, set: true };
+-}
+-
+-function registerUiRoutes(app, api, domain) {
+-  const route = (handler) => async (req, res) => {
+-    try {
+-      res.json({ ok: true, ...(await handler(req)) });
+-    } catch (error) {
+-      res.status(400).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+-    }
+-  };
+-  const body = (req) => (req.body && typeof req.body === "object" ? req.body : {});
+-
+-  // The tab script holds no data; the data routes below need the admin token.
+-  app.get(UI_SCRIPT_URL, async (_req, res) => {
+-    try {
+-      res.type("text/javascript").set("cache-control", "no-cache").send(await fs.readFile(UI_SCRIPT_PATH, "utf8"));
+-    } catch {
+-      res.status(404).type("text/plain").send("Social Media Manager interface is unavailable");
+-    }
+-  });
+-
+-  app.get(`${API_BASE}/state`, route(async (req) => ({ state: await domain.listState({ propertyId: req.query.propertyId }) })));
+-  app.get(`${API_BASE}/report`, route(async (req) => ({ report: await domain.buildReport({ propertyId: req.query.propertyId }) })));
+-
+-  app.post(`${API_BASE}/properties`, route(async (req) => ({ property: await domain.saveProperty(body(req)) })));
+-  app.delete(`${API_BASE}/properties/:id`, route(async (req) => domain.removeProperty(req.params.id)));
+-  app.get(`${API_BASE}/properties/:id/secrets`, route(async (req) => ({ secrets: await channelSecrets(api, domain, req.params.id) })));
+-  app.post(`${API_BASE}/properties/:id/secrets`, route(async (req) => ({ secret: await setChannelSecret(api, domain, req.params.id, body(req)) })));
+-
+-  app.post(`${API_BASE}/products`, route(async (req) => ({ product: await domain.saveProduct(body(req)) })));
+-  app.delete(`${API_BASE}/products/:id`, route(async (req) => ({ product: await domain.removeProduct(req.params.id) })));
+-
+-  app.post(`${API_BASE}/opportunities`, route(async (req) => domain.discoverOpportunities(body(req))));
+-  app.delete(`${API_BASE}/opportunities/:id`, route(async (req) => ({ opportunity: await domain.removeOpportunity(req.params.id) })));
+-
+-  app.post(`${API_BASE}/posts/compose`, route(async (req) => ({ posts: await domain.composePosts(body(req)) })));
+-  app.patch(`${API_BASE}/posts/:id`, route(async (req) => ({ post: await updatePost(domain, req.params.id, body(req)) })));
+-  app.delete(`${API_BASE}/posts/:id`, route(async (req) => ({ post: await domain.removePost(req.params.id) })));
+-  // A person pressing Publish in the tab is the approval the tool path asks for.
+-  app.post(`${API_BASE}/posts/:id/publish`, route(async (req) => publish(api, domain, { postId: req.params.id, targetId: body(req).targetId })));
+-
+-  app.post(`${API_BASE}/targets`, route(async (req) => ({ publishingTarget: await domain.savePublishingTarget(body(req)) })));
+-  app.delete(`${API_BASE}/targets/:id`, route(async (req) => ({ publishingTarget: await domain.removePublishingTarget(req.params.id) })));
+-
+-  app.post(`${API_BASE}/interactions`, route(async (req) => ({ interaction: await domain.recordInteraction(body(req)) })));
+-  app.patch(`${API_BASE}/interactions/:id`, route(async (req) => ({ interaction: await domain.updateInteraction(req.params.id, body(req)) })));
+-}
+diff --git a/plugins/social-media-manager/ui/social-media-manager-ui.js b/plugins/social-media-manager/ui/social-media-manager-ui.js
+deleted file mode 100644
+index e811d4e..0000000
+--- a/plugins/social-media-manager/ui/social-media-manager-ui.js
++++ /dev/null
+@@ -1,656 +0,0 @@
+-// The Social Media Manager tab: properties, each with its own products,
+-// channels, posts and replies. Served by the plugin; mounted by Speck.
+-
+-const API = "/api/plugins/social-media-manager";
+-const SECTIONS = [
+-  ["overview", "Overview"],
+-  ["products", "Products"],
+-  ["channels", "Channels"],
+-  ["posts", "Posts"],
+-  ["replies", "Replies"],
+-  ["settings", "Settings"]
+-];
+-const POST_FILTERS = ["all", "draft", "approved", "submitted", "published", "archived"];
+-const REPLY_STATUSES = ["needs-review", "approved", "replied", "ignored"];
+-
+-const escapeHtml = (value = "") => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+-  "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+-})[character]);
+-const when = (value) => {
+-  const date = new Date(Number(value || 0));
+-  return Number(value) > 0 && Number.isFinite(date.getTime()) ? date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+-};
+-const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+-
+-export async function mountPluginTab({ root, pluginAdminFetch, observerApp }) {
+-  const fetcher = pluginAdminFetch || observerApp?.adminFetch || fetch;
+-  const ui = createSocialManagerUi(root, fetcher);
+-  await ui.load();
+-  return ui;
+-}
+-
+-function createSocialManagerUi(root, fetcher) {
+-  const view = {
+-    state: null,
+-    propertyId: readPreference("property"),
+-    section: readPreference("section") || "overview",
+-    postFilter: "all",
+-    editing: null, // { kind, id } of the record whose form is open
+-    secrets: null,
+-    busy: false,
+-    error: ""
+-  };
+-  injectStyles();
+-  root.classList.add("smm");
+-  root.addEventListener("click", onClick);
+-  root.addEventListener("submit", onSubmit);
+-  root.addEventListener("change", onChange);
+-
+-  async function request(path, { method = "GET", body } = {}) {
+-    const options = { method, headers: {} };
+-    if (body !== undefined) {
+-      options.headers["content-type"] = "application/json";
+-      options.body = JSON.stringify(body);
+-    }
+-    const response = await fetcher(`${API}${path}`, options);
+-    const payload = await response.json().catch(() => ({}));
+-    if (!response.ok || payload?.ok === false) throw new Error(payload?.error || `${response.status} ${response.statusText}`);
+-    return payload;
+-  }
+-
+-  async function load() {
+-    try {
+-      const { state } = await request("/state");
+-      view.state = state;
+-      const ids = state.allProperties.map((property) => property.id);
+-      if (!ids.includes(view.propertyId)) view.propertyId = ids[0] || "";
+-      view.error = "";
+-      if (view.section === "channels" && view.propertyId) await loadSecrets();
+-    } catch (error) {
+-      view.error = error.message;
+-    }
+-    render();
+-  }
+-
+-  async function loadSecrets() {
+-    try {
+-      view.secrets = (await request(`/properties/${encodeURIComponent(view.propertyId)}/secrets`)).secrets;
+-    } catch {
+-      view.secrets = null;
+-    }
+-  }
+-
+-  // Runs one change, reloads, and reports the outcome.
+-  async function act(work, done = "") {
+-    if (view.busy) return;
+-    view.busy = true;
+-    root.classList.add("smm-busy");
+-    try {
+-      const result = await work();
+-      await load();
+-      if (done) notice(typeof done === "function" ? done(result) : done);
+-    } catch (error) {
+-      notice(error.message, true);
+-    } finally {
+-      view.busy = false;
+-      root.classList.remove("smm-busy");
+-    }
+-  }
+-
+-  function notice(message, isError = false) {
+-    const toast = document.querySelector("#toast");
+-    if (toast) {
+-      toast.textContent = message;
+-      toast.classList.toggle("error", isError);
+-      toast.classList.add("show");
+-      clearTimeout(notice.timer);
+-      notice.timer = setTimeout(() => toast.classList.remove("show"), 3200);
+-    } else if (isError) {
+-      alert(message);
+-    }
+-  }
+-
+-  const creatingProperty = () => view.editing?.kind === "property" && !view.editing.id;
+-  const property = () => view.state?.allProperties.find((entry) => entry.id === view.propertyId) || null;
+-  const scoped = (kind) => (view.state?.[kind] || []).filter((record) => record.propertyId === view.propertyId);
+-  const platformLabel = (id) => view.state?.platforms.find((entry) => entry.id === id)?.name || id || "Any";
+-  const productName = (id) => view.state?.products.find((entry) => entry.id === id)?.name || "Unknown product";
+-
+-  function render() {
+-    if (!view.state) {
+-      root.innerHTML = view.error
+-        ? `<div class="smm-empty">The Social Media Manager could not load.<br>${escapeHtml(view.error)}<br><br><button class="smm-button" data-action="reload">Try again</button></div>`
+-        : `<div class="smm-empty">Loading properties…</div>`;
+-      return;
+-    }
+-    const current = property();
+-    root.innerHTML = `<div class="smm-layout">
+-      <aside class="smm-sidebar" aria-label="Properties">
+-        <div class="smm-sidebar-head"><span class="smm-eyebrow">Properties</span>
+-          <button class="smm-button smm-small" data-action="new-property">+ New</button></div>
+-        <div class="smm-property-list">${view.state.allProperties.map(propertyCard).join("") || `<p class="smm-muted">No properties yet.</p>`}</div>
+-      </aside>
+-      <section class="smm-main">${creatingProperty()
+-        ? newPropertyView()
+-        : current ? propertyView(current) : welcomeView()}</section>
+-    </div>`;
+-  }
+-
+-  function propertyCard(entry) {
+-    const summary = entry.summary || {};
+-    const attention = summary.needsReview + summary.approved;
+-    return `<button class="smm-property ${entry.id === view.propertyId && !creatingProperty() ? "active" : ""}" data-action="select-property" data-id="${escapeHtml(entry.id)}">
+-      <span class="smm-property-name">${escapeHtml(entry.name)}${entry.status !== "active" ? ` <em>${escapeHtml(entry.status)}</em>` : ""}</span>
+-      <span class="smm-chips">${entry.channels.filter((channel) => channel.enabled).map((channel) => `<i>${escapeHtml(channel.label)}</i>`).join("") || `<i class="smm-chip-empty">no channels</i>`}</span>
+-      <span class="smm-property-meta">${plural(summary.products || 0, "product")} · ${plural(summary.posts || 0, "post")}${attention ? ` · <b>${attention} waiting</b>` : ""}</span>
+-    </button>`;
+-  }
+-
+-  function welcomeView() {
+-    return `<div class="smm-empty"><h3>Add your first property</h3>
+-      <p>A property is a business, brand or site you promote. Each one keeps its own products, channels, voice and posts.</p>
+-      <button class="smm-button smm-primary" data-action="new-property">Create a property</button></div>`;
+-  }
+-
+-  function newPropertyView() {
+-    return `<header class="smm-head"><div><span class="smm-eyebrow">New property</span><h2>Create a property</h2>
+-      <p class="smm-muted">Name the business, brand or site. Products and channels are added after it is saved.</p></div></header>
+-      ${propertyForm({ channels: [] })}`;
+-  }
+-
+-  function propertyView(current) {
+-    const summary = current.summary || {};
+-    return `<header class="smm-head">
+-        <div><span class="smm-eyebrow">Property</span><h2>${escapeHtml(current.name)}</h2>
+-          <p class="smm-muted">${current.website ? `<a href="${escapeHtml(current.website)}" target="_blank" rel="noopener">${escapeHtml(current.website)}</a> · ` : ""}${plural(summary.products || 0, "product")} · ${plural(current.channels.filter((channel) => channel.enabled).length, "channel")} · ${summary.published || 0} published</p></div>
+-        <button class="smm-button" data-action="reload" title="Reload">↻</button>
+-      </header>
+-      <nav class="smm-tabs" role="tablist">${SECTIONS.map(([id, label]) => {
+-        const count = id === "posts" ? summary.drafts + summary.approved : id === "replies" ? summary.needsReview : 0;
+-        return `<button role="tab" aria-selected="${view.section === id}" class="smm-tab ${view.section === id ? "active" : ""}" data-action="section" data-id="${id}">${label}${count ? `<span>${count}</span>` : ""}</button>`;
+-      }).join("")}</nav>
+-      <div class="smm-section">${sectionView(current)}</div>`;
+-  }
+-
+-  function sectionView(current) {
+-    switch (view.section) {
+-      case "products": return productsView(current);
+-      case "channels": return channelsView(current);
+-      case "posts": return postsView(current);
+-      case "replies": return repliesView();
+-      case "settings": return settingsView(current);
+-      default: return overviewView(current);
+-    }
+-  }
+-
+-  // ---- Overview -------------------------------------------------------
+-
+-  function overviewView(current) {
+-    const summary = current.summary;
+-    const metrics = summary.metrics || {};
+-    const cards = [
+-      ["Drafts", summary.drafts, "waiting for approval"],
+-      ["Approved", summary.approved, "ready to publish"],
+-      ["Awaiting verification", summary.submitted, "submitted, not yet confirmed"],
+-      ["Published", summary.published, `${metrics.views || 0} views · ${metrics.clicks || 0} clicks`],
+-      ["Replies to review", summary.needsReview, plural(summary.interactions, "interaction")]
+-    ];
+-    const posts = scoped("posts").filter((post) => ["draft", "approved", "submitted"].includes(post.status))
+-      .sort((left, right) => right.updatedAt - left.updatedAt).slice(0, 6);
+-    const missing = [];
+-    if (!current.channels.some((channel) => channel.enabled)) missing.push(["channels", "Choose the channels this property posts to."]);
+-    if (!scoped("products").length) missing.push(["products", "Add a product or service to promote."]);
+-    return `${missing.length ? `<div class="smm-callout">${missing.map(([section, text]) => `<p>${escapeHtml(text)} <button class="smm-link" data-action="section" data-id="${section}">Open ${section}</button></p>`).join("")}</div>` : ""}
+-      <div class="smm-metrics">${cards.map(([label, value, detail]) => `<article class="smm-metric"><span class="smm-eyebrow">${escapeHtml(label)}</span><strong>${Number(value || 0)}</strong><small>${escapeHtml(detail)}</small></article>`).join("")}</div>
+-      <h3 class="smm-subhead">Needs attention</h3>
+-      ${posts.map((post) => postCard(post, { compact: true })).join("") || `<p class="smm-muted">Nothing is waiting. Draft posts from the Products section.</p>`}`;
+-  }
+-
+-  // ---- Products -------------------------------------------------------
+-
+-  function productsView(current) {
+-    const products = scoped("products");
+-    const editing = view.editing?.kind === "product" ? view.editing : null;
+-    const channels = current.channels.filter((channel) => channel.enabled);
+-    return `<div class="smm-section-head"><p class="smm-muted">Products and services promoted under ${escapeHtml(current.name)}.</p>
+-        <button class="smm-button smm-primary" data-action="edit" data-kind="product" data-id="">+ Add product</button></div>
+-      ${editing && !editing.id ? productForm({}) : ""}
+-      <div class="smm-list">${products.map((product) => editing?.id === product.id ? productForm(product) : `<article class="smm-card">
+-        <div class="smm-card-head"><div><h4>${escapeHtml(product.name)}</h4>
+-          ${product.url ? `<a class="smm-small-link" href="${escapeHtml(product.url)}" target="_blank" rel="noopener">${escapeHtml(product.url)}</a>` : ""}</div>
+-          <span class="smm-pill">${escapeHtml(product.status)}</span></div>
+-        ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ""}
+-        <dl class="smm-facts">${product.audience ? `<div><dt>Audience</dt><dd>${escapeHtml(product.audience)}</dd></div>` : ""}${product.valueProposition ? `<div><dt>Value</dt><dd>${escapeHtml(product.valueProposition)}</dd></div>` : ""}</dl>
+-        ${view.editing?.kind === "compose" && view.editing.id === product.id ? composeForm(product, channels) : `<div class="smm-actions">
+-          <button class="smm-button smm-primary" data-action="compose" data-id="${escapeHtml(product.id)}" ${channels.length ? "" : "disabled title=\"Add a channel first\""}>Draft posts</button>
+-          <button class="smm-button" data-action="edit" data-kind="product" data-id="${escapeHtml(product.id)}">Edit</button>
+-          <button class="smm-button smm-danger" data-action="delete-product" data-id="${escapeHtml(product.id)}">Remove</button></div>`}
+-      </article>`).join("") || (editing ? "" : `<div class="smm-empty">No products yet.</div>`)}</div>`;
+-  }
+-
+-  function productForm(product) {
+-    return `<form class="smm-card smm-form" data-form="product" data-id="${escapeHtml(product.id || "")}">
+-      <div class="smm-grid">
+-        ${field("name", "Name", product.name, { required: true })}
+-        ${field("url", "Product URL", product.url, { type: "url", placeholder: "https://" })}
+-        ${field("description", "Description", product.description, { textarea: true, wide: true })}
+-        ${field("audience", "Audience", product.audience)}
+-        ${field("valueProposition", "Value proposition", product.valueProposition)}
+-        ${field("keywords", "Keywords", (product.keywords || []).join(", "), { placeholder: "comma separated" })}
+-        ${select("status", "Status", product.status || "active", ["active", "paused", "archived"])}
+-      </div>
+-      <div class="smm-actions"><button class="smm-button smm-primary" type="submit">Save product</button>
+-        <button class="smm-button" type="button" data-action="cancel">Cancel</button></div></form>`;
+-  }
+-
+-  function composeForm(product, channels) {
+-    return `<form class="smm-inline-form" data-form="compose" data-id="${escapeHtml(product.id)}">
+-      ${select("platform", "Channel", channels[0]?.platform || "", channels.map((channel) => [channel.platform, channel.label]))}
+-      ${select("count", "Drafts", "3", ["1", "2", "3", "4", "5"])}
+-      ${field("tone", "Tone", property()?.voice || "", { placeholder: "e.g. concise" })}
+-      <div class="smm-actions"><button class="smm-button smm-primary" type="submit">Draft</button>
+-        <button class="smm-button" type="button" data-action="cancel">Cancel</button></div></form>`;
+-  }
+-
+-  // ---- Channels -------------------------------------------------------
+-
+-  function channelsView(current) {
+-    const used = new Set(current.channels.map((channel) => channel.platform));
+-    const available = view.state.platforms.filter((platform) => !used.has(platform.id));
+-    const targets = scoped("publishingTargets").concat((view.state.publishingTargets || []).filter((target) => !target.propertyId));
+-    return `<p class="smm-muted">The channels ${escapeHtml(current.name)} posts to. Drafts can only be written for enabled channels.</p>
+-      <div class="smm-list">${current.channels.map((channel, index) => channelCard(current, channel, index)).join("") || `<div class="smm-empty">No channels yet. Add one below.</div>`}</div>
+-      <form class="smm-inline-form smm-add-channel" data-form="add-channel">
+-        ${select("platform", "Add a channel", available[0]?.id || "", [...available.map((platform) => [platform.id, platform.name]), ["custom", "Other…"]])}
+-        ${field("custom", "Custom platform name", "", { placeholder: "only for Other…" })}
+-        ${field("handle", "Account or page", "", { placeholder: "@handle or page name" })}
+-        <div class="smm-actions"><button class="smm-button smm-primary" type="submit">Add channel</button></div>
+-      </form>
+-      <h3 class="smm-subhead">Browser publishing targets</h3>
+-      <p class="smm-muted">Optional. A target lets Speck publish through a signed-in browser account instead of a webhook. Targets without a property serve every property.</p>
+-      <div class="smm-list">${targets.map((target) => view.editing?.kind === "target" && view.editing.id === target.id ? targetForm(current, target) : `<article class="smm-card smm-row">
+-        <div><h4>${escapeHtml(target.label)}</h4><p class="smm-muted">${escapeHtml(platformLabel(target.platform))} · ${escapeHtml(target.accountId)} · ${target.propertyId ? "this property" : "all properties"} · ${escapeHtml(target.status)}</p></div>
+-        <div class="smm-actions"><button class="smm-button" data-action="edit" data-kind="target" data-id="${escapeHtml(target.id)}">Edit</button>
+-          <button class="smm-button smm-danger" data-action="delete-target" data-id="${escapeHtml(target.id)}">Remove</button></div></article>`).join("")}</div>
+-      ${view.editing?.kind === "target" && !view.editing.id ? targetForm(current, {}) : `<button class="smm-button" data-action="edit" data-kind="target" data-id="">+ Add browser target</button>`}`;
+-  }
+-
+-  function channelCard(current, channel, index) {
+-    const secret = view.secrets?.channels?.find((entry) => entry.platform === channel.platform);
+-    const status = !secret ? "" : secret.webhookUrl
+-      ? `<span class="smm-pill smm-ok">own webhook</span>`
+-      : secret.sharedWebhookUrl ? `<span class="smm-pill">shared webhook</span>` : `<span class="smm-pill smm-warn">no webhook</span>`;
+-    return `<article class="smm-card">
+-      <div class="smm-card-head"><div><h4>${escapeHtml(channel.label)}</h4><p class="smm-muted">${escapeHtml([channel.label === platformLabel(channel.platform) ? "" : platformLabel(channel.platform), channel.handle].filter(Boolean).join(" · ") || "No account named")}</p></div>
+-        <div class="smm-actions">${status}<label class="smm-switch" title="${channel.enabled ? "Enabled" : "Disabled"}"><input type="checkbox" data-change="channel-enabled" data-index="${index}" ${channel.enabled ? "checked" : ""}/><i></i></label></div></div>
+-      <form class="smm-inline-form" data-form="channel" data-index="${index}">
+-        ${field("label", "Label", channel.label)}
+-        ${field("handle", "Account or page", channel.handle)}
+-        ${field("notes", "Posting notes", channel.notes, { wide: true, placeholder: "rules, best times, hashtags…" })}
+-        <div class="smm-actions"><button class="smm-button" type="submit">Save</button>
+-          <button class="smm-button smm-danger" type="button" data-action="remove-channel" data-index="${index}">Remove</button></div>
+-      </form>
+-      ${secret ? `<details class="smm-details"><summary>Webhook publishing</summary>
+-        <p class="smm-muted">Stored in Speck Secrets as <code>${escapeHtml(secret.handles.url)}</code>${secret.sharedWebhookUrl ? `; falls back to <code>${escapeHtml(secret.sharedHandles.url)}</code>` : ""}. Values are never shown.</p>
+-        <form class="smm-inline-form" data-form="secret" data-platform="${escapeHtml(channel.platform)}">
+-          ${field("url", `Webhook URL ${secret.webhookUrl ? "(set — enter to replace, blank to clear)" : ""}`, "", { type: "url", placeholder: "https://" })}
+-          ${field("token", `Bearer token ${secret.webhookToken ? "(set)" : "(optional)"}`, "", { type: "password" })}
+-          <div class="smm-actions"><button class="smm-button" type="submit">Save webhook</button></div>
+-        </form></details>` : ""}
+-    </article>`;
+-  }
+-
+-  function targetForm(current, target) {
+-    const channels = current.channels.map((channel) => [channel.platform, channel.label]);
+-    return `<form class="smm-card smm-form" data-form="target" data-id="${escapeHtml(target.id || "")}">
+-      <div class="smm-grid">
+-        ${select("platform", "Channel", target.platform || channels[0]?.[0] || "", channels.length ? channels : view.state.platforms.map((platform) => [platform.id, platform.name]))}
+-        ${field("accountId", "Browser account", target.accountId, { required: true })}
+-        ${field("label", "Label", target.label, { required: true })}
+-        ${select("scope", "Used by", target.id && !target.propertyId ? "all" : "property", [["property", `${current.name} only`], ["all", "All properties"]])}
+-        ${field("composerUrl", "Composer URL", target.composerUrl, { type: "url", required: true, wide: true })}
+-        ${field("bodySelector", "Body selector", target.bodySelector, { required: true })}
+-        ${field("submitSelector", "Submit selector", target.submitSelector, { required: true })}
+-        ${field("titleSelector", "Title selector", target.titleSelector)}
+-        ${select("status", "Status", target.status || "active", ["active", "paused", "archived"])}
+-      </div>
+-      <div class="smm-actions"><button class="smm-button smm-primary" type="submit">Save target</button>
+-        <button class="smm-button" type="button" data-action="cancel">Cancel</button></div></form>`;
+-  }
+-
+-  // ---- Posts ----------------------------------------------------------
+-
+-  function postsView() {
+-    const posts = scoped("posts");
+-    const counts = Object.fromEntries(POST_FILTERS.map((status) => [status, status === "all" ? posts.length : posts.filter((post) => post.status === status).length]));
+-    const shown = posts.filter((post) => view.postFilter === "all" || post.status === view.postFilter)
+-      .sort((left, right) => right.updatedAt - left.updatedAt);
+-    return `<div class="smm-filters">${POST_FILTERS.map((status) => `<button class="smm-tab smm-filter ${view.postFilter === status ? "active" : ""}" data-action="post-filter" data-id="${status}">${status}<span>${counts[status]}</span></button>`).join("")}</div>
+-      <div class="smm-list">${shown.map((post) => postCard(post)).join("") || `<div class="smm-empty">No ${view.postFilter === "all" ? "" : `${view.postFilter} `}posts. Draft some from the Products section.</div>`}</div>`;
+-  }
+-
+-  function postCard(post, { compact = false } = {}) {
+-    const editable = ["draft", "approved"].includes(post.status) && !compact;
+-    const id = escapeHtml(post.id);
+-    const actions = [];
+-    if (post.status === "draft") actions.push(`<button class="smm-button smm-primary" data-action="post-status" data-status="approved" data-id="${id}">Approve</button>`);
+-    if (post.status === "approved") {
+-      actions.push(`<button class="smm-button smm-primary" data-action="publish" data-id="${id}">Publish…</button>`);
+-      actions.push(`<button class="smm-button" data-action="post-status" data-status="draft" data-id="${id}">Back to draft</button>`);
+-    }
+-    if (["approved", "submitted"].includes(post.status)) actions.push(`<button class="smm-button" data-action="verify" data-id="${id}">Mark published…</button>`);
+-    if (post.status !== "archived") actions.push(`<button class="smm-button" data-action="post-status" data-status="archived" data-id="${id}">Archive</button>`);
+-    actions.push(`<button class="smm-button smm-danger" data-action="delete-post" data-id="${id}">Delete</button>`);
+-    return `<article class="smm-card smm-post">
+-      <div class="smm-card-head"><div><span class="smm-pill">${escapeHtml(platformLabel(post.platform))}</span> <span class="smm-pill smm-status-${escapeHtml(post.status)}">${escapeHtml(post.status)}</span>
+-        <h4>${escapeHtml(post.title || "Untitled post")}</h4><p class="smm-muted">${escapeHtml(productName(post.productId))} · updated ${escapeHtml(when(post.updatedAt))}${post.publishedUrl ? ` · <a href="${escapeHtml(post.publishedUrl)}" target="_blank" rel="noopener">view post</a>` : ""}</p></div></div>
+-      ${editable ? `<form data-form="post" data-id="${id}" class="smm-post-form">
+-          <textarea name="body" rows="7" aria-label="Post text">${escapeHtml(post.body)}</textarea>
+-          <div class="smm-post-foot"><small class="smm-muted">${post.body.length} characters</small><button class="smm-button" type="submit">Save text</button></div>
+-        </form>` : `<p class="smm-post-body">${escapeHtml(compact ? post.body.slice(0, 280) + (post.body.length > 280 ? "…" : "") : post.body)}</p>`}
+-      ${post.status === "published" ? `<p class="smm-muted">${["views", "likes", "comments", "shares", "clicks"].map((key) => `${post.metrics?.[key] || 0} ${key}`).join(" · ")}</p>` : ""}
+-      ${compact ? `<div class="smm-actions"><button class="smm-link" data-action="section" data-id="posts">Open in Posts</button></div>` : `<div class="smm-actions">${actions.join("")}</div>`}
+-    </article>`;
+-  }
+-
+-  // ---- Replies --------------------------------------------------------
+-
+-  function repliesView() {
+-    const interactions = scoped("interactions").sort((left, right) =>
+-      (left.replyStatus === "needs-review" ? 0 : 1) - (right.replyStatus === "needs-review" ? 0 : 1) || right.updatedAt - left.updatedAt);
+-    return `<p class="smm-muted">Comments recorded on this property's posts, each with a suggested reply to review.</p>
+-      <div class="smm-list">${interactions.map((interaction) => `<article class="smm-card">
+-        <div class="smm-card-head"><div><h4>${escapeHtml(interaction.author || "Unknown")}</h4>
+-          <p class="smm-muted">${escapeHtml(platformLabel(interaction.platform))} · ${escapeHtml(interaction.sentiment)} · ${escapeHtml(interaction.intent)}${interaction.externalUrl ? ` · <a href="${escapeHtml(interaction.externalUrl)}" target="_blank" rel="noopener">open</a>` : ""}</p></div>
+-          <span class="smm-pill">${escapeHtml(interaction.replyStatus)}</span></div>
+-        <blockquote>${escapeHtml(interaction.text)}</blockquote>
+-        <form data-form="reply" data-id="${escapeHtml(interaction.id)}" class="smm-post-form">
+-          <textarea name="replyDraft" rows="3" aria-label="Reply">${escapeHtml(interaction.replyDraft)}</textarea>
+-          <div class="smm-post-foot">${select("replyStatus", "", interaction.replyStatus, REPLY_STATUSES)}<button class="smm-button" type="submit">Save reply</button></div>
+-        </form></article>`).join("") || `<div class="smm-empty">No comments recorded for this property yet.</div>`}</div>`;
+-  }
+-
+-  // ---- Settings -------------------------------------------------------
+-
+-  function settingsView(current) {
+-    const summary = current.summary || {};
+-    return `${propertyForm(current)}
+-      <section class="smm-card smm-danger-zone"><h4>Remove property</h4>
+-        <p class="smm-muted">Removes ${escapeHtml(current.name)} with its ${plural(summary.products || 0, "product")}, ${plural(summary.posts || 0, "post")}, opportunities, replies and property-only publishing targets. Secrets stay in Speck Secrets.</p>
+-        <button class="smm-button smm-danger" data-action="delete-property" data-id="${escapeHtml(current.id)}">Remove property</button></section>`;
+-  }
+-
+-  function propertyForm(current) {
+-    return `<form class="smm-card smm-form" data-form="property" data-id="${escapeHtml(current.id || "")}">
+-      <div class="smm-grid">
+-        ${field("name", "Name", current.name, { required: true })}
+-        ${field("website", "Website", current.website, { type: "url", placeholder: "https://" })}
+-        ${field("description", "What it is", current.description, { textarea: true, wide: true })}
+-        ${field("audience", "Audience", current.audience)}
+-        ${field("voice", "Voice", current.voice, { placeholder: "e.g. friendly, local, concise" })}
+-        ${field("keywords", "Keywords", (current.keywords || []).join(", "), { placeholder: "comma separated" })}
+-        ${select("status", "Status", current.status || "active", ["active", "paused", "archived"])}
+-        ${field("guidelines", "Guidelines", current.guidelines, { textarea: true, wide: true, placeholder: "What posts for this property must or must not do" })}
+-        ${current.id ? "" : `<fieldset class="smm-wide smm-channel-picks"><legend>Channels</legend>${view.state.platforms.map((platform) =>
+-          `<label><input type="checkbox" name="channels" value="${escapeHtml(platform.id)}"/> ${escapeHtml(platform.name)}</label>`).join("")}</fieldset>`}
+-      </div>
+-      <div class="smm-actions"><button class="smm-button smm-primary" type="submit">${current.id ? "Save settings" : "Create property"}</button>
+-        ${current.id ? "" : `<button class="smm-button" type="button" data-action="cancel">Cancel</button>`}</div></form>`;
+-  }
+-
+-  // ---- Form helpers ---------------------------------------------------
+-
+-  function field(name, label, value = "", { textarea = false, wide = false, type = "text", placeholder = "", required = false } = {}) {
+-    const attrs = `name="${name}" placeholder="${escapeHtml(placeholder)}" ${required ? "required" : ""}`;
+-    return `<label class="smm-field ${wide || textarea ? "smm-wide" : ""}"><span>${escapeHtml(label)}</span>${textarea
+-      ? `<textarea ${attrs} rows="3">${escapeHtml(value || "")}</textarea>`
+-      : `<input type="${type}" ${attrs} value="${escapeHtml(value || "")}" autocomplete="off"/>`}</label>`;
+-  }
+-
+-  function select(name, label, value, options) {
+-    const pairs = options.map((option) => Array.isArray(option) ? option : [option, option]);
+-    return `<label class="smm-field">${label ? `<span>${escapeHtml(label)}</span>` : ""}<select name="${name}">${pairs.map(([optionValue, optionLabel]) =>
+-      `<option value="${escapeHtml(optionValue)}" ${String(optionValue) === String(value) ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`).join("")}</select></label>`;
+-  }
+-
+-  const values = (form) => Object.fromEntries([...new FormData(form).entries()].filter(([key]) => key !== "channels"));
+-
+-  // ---- Events ---------------------------------------------------------
+-
+-  function onClick(event) {
+-    const button = event.target.closest("[data-action]");
+-    if (!button || !root.contains(button)) return;
+-    const { action, id = "", kind = "", status = "", index } = button.dataset;
+-    const current = property();
+-    switch (action) {
+-      case "reload": return act(async () => {}, "Reloaded");
+-      case "select-property":
+-        view.propertyId = id; view.editing = null; writePreference("property", id);
+-        if (view.section === "channels") return act(async () => {});
+-        return render();
+-      case "new-property": view.editing = { kind: "property", id: "" }; return render();
+-      case "section":
+-        view.section = id; view.editing = null; writePreference("section", id);
+-        if (id === "channels") return loadSecrets().then(render);
+-        return render();
+-      case "post-filter": view.postFilter = id; return render();
+-      case "edit": view.editing = { kind, id }; return render();
+-      case "compose": view.editing = { kind: "compose", id }; return render();
+-      case "cancel": view.editing = null; return render();
+-      case "delete-product":
+-        if (!confirm("Remove this product? Its posts stay.")) return;
+-        return act(() => request(`/products/${encodeURIComponent(id)}`, { method: "DELETE" }), "Product removed");
+-      case "delete-target":
+-        if (!confirm("Remove this publishing target?")) return;
+-        return act(() => request(`/targets/${encodeURIComponent(id)}`, { method: "DELETE" }), "Target removed");
+-      case "delete-post":
+-        if (!confirm("Delete this post and its recorded replies?")) return;
+-        return act(() => request(`/posts/${encodeURIComponent(id)}`, { method: "DELETE" }), "Post deleted");
+-      case "delete-property":
+-        if (!confirm(`Remove ${current?.name} and everything that belongs to it? This cannot be undone.`)) return;
+-        return act(async () => { await request(`/properties/${encodeURIComponent(id)}`, { method: "DELETE" }); view.section = "overview"; }, "Property removed");
+-      case "post-status":
+-        return act(() => request(`/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: { status } }), `Post ${status === "approved" ? "approved" : status === "archived" ? "archived" : "moved to drafts"}`);
+-      case "verify": {
+-        const publishedUrl = prompt("Address of the published post:");
+-        if (!publishedUrl) return;
+-        return act(() => request(`/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: { status: "published", publishedUrl, publishedAt: Date.now() } }), "Post marked published");
+-      }
+-      case "publish": {
+-        const post = view.state.posts.find((entry) => entry.id === id);
+-        if (!confirm(`Publish this post to ${platformLabel(post?.platform)} for ${current?.name} now?`)) return;
+-        return act(() => request(`/posts/${encodeURIComponent(id)}/publish`, { method: "POST", body: {} }),
+-          (result) => result.verificationRequired ? "Submitted. Mark it published once you have confirmed it is live." : "Published");
+-      }
+-      case "remove-channel": {
+-        const channels = current.channels.filter((_, position) => position !== Number(index));
+-        return act(() => saveProperty({ id: current.id, channels }), "Channel removed");
+-      }
+-      default: return undefined;
+-    }
+-  }
+-
+-  function onChange(event) {
+-    const input = event.target;
+-    if (input.dataset?.change !== "channel-enabled") return;
+-    const current = property();
+-    const channels = current.channels.map((channel, position) => position === Number(input.dataset.index) ? { ...channel, enabled: input.checked } : channel);
+-    act(() => saveProperty({ id: current.id, channels }), input.checked ? "Channel enabled" : "Channel disabled");
+-  }
+-
+-  const saveProperty = (body) => request("/properties", { method: "POST", body });
+-
+-  function onSubmit(event) {
+-    const form = event.target.closest("form[data-form]");
+-    if (!form) return;
+-    event.preventDefault();
+-    const data = values(form);
+-    const current = property();
+-    const id = form.dataset.id || "";
+-    switch (form.dataset.form) {
+-      case "property": {
+-        if (!id) data.channels = new FormData(form).getAll("channels");
+-        return act(async () => {
+-          const { property: saved } = await saveProperty(id ? { ...data, id } : data);
+-          view.propertyId = saved.id; writePreference("property", saved.id);
+-          view.editing = null;
+-          if (!id) view.section = "products";
+-        }, id ? "Settings saved" : "Property created");
+-      }
+-      case "product":
+-        return act(async () => {
+-          await request("/products", { method: "POST", body: { ...data, ...(id ? { id } : {}), propertyId: current.id } });
+-          view.editing = null;
+-        }, "Product saved");
+-      case "compose":
+-        return act(async () => {
+-          const { posts } = await request("/posts/compose", { method: "POST", body: { ...data, productId: id, propertyId: current.id, count: Number(data.count) } });
+-          view.editing = null; view.section = "posts"; view.postFilter = "draft";
+-          return posts;
+-        }, (posts) => `${plural(posts.length, "draft")} written`);
+-      case "post":
+-        return act(() => request(`/posts/${encodeURIComponent(id)}`, { method: "PATCH", body: { body: data.body } }), "Post saved");
+-      case "reply":
+-        return act(() => request(`/interactions/${encodeURIComponent(id)}`, { method: "PATCH", body: data }), "Reply saved");
+-      case "add-channel": {
+-        const platform = data.platform === "custom" ? data.custom.trim() : data.platform;
+-        if (!platform) return notice("Name the platform for a custom channel.", true);
+-        return act(() => saveProperty({ id: current.id, channels: [...current.channels, { platform, handle: data.handle }] }), "Channel added");
+-      }
+-      case "channel": {
+-        const channels = current.channels.map((channel, position) => position === Number(form.dataset.index) ? { ...channel, ...data } : channel);
+-        return act(() => saveProperty({ id: current.id, channels }), "Channel saved");
+-      }
+-      case "secret": {
+-        const platform = form.dataset.platform;
+-        const path = `/properties/${encodeURIComponent(current.id)}/secrets`;
+-        const clearing = !data.url && !data.token;
+-        if (clearing && !confirm("Clear this channel's webhook URL and token?")) return;
+-        const kinds = clearing ? [["url", ""], ["token", ""]] : [["url", data.url], ["token", data.token]].filter(([, value]) => value);
+-        return act(async () => {
+-          for (const [kind, value] of kinds) await request(path, { method: "POST", body: { platform, kind, value } });
+-        }, clearing ? "Webhook cleared" : "Webhook saved");
+-      }
+-      case "target": {
+-        const { scope, ...target } = data;
+-        return act(async () => {
+-          await request("/targets", { method: "POST", body: { ...target, ...(id ? { id } : {}), propertyId: scope === "all" ? "" : current.id } });
+-          view.editing = null;
+-        }, "Target saved");
+-      }
+-      default: return undefined;
+-    }
+-  }
+-
+-  return { load, render };
+-}
+-
+-function readPreference(key) {
+-  try { return localStorage.getItem(`speck.social.${key}`) || ""; } catch { return ""; }
+-}
+-
+-function writePreference(key, value) {
+-  try { localStorage.setItem(`speck.social.${key}`, value); } catch { /* preferences are optional */ }
+-}
+-
+-function injectStyles() {
+-  if (document.getElementById("smm-styles")) return;
+-  const style = document.createElement("style");
+-  style.id = "smm-styles";
+-  style.textContent = `
+-.smm { --smm-line: var(--line, rgba(214,205,255,.12)); --smm-ink: var(--ink, #f3f0ff); --smm-muted: var(--muted, #9e9ab4); --smm-accent: var(--cyan, #75e6dc); --smm-violet: var(--lavender, #d8cbff); --smm-rose: var(--rose, #ff8eaa); --smm-gold: var(--gold, #f5cd78); color: var(--smm-ink); }
+-.smm.smm-busy { cursor: progress; }
+-.smm.smm-busy button { pointer-events: none; opacity: .7; }
+-.smm-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 18px; align-items: start; }
+-.smm-sidebar { position: sticky; top: 0; display: grid; gap: 10px; min-width: 0; }
+-.smm-sidebar-head, .smm-head, .smm-section-head, .smm-card-head, .smm-post-foot { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+-.smm-sidebar-head { align-items: center; }
+-.smm-property-list, .smm-list { display: grid; gap: 10px; }
+-.smm-property { display: grid; gap: 6px; width: 100%; padding: 13px 14px; text-align: left; color: inherit; border: 1px solid var(--smm-line); border-radius: 15px; background: rgba(255,255,255,.03); cursor: pointer; }
+-.smm-property:hover { background: rgba(255,255,255,.055); }
+-.smm-property.active { border-color: rgba(117,230,220,.5); background: rgba(117,230,220,.07); }
+-.smm-property-name { font-weight: 700; font-size: 13px; }
+-.smm-property-name em { font-style: normal; font-weight: 500; color: var(--smm-muted); font-size: 10px; }
+-.smm-property-meta { color: var(--smm-muted); font-size: 10px; }
+-.smm-property-meta b { color: var(--smm-gold); font-weight: 600; }
+-.smm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+-.smm-chips i { font-style: normal; font-size: 9px; padding: 2px 7px; border-radius: 999px; background: rgba(216,203,255,.1); color: var(--smm-violet); }
+-.smm-chips i.smm-chip-empty { background: none; color: var(--smm-muted); padding-left: 0; }
+-.smm-main { min-width: 0; }
+-.smm-head { margin-bottom: 12px; }
+-.smm-head h2 { margin: 2px 0 4px; font-size: 20px; }
+-.smm-head a, .smm-card a { color: var(--smm-accent); }
+-.smm-eyebrow { color: var(--smm-accent); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+-.smm-muted { margin: 0; color: var(--smm-muted); font-size: 11px; line-height: 1.55; }
+-.smm-tabs, .smm-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+-.smm-tab { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; color: var(--smm-muted); border: 1px solid var(--smm-line); border-radius: 999px; background: rgba(255,255,255,.03); cursor: pointer; font-size: 12px; text-transform: capitalize; }
+-.smm-tab span { min-width: 18px; padding: 1px 6px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: 9px; text-align: center; }
+-.smm-tab.active { color: #10121d; border-color: transparent; background: linear-gradient(135deg, var(--smm-accent), var(--smm-violet)); }
+-.smm-tab.active span { background: rgba(0,0,0,.14); }
+-.smm-section { display: grid; gap: 12px; }
+-.smm-section-head { align-items: center; }
+-.smm-subhead { margin: 10px 0 0; font-size: 14px; }
+-.smm-card { padding: 16px; border: 1px solid var(--smm-line); border-radius: 16px; background: rgba(255,255,255,.03); display: grid; gap: 10px; }
+-.smm-card h4 { margin: 0 0 3px; font-size: 14px; overflow-wrap: anywhere; }
+-.smm-card > p { margin: 0; color: var(--smm-muted); font-size: 12px; line-height: 1.55; }
+-.smm-row { grid-template-columns: 1fr auto; align-items: center; }
+-.smm-small-link { font-size: 11px; overflow-wrap: anywhere; }
+-.smm-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin: 0; }
+-.smm-facts dt { color: var(--smm-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
+-.smm-facts dd { margin: 2px 0 0; font-size: 12px; }
+-.smm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+-.smm-button { padding: 8px 13px; color: var(--smm-ink); border: 1px solid var(--smm-line); border-radius: 11px; background: rgba(255,255,255,.055); cursor: pointer; font-size: 12px; }
+-.smm-button:hover:not(:disabled) { background: rgba(255,255,255,.09); }
+-.smm-button:disabled { opacity: .45; cursor: not-allowed; }
+-.smm-button.smm-primary { color: #0c0b14; border-color: transparent; background: linear-gradient(135deg, var(--smm-violet), var(--smm-accent)); font-weight: 700; }
+-.smm-button.smm-danger { color: var(--smm-rose); border-color: rgba(255,142,170,.3); background: rgba(255,142,170,.05); }
+-.smm-button.smm-small { padding: 5px 10px; font-size: 11px; }
+-.smm-link { padding: 0; border: 0; background: none; color: var(--smm-accent); cursor: pointer; font-size: 11px; text-decoration: underline; }
+-.smm-pill { display: inline-block; padding: 2px 8px; border: 1px solid var(--smm-line); border-radius: 999px; color: var(--smm-violet); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+-.smm-pill.smm-ok, .smm-status-published { color: var(--smm-accent); border-color: rgba(117,230,220,.35); }
+-.smm-pill.smm-warn, .smm-status-submitted { color: var(--smm-gold); border-color: rgba(245,205,120,.35); }
+-.smm-status-approved { color: #b9f5a7; border-color: rgba(185,245,167,.35); }
+-.smm-status-archived { color: var(--smm-muted); }
+-.smm-form .smm-grid, .smm-inline-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; align-items: end; }
+-.smm-inline-form .smm-actions { align-self: end; }
+-.smm-field { display: grid; gap: 5px; min-width: 0; color: var(--smm-muted); font-size: 10px; letter-spacing: .04em; }
+-.smm-wide { grid-column: 1 / -1; }
+-.smm input:not([type=checkbox]), .smm textarea, .smm select { width: 100%; padding: 9px 11px; color: var(--smm-ink); border: 1px solid var(--smm-line); border-radius: 11px; background: rgba(255,255,255,.04); font: inherit; font-size: 12px; resize: vertical; }
+-.smm select option { background: #11121f; }
+-.smm-channel-picks { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px; border: 1px solid var(--smm-line); border-radius: 12px; color: var(--smm-ink); font-size: 12px; }
+-.smm-channel-picks legend { color: var(--smm-muted); font-size: 10px; padding: 0 4px; }
+-.smm-channel-picks label { display: inline-flex; gap: 6px; align-items: center; }
+-.smm-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+-.smm-metric { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--smm-line); border-radius: 15px; background: rgba(255,255,255,.03); }
+-.smm-metric strong { font-size: 24px; }
+-.smm-metric small { color: var(--smm-muted); font-size: 10px; }
+-.smm-callout { padding: 12px 14px; border: 1px solid rgba(245,205,120,.3); border-radius: 14px; background: rgba(245,205,120,.05); display: grid; gap: 4px; }
+-.smm-callout p { margin: 0; font-size: 12px; }
+-.smm-post-body { white-space: pre-wrap; margin: 0; font-size: 12px; line-height: 1.6; color: var(--smm-ink) !important; }
+-.smm-post-form { display: grid; gap: 8px; }
+-.smm-post-form textarea { line-height: 1.6; }
+-.smm-post-foot { align-items: center; }
+-.smm-post-foot .smm-field { min-width: 150px; }
+-.smm blockquote { margin: 0; padding: 8px 12px; border-left: 2px solid var(--smm-violet); color: var(--smm-ink); font-size: 12px; }
+-.smm-details summary { cursor: pointer; color: var(--smm-accent); font-size: 12px; }
+-.smm-details[open] { display: grid; gap: 8px; }
+-.smm code { overflow-wrap: anywhere; font-size: 10px; padding: 1px 5px; border-radius: 6px; background: rgba(255,255,255,.07); }
+-.smm-switch { position: relative; display: inline-block; width: 38px; height: 22px; }
+-.smm-switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+-.smm-switch i { position: absolute; inset: 0; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid var(--smm-line); pointer-events: none; transition: background .15s; }
+-.smm-switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--smm-muted); transition: transform .15s, background .15s; }
+-.smm-switch input:checked + i { background: rgba(117,230,220,.25); }
+-.smm-switch input:checked + i::after { transform: translateX(16px); background: var(--smm-accent); }
+-.smm-switch input:focus-visible + i { outline: 2px solid var(--smm-accent); outline-offset: 2px; }
+-.smm-empty { padding: 28px; border: 1px dashed var(--smm-line); border-radius: 16px; color: var(--smm-muted); text-align: center; font-size: 12px; line-height: 1.6; }
+-.smm-empty h3 { margin: 0 0 6px; color: var(--smm-ink); }
+-.smm-empty p { margin: 0 0 14px; }
+-.smm-danger-zone { border-color: rgba(255,142,170,.22); }
+-@media (max-width: 860px) {
+-  .smm-layout { grid-template-columns: minmax(0, 1fr); }
+-  .smm-sidebar { position: static; }
+-  .smm-property-list { grid-auto-flow: column; grid-auto-columns: minmax(200px, 70%); overflow-x: auto; padding-bottom: 4px; contain: inline-size; }
+-  .smm-row { grid-template-columns: 1fr; }
+-}`;
+-  document.head.appendChild(style);
+-}
+diff --git a/src/tests/ported-plugins.test.ts b/src/tests/ported-plugins.test.ts
+deleted file mode 100644
+index b13b14e..0000000
+--- a/src/tests/ported-plugins.test.ts
++++ /dev/null
+@@ -1,110 +0,0 @@
+-import assert from "node:assert/strict";
+-import fs from "node:fs";
+-import os from "node:os";
+-import path from "node:path";
+-import test from "node:test";
+-import { loadConfig } from "../config.js";
+-import { createGenesisSpeckHost } from "../genesis-host.js";
+-import { SpeckRuntime } from "../runtime/speck-runtime.js";
+-
+-test("ported assistant plugins load through the Genesis host", async () => {
+-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "speck-ported-plugins-"));
+-  const root = path.resolve();
+-  fs.cpSync(path.join(root, "plugins"), path.join(directory, "plugins"), { recursive: true });
+-  fs.cpSync(path.join(root, "profiles"), path.join(directory, "profiles"), { recursive: true });
+-  const config = loadConfig({
+-    databasePath: path.join(directory, "speck.sqlite"),
+-    genesisRuntimePath: path.join(directory, "genesis"),
+-    genesisProfile: "minimal"
+-  });
+-  const runtime = new SpeckRuntime(config);
+-  let host: Awaited<ReturnType<typeof createGenesisSpeckHost>> | null = null;
+-  try {
+-    await runtime.initialize();
+-    host = await createGenesisSpeckHost(runtime, config, { speckRoot: directory });
+-    assert.deepEqual(host.pluginLoadErrors, []);
+-    const plugins = host.pluginManager.listPlugins();
+-    assert.ok(plugins.some((plugin) => plugin.id === "social-media-manager" && plugin.failureCount === 0));
+-    assert.ok(plugins.some((plugin) => plugin.id === "airchat" && plugin.failureCount === 0));
+-    assert.ok(plugins.some((plugin) => plugin.id === "information-agent" && plugin.failureCount === 0));
+-    assert.equal(runtime.toolRegistry.list().find((tool) => tool.name === "social_publish_post")?.risk, "external-side-effect");
+-    assert.equal(runtime.toolRegistry.list().find((tool) => tool.name === "airchat_read_messages")?.risk, "read-only");
+-    assert.equal(runtime.toolRegistry.list().find((tool) => tool.name === "info_agent_list_updates")?.risk, "read-only");
+-
+-    const save = await host.pluginManager.executeTool("social_save_product", {
+-      name: "Example Service", description: "A real service with an explanatory description", url: "https://example.com/service"
+-    });
+-    assert.equal(save.handled, true);
+-    const listed = await host.pluginManager.executeTool("social_list_campaign");
+-    assert.equal(listed.result.products.length, 1);
+-    const drafts = await host.pluginManager.executeTool("social_compose_posts", {
+-      productId: save.result.id, platform: "linkedin", count: 1
+-    });
+-    const postId = drafts.result[0].id;
+-    await assert.rejects(host.pluginManager.executeTool("social_publish_post", { postId }), /approve the draft/);
+-    await host.pluginManager.executeTool("social_update_post", { postId, status: "approved" });
+-    await host.pluginManager.getCapability("speck:secret-set")?.({
+-      handle: "social.linkedin.webhook-url", value: "https://example.test/publish"
+-    });
+-    const originalFetch = globalThis.fetch;
+-    let publishCount = 0;
+-    globalThis.fetch = (async (_input: unknown, init?: RequestInit) => {
+-      assert.equal(init?.method, "POST");
+-      publishCount += 1;
+-      if (publishCount === 1) assert.equal(JSON.parse(String(init?.body)).postId, postId);
+-      return new Response(JSON.stringify(publishCount === 1
+-        ? { id: "remote-post-1", url: "https://example.test/post/1" }
+-        : { id: "queued-job-2" }), {
+-        status: 200, headers: { "content-type": "application/json" }
+-      });
+-    }) as typeof fetch;
+-    try {
+-      const published = await host.pluginManager.executeTool("social_publish_post", { postId });
+-      assert.equal(published.result.post.status, "published");
+-      const anotherDraft = await host.pluginManager.executeTool("social_compose_posts", {
+-        productId: save.result.id, platform: "linkedin", count: 1
+-      });
+-      const anotherPostId = anotherDraft.result[0].id;
+-      await host.pluginManager.executeTool("social_update_post", { postId: anotherPostId, status: "approved" });
+-      const pending = await host.pluginManager.executeTool("social_publish_post", { postId: anotherPostId });
+-      assert.equal(pending.result.post.status, "submitted");
+-      await assert.rejects(host.pluginManager.executeTool("social_publish_post", { postId: anotherPostId }), /approve the draft/);
+-    } finally {
+-      globalThis.fetch = originalFetch;
+-    }
+-    const status = await host.pluginManager.executeTool("airchat_status");
+-    assert.deepEqual(status.result, { configured: false });
+-    await host.pluginManager.getCapability("speck:secret-set")?.({ handle: "airchat.url", value: "https://airchat.example.test/mcp" });
+-    await host.pluginManager.getCapability("speck:secret-set")?.({ handle: "airchat.token", value: "test-token" });
+-    const beforeAirchatFetch = globalThis.fetch;
+-    globalThis.fetch = (async (_input: unknown, init?: RequestInit) => {
+-      assert.equal((init?.headers as Record<string, string>)?.Authorization, "Bearer test-token");
+-      const request = JSON.parse(String(init?.body));
+-      return new Response(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: request.method === "tools/call"
+-        ? { structuredContent: { summary: "board ready" } } : {} }), {
+-        status: 200, headers: { "content-type": "application/json", "mcp-session-id": "test-session" }
+-      });
+-    }) as typeof fetch;
+-    try {
+-      const board = await host.pluginManager.executeTool("airchat_check_board");
+-      assert.deepEqual(board.result, { summary: "board ready" });
+-    } finally {
+-      globalThis.fetch = beforeAirchatFetch;
+-    }
+-    const interest = await host.pluginManager.executeTool("info_agent_save_interest", { name: "Campaign competitors" });
+-    assert.ok(interest.result.id);
+-    await assert.rejects(host.pluginManager.executeTool("info_agent_add_source", {
+-      interestId: interest.result.id, label: "Private", url: "http://127.0.0.1/admin"
+-    }), /private source URL/);
+-    await host.pluginManager.executeTool("info_agent_add_source", {
+-      interestId: interest.result.id, label: "Public", url: "https://example.com/updates"
+-    });
+-    const updates = await host.pluginManager.executeTool("info_agent_list_updates");
+-    assert.equal(updates.result.summary.interestCount, 1);
+-    assert.equal(updates.result.summary.sourceCount, 1);
+-  } finally {
+-    await host?.close();
+-    runtime.close();
+-    fs.rmSync(directory, { recursive: true, force: true });
+-  }
+-});
+diff --git a/src/tests/social-media-manager.test.ts b/src/tests/social-media-manager.test.ts
+deleted file mode 100644
+index fe717d7..0000000
+--- a/src/tests/social-media-manager.test.ts
++++ /dev/null
+@@ -1,181 +0,0 @@
+-import assert from "node:assert/strict";
+-import { once } from "node:events";
+-import fs from "node:fs";
+-import type { Server } from "node:http";
+-import os from "node:os";
+-import path from "node:path";
+-import test from "node:test";
+-import { pathToFileURL } from "node:url";
+-import { loadConfig } from "../config.js";
+-import { createGenesisSpeckHost } from "../genesis-host.js";
+-import { SpeckRuntime } from "../runtime/speck-runtime.js";
+-
+-type Domain = Record<string, (...args: any[]) => Promise<any>>;
+-
+-async function createDomain(initial: unknown = {}): Promise<{ domain: Domain; stored: () => any }> {
+-  const modulePath = path.resolve("plugins", "social-media-manager", "lib", "social-media-manager-domain.js");
+-  const { createSocialMediaManagerDomain } = await import(pathToFileURL(modulePath).href);
+-  let saved: unknown = structuredClone(initial);
+-  const dataApi = {
+-    readJson: async (_key: string, fallback: unknown) => structuredClone(saved ?? fallback),
+-    writeJson: async (_key: string, value: unknown) => { saved = structuredClone(value); }
+-  };
+-  return { domain: createSocialMediaManagerDomain({ dataApi }), stored: () => saved };
+-}
+-
+-test("each property keeps its own products, channels and posts", async () => {
+-  const { domain } = await createDomain();
+-  const printing = await domain.saveProperty!({ name: "Example Prints", website: "https://print.example", platforms: ["facebook", "Instagram"] });
+-  const cafe = await domain.saveProperty!({ name: "Corner Cafe", platforms: "linkedin, x", voice: "concise" });
+-  assert.equal(printing.id, "example-prints");
+-  assert.deepEqual(printing.channels.map((channel: any) => channel.platform), ["facebook", "instagram"]);
+-  assert.deepEqual(cafe.channels.map((channel: any) => channel.platform), ["linkedin", "x"]);
+-
+-  await assert.rejects(domain.saveProduct!({ name: "Prints", description: "Custom prints" }), /Several properties exist; pass propertyId.*Example Prints/);
+-  const prints = await domain.saveProduct!({ propertyId: printing.id, name: "Custom prints", description: "Prints made to order" });
+-  const sameName = await domain.saveProduct!({ propertyId: "Corner Cafe", name: "Custom prints", description: "Cakes made to order" });
+-  assert.notEqual(prints.id, sameName.id, "the same product name in another property is a different product");
+-  assert.equal(sameName.propertyId, cafe.id);
+-
+-  await assert.rejects(domain.composePosts!({ productId: prints.id, platform: "linkedin" }), /LinkedIn is not one of Example Prints's channels: Facebook Page, Instagram/);
+-  const [draft] = await domain.composePosts!({ productId: prints.id, count: 1 });
+-  assert.equal(draft.platform, "facebook", "a draft without a platform goes to the property's first channel");
+-  assert.equal(draft.propertyId, printing.id);
+-  assert.match(draft.body, /https:\/\/print\.example/, "the property website stands in for a product without a URL");
+-  assert.match(draft.body, /\n\n/, "drafts keep their paragraphs");
+-
+-  const scoped = await domain.listState!({ propertyId: cafe.id });
+-  assert.deepEqual(scoped.products.map((product: any) => product.id), [sameName.id]);
+-  assert.equal(scoped.posts.length, 0);
+-  assert.equal(scoped.allProperties.length, 2);
+-  assert.equal(scoped.allProperties.find((entry: any) => entry.id === printing.id).summary.drafts, 1);
+-
+-  const report = await domain.buildReport!({});
+-  assert.match(report.text, /all 2 properties/);
+-  assert.match(report.text, /Example Prints: 1 products, 1 posts/);
+-
+-  const removed = await domain.removeProperty!(printing.id);
+-  assert.deepEqual(removed.removed, { products: 1, opportunities: 0, posts: 1, interactions: 0, publishingTargets: 0 });
+-  const remaining = await domain.listState!();
+-  assert.deepEqual(remaining.properties.map((entry: any) => entry.id), [cafe.id]);
+-  assert.equal(remaining.posts.length, 0);
+-});
+-
+-test("records saved before properties existed join a default property", async () => {
+-  const { domain, stored } = await createDomain({
+-    products: [{ id: "product-old", name: "Old product", description: "Saved by version 2" }],
+-    posts: [{ id: "post-old", productId: "product-old", platform: "LinkedIn", body: "Hello" }],
+-    interactions: [{ id: "interaction-old", postId: "post-old", text: "Nice" }]
+-  });
+-  const state = await domain.listState!();
+-  assert.deepEqual(state.properties.map((entry: any) => entry.id), ["default"]);
+-  assert.equal(state.products[0].propertyId, "default");
+-  assert.equal(state.posts[0].propertyId, "default");
+-  assert.equal(state.posts[0].platform, "linkedin");
+-  assert.equal(state.interactions[0].propertyId, "default");
+-  await assert.rejects(domain.saveProperty!({ id: "default" }), /real name/);
+-  const renamed = await domain.saveProperty!({ id: "default", name: "Main Store", platforms: ["linkedin"] });
+-  assert.equal(renamed.id, "default");
+-  assert.equal((stored() as any).products[0].propertyId, "default");
+-  // With one property, requests need not name it.
+-  const product = await domain.saveProduct!({ name: "New product", url: "https://store.example/new" });
+-  assert.equal(product.propertyId, "default");
+-});
+-
+-test("a property's own publishing target is preferred over a shared one", async () => {
+-  const { domain } = await createDomain();
+-  const first = await domain.saveProperty!({ name: "First", platforms: ["x"] });
+-  const second = await domain.saveProperty!({ name: "Second", platforms: ["x"] });
+-  const target = { platform: "x", composerUrl: "https://x.example/compose", bodySelector: "#body", submitSelector: "#send" };
+-  await domain.savePublishingTarget!({ ...target, accountId: "shared", label: "Shared X" });
+-  const own = await domain.savePublishingTarget!({ ...target, accountId: "second", label: "Second X", propertyId: second.id });
+-  assert.equal((await domain.findPublishingTarget!({ platform: "x", propertyId: second.id })).id, own.id);
+-  assert.equal((await domain.findPublishingTarget!({ platform: "x", propertyId: first.id })).accountId, "shared");
+-  assert.equal((await domain.listState!({ propertyId: first.id })).publishingTargets.length, 1);
+-});
+-
+-test("the Social tab manages properties through admin routes and publishes with a property's webhook", async () => {
+-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "speck-social-"));
+-  const root = path.resolve();
+-  fs.cpSync(path.join(root, "plugins"), path.join(directory, "plugins"), { recursive: true });
+-  fs.rmSync(path.join(directory, "plugins", ".runtime", "plugin-state.json"), { force: true });
+-  fs.cpSync(path.join(root, "profiles"), path.join(directory, "profiles"), { recursive: true });
+-  const config = loadConfig({
+-    databasePath: path.join(directory, "speck.sqlite"),
+-    genesisRuntimePath: path.join(directory, "genesis"),
+-    genesisProfile: "minimal"
+-  });
+-  const runtime = new SpeckRuntime(config);
+-  let host: Awaited<ReturnType<typeof createGenesisSpeckHost>> | null = null;
+-  let server: Server | null = null;
+-  const originalFetch = globalThis.fetch;
+-  try {
+-    await runtime.initialize();
+-    host = await createGenesisSpeckHost(runtime, config, { speckRoot: directory });
+-    assert.deepEqual(host.pluginLoadErrors, []);
+-    server = host.app.listen(0, "127.0.0.1");
+-    await once(server, "listening");
+-    const address = server.address();
+-    assert.ok(address && typeof address === "object");
+-    const origin = `http://127.0.0.1:${address.port}`;
+-    const token = String(((await (await fetch(`${origin}/api/admin-token`, { headers: { origin } })).json()) as { token?: string }).token ?? "");
+-    const call = async (route: string, method = "GET", body?: unknown) => {
+-      const response = await fetch(`${origin}/api/plugins/social-media-manager${route}`, {
+-        method,
+-        headers: { origin, "x-admin-token": token, ...(body === undefined ? {} : { "content-type": "application/json" }) },
+-        ...(body === undefined ? {} : { body: JSON.stringify(body) })
+-      });
+-      const payload = await response.json() as any;
+-      if (!response.ok) throw new Error(payload.error);
+-      return payload;
+-    };
+-
+-    const catalog = await (await fetch(`${origin}/api/plugins/list`, { headers: { origin, "x-admin-token": token } })).json() as any;
+-    const tab = catalog.uiPrimaryTabs.find((entry: any) => entry.pluginId === "social-media-manager");
+-    assert.equal(tab?.title, "Social");
+-    const script = await fetch(`${origin}${tab.scriptUrl}`);
+-    assert.equal(script.status, 200);
+-    assert.match(script.headers.get("content-type") ?? "", /javascript/);
+-    assert.match(await script.text(), /export async function mountPluginTab/);
+-    assert.equal((await fetch(`${origin}/api/plugins/social-media-manager/state`, { headers: { origin } })).status, 403, "data routes need the admin token");
+-
+-    const { property: store } = await call("/properties", "POST", { name: "Store", platforms: ["linkedin"] });
+-    await call("/properties", "POST", { name: "Studio", platforms: ["linkedin"] });
+-    const { product } = await call("/products", "POST", { propertyId: store.id, name: "Widget", url: "https://store.example/widget" });
+-    const { posts: [post] } = await call("/posts/compose", "POST", { productId: product.id, propertyId: store.id, count: 1 });
+-    assert.equal(post.platform, "linkedin");
+-    await call(`/posts/${post.id}`, "PATCH", { status: "approved" });
+-
+-    const before = await call(`/properties/${store.id}/secrets`);
+-    assert.deepEqual(before.secrets.channels[0].handles, { url: "social.store.linkedin.webhook-url", token: "social.store.linkedin.webhook-token" });
+-    assert.equal(before.secrets.channels[0].webhookUrl, false);
+-    await assert.rejects(call(`/properties/${store.id}/secrets`, "POST", { platform: "linkedin", kind: "url", value: "http://insecure.example" }), /HTTPS/);
+-    await call(`/properties/${store.id}/secrets`, "POST", { platform: "linkedin", kind: "url", value: "https://store-hook.example/publish" });
+-    await host.pluginManager.getCapability("speck:secret-set")?.({ handle: "social.linkedin.webhook-url", value: "https://shared-hook.example/publish" });
+-    assert.equal((await call(`/properties/${store.id}/secrets`)).secrets.channels[0].webhookUrl, true);
+-
+-    const hooks: Array<{ url: string; body: any }> = [];
+-    globalThis.fetch = (async (input: any, init?: RequestInit) => {
+-      const url = String(input instanceof URL ? input.href : input);
+-      if (!url.includes("-hook.example")) return originalFetch(input, init);
+-      hooks.push({ url, body: JSON.parse(String(init?.body)) });
+-      return new Response(JSON.stringify({ url: "https://linkedin.example/post/1" }), { status: 200, headers: { "content-type": "application/json" } });
+-    }) as typeof fetch;
+-    const published = await call(`/posts/${post.id}/publish`, "POST", {});
+-    assert.equal(published.post.status, "published");
+-    assert.equal(hooks[0]?.url, "https://store-hook.example/publish", "the property's own webhook is used before the shared one");
+-    assert.equal(hooks[0]?.body.propertyId, store.id);
+-
+-    const studioState = (await call("/state?propertyId=Studio")).state;
+-    assert.equal(studioState.posts.length, 0);
+-    assert.equal(studioState.allProperties.length, 2);
+-    const listed = await host.pluginManager.executeTool("social_list_properties");
+-    assert.deepEqual(listed.result.properties.map((entry: any) => entry.name), ["Store", "Studio"]);
+-  } finally {
+-    globalThis.fetch = originalFetch;
+-    if (server) await new Promise<void>((resolve, reject) => server!.close((error) => error ? reject(error) : resolve()));
+-    await host?.close();
+-    runtime.close();
+-    fs.rmSync(directory, { recursive: true, force: true });
+-  }
+-});

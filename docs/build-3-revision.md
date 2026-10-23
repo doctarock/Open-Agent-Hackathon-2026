@@ -454,3 +454,13 @@ The Speck change is for this project only, so it is not committed to Speck.
   `29d5bb3`.
 - The patch applies cleanly to a fresh `29d5bb3` checkout. `test/speck-patch.test.ts` checks
   that it is in the working tree and touches only the files of this change.
+
+#### Speck's other plugins removed
+
+Speck's bundled demonstration plugins (Social Media Manager, AirChat, Information Agent) were
+removed for the Evidence Desk demonstration, together with the two Speck tests dedicated to them
+(`ported-plugins.test.ts`, `social-media-manager.test.ts`).
+- Kept as `patches/speck-remove-plugins.patch`, applied by `npm run speck:patch` and by setup.
+- Nothing else in Speck imports them; Speck's benchmark prompts name their tools only as text.
+- Speck's suite then passes 226/226, which is 231 less the 5 removed tests.
+- Both patches apply cleanly to a fresh `29d5bb3` checkout.
