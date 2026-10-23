@@ -6,18 +6,25 @@ import { byObservation, EvidenceProviderError, validateEvidenceRecord, type Evid
 // Federated evidence through a Zetaris Lightning platform. The REST flow is
 // the one the platform's own verify.sh documents: POST /api/auth/login for a
 // bearer token and organisation id, then POST /api/proxy/query/sql/start with
-// a SELECT. Each source system is a table; config/zetaris-queries.json says
-// which. A failure is raised with a hint, never replaced with fixture data.
+// a SELECT. The query config says where the evidence is:
+// - semanticLayer: one table of a Zetaris Unified Semantic Layer that maps
+//   every source system into the evidence model (config/zetaris-usl-queries.json,
+//   the default; built by npm run zetaris:usl), read with one SELECT;
+// - sources: one table per source system (config/zetaris-queries.json).
+// A failure is raised with a hint, never replaced with fixture data.
 
 export interface ZetarisQueryConfig {
-  database: string;
+  database?: string;
   columns: string;
-  sources: Array<{ system: string; table: string }>;
+  sources?: Array<{ system: string; table: string }>;
+  semanticLayer?: { table: string; description?: string };
 }
 
 interface Session { token: string; orgId: string }
 
 const IDENTIFIER = /^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$/;
+// A USL table: lightning.metastore.<namespace...>.<usl>.<table>.
+const USL_TABLE = /^lightning\.metastore(\.[A-Za-z0-9_]+){3,}$/;
 const COLUMN_LIST = /^[A-Za-z0-9_,\s]+$/;
 const CASE_ID = /^[A-Za-z0-9_-]+$/;
 
@@ -29,9 +36,11 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
   constructor(private readonly config: ZetarisConfig, private readonly fetchImpl: typeof fetch = fetch) {}
 
   describe(): ProviderDescription {
+    let usl: string | null = null;
+    try { usl = this.queryConfig().semanticLayer?.table ?? null; } catch { usl = null; }
     return {
       mode: this.mode,
-      label: "Zetaris Lightning (live)",
+      label: usl ? `Zetaris Unified Semantic Layer ${usl} (live)` : "Zetaris Lightning (live)",
       target: this.config.baseUrl,
       ready: this.missingSettings().length === 0,
       problem: this.missingSettings().length ? `missing ${this.missingSettings().join(", ")}` : null
@@ -43,7 +52,21 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
     const queries = this.queryConfig();
     const records: EvidenceRecord[] = [];
     const sources: FetchSummary["sources"] = [];
-    for (const source of queries.sources) {
+    if (queries.semanticLayer) {
+      // Every source system through the USL's one evidence model.
+      const table = queries.semanticLayer.table;
+      const began = performance.now();
+      const result = await this.select(`SELECT ${queries.columns} FROM ${table} WHERE case_id = '${caseId}'`, table);
+      sources.push({ location: table, rows: result.records.length, queryToken: result.queryToken, latencyMs: Math.round(performance.now() - began) });
+      const retrievedAt = new Date().toISOString();
+      result.records.forEach((row, index) => {
+        const record = this.toRecord(row, `${table} row ${index + 1}`);
+        records.push({ ...record, retrieval: { mode: this.mode, location: table, retrievedAt, ...(result.queryToken ? { queryToken: result.queryToken } : {}) } });
+      });
+      this.fetched = { mode: this.mode, at: new Date().toISOString(), sources };
+      return records.sort(byObservation);
+    }
+    for (const source of queries.sources ?? []) {
       const sql = `SELECT ${queries.columns} FROM ${source.table} WHERE case_id = '${caseId}'`;
       const began = performance.now();
       const result = await this.select(sql, source.table);
@@ -89,10 +112,12 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
     }
     if (!response.ok) {
       const message = serverMessage(body);
-      const missingTable = /TABLE_OR_VIEW_NOT_FOUND/.test(message ?? "");
+      const missingTable = /TABLE_OR_VIEW_NOT_FOUND|is not activated|not found/i.test(message ?? "");
       throw new EvidenceProviderError(`Zetaris query on ${label} failed (HTTP ${response.status})`, this.mode,
         missingTable
-          ? "The table is not registered in Zetaris. Run `npm run zetaris:seed`, or point config/zetaris-queries.json at your own tables."
+          ? label.startsWith("lightning.metastore.")
+            ? "The Unified Semantic Layer is not built or not activated in Zetaris. Run `npm run zetaris:usl`, or set ZETARIS_QUERY_CONFIG=config/zetaris-queries.json to read the per-source tables."
+            : "The table is not registered in Zetaris. Run `npm run zetaris:seed`, or point config/zetaris-queries.json at your own tables."
           : "Read the server message below. A driver that is still starting fails queries; ./verify.sh in the platform folder reports its state.",
         message);
     }
@@ -149,10 +174,11 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
       throw new EvidenceProviderError(`Cannot read Zetaris query config ${this.config.queryConfigPath}`, this.mode,
         "Set ZETARIS_QUERY_CONFIG to a JSON file shaped like config/zetaris-queries.json.", error instanceof Error ? error.message : String(error));
     }
-    if (!COLUMN_LIST.test(parsed.columns ?? "") || !parsed.sources?.length
-      || parsed.sources.some((source) => !IDENTIFIER.test(source.table) || !source.system)) {
+    const validSources = Boolean(parsed.sources?.length) && !parsed.sources!.some((source) => !IDENTIFIER.test(source.table) || !source.system);
+    const validUsl = Boolean(parsed.semanticLayer) && USL_TABLE.test(parsed.semanticLayer!.table ?? "");
+    if (!COLUMN_LIST.test(parsed.columns ?? "") || (parsed.semanticLayer ? !validUsl : !validSources)) {
       throw new EvidenceProviderError("Zetaris query config is invalid", this.mode,
-        "Each source needs a system and a DATABASE.table name; columns must be a plain column list.");
+        "Give either semanticLayer.table (lightning.metastore.<namespace>.<usl>.<table>) or sources, each with a system and a DATABASE.table name; columns must be a plain column list.");
     }
     return parsed;
   }

@@ -78,7 +78,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
       username: env.ZETARIS_USERNAME?.trim() ?? "",
       password: env.ZETARIS_PASSWORD ?? "",
       orgId: env.ZETARIS_ORG_ID?.trim() || null,
-      queryConfigPath: fromRoot(env.ZETARIS_QUERY_CONFIG?.trim() || "config/zetaris-queries.json"),
+      queryConfigPath: fromRoot(env.ZETARIS_QUERY_CONFIG?.trim() || "config/zetaris-usl-queries.json"),
       timeoutMs: positiveInt(env.ZETARIS_TIMEOUT_MS, 120_000, "ZETARIS_TIMEOUT_MS")
     },
     reasoner: oneOf(env.REASONER, ["rules", "nemotron"], "rules", "REASONER"),

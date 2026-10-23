@@ -58,3 +58,21 @@ test("the USL work never touches the live evidence database", () => {
     assert.doesNotMatch(text, /\bEVIDENCE_DESK\b(?!_)/);
   }
 });
+
+test("the evidence USL's mapping yields its declared columns in every branch, over the scenario's real records", () => {
+  const evidenceColumns = [...read("evidence_usl.ddl.sql").matchAll(/^\s{2}(\w+) \w+/gm)].map((match) => match[1]).filter((name) => name !== "CONSTRAINT");
+  // The columns Evidence Desk's adapter selects come first, in its order.
+  const adapter = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "config", "zetaris-usl-queries.json"), "utf8")) as { columns: string };
+  assert.deepEqual(evidenceColumns.slice(0, 11), adapter.columns.split(",").map((column) => column.trim()));
+  const branches = aliases(read("case_evidence.activate.sql"));
+  assert.equal(branches.length, 4, "order system, warehouse, carrier, support");
+  for (const branch of branches) assert.deepEqual(branch, evidenceColumns);
+  const contents = new Set(scenario.records.map((record) => record.content));
+  const order = JSON.parse(read("sources", "oms_orders", "order-ORD-1042.json")) as { summary: string };
+  assert.ok(contents.has(order.summary));
+  const support = read("sources", "support_contacts", "contacts-2026-10.csv");
+  for (const record of scenario.records.filter((item) => item.source.system === "support")) {
+    assert.ok(support.includes(record.provenance.recordRef), record.id);
+    assert.ok(support.replace(/""/g, "\"").includes(record.content), record.id);
+  }
+});
