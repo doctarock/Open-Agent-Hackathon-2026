@@ -1,0 +1,2 @@
+handover_id,order_no,parcel_no,event_code,scanned_at_utc,dock,manifest_no,weight_kg,scanner_id,remarks
+scans/dock3/MAN-5521/PCL-88412,ORD-1042,PCL-88412,HANDED_TO_CARRIER,2026-10-11T23:40:00Z,3,MAN-5521,3.2,scanner-D3-02,"Parcel PCL-88412 for ORD-1042 packed, weighed 3.2 kg, and scanned onto carrier manifest MAN-5521 at dock 3."

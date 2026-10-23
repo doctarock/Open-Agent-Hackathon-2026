@@ -2,3 +2,5 @@
 # hash, and the Speck patch must apply to Speck's LF sources.
 eval/cross-domain/** text eol=lf
 patches/*.patch text eol=lf
+# The Zetaris USL sources and SQL are copied into the platform as-is.
+zetaris/usl/** text eol=lf

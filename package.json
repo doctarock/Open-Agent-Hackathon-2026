@@ -20,6 +20,7 @@
     "db:reset": "npm run build && node dist/src/scripts/reset-db.js",
     "zetaris:seed": "npm run build && node dist/src/scripts/zetaris-seed.js",
     "zetaris:check": "npm run build && node dist/src/scripts/zetaris-check.js",
+    "zetaris:usl": "npm run build && node dist/src/scripts/zetaris-usl.js",
     "model:check": "npm run build && node dist/src/scripts/model-check.js",
     "eval": "npm run build && node dist/src/scripts/eval.js",
     "eval:live": "npm run build && node dist/src/scripts/eval.js --live",
