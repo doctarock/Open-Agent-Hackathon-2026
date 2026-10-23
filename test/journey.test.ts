@@ -13,7 +13,7 @@ const text = (items: unknown[]): string => items.flat(Infinity).filter(Boolean).
 const part = (id: string) => journey.JOURNEY.find((item: any) => item.id === id);
 
 test("the demo runs both prepared cases, then Speck's world view, memory map and chat, then the person's own investigation", () => {
-  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["delivery", "bank", "world", "memory", "chat", "create", "run-yours"]);
+  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["delivery", "bank", "world", "memory", "chat", "create"]);
   assert.deepEqual([part("delivery").caseId, part("bank").caseId], ["disputed-delivery", "bank-return"]);
   const known = new Set(tour.TOUR_STEPS.map((step: any) => step.id));
   for (const item of journey.JOURNEY.filter((entry: any) => entry.kind === "case")) {
@@ -25,7 +25,7 @@ test("the demo runs both prepared cases, then Speck's world view, memory map and
 
 test("the Speck parts describe real state, and the action parts wait for it", () => {
   const facts = { cases: [{ id: "disputed-delivery", label: "Disputed delivery", runs: 2, headline: "Leading, not established: H-MISDELIVERED." }, { id: "bank-return", label: "Bank return", runs: 0, headline: "" }],
-    timeline: "Timeline · 12 of 50 items", memory: "40 mapped memories · 18 associations", replied: false, created: null, yoursRuns: 0 };
+    timeline: "Timeline · 12 of 50 items", memory: "40 mapped memories · 18 associations", replied: false };
   assert.match(text(part("world").body(facts)), /Disputed delivery: 2 run\(s\); now Leading.*\nBank return: not run yet\./s);
   assert.match(text(part("world").body(facts)), /Speck reports: Timeline · 12 of 50 items/);
   assert.match(text(part("memory").body(facts)), /derived from.*supports, or contradicts.*inhibits.*40 mapped memories/s);
@@ -34,11 +34,8 @@ test("the Speck parts describe real state, and the action parts wait for it", ()
   assert.equal(journey.partDone(part("chat"), facts), false);
   assert.equal(journey.partDone(part("chat"), { ...facts, replied: true }), true);
   assert.match(text(part("chat").body(facts)), new RegExp(journey.SUGGESTED_QUESTION.replace(/[?,]/g, "\\$&")));
-  assert.equal(journey.partDone(part("create"), facts), false);
-  const created = { ...facts, created: { id: "my-1", label: "Missing laptop return" } };
-  assert.equal(journey.partDone(part("create"), created), true);
-  assert.equal(journey.partDone(part("run-yours"), created), false);
-  assert.match(text(part("run-yours").after({ ...created, yoursRuns: 1 })), /1 run\(s\)/);
+  assert.equal(journey.partDone(part("create"), facts), true, "the last part does not wait for the person to create anything");
+  assert.match(text(part("create").body(facts)), /That completes the guided demo/);
 });
 
 test("where the demo is is kept per viewer, and survives unavailable storage", () => {
@@ -50,8 +47,6 @@ test("where the demo is is kept per viewer, and survives unavailable storage", (
   assert.equal(journey.journeyStore(storage).part(), 3);
   store.setPart(99);
   assert.equal(store.part(), null, "an out-of-range part is ignored");
-  store.setCreated({ id: "my-2", label: "x" });
-  assert.deepEqual(store.created(), { id: "my-2", label: "x" });
   const broken = journey.journeyStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
   broken.setPart(1);
   assert.equal(broken.part(), null);

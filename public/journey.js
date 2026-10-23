@@ -6,8 +6,7 @@
 //
 // A "case" part runs the case page's own guided steps (tour.js), filtered.
 // The other parts are described from facts the tab gathers from real state:
-// facts = { cases: [{ id, label, runs, headline }], timeline, memory,
-//           replied, reply, created: { id, label } | null, yoursRuns }.
+// facts = { cases: [{ id, label, runs, headline }], timeline, memory, replied }.
 
 const casesLine = (facts) => (facts.cases ?? []).map((item) => item.runs
   ? `${item.label}: ${item.runs} run(s); now ${item.headline}`
@@ -83,30 +82,12 @@ export const JOURNEY = [
   {
     id: "create",
     kind: "yours",
-    action: "create",
     label: "Part 6 of 6 · Your own investigation",
     title: "Start an investigation of your own",
-    goal: (facts) => Boolean(facts.created),
     body: () => [
-      "Write a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases.",
-      "Fill in the form and click Create investigation."
-    ],
-    after: (facts) => [`"${facts.created.label}" is created and listed under Your investigations.`]
-  },
-  {
-    id: "run-yours",
-    kind: "yours",
-    action: "run",
-    label: "Part 6 of 6 · Your own investigation",
-    title: "Run it, then add or correct evidence",
-    goal: (facts) => (facts.yoursRuns ?? 0) >= 1,
-    body: () => [
-      "Click Run investigation. The local model weighs each record against each explanation; Speck caps model-judged evidence at reliability 0.4.",
-      "Then use Add evidence: a new record, or a correction of an earlier one. Run again, and the conclusion is revised from the evidence that still counts."
-    ],
-    after: (facts) => [
-      `Your investigation has ${facts.yoursRuns} run(s). Add evidence or a correction and run it again to see the revision.`,
-      "That is the whole demo. The Guide button on any case lists every feature; Reset demo case starts a prepared case afresh for the next person."
+      "This form starts an investigation of your own: a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases.",
+      "Once it is created, Run investigation has the local model weigh each record against each explanation (Speck caps model-judged evidence at reliability 0.4). Add evidence takes a new record, or a correction of an earlier one; run again and the conclusion is revised from the evidence that still counts.",
+      "That completes the guided demo. The Guide button on any case lists every feature, and Reset demo case starts a prepared case afresh for the next person."
     ]
   }
 ];
@@ -126,8 +107,6 @@ export function journeyStore(storage) {
     part: () => { const part = read("part", null); return Number.isInteger(part) && part >= 0 && part < JOURNEY.length ? part : null; },
     setPart: (part) => write("part", part),
     offerDismissed: () => read("offer-dismissed", false) === true,
-    dismissOffer: () => write("offer-dismissed", true),
-    created: () => read("created", null),
-    setCreated: (created) => write("created", created)
+    dismissOffer: () => write("offer-dismissed", true)
   };
 }

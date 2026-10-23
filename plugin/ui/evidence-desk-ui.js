@@ -52,7 +52,7 @@ const demo = {
   collapsed: false,
   spotlit: null,
   mounted: false,    // whether the tab has been mounted since the page loaded
-  facts: { cases: [], timeline: "", memory: "", replied: false, created: null, yoursRuns: 0 }
+  facts: { cases: [], timeline: "", memory: "", replied: false }
 };
 
 const currentPart = () => {
@@ -134,9 +134,6 @@ function endJourney() {
 
 function startJourney() {
   demo.store.dismissOffer();
-  demo.store.setCreated(null);
-  demo.facts.created = null;
-  demo.facts.yoursRuns = 0;
   demo.collapsed = false;
   enterPart(0, "first");
 }
@@ -159,7 +156,6 @@ function renderCoach() {
   }
   const { JOURNEY, partDone } = demo.journey;
   const index = JOURNEY.indexOf(part);
-  demo.facts.created = demo.store.created();
   const done = partDone(part, demo.facts);
   const waiting = part.action && !done;
   if (!demo.coach) {
@@ -178,7 +174,6 @@ function renderCoach() {
     demo.collapsed ? null : el("div", { className: "coach-body" }, paragraphs(done && part.after ? part.after(demo.facts) : part.body(demo.facts))),
     part.action && !demo.collapsed ? el("p", { className: `coach-status ${done ? "done" : "waiting"}`, role: "status" },
       done ? "Done." : part.action === "chat" ? "Waiting for you: send a message to Speck."
-        : part.action === "create" ? "Waiting for you: create the investigation."
         : "Waiting for you: click Run investigation.") : null,
     demo.collapsed ? null : el("div", { className: "coach-actions" },
       el("button", { type: "button", className: "secondary", "data-journey": "back" }, "Back"),
@@ -188,8 +183,7 @@ function renderCoach() {
   hostSpotlight(part.id === "world" ? document.querySelector("#timelineStatus")
     : part.id === "memory" ? document.querySelector(".world-mode-switch")
     : part.id === "chat" ? document.querySelector("#quickComposer")
-    : part.id === "create" && !done ? document.querySelector("form.new-case")
-    : part.id === "run-yours" ? document.querySelector(".case-picker + .edk #edk-run-button")
+    : part.id === "create" ? document.querySelector("form.new-case")
     : null);
   fitCoach();
 }
@@ -319,12 +313,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     renderPicker();
     mounted = mountEvidenceDesk(page, {
       apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours",
-      intro: false, guided,
-      onView: (view) => {
-        if (currentPart()?.id !== "run-yours" || demo.store.created()?.id !== item.id) return;
-        demo.facts.yoursRuns = view.investigation?.runs?.length ?? 0;
-        renderCoach();
-      }
+      intro: false, guided
     });
   }
 
@@ -344,10 +333,6 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       } });
     } else if (part.id === "create") {
       openNewCase();
-    } else if (part.id === "run-yours") {
-      const created = demo.store.created();
-      if (created && cases.some((item) => item.id === created.id)) show(created.id);
-      else return enterPart(JOURNEY.findIndex((item) => item.id === "create"), "first");
     }
     renderOffer();
     renderCoach();
@@ -405,8 +390,6 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
         if (!response.ok) throw new Error(result.error ?? `HTTP ${response.status}`);
         await loadCases();
         show(result.id);
-        // In the guided demo, creating it completes the step.
-        if (currentPart()?.id === "create") { demo.store.setCreated({ id: result.id, label: result.label }); renderCoach(); }
       } catch (failure) {
         error.hidden = false;
         error.textContent = `The investigation was not created: ${failure.message}`;

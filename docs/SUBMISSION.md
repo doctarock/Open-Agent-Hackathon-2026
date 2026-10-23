@@ -52,7 +52,7 @@ The submodule is pinned to upstream Speck.
      Memory map (the case's records and assessments linked with Speck's association kinds:
      derived-from, supports, contradicts, inhibitory for a correction) and its chat, which
      answers from the published case summary.
-   - It ends with the judge creating an investigation of their own: a question, competing
+   - It ends on the form for an investigation of the judge's own: a question, competing
      explanations and free-text evidence, weighed by the local model, with corrections.
 
 ## Sponsor technologies, as verified in a real run

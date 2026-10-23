@@ -113,8 +113,9 @@ demo* link beside the case picker starts or resumes it.
 5. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
    completes when Speck replies (Speck's `speck:reply` event); it does not judge the reply, and
    says to check it against the case page.
-6. **Your own investigation:** the new-investigation form opens; the step completes when it is
-   created, and the last step when it has been run.
+6. **Your own investigation:** the new-investigation form opens, with what creating, running and
+   correcting one does. This part does not wait for anything: it says the guided demo is
+   complete, and the viewer can go on to create one.
 
 Each part that asks for an action waits for the real state; Back, Skip, Exit and resume work
 across Speck's views and after a reload (the place is kept in local storage). The definitions
