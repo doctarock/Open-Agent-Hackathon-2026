@@ -117,6 +117,7 @@ const TEMPLATE = `
     <h2 id="edk-evidence-heading">Evidence</h2>
     <p id="edk-evidence-summary" class="muted"></p>
     <div id="edk-evidence-help"></div>
+    <div id="edk-add-evidence" hidden></div>
     <ol id="edk-evidence-list" class="evidence-list"></ol>
   </section>
 </div>
@@ -149,7 +150,9 @@ const TEMPLATE = `
 // standalone; the plugin's case route inside Speck). fetchImpl: how to call
 // it (Speck passes its admin-authorised fetch). eventsUrl: a server-sent
 // event stream for run progress, if the host has one.
-export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null } = {}) {
+// userCase: an investigation the person created (the plugin's own cases), to
+// which they can add evidence from the page.
+export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false } = {}) {
   root.classList.add("edk");
   root.innerHTML = TEMPLATE;
   const $ = (id) => root.querySelector(`#edk-${id}`);
@@ -161,15 +164,21 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   $("timeline-help").replaceChildren(help("What is this?", ...HELP.timeline));
   $("trace-help").replaceChildren(help("What is this?", ...HELP.trace));
 
+  // Set when the host removes the page (another case, or the new-case form):
+  // a request still in flight then resolves without touching the page.
+  let destroyed = false;
+
   async function api(path, options = {}) {
     // Paths are written as /api/...; the host decides where the API lives.
     const response = await fetchImpl(apiBase + path.slice("/api".length), options);
+    if (destroyed) throw Object.assign(new Error("The page was closed"), { closed: true });
     const body = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
     if (!response.ok) throw Object.assign(new Error(body.error ?? `HTTP ${response.status}`), { body });
     return body;
   }
 
   function showError(error) {
+    if (destroyed) return;
     const box = $("error");
     if (!error) { box.hidden = true; box.replaceChildren(); return; }
     const body = error.body ?? {};
@@ -260,6 +269,59 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     if (record.status === "failed") return badge(record.assessed ? "assessed, judgments missing" : "assessment failed: retried next run", "bad");
     if (record.status === "withdrawn") return badge("withdrawn before assessment: not assessed", "warn");
     return badge(record.lastAttempt ? "not yet assessed (interrupted run)" : "not yet assessed", "pending");
+  }
+
+  // Adding evidence to the person's own investigation. Built once, so a
+  // refresh never clears what is being typed; the records it can correct are
+  // brought up to date on every refresh.
+  let addForm = null;
+  function renderAddEvidence() {
+    const holder = $("add-evidence");
+    if (!userCase) return;
+    holder.hidden = false;
+    if (!addForm) {
+      const error = el("p", { className: "dialog-error", role: "alert", hidden: "" });
+      addForm = el("form", { className: "add-evidence", novalidate: "" },
+        el("h3", {}, "Add evidence"),
+        el("p", { className: "meta", "data-assessor-note": "" }),
+        el("label", { className: "field" }, "Source", el("input", { type: "text", name: "source", maxlength: "120", placeholder: "Where it comes from, e.g. Warehouse inbound log" })),
+        el("label", { className: "field" }, "What it says", el("textarea", { name: "content", rows: "2", maxlength: "1200" })),
+        el("label", { className: "field" }, "When the source recorded it (optional)", el("input", { type: "date", name: "observedAt" })),
+        el("label", { className: "field" }, "This corrects an earlier record (optional)", el("select", { name: "corrects" })),
+        error,
+        el("div", { className: "dialog-actions" }, el("button", { type: "submit", className: "secondary" }, "Add evidence")));
+      addForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const value = (name) => addForm.querySelector(`[name="${name}"]`).value.trim();
+        const submit = addForm.querySelector("[type=submit]");
+        submit.disabled = true;
+        error.hidden = true;
+        try {
+          const result = await api("/api/evidence/add", { method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ source: value("source"), content: value("content"), ...(value("observedAt") ? { observedAt: value("observedAt") } : {}), ...(value("corrects") ? { corrects: value("corrects") } : {}) }) });
+          const corrected = value("corrects");
+          addForm.reset();
+          await refresh();
+          showOutcome({ tone: "ok", title: `${result.recordId} added.`,
+            lines: [corrected ? `It corrects ${corrected}: once a run assesses ${result.recordId}, ${corrected} stops counting and the beliefs that rested on it are rebuilt.` : "It does not count until a run assesses it."],
+            next: "Run the investigation to assess it." });
+        } catch (failure) {
+          error.hidden = false;
+          error.textContent = `Not added: ${failure.message}`;
+        } finally {
+          submit.disabled = false;
+        }
+      });
+      holder.replaceChildren(addForm);
+    }
+    const select = addForm.querySelector('[name="corrects"]');
+    const chosen = select.value;
+    select.replaceChildren(el("option", { value: "" }, "No, it is a new record"),
+      ...(view.listing?.records ?? []).filter((record) => !record.invalidation).map((record) => el("option", { value: record.id }, `${record.id}: ${record.content.slice(0, 60)}${record.content.length > 60 ? "…" : ""}`)));
+    select.value = [...select.options].some((option) => option.value === chosen) ? chosen : "";
+    addForm.querySelector("[data-assessor-note]").textContent = view.status?.reasoner?.kind === "nemotron"
+      ? "Your evidence is free text, so the local model weighs it against each explanation; Speck caps model-judged evidence at reliability 0.4."
+      : "This workspace uses the deterministic rule assessor, which matches structured facts. Your free-text evidence has none, so runs assess it but cannot weigh it: set REASONER=nemotron in the plugin's .env to have the model weigh it.";
   }
 
   function renderEvidence(listing) {
@@ -614,6 +676,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   }
 
   async function refresh() {
+    if (destroyed) return;
     try {
       view.status = await api("/api/status");
       view.investigation = await api("/api/investigation");
@@ -638,6 +701,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         throw evidenceError;
       }
       renderEvidence(view.listing);
+      renderAddEvidence();
       showError(null);
     } catch (error) {
       showError(error);
@@ -647,6 +711,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   }
 
   function setProgress(text) {
+    if (destroyed) return;
     const box = $("progress");
     box.hidden = !text;
     box.className = "progress";
@@ -655,6 +720,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
 
   // An outcome: what happened, in a tone, and what to do next.
   function showOutcome(outcome) {
+    if (destroyed) return;
     const box = $("progress");
     if (!outcome) { setProgress(null); return; }
     box.hidden = false;
@@ -678,7 +744,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       if (kind === "run" && !eventsUrl) {
         try { engineProgress = (await api("/api/progress")).progress ?? engineProgress; } catch { /* keep the last report */ }
       }
-      if (busy !== kind) return;
+      if (busy !== kind || destroyed) return;
       workingText = describeProgress(kind, Date.now() - began, engineProgress && engineProgress.at && Date.parse(engineProgress.at) >= began - 1000 ? engineProgress : null)
         + (kind === "run" && liveRun() ? " A live run can take up to about 35 seconds." : "");
       setProgress(workingText);
@@ -867,6 +933,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   }
 
   function renderTour() {
+    if (destroyed) return;
     const coach = $("coach");
     if (tourStep === null) { coach.hidden = true; spotlight(null); scrolledFor = null; return; }
     const step = TOUR_STEPS[tourStep];
@@ -971,6 +1038,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
 
   let guideOpen = false;
   function renderGuide() {
+    if (destroyed) return;
     const guide = $("guide");
     $("guide-button").setAttribute("aria-expanded", String(guideOpen));
     guide.hidden = !guideOpen;
@@ -1036,5 +1104,5 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   });
 
   refresh();
-  return { refresh, destroy: () => { events?.close(); spotlight(null); } };
+  return { refresh, destroy: () => { destroyed = true; events?.close(); spotlight(null); } };
 }

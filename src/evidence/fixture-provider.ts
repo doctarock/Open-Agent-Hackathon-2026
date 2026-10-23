@@ -8,13 +8,14 @@ export class FixtureEvidenceProvider implements EvidenceProvider {
   readonly mode = "fixture" as const;
   private fetched: FetchSummary | null = null;
 
-  constructor(private readonly file: string, private readonly rootDir: string) {}
+  // label: how the page names this source (evidence a person entered, say).
+  constructor(private readonly file: string, private readonly rootDir: string, private readonly label = "Local fixtures (not Zetaris)") {}
 
   describe(): ProviderDescription {
     const exists = fs.existsSync(this.file);
     return {
       mode: this.mode,
-      label: "Local fixtures (not Zetaris)",
+      label: this.label,
       target: this.relative(),
       ready: exists,
       problem: exists ? null : `fixture file ${this.relative()} does not exist`

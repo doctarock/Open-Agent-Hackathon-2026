@@ -80,7 +80,11 @@ export function describeRun(view) {
   }
 
   let next;
+  // An investigation a person created has no prepared updates: its next
+  // evidence is whatever they add.
+  const theirs = String(view.status?.case?.scenarioId ?? "").startsWith("user-");
   if (pending.length) next = "Run the investigation again to assess the pending record(s).";
+  else if (theirs) next = "Add more evidence, or a correction of an earlier record, then run the investigation again.";
   else if (view.status?.nextStage) next = `Next: introduce the prepared update ("${view.status.nextStage.label}").`;
   else next = "Every prepared update is in. Explore the evidence, the history and the trace, or withdraw a record to see what changes.";
   return { tone, title, lines, next };

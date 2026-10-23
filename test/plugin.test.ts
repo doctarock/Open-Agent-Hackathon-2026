@@ -6,7 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { test } from "node:test";
 import { SpeckRuntime } from "#speck";
-import createEvidenceDeskPlugin, { caseConfig, CASES, createCaseRegistry } from "../plugin/evidence-desk-plugin.js";
+import createEvidenceDeskPlugin, { caseConfig, CASES, createCaseRegistry, registerEvidenceDeskRoutes } from "../plugin/evidence-desk-plugin.js";
 import { ROOT_DIR } from "../src/config.js";
 import { installPlugin } from "../src/scripts/plugin-install.js";
 import { EVIDENCE_HOME_VIEW } from "../src/scripts/speck.js";
@@ -57,7 +57,8 @@ test("the plugin declares a Speck tab and runs a case on Speck's own runtime, be
     const other = await runtime.createWorker("Someone else's task", [], { kind: "user", source: "test" });
     const otherObjects = runtime.mentalObjects.listForWorker(other.id).length;
 
-    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases, CASES.map((spec) => ({ id: spec.id, label: spec.label })));
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.filter((item: any) => item.kind === "prepared"),
+      CASES.map((spec) => ({ id: spec.id, label: spec.label, kind: "prepared" })));
     const bank = "/api/plugins/evidence-desk/cases/bank-return";
     const status = (await call(base, `${bank}/status`)).body;
     assert.equal(status.evidence.mode, "fixture");
@@ -182,3 +183,37 @@ function walk(directory: string): string[] {
     return entry.isDirectory() ? walk(full) : [full];
   });
 }
+
+test("a person creates an investigation through the plugin and adds evidence to it; the prepared cases' evidence is fixed", async () => {
+  const runtime = new SpeckRuntime({ databasePath: path.join(tempDir(), "speck.sqlite") });
+  await runtime.initialize();
+  const app = express();
+  app.use(express.json());
+  const own = tempDir();
+  registerEvidenceDeskRoutes(app, createCaseRegistry(() => runtime, { rootDir: ROOT_DIR, settings: {}, userCasesDir: own }));
+  const server = http.createServer(app).listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    assert.equal((await call(base, "/api/plugins/evidence-desk/cases", "POST", { title: "x", question: "y", explanations: ["only one"] })).status, 400);
+    const created = await call(base, "/api/plugins/evidence-desk/cases", "POST", {
+      title: "Missing laptop return", question: "Was laptop SN-4471 returned?",
+      explanations: ["Returned and lost at the warehouse.", "Never sent back."],
+      evidence: [{ source: "Courier", content: "Pickup from the customer on 3 Oct.", observedAt: "2026-10-03T09:00:00Z" }]
+    });
+    assert.deepEqual(created, { status: 200, body: { id: "my-1", label: "Missing laptop return", kind: "yours" } });
+    const cases = (await call(base, "/api/plugins/evidence-desk/cases")).body.cases;
+    assert.deepEqual(cases.map((item: any) => [item.id, item.kind]), [["disputed-delivery", "prepared"], ["bank-return", "prepared"], ["my-1", "yours"]]);
+    const status = (await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).body;
+    assert.deepEqual([status.case.caseId, status.evidence.mode, status.evidence.label], ["MY-1", "fixture", "Evidence you entered (stored locally, not Zetaris)"]);
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence")).body.pending, ["E-1"]);
+    const added = await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence/add", "POST", { source: "Warehouse", content: "No inbound scan for SN-4471." });
+    assert.deepEqual(added, { status: 200, body: { recordId: "E-2" } });
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence")).body.pending, ["E-1", "E-2"]);
+    assert.equal((await call(base, "/api/plugins/evidence-desk/cases/bank-return/evidence/add", "POST", { source: "x", content: "y" })).status, 400);
+    assert.ok(!fs.existsSync(path.join(ROOT_DIR, "data", "user-cases", "my-1")), "nothing was written to the repository's data folder");
+  } finally {
+    server.close();
+    runtime.close();
+  }
+});

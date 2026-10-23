@@ -409,3 +409,15 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 @media (max-width: 600px) {
   .edk.edk-in-speck .coach { left: 8px; bottom: 150px; max-height: min(40vh, calc(100vh - 230px)); }
 }
+
+/* Forms: a new investigation, and evidence added to one. */
+.edk .field { display: block; margin: 10px 0; font-weight: 600; font-size: 0.9rem; }
+.edk .field input, .edk .field textarea, .edk .field select {
+  display: block; width: 100%; margin-top: 4px; padding: 6px 8px; font: inherit; font-weight: normal;
+  color: var(--edk-text); background: var(--edk-surface); border: 1px solid var(--edk-border); border-radius: 6px;
+}
+.edk fieldset { margin: 12px 0; padding: 8px 12px; border: 1px solid var(--edk-border); border-radius: 6px; }
+.edk legend { padding: 0 4px; font-weight: 600; }
+.edk .add-evidence { margin: 8px 0 12px; padding: 10px 12px; border: 1px dashed var(--edk-border); border-radius: 6px; }
+.edk .new-case { max-width: 760px; }
+.edk .picker-label { align-self: center; margin: 0 2px 0 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }

@@ -104,3 +104,11 @@ test("minimising the tour is remembered with its step, and a demo reset starts t
   again.resetForDemo();
   assert.deepEqual([again.introDismissed(), again.tourStep(), again.coachCollapsed(), again.viewed().size], [false, null, false, 0]);
 });
+
+test("for a person's own investigation the next step is to add evidence, not a prepared update", () => {
+  const outcome = status.describeRun({
+    status: { case: { scenarioId: "user-my-1" }, nextStage: null }, listing: { pending: [] }, trace: { entries: [] },
+    investigation: { latestRun: { runNumber: 1, stage: { id: "entered" }, execution: { status: "completed" } }, current: { state: "leading", headline: "Leading, not established: X.", reconciled: true } }
+  });
+  assert.equal(outcome.next, "Add more evidence, or a correction of an earlier record, then run the investigation again.");
+});

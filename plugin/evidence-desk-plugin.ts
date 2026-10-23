@@ -5,6 +5,8 @@ import type { SpeckRuntime } from "#speck";
 import { loadConfig, ROOT_DIR, type AppConfig } from "../src/config.js";
 import { deskApi, errorResponse, type DeskApi } from "../src/investigation/api.js";
 import { EvidenceDesk } from "../src/investigation/desk.js";
+import { FixtureEvidenceProvider } from "../src/evidence/fixture-provider.js";
+import { addUserEvidence, createUserCase, listUserCases, UserCaseError } from "../src/investigation/user-cases.js";
 
 // Evidence Desk as a Speck plugin. Speck loads this file (as
 // speck/plugins/evidence-desk/dist/plugin/evidence-desk-plugin.js, put there
@@ -35,7 +37,9 @@ export interface CaseSpec {
   id: string;
   label: string;
   scenarioDir: string;
-  fixed?: { evidenceMode: "fixture"; reasoner: "rules" };
+  fixed?: { evidenceMode: "fixture"; reasoner?: "rules" };
+  // An investigation a person created from the tab (src/investigation/user-cases.ts).
+  yours?: boolean;
 }
 export const CASES: CaseSpec[] = [
   { id: "disputed-delivery", label: "Disputed delivery", scenarioDir: "fixtures/scenarios/disputed-delivery" },
@@ -49,26 +53,58 @@ export function pluginSettings(rootDir = ROOT_DIR): NodeJS.ProcessEnv {
 }
 
 export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR): AppConfig {
-  const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir, ...(spec.fixed ? { EVIDENCE_MODE: spec.fixed.evidenceMode, REASONER: spec.fixed.reasoner } : {}) };
+  const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir,
+    ...(spec.fixed ? { EVIDENCE_MODE: spec.fixed.evidenceMode, ...(spec.fixed.reasoner ? { REASONER: spec.fixed.reasoner } : {}) } : {}) };
   const dataDir = path.join(rootDir, "data", spec.id);
   // databasePath is unused here: the case lives in Speck's own database.
   return loadConfig(env, { rootDir, databasePath: path.join(dataDir, "unused.sqlite"), historyDir: path.join(dataDir, "meterless") });
 }
 
-// The cases, attached to Speck's runtime on first use.
-export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootDir?: string; settings?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch } = {}) {
+// Where the investigations a person creates are kept.
+export const userCasesDir = (rootDir = ROOT_DIR) => path.join(rootDir, "data", "user-cases");
+
+// The cases, attached to Speck's runtime on first use: the prepared ones,
+// then the investigations created from the tab.
+// userCasesDir: where a person's investigations are kept (tests use a temporary one).
+export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootDir?: string; settings?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; userCasesDir?: string } = {}) {
   const rootDir = options.rootDir ?? ROOT_DIR;
+  const ownDir = options.userCasesDir ?? userCasesDir(rootDir);
   const opened = new Map<string, Promise<{ desk: EvidenceDesk; api: DeskApi }>>();
+  // A person's evidence is a local file they wrote, never Zetaris; the
+  // assessor follows the settings (only a model can weigh free text).
+  const specs = (): CaseSpec[] => [...CASES, ...listUserCases(ownDir).map((item) => ({ ...item, fixed: { evidenceMode: "fixture" as const }, yours: true }))];
+  const find = (id: string) => {
+    const spec = specs().find((candidate) => candidate.id === id);
+    if (!spec) throw Object.assign(new Error(`Unknown case "${id}"`), { status: 404 });
+    return spec;
+  };
   return {
-    list: () => CASES.map((spec) => ({ id: spec.id, label: spec.label })),
+    list: () => specs().map((spec) => ({ id: spec.id, label: spec.label, kind: spec.yours ? "yours" : "prepared" })),
+    create(input: unknown) {
+      try {
+        const created = createUserCase(ownDir, input);
+        return { id: created.id, label: created.label, kind: "yours" };
+      } catch (error) {
+        throw error instanceof UserCaseError ? Object.assign(error, { status: 400 }) : error;
+      }
+    },
+    addEvidence(id: string, input: unknown) {
+      const spec = find(id);
+      if (!spec.yours) throw Object.assign(new Error("Evidence can only be added to an investigation you created; the prepared cases' evidence is fixed"), { status: 400 });
+      try {
+        return addUserEvidence(spec.scenarioDir, input);
+      } catch (error) {
+        throw error instanceof UserCaseError ? Object.assign(error, { status: 400 }) : error;
+      }
+    },
     async get(id: string): Promise<{ desk: EvidenceDesk; api: DeskApi }> {
-      const spec = CASES.find((candidate) => candidate.id === id);
-      if (!spec) throw Object.assign(new Error(`Unknown case "${id}"`), { status: 404 });
+      const spec = find(id);
       let entry = opened.get(id);
       if (!entry) {
         entry = (async () => {
           const config = caseConfig(spec, options.settings ?? pluginSettings(rootDir), rootDir);
-          const desk = await EvidenceDesk.attach(runtime(), config, options.fetchImpl ? { fetchImpl: options.fetchImpl } : {});
+          const provider = spec.yours ? new FixtureEvidenceProvider(path.join(spec.scenarioDir, "evidence.json"), config.rootDir, "Evidence you entered (stored locally, not Zetaris)") : null;
+          const desk = await EvidenceDesk.attach(runtime(), config, { ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}), ...(provider ? { provider } : {}) });
           return { desk, api: deskApi(desk, config, "Speck's own database (this case is a Speck worker)") };
         })();
         opened.set(id, entry);
@@ -105,6 +141,18 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
     });
   }
   app.get(`${API_BASE}/cases`, (_req, res) => res.json({ cases: cases.list() }));
+  const plain = (operation: (req: { params: Record<string, string>; body?: unknown }) => unknown): Handler => async (req, res) => {
+    try {
+      res.json(await operation(req));
+    } catch (error) {
+      const known = (error as { status?: number }).status;
+      const { status, body } = known ? { status: known, body: { error: (error as Error).message, kind: "request" } } : errorResponse(error);
+      res.status(status).json(body);
+    }
+  };
+  // A new investigation of the person's own, and evidence added to one.
+  app.post(`${API_BASE}/cases`, plain((req) => cases.create(req.body)));
+  app.post(`${API_BASE}/cases/:caseId/evidence/add`, plain((req) => cases.addEvidence(String(req.params.caseId ?? ""), req.body)));
   const route = (operation: (api: DeskApi, body: unknown) => unknown): Handler => async (req, res) => {
     try {
       const { api } = await cases.get(String(req.params.caseId ?? ""));
