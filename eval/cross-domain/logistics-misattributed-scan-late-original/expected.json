@@ -1,0 +1,45 @@
+{
+  "id": "logistics-misattributed-scan-late-original",
+  "domain": "logistics",
+  "family": "misattributed-scan",
+  "order": "correction before the record it replaces",
+  "category": "arrival order",
+  "description": "The same four records; the delivered scan arrives last, after the correction that already replaced it.",
+  "checkpoints": [
+    {
+      "afterStage": "complaint",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "correction",
+      "conclusion": "H-AT-DEPOT",
+      "notCurrent": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "unsupported": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "late-scan",
+      "conclusion": "H-AT-DEPOT",
+      "notCurrent": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "unsupported": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "invalidated": [
+        "XL1-01"
+      ]
+    }
+  ]
+}

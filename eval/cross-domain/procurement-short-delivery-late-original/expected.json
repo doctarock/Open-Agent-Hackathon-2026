@@ -1,0 +1,47 @@
+{
+  "id": "procurement-short-delivery-late-original",
+  "domain": "procurement",
+  "family": "short-delivery",
+  "order": "correction before the record it replaces",
+  "category": "arrival order",
+  "description": "The same four records; the original goods receipt is backfilled after the amendment that replaced it.",
+  "checkpoints": [
+    {
+      "afterStage": "recount",
+      "conclusion": "H-SHORT",
+      "notCurrent": [
+        "H-FULL"
+      ],
+      "unsupported": [
+        "H-FULL"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "late-original",
+      "conclusion": "H-SHORT",
+      "notCurrent": [
+        "H-FULL"
+      ],
+      "unsupported": [
+        "H-FULL"
+      ],
+      "invalidated": [
+        "XR1-02"
+      ]
+    },
+    {
+      "afterStage": "manifest",
+      "conclusion": "H-SHORT",
+      "notCurrent": [
+        "H-FULL"
+      ],
+      "unsupported": [
+        "H-FULL"
+      ],
+      "invalidated": [
+        "XR1-02"
+      ]
+    }
+  ]
+}

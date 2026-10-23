@@ -87,6 +87,42 @@ test("Zetaris rows become evidence labelled as retrieved via Zetaris", async () 
   await assert.rejects(provider.fetchCaseEvidence("X' OR '1'='1"), /Invalid case id/);
 });
 
+test("a run over Zetaris is traced with every SELECT the adapter sent, including empty tables", async () => {
+  // The development fixture's rows, served through a stand-in for the Zetaris
+  // REST API so the real adapter's login, query and row mapping run. The
+  // support table returns no rows: the trace must still show that query.
+  const fixture = JSON.parse((await import("node:fs")).readFileSync("fixtures/scenarios/disputed-delivery/evidence.json", "utf8")) as { records: any[] };
+  const systems: Record<string, string> = { "EVIDENCE_DESK.order_events": "oms", "EVIDENCE_DESK.warehouse_scans": "wms", "EVIDENCE_DESK.carrier_events": "carrier", "EVIDENCE_DESK.support_messages": "support" };
+  let query = 0;
+  const zetaris = fakeFetch((url, init) => {
+    if (url.endsWith("/api/auth/login")) return loginOk();
+    const table = /FROM (\S+)/.exec(JSON.parse(String(init.body)).select)![1]!;
+    const rows = systems[table] === "support" ? [] : fixture.records.filter((record) => record.source.system === systems[table]).map((record) => ({
+      id: record.id, case_id: record.caseId, source_system: record.source.system, source_name: record.source.name,
+      observed_at: record.observedAt, content: record.content, facts_json: JSON.stringify(record.facts), record_ref: record.provenance.recordRef,
+      system_of_record: record.provenance.systemOfRecord, author: record.provenance.author, supersedes: record.provenance.supersedes.join(",")
+    }));
+    query += 1;
+    return jsonResponse(200, { records: rows, totalCount: rows.length, queryToken: `token-${query}` });
+  });
+  await withDesk(liveConfig(), async (desk) => {
+    await desk.run();
+    const trace = desk.trace().find((entry) => entry.kind === "run")!;
+    assert.ok(trace.kind === "run");
+    assert.equal(trace.evidence?.mode, "zetaris");
+    assert.equal(trace.evidence?.label, "Zetaris Lightning (live)");
+    assert.equal(trace.evidence?.target, "http://zetaris.invalid:3000");
+    assert.deepEqual(trace.evidence?.sources.map((source) => [source.location, source.rows, source.queryToken]), [
+      ["EVIDENCE_DESK.order_events", 1, "token-1"], ["EVIDENCE_DESK.warehouse_scans", 1, "token-2"],
+      ["EVIDENCE_DESK.carrier_events", 2, "token-3"], ["EVIDENCE_DESK.support_messages", 0, "token-4"]
+    ]);
+    assert.ok(trace.evidence!.sources.every((source) => typeof source.latencyMs === "number"));
+    // Every record Speck recorded came through those queries.
+    const recorded = desk.runs()[0]!.assessed.map((item) => [item.record.id, item.record.retrieval.mode, item.record.retrieval.queryToken]);
+    assert.deepEqual(recorded, [["EV-OMS-001", "zetaris", "token-1"], ["EV-WMS-002", "zetaris", "token-2"], ["EV-CAR-003", "zetaris", "token-3"]]);
+  }, { fetchImpl: zetaris });
+});
+
 test("the API returns a Zetaris failure as a visible 502, not data", async () => {
   const refused = fakeFetch(() => { throw new TypeError("fetch failed"); });
   const config = liveConfig();

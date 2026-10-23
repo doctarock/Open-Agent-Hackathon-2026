@@ -1,0 +1,41 @@
+{
+  "id": "procurement-price-amendment",
+  "domain": "procurement",
+  "family": null,
+  "order": "as recorded",
+  "category": "decisive refutation, then withdrawn by its source",
+  "description": "Conflicting claims; the contract system rejects the amendment (decisive), then voids that rejection and approves it.",
+  "checkpoints": [
+    {
+      "afterStage": "invoice",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "contract-check",
+      "conclusion": "H-OVERCHARGED",
+      "notCurrent": [
+        "H-PRICE-AGREED"
+      ],
+      "unsupported": [
+        "H-PRICE-AGREED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "re-approved",
+      "conclusion": "H-PRICE-AGREED",
+      "notCurrent": [
+        "H-OVERCHARGED"
+      ],
+      "unsupported": [
+        "H-OVERCHARGED"
+      ],
+      "invalidated": [
+        "XR2-03"
+      ]
+    }
+  ]
+}

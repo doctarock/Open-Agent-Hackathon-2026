@@ -1,0 +1,154 @@
+import fs from "node:fs";
+import path from "node:path";
+import { parseEnv } from "node:util";
+import type { SpeckRuntime } from "#speck";
+import { loadConfig, ROOT_DIR, type AppConfig } from "../src/config.js";
+import { deskApi, errorResponse, type DeskApi } from "../src/investigation/api.js";
+import { EvidenceDesk } from "../src/investigation/desk.js";
+
+// Evidence Desk as a Speck plugin. Speck loads this file (as
+// speck/plugins/evidence-desk/dist/plugin/evidence-desk-plugin.js, put there
+// by `npm run plugin:install`) and hands it its own runtime. Each case is a
+// worker in Speck's database, beside Speck's other workers, and the page is
+// a tab in Speck's interface (its home view when started with npm run speck).
+//
+// Settings come from speck/plugins/evidence-desk/.env (the same variables as
+// the standalone .env), read without touching Speck's environment; a
+// variable already set in Speck's environment wins.
+
+export const PLUGIN_ID = "evidence-desk";
+const API_BASE = `/api/plugins/${PLUGIN_ID}`;
+const ASSET_BASE = `/plugins/${PLUGIN_ID}`;
+const PUBLIC_DIR = path.join(ROOT_DIR, "public");
+const ASSETS: Record<string, { file: string; type: string }> = {
+  "ui.js": { file: path.join(ROOT_DIR, "plugin", "ui", "evidence-desk-ui.js"), type: "text/javascript" },
+  "app.js": { file: path.join(PUBLIC_DIR, "app.js"), type: "text/javascript" },
+  "style.css": { file: path.join(PUBLIC_DIR, "style.css"), type: "text/css" }
+};
+
+// The cases the tab offers. The disputed delivery follows the plugin's
+// settings (live Zetaris and Nemotron, or fixtures); the bank return is the
+// held-out correction case and always runs on its fixture with the rules.
+export interface CaseSpec {
+  id: string;
+  label: string;
+  scenarioDir: string;
+  fixed?: { evidenceMode: "fixture"; reasoner: "rules" };
+}
+export const CASES: CaseSpec[] = [
+  { id: "disputed-delivery", label: "Disputed delivery", scenarioDir: "fixtures/scenarios/disputed-delivery" },
+  { id: "bank-return", label: "Bank return", scenarioDir: "eval/scenarios/correction-supersedes", fixed: { evidenceMode: "fixture", reasoner: "rules" } }
+];
+
+export function pluginSettings(rootDir = ROOT_DIR): NodeJS.ProcessEnv {
+  const file = path.join(rootDir, ".env");
+  const fromFile = fs.existsSync(file) ? parseEnv(fs.readFileSync(file, "utf8")) : {};
+  return { ...fromFile, ...process.env };
+}
+
+export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR): AppConfig {
+  const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir, ...(spec.fixed ? { EVIDENCE_MODE: spec.fixed.evidenceMode, REASONER: spec.fixed.reasoner } : {}) };
+  const dataDir = path.join(rootDir, "data", spec.id);
+  // databasePath is unused here: the case lives in Speck's own database.
+  return loadConfig(env, { rootDir, databasePath: path.join(dataDir, "unused.sqlite"), historyDir: path.join(dataDir, "meterless") });
+}
+
+// The cases, attached to Speck's runtime on first use.
+export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootDir?: string; settings?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch } = {}) {
+  const rootDir = options.rootDir ?? ROOT_DIR;
+  const opened = new Map<string, Promise<{ desk: EvidenceDesk; api: DeskApi }>>();
+  return {
+    list: () => CASES.map((spec) => ({ id: spec.id, label: spec.label })),
+    async get(id: string): Promise<{ desk: EvidenceDesk; api: DeskApi }> {
+      const spec = CASES.find((candidate) => candidate.id === id);
+      if (!spec) throw Object.assign(new Error(`Unknown case "${id}"`), { status: 404 });
+      let entry = opened.get(id);
+      if (!entry) {
+        entry = (async () => {
+          const config = caseConfig(spec, options.settings ?? pluginSettings(rootDir), rootDir);
+          const desk = await EvidenceDesk.attach(runtime(), config, options.fetchImpl ? { fetchImpl: options.fetchImpl } : {});
+          return { desk, api: deskApi(desk, config, "Speck's own database (this case is a Speck worker)") };
+        })();
+        opened.set(id, entry);
+        entry.catch(() => opened.delete(id));
+      }
+      return entry;
+    }
+  };
+}
+
+type Handler = (req: { params: Record<string, string>; body?: unknown }, res: {
+  status(code: number): { json(body: unknown): void; type(value: string): { send(body: unknown): void } };
+  json(body: unknown): void;
+  set(field: string, value: string): unknown;
+  type(value: string): { send(body: unknown): void };
+}) => unknown;
+interface RouteApp { get(path: string, handler: Handler): unknown; post(path: string, handler: Handler): unknown }
+interface PluginApi {
+  getRuntimeContext(): { speck?: SpeckRuntime };
+  registerUiPrimaryTab?(tab: { id: string; title: string; order: number; scriptUrl: string }): unknown;
+}
+
+// Registers the tab's assets and the per-case JSON API under Speck's plugin
+// routes (Speck requires its admin session for everything under /api/plugins).
+export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<typeof createCaseRegistry>): void {
+  for (const [name, asset] of Object.entries(ASSETS)) {
+    app.get(`${ASSET_BASE}/${name}`, async (_req, res) => {
+      try {
+        res.set("cache-control", "no-cache");
+        res.type(asset.type).send(await fs.promises.readFile(asset.file, "utf8"));
+      } catch {
+        res.status(404).type("text/plain").send("Evidence Desk asset is unavailable");
+      }
+    });
+  }
+  app.get(`${API_BASE}/cases`, (_req, res) => res.json({ cases: cases.list() }));
+  const route = (operation: (api: DeskApi, body: unknown) => unknown): Handler => async (req, res) => {
+    try {
+      const { api } = await cases.get(String(req.params.caseId ?? ""));
+      res.json(await operation(api, req.body));
+    } catch (error) {
+      const known = (error as { status?: number }).status;
+      const { status, body } = known ? { status: known, body: { error: (error as Error).message, kind: "request" } } : errorResponse(error);
+      res.status(status).json(body);
+    }
+  };
+  const base = `${API_BASE}/cases/:caseId`;
+  app.get(`${base}/status`, route((api) => api.status()));
+  app.get(`${base}/evidence`, route((api) => api.evidence()));
+  app.get(`${base}/trace`, route((api) => api.trace()));
+  app.get(`${base}/investigation`, route((api) => api.investigation()));
+  app.post(`${base}/run`, route((api) => api.run()));
+  app.post(`${base}/update`, route((api) => api.update()));
+  app.post(`${base}/evidence/withdraw`, route((api, body) => api.withdraw(body)));
+}
+
+export default function createEvidenceDeskPlugin() {
+  let cases: ReturnType<typeof createCaseRegistry> | null = null;
+  const casesFor = (api: PluginApi) => {
+    cases ||= createCaseRegistry(() => {
+      const runtime = api.getRuntimeContext().speck;
+      if (!runtime) throw new Error("Speck did not provide its runtime to the Evidence Desk plugin");
+      return runtime;
+    });
+    return cases;
+  };
+  return {
+    id: PLUGIN_ID,
+    name: "Evidence Desk",
+    version: "0.1.0",
+    description: "Investigates cases whose evidence conflicts and changes over time, with Speck holding the beliefs and their revision history.",
+    manifest: {
+      schemaVersion: 1,
+      permissions: { routes: true, uiPanels: true, data: false, tools: [], capabilities: [], hooks: [], runtimeContext: ["speck"] },
+      dependencies: { requiredCapabilities: [], optionalCapabilities: [] },
+      security: { isolation: "inprocess" }
+    },
+    init(api: PluginApi) {
+      api.registerUiPrimaryTab?.({ id: "evidence", title: "Evidence", order: 45, scriptUrl: `${ASSET_BASE}/ui.js` });
+    },
+    registerRoutes({ app, api }: { app: RouteApp; api: PluginApi }) {
+      registerEvidenceDeskRoutes(app, casesFor(api));
+    }
+  };
+}

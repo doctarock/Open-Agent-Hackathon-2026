@@ -1,0 +1,83 @@
+{
+  "caseId": "XD-PRO-02",
+  "records": [
+    {
+      "id": "XR2-01",
+      "caseId": "XD-PRO-02",
+      "source": {
+        "system": "supplier",
+        "name": "Supplier portal"
+      },
+      "observedAt": "2026-09-18T01:00:00Z",
+      "content": "Invoice INV-S-2290: 500 units at USD 12.00; PO-5120 price USD 10.00.",
+      "facts": {
+        "invoice.price_vs_po": "above"
+      },
+      "provenance": {
+        "systemOfRecord": "Supplier portal",
+        "recordRef": "xr2-01",
+        "author": "supplier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XR2-02",
+      "caseId": "XD-PRO-02",
+      "source": {
+        "system": "supplier",
+        "name": "Supplier portal"
+      },
+      "observedAt": "2026-09-18T02:00:00Z",
+      "content": "Supplier note: the USD 12.00 price was agreed in amendment A-17.",
+      "facts": {
+        "amendment.claimed": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Supplier portal",
+        "recordRef": "xr2-02",
+        "author": "supplier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XR2-03",
+      "caseId": "XD-PRO-02",
+      "source": {
+        "system": "contracts",
+        "name": "Contract management system"
+      },
+      "observedAt": "2026-09-20T01:00:00Z",
+      "content": "Amendment A-17 status: rejected by the category manager on 2 Sep.",
+      "facts": {
+        "amendment.status": "rejected"
+      },
+      "provenance": {
+        "systemOfRecord": "Contract management system",
+        "recordRef": "xr2-03",
+        "author": "contracts-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XR2-04",
+      "caseId": "XD-PRO-02",
+      "source": {
+        "system": "contracts",
+        "name": "Contract management system"
+      },
+      "observedAt": "2026-09-24T01:00:00Z",
+      "content": "Amendment A-17 re-reviewed and approved, effective 1 Sep; the 2 Sep rejection is void.",
+      "facts": {
+        "amendment.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Contract management system",
+        "recordRef": "xr2-04",
+        "author": "contracts-feed",
+        "supersedes": [
+          "XR2-03"
+        ]
+      }
+    }
+  ]
+}

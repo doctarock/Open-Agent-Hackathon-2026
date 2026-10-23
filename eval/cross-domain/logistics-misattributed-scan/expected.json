@@ -1,0 +1,41 @@
+{
+  "id": "logistics-misattributed-scan",
+  "domain": "logistics",
+  "family": "misattributed-scan",
+  "order": "as recorded",
+  "category": "replacement + decisive refutation",
+  "description": "A delivered scan is later reassigned to another parcel by the carrier, and the depot holds the parcel.",
+  "checkpoints": [
+    {
+      "afterStage": "scan",
+      "conclusion": "H-DELIVERED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-LOST"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "complaint",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "correction",
+      "conclusion": "H-AT-DEPOT",
+      "notCurrent": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "unsupported": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "invalidated": [
+        "XL1-01"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "caseId": "XD-PRO-01",
+  "records": [
+    {
+      "id": "XR1-01",
+      "caseId": "XD-PRO-01",
+      "source": {
+        "system": "supplier",
+        "name": "Supplier portal"
+      },
+      "observedAt": "2026-09-10T02:00:00Z",
+      "content": "Invoice SI-7781 for PO-4410: 100 valves.",
+      "facts": {
+        "invoice.quantity": "100"
+      },
+      "provenance": {
+        "systemOfRecord": "Supplier portal",
+        "recordRef": "xr1-01",
+        "author": "supplier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XR1-02",
+      "caseId": "XD-PRO-01",
+      "source": {
+        "system": "warehouse",
+        "name": "Warehouse receiving"
+      },
+      "observedAt": "2026-09-11T03:00:00Z",
+      "content": "Goods receipt GRN-3302 for PO-4410: 100 units received.",
+      "facts": {
+        "grn.quantity": "100"
+      },
+      "provenance": {
+        "systemOfRecord": "Warehouse receiving",
+        "recordRef": "xr1-02",
+        "author": "warehouse-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XR1-03",
+      "caseId": "XD-PRO-01",
+      "source": {
+        "system": "warehouse",
+        "name": "Warehouse receiving"
+      },
+      "observedAt": "2026-09-15T02:00:00Z",
+      "content": "GRN-3302 amended after cycle count: 80 units received. The original was keyed from the packing slip.",
+      "facts": {
+        "grn.quantity": "80"
+      },
+      "provenance": {
+        "systemOfRecord": "Warehouse receiving",
+        "recordRef": "xr1-03",
+        "author": "warehouse-feed",
+        "supersedes": [
+          "XR1-02"
+        ]
+      }
+    },
+    {
+      "id": "XR1-04",
+      "caseId": "XD-PRO-01",
+      "source": {
+        "system": "carrier",
+        "name": "Freight carrier"
+      },
+      "observedAt": "2026-09-17T02:00:00Z",
+      "content": "Carrier manifest for the PO-4410 consignment: 80 units shipped.",
+      "facts": {
+        "manifest.quantity": "80"
+      },
+      "provenance": {
+        "systemOfRecord": "Freight carrier",
+        "recordRef": "xr1-04",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

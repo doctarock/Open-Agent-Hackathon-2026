@@ -1,23 +1,49 @@
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
-import { SpeckRuntime, type ActorInput, type EvidenceRelation, type MentalObject, type MentalObjectId, type Worker, type WorkerId } from "#speck";
+import { SpeckRuntime, type ActorInput, type CognitiveEvent, type EvidenceRelation, type MentalObject, type MentalObjectId, type Worker, type WorkerId } from "#speck";
 import { Markovian, type Generator, type MarkovianRun, type ProgressState } from "../../vendor/meterless-markovian/src/index.js";
 import type { AppConfig } from "../config.js";
 import { createEvidenceProvider } from "../evidence/provider.js";
-import { byObservation, type EvidenceProvider, type EvidenceRecord, type ProviderDescription } from "../evidence/types.js";
+import { byObservation, type EvidenceProvider, type EvidenceRecord, type FetchSummary, type ProviderDescription } from "../evidence/types.js";
 import { NemotronReasoner } from "../reasoning/nemotron.js";
 import { RuleReasoner } from "../reasoning/rules.js";
-import type { Explanation, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "../reasoning/types.js";
+import type { Explanation, ModelCallTrace, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "../reasoning/types.js";
 import { loadScenario, type Scenario, type StageSpec } from "../scenario.js";
 import { deriveBasis, describeInvalidation, isPrefix, type BeliefBasis, type Invalidation, type LedgerEntry, type PlannedRelation } from "./basis.js";
 import { deriveConclusion, type Conclusion, type HypothesisView } from "./conclusion.js";
+import { retireHypothesis } from "./speck-compat.js";
 import { buildTimeline, type TimelineEntry } from "./timeline.js";
+import { buildTrace, readEngineHistory, type EngineHistoryEntry, type TraceEntry } from "./trace.js";
 
 export const RUN_SCHEMA = "evidence-desk.run.v1";
 export const RECOMPUTE_SCHEMA = "evidence-desk.recompute.v1";
+export const ASSESSMENT_SCHEMA = "evidence-desk.assessment.v1";
+export const EXCLUSION_SCHEMA = "evidence-desk.exclusion.v1";
+
+// A record withdrawn before it was assessed (for example one whose assessment
+// keeps failing). It never enters Speck's evidence ledger and no judgment is
+// recorded for it: it is simply not assessed, so it cannot affect beliefs and
+// supersedes nothing.
+export interface Exclusion {
+  schema: typeof EXCLUSION_SCHEMA;
+  recordId: string;
+  reason: string;
+  at: string;
+  // The failure that prompted it, if its last assessment failed.
+  lastError: string | null;
+}
 export const STAGE_KEY = "evidence-desk.stage";
 export const MARKOVIAN_SOURCE = "Meterless Markovian reference engine (vendored, commit 1742dec)";
+// The engine's identity, as recorded in vendor/meterless-markovian/NOTICE.md.
+export const MARKOVIAN_ENGINE = {
+  name: "Meterless Markovian reference engine",
+  package: "@meterless/markovian-reference@0.1.0",
+  upstream: "https://github.com/Meterless/Meterless (engines/markovian/reference/src)",
+  commit: "1742dec56a66e58eef9dda2d2b865823758ca8cd",
+  vendored: "vendor/meterless-markovian/ (unmodified)"
+} as const;
 
 export interface AssessedEvidence {
   record: EvidenceRecord;
@@ -40,15 +66,23 @@ export interface Recomputation {
   trigger: string;
   hypotheses: Array<{
     key: string;
+    // replaced: rebuilt from its prior as a new Speck hypothesis. extended:
+    // the same hypothesis, with relations from records already in the ledger
+    // applied (absent in records written before Build 3.1: replaced).
+    mode?: "replaced" | "extended";
     previousId: string;
-    replacementId: string;
+    // Resolved when read (recomputations()): the hypothesis that replaced
+    // previousId, or null if an interruption stopped it being made.
+    replacementId: string | null;
+    carriedOut?: boolean;
     previous: { confidence: number; status: string };
     // Relations the old hypothesis carried that no longer apply, and why.
     dropped: Array<{ recordId: string; direction: string; reason: string }>;
     // Relations that apply now and did not before; reinstated ones were in
     // the ledger already and count again.
     added: Array<{ recordId: string; direction: string; reinstated: boolean }>;
-    // Everything replayed from the prior, in order.
+    // What was applied: the whole plan from the prior when replaced, the
+    // added relations when extended.
     replayed: string[];
     cause: string;
   }>;
@@ -80,6 +114,9 @@ export interface RunSnapshot {
   execution: {
     engine: string;
     runId: string;
+    // The engine's own timestamp for the run. Its run ids restart at run-1 in
+    // every process, so id and timestamp together identify it in history.json.
+    timestamp?: number;
     status: MarkovianRun["status"];
     error: string | null;
     chunkConfig: MarkovianRun["chunkConfig"];
@@ -91,9 +128,16 @@ export interface RunSnapshot {
   assessed: AssessedEvidence[];
   // Visible evidence this run did not reach (the chunk limit, or an error).
   unprocessed: string[];
+  // Earlier runs that were interrupted before saving a snapshot, whose saved
+  // judgments this run found and reconciled.
+  recovered?: string[];
   notes: string[];
   conclusion: Conclusion;
   explanation: (Explanation & { invalidCitations: string[]; agreement: ExplanationAgreement }) | null;
+  // What the evidence fetch at the start of this run did (each Zetaris
+  // SELECT, or the fixture file), and the explanation's model call.
+  retrieval?: (FetchSummary & { visible: number }) | null;
+  explanationCall?: ModelCallTrace | null;
 }
 
 // Whether the model's explanation says what Speck believes. Checked on the
@@ -115,11 +159,44 @@ export interface EvidenceListing {
     // judgments, the reliability Speck applied, and whether each judgment
     // takes effect now.
     assessment: {
-      runNumber: number; reliability: number; recordedBy: "rules" | "model";
+      // reliability: the source's, as configured; appliedReliability: what Speck
+      // stored for the evidence, after its cap on model-judged evidence.
+      runNumber: number | null; reliability: number; appliedReliability: number | null; recordedBy: "rules" | "model";
       judgments: Array<RelationJudgment & { effect: JudgmentEffect; refutedBy: string | null }>;
     } | null;
+    // completed: in Speck's ledger with its judgments saved. failed: the last
+    // attempt to assess it failed (it is retried by the next run). pending:
+    // not yet assessed, or assessed by a run interrupted before recording it.
+    status: AssessmentStatus;
+    lastAttempt: { runId: string; at: string; outcome: "judged" | "failed"; error: string | null } | null;
   }>;
+  // Records the next run will assess: pending and failed.
   pending: string[];
+}
+
+// withdrawn: withdrawn before it was assessed; it is never assessed.
+export type AssessmentStatus = "pending" | "failed" | "completed" | "withdrawn";
+
+// One chunk's assessment, saved in Speck before any of its evidence enters
+// the ledger, so a run interrupted afterwards loses no judgment.
+export interface AssessmentAttempt {
+  schema: typeof ASSESSMENT_SCHEMA;
+  runId: string;
+  at: string;
+  judged: AssessedEvidence[];
+  failed: Array<{ record: EvidenceRecord; error: string }>;
+  // The Meterless chunk (1-based step) whose generator call made this
+  // assessment, the model call behind it (null for the rule assessor), and
+  // the reasoner's notes on what it discarded. Absent before the trace existed.
+  chunk?: number;
+  model?: ModelCallTrace | null;
+  notes?: string[];
+}
+
+export interface DeskOptions {
+  provider?: EvidenceProvider;
+  reasoner?: Reasoner | ((runtime: SpeckRuntime) => Reasoner);
+  fetchImpl?: typeof fetch;
 }
 
 export class RunInProgressError extends Error {
@@ -142,6 +219,9 @@ export class ReasonerNotReadyError extends Error {
 // database resumes exactly where the last process left off.
 export class EvidenceDesk extends EventEmitter {
   private running = false;
+  // Whether this desk opened the Speck runtime (standalone) or was handed
+  // one (the Speck plugin), and so whether it may close it.
+  private ownsRuntime = false;
 
   private constructor(
     readonly config: AppConfig,
@@ -153,20 +233,51 @@ export class EvidenceDesk extends EventEmitter {
     super();
   }
 
-  static async open(config: AppConfig, options: { provider?: EvidenceProvider; reasoner?: Reasoner | ((runtime: SpeckRuntime) => Reasoner); fetchImpl?: typeof fetch } = {}): Promise<EvidenceDesk> {
+  // Standalone: opens its own Speck runtime on config.databasePath.
+  static async open(config: AppConfig, options: DeskOptions = {}): Promise<EvidenceDesk> {
     const runtime = new SpeckRuntime({ databasePath: config.databasePath });
     await runtime.initialize();
+    const desk = await EvidenceDesk.attach(runtime, config, options);
+    desk.ownsRuntime = true;
+    return desk;
+  }
+
+  // Inside Speck: works on a runtime Speck already runs (the plugin is handed
+  // Speck's own), alongside Speck's other workers. The case is one worker.
+  static async attach(runtime: SpeckRuntime, config: AppConfig, options: DeskOptions = {}): Promise<EvidenceDesk> {
     const scenario = loadScenario(config.scenarioDir);
     const provider = options.provider ?? createEvidenceProvider(config, options.fetchImpl);
     const reasoner = typeof options.reasoner === "function" ? options.reasoner(runtime)
       : options.reasoner ?? (config.reasoner === "nemotron" ? new NemotronReasoner(runtime, config.nemotron) : new RuleReasoner());
     const desk = new EvidenceDesk(config, runtime, scenario, provider, reasoner);
-    await desk.ensureCase();
+    await desk.exclusive(async () => {
+      await desk.ensureCase();
+      // A run interrupted after recording evidence may have left current
+      // beliefs behind the ledger. Reconciling is idempotent: on consistent
+      // state it changes nothing.
+      await desk.reconcile({ correlationId: randomUUID(), trigger: "recovery on open", recovery: true });
+    });
     return desk;
   }
 
   close(): void {
-    this.runtime.close();
+    if (this.ownsRuntime) this.runtime.close();
+  }
+
+  // Every change to the case runs here. Speck's background cognition reads
+  // a worker's objects, may await (embeddings), then writes whole objects
+  // back; a belief revised in between would be overwritten with the stale
+  // copy. The foreground lease stops new background jobs, and waiting for a
+  // job already running to finish closes the remaining window. Both are
+  // Speck's public runtime API.
+  private async exclusive<T>(work: () => Promise<T>): Promise<T> {
+    const release = this.runtime.beginForegroundWork();
+    try {
+      while (this.runtime.backgroundScheduler.backgroundActive) await new Promise((resolve) => setImmediate(resolve));
+      return await work();
+    } finally {
+      release();
+    }
   }
 
   get isRunning(): boolean { return this.running; }
@@ -174,7 +285,7 @@ export class EvidenceDesk extends EventEmitter {
   // The case's Speck worker, created with its hypotheses on first use.
   async ensureCase(): Promise<Worker> {
     const existing = this.findWorker();
-    if (existing) return existing;
+    if (existing) return this.settleWorker(existing);
     const actor: ActorInput = { kind: "user", source: `scenario/${this.scenario.id}` };
     const worker = await this.runtime.createWorker(this.scenario.question, this.caseConstraints(), actor);
     for (const hypothesis of this.scenario.hypotheses) {
@@ -186,7 +297,20 @@ export class EvidenceDesk extends EventEmitter {
     await this.runtime.setWorldState({
       workerId: worker.id, key: STAGE_KEY, value: this.scenario.stages[0]!.id, epistemicStatus: "observed", actor
     });
-    return this.runtime.workers.require(worker.id);
+    return this.settleWorker(this.runtime.workers.require(worker.id));
+  }
+
+  // A case is a worker waiting on evidence, not a task in Speck's queue.
+  // Speck counts "created" and "ready" workers as queued, shows them as
+  // pending tasks, and skips background cognition for every worker while
+  // any is queued, so the case moves on to "waiting" through Speck's own
+  // transitions (created -> ready -> waiting).
+  private async settleWorker(worker: Worker): Promise<Worker> {
+    const actor: ActorInput = { kind: "runtime", source: "evidence-desk/case" };
+    let current = worker;
+    if (current.status === "created") current = await this.runtime.transitionWorker(current.id, "ready", actor, "Investigation case opened");
+    if (current.status === "ready") current = await this.runtime.transitionWorker(current.id, "waiting", actor, "Waiting for evidence");
+    return current;
   }
 
   currentStage(): StageSpec {
@@ -205,10 +329,10 @@ export class EvidenceDesk extends EventEmitter {
     if (this.running) throw new RunInProgressError();
     const next = this.nextStage();
     if (!next) throw new Error("There is no further prepared evidence update for this case");
-    await this.runtime.setWorldState({
+    await this.exclusive(() => this.runtime.setWorldState({
       workerId: this.worker().id, key: STAGE_KEY, value: next.id, epistemicStatus: "observed",
       actor: { kind: "user", source: "evidence-desk/update" }
-    });
+    }));
     return next;
   }
 
@@ -219,26 +343,40 @@ export class EvidenceDesk extends EventEmitter {
     const supersededBy = new Map<string, string>();
     for (const record of visible) for (const id of record.provenance.supersedes) supersededBy.set(id, record.id);
     const basis = this.basis();
-    const assessments = new Map<string, NonNullable<EvidenceListing["records"][number]["assessment"]>>();
-    for (const run of this.runs()) {
-      for (const item of run.assessed) {
-        const judgments = item.judgments.map((judgment) => {
-          const withheld = basis.withheld.find((entry) => entry.recordId === item.record.id && entry.hypothesisKey === judgment.hypothesisKey);
-          const effect: JudgmentEffect = basis.invalid.has(item.record.id) ? "void" : withheld ? "withheld" : "applied";
+    const history = this.assessmentHistory();
+    const excluded = this.exclusions();
+    const runNumbers = new Map(this.runs().map((run) => [run.runId, run.runNumber]));
+    const records = visible.map((record) => {
+      const attempts = history.get(record.id) ?? [];
+      const last = attempts.at(-1) ?? null;
+      // The judgments in force are the last ones saved before the record
+      // entered the ledger; later attempts only happen while it is pending.
+      const judged = [...attempts].reverse().find((attempt) => attempt.item);
+      const inLedger = recorded.has(record.id);
+      const exclusion = inLedger ? undefined : excluded.get(record.id);
+      const status: AssessmentStatus = inLedger ? (judged ? "completed" : "failed") : exclusion ? "withdrawn" : last && !last.item ? "failed" : "pending";
+      const assessment = inLedger && judged?.item ? {
+        runNumber: runNumbers.get(judged.runId) ?? null, reliability: judged.item.reliability, recordedBy: judged.item.recordedBy,
+        appliedReliability: numberOrNull(this.runtime.mentalObjects.get(recorded.get(record.id) as MentalObjectId)?.data.reliability),
+        judgments: judged.item.judgments.map((judgment) => {
+          const withheld = basis.withheld.find((entry) => entry.recordId === record.id && entry.hypothesisKey === judgment.hypothesisKey);
+          const effect: JudgmentEffect = basis.invalid.has(record.id) ? "void" : withheld ? "withheld" : "applied";
           return { ...judgment, effect, refutedBy: withheld?.refutedBy ?? null };
-        });
-        assessments.set(item.record.id, { runNumber: run.runNumber, reliability: item.reliability, recordedBy: item.recordedBy, judgments });
-      }
-    }
+        })
+      } : null;
+      return {
+        ...record, assessed: inLedger, supersededBy: supersededBy.get(record.id) ?? null,
+        invalidation: basis.invalid.get(record.id) ?? (exclusion ? { kind: "withdrawn" as const, reason: exclusion.reason, at: exclusion.at } : null),
+        assessment,
+        status,
+        lastAttempt: last ? { runId: last.runId, at: last.at, outcome: last.item ? "judged" as const : "failed" as const, error: last.error ?? (inLedger && !judged ? "in Speck's ledger without saved judgments; it counts for nothing" : null) } : null
+      };
+    });
     return {
       stage,
       provider: this.provider.describe(),
-      records: visible.map((record) => ({
-        ...record, assessed: recorded.has(record.id), supersededBy: supersededBy.get(record.id) ?? null,
-        invalidation: basis.invalid.get(record.id) ?? null,
-        assessment: assessments.get(record.id) ?? null
-      })),
-      pending: visible.filter((record) => !recorded.has(record.id)).map((record) => record.id)
+      records,
+      pending: records.filter((record) => record.status === "pending" || record.status === "failed").map((record) => record.id)
     };
   }
 
@@ -246,7 +384,7 @@ export class EvidenceDesk extends EventEmitter {
     if (this.running) throw new RunInProgressError();
     this.running = true;
     try {
-      return await this.execute();
+      return await this.exclusive(() => this.execute());
     } finally {
       this.running = false;
     }
@@ -260,20 +398,61 @@ export class EvidenceDesk extends EventEmitter {
     const why = reason.trim();
     if (!why) throw new WithdrawalError("A reason is required to withdraw evidence");
     const evidenceId = this.recordedEvidence().get(recordId);
-    if (!evidenceId) throw new WithdrawalError(`${recordId} has not been assessed in this case, so there is nothing to withdraw`);
+    if (!evidenceId) return this.excludeRecord(recordId, why);
+    // Withdrawing again is a no-op: the first reason stands and nothing is recomputed.
+    if (this.runtime.mentalObjects.get(evidenceId as MentalObjectId)?.data.withdrawn) return null;
     this.running = true;
     try {
       const correlationId = randomUUID();
-      await this.runtime.withdrawEvidence({
-        workerId: this.worker().id, evidenceId: evidenceId as MentalObjectId, reason: why,
-        actor: { kind: "user", source: "evidence-desk/withdraw", correlationId }
+      const { recomputation } = await this.exclusive(async () => {
+        await this.runtime.withdrawEvidence({
+          workerId: this.worker().id, evidenceId: evidenceId as MentalObjectId, reason: why,
+          actor: { kind: "user", source: "evidence-desk/withdraw", correlationId }
+        });
+        return this.reconcile({ correlationId, trigger: `${recordId} withdrawn: ${why}` });
       });
-      const { recomputation } = await this.reconcile({ correlationId, trigger: `${recordId} withdrawn: ${why}` });
       this.emit("revision", { recordId, recomputation: recomputation?.version ?? null });
       return recomputation;
     } finally {
       this.running = false;
     }
+  }
+
+  // Withdrawal of a record that is not in Speck's ledger: pending, or failed.
+  // Nothing is judged for it; it is recorded as excluded and future runs skip
+  // it. Beliefs cannot change, so nothing is recomputed.
+  private async excludeRecord(recordId: string, reason: string): Promise<null> {
+    if (this.exclusions().has(recordId)) return null;
+    const visible = await this.visibleEvidence(this.currentStage());
+    if (!visible.some((record) => record.id === recordId)) {
+      throw new WithdrawalError(`${recordId} is not evidence available in this case at stage "${this.currentStage().label}", so there is nothing to withdraw`);
+    }
+    this.running = true;
+    try {
+      const exclusion: Exclusion = {
+        schema: EXCLUSION_SCHEMA, recordId, reason, at: new Date().toISOString(),
+        lastError: this.assessmentHistory().get(recordId)?.at(-1)?.error ?? null
+      };
+      await this.exclusive(() => this.runtime.recordMemory({
+        workerId: this.worker().id, type: "episodic",
+        content: `${recordId} withdrawn before assessment: ${reason}`,
+        data: exclusion as unknown as Record<string, unknown>,
+        // Its own correlation id: Speck otherwise carries the previous
+        // event's forward, which would attribute this to the last run.
+        actor: { kind: "user", source: "evidence-desk/withdraw", correlationId: randomUUID() }
+      }));
+      this.emit("revision", { recordId, recomputation: null });
+      return null;
+    } finally {
+      this.running = false;
+    }
+  }
+
+  // Records withdrawn before assessment, by record id.
+  exclusions(): Map<string, Exclusion> {
+    return new Map(this.runtime.mentalObjects.listForWorker(this.worker().id)
+      .filter((object) => object.data.schema === EXCLUSION_SCHEMA)
+      .map((object) => [String(object.data.recordId), object.data as unknown as Exclusion]));
   }
 
   runs(): RunSnapshot[] {
@@ -283,10 +462,30 @@ export class EvidenceDesk extends EventEmitter {
       .sort((left, right) => left.runNumber - right.runNumber);
   }
 
+  // How many records are in Speck's evidence ledger for the case.
+  recordedCount(): number {
+    return this.recordedEvidence().size;
+  }
+
+  // Recomputation records, each with its replacements resolved: the record is
+  // written before the replacements are made, so an interruption can leave
+  // one not carried out (a later recomputation then redoes it).
   recomputations(): Recomputation[] {
-    return this.runtime.mentalObjects.listForWorker(this.worker().id)
+    const objects = this.runtime.mentalObjects.listForWorker(this.worker().id);
+    const hypotheses = objects.filter((object) => object.kind === "hypothesis");
+    return objects
       .filter((object) => object.data.schema === RECOMPUTE_SCHEMA)
       .map((object) => object.data as unknown as Recomputation)
+      .map((record) => ({
+        ...record,
+        hypotheses: record.hypotheses.map((entry) => {
+          if (entry.mode === "extended") return { ...entry, carriedOut: true };
+          const replacement = hypotheses.find((object) => object.data.replaces === entry.previousId && object.data.recomputation === record.version);
+          // Records written before Build 3.1 name their replacement directly.
+          const replacementId = replacement?.id ?? entry.replacementId ?? null;
+          return { ...entry, replacementId, carriedOut: replacementId !== null };
+        })
+      }))
       .sort((left, right) => left.version - right.version);
   }
 
@@ -307,7 +506,8 @@ export class EvidenceDesk extends EventEmitter {
       statusWhenReplaced: String(object.data.statusWhenReplaced ?? object.data.status),
       supersededBy: object.data.supersededBy ? String(object.data.supersededBy) : null,
       recomputation: Number(this.allHypotheses().find((other) => other.data.replaces === object.id)?.data.recomputation) || null
-    }));
+    // In the order they were replaced, then by key: creation times can tie.
+    })).sort((left, right) => (left.recomputation ?? 0) - (right.recomputation ?? 0) || left.key.localeCompare(right.key));
   }
 
   hypotheses(): HypothesisView[] {
@@ -316,8 +516,36 @@ export class EvidenceDesk extends EventEmitter {
   }
 
   timeline(): TimelineEntry[] {
+    return buildTimeline({
+      events: this.allEvents(),
+      objects: this.runtime.mentalObjects.listForWorker(this.worker().id),
+      scenario: this.scenario,
+      runs: this.runs()
+    });
+  }
+
+  // What each component did in each run, and in actions between runs, read
+  // back from persisted state (see trace.ts).
+  trace(): TraceEntry[] {
+    return buildTrace({
+      events: this.allEvents(),
+      objects: this.runtime.mentalObjects.listForWorker(this.worker().id),
+      runs: this.runs(),
+      recomputations: this.recomputations(),
+      engine: `${MARKOVIAN_ENGINE.name} ${MARKOVIAN_ENGINE.package}, upstream commit ${MARKOVIAN_ENGINE.commit.slice(0, 7)}, ${MARKOVIAN_ENGINE.vendored}`,
+      meterlessHistory: this.meterlessHistory()
+    });
+  }
+
+  // Run ids in the Meterless engine's own history file, or null if it cannot
+  // be read (for example, a fresh history directory).
+  private meterlessHistory(): EngineHistoryEntry[] | null {
+    return readEngineHistory(path.join(this.config.historyDir, "history.json"));
+  }
+
+  private allEvents(): CognitiveEvent[] {
     const workerId = this.worker().id;
-    const events = [];
+    const events: CognitiveEvent[] = [];
     let after = 0;
     for (;;) {
       const page = this.runtime.listEvents(workerId, after, 1000);
@@ -325,12 +553,7 @@ export class EvidenceDesk extends EventEmitter {
       if (page.length < 1000) break;
       after = page[page.length - 1]!.sequence;
     }
-    return buildTimeline({
-      events,
-      objects: this.runtime.mentalObjects.listForWorker(workerId),
-      scenario: this.scenario,
-      runs: this.runs()
-    });
+    return events;
   }
 
   private async execute(): Promise<RunSnapshot> {
@@ -344,14 +567,27 @@ export class EvidenceDesk extends EventEmitter {
     const notes: string[] = [];
     const assessed: AssessedEvidence[] = [];
     // Set by the reflection pass inside the generator.
-    const reflection: { explanation: RunSnapshot["explanation"] } = { explanation: null };
+    const reflection: { explanation: RunSnapshot["explanation"]; call: ModelCallTrace | null } = { explanation: null, call: null };
 
     // Evidence access failures end the run here, visibly. Nothing is
     // substituted for the missing data.
     const visible = await this.visibleEvidence(stage);
+    const fetched = this.provider.lastFetch?.() ?? null;
+    const retrieval = fetched ? { ...fetched, visible: visible.length } : null;
     const recorded = this.recordedEvidence();
-    const pending = visible.filter((record) => !recorded.has(record.id));
+    const excluded = this.exclusions();
+    const pending = visible.filter((record) => !recorded.has(record.id) && !excluded.has(record.id));
     const batches = chunk(pending, this.config.execution.batchSize);
+    // Runs interrupted before saving a snapshot: their judgments were saved
+    // per chunk, so they are recovered here, and said so.
+    const recovered = this.interruptedRuns();
+    if (recovered.length) {
+      const judged = recovered.flatMap((item) => item.recorded);
+      notes.push(`Recovered ${recovered.length} interrupted run(s) (${recovered.map((item) => item.runId.slice(0, 8)).join(", ")}): `
+        + `${judged.length ? `the saved judgments for ${judged.join(", ")} were kept and beliefs reconciled with them` : "no evidence had entered the ledger"}`
+        + `${recovered.some((item) => item.unrecorded.length) ? `; not yet in the ledger, so assessed again: ${recovered.flatMap((item) => item.unrecorded).join(", ")}` : ""}.`);
+    }
+    await this.reconcile({ correlationId: runId, trigger: "start of run", recovery: true });
 
     const markovian = new Markovian({
       chunkConfig: { maxChunks: this.config.execution.maxChunks, chunkSize: 4000, carryoverTokens: 512 },
@@ -366,29 +602,61 @@ export class EvidenceDesk extends EventEmitter {
       if (systemPrompt !== undefined) {
         if (!this.reasoner.explain) return { text: "" };
         const conclusion = this.conclusionFromSpeck(assessed);
-        const result = await this.reasoner.explain(explanationPrompt(prompt, conclusion, assessedRecords(this.runs(), assessed), this.basis(assessed).invalid));
-        const known = new Set(assessedRecords(this.runs(), assessed).map((record) => record.id));
+        const ledgerRecords = this.ledger(assessed).map((entry) => entry.record).sort(byObservation);
+        let result: Explanation;
+        try {
+          result = await this.reasoner.explain(explanationPrompt(prompt, conclusion, ledgerRecords, this.basis(assessed).invalid));
+        } finally {
+          reflection.call = this.reasoner.takeTrace?.() ?? null;
+        }
+        const known = new Set(ledgerRecords.map((record) => record.id));
         const invalidCitations = result.citedEvidence.filter((id) => !known.has(id));
         reflection.explanation = { ...result, invalidCitations, agreement: checkAgreement(result, invalidCitations, this.conclusionFromSpeck(assessed)) };
         return { text: result.text };
       }
       const batch = batches[next] ?? [];
+      const chunkNumber = next + 1;
       next += 1;
       if (!batch.length) return { text: "No new evidence since the last run; belief state unchanged.\n[TASK_COMPLETE]" };
-      const assessment = await this.reasoner.assess({ chunkPrompt: prompt, batch, hypotheses: this.scenario.hypotheses });
+      let assessment: Awaited<ReturnType<Reasoner["assess"]>>;
+      try {
+        assessment = await this.reasoner.assess({ chunkPrompt: prompt, batch, hypotheses: this.scenario.hypotheses });
+      } catch (error) {
+        // Saved so the records show as failed, not merely pending, until a
+        // later run assesses them.
+        const message = error instanceof Error ? error.message : String(error);
+        await this.saveAssessment({
+          schema: ASSESSMENT_SCHEMA, runId, at: new Date().toISOString(), judged: [], failed: batch.map((record) => ({ record, error: message })),
+          chunk: chunkNumber, model: this.reasoner.takeTrace?.() ?? null, notes: []
+        });
+        throw error;
+      }
       notes.push(...assessment.notes);
-      const recordedNow = new Set<string>();
+      const judged: AssessedEvidence[] = [];
+      const failed: AssessmentAttempt["failed"] = [];
       for (const record of batch) {
         // A record the reasoner returned nothing for is not recorded: a
         // missing judgment must not pass for "no bearing". It stays pending.
         const judgments = assessment.judgments[record.id];
         if (!judgments) {
           notes.push(`No judgment was returned for ${record.id}; it was not recorded and stays pending for the next run.`);
+          failed.push({ record, error: "no judgment was returned" });
           continue;
         }
         const reliability = this.scenario.sources[record.source.system]?.reliability;
         if (reliability === undefined) notes.push(`Source "${record.source.system}" has no reliability in the scenario; ${record.id} was weighted 0.5.`);
         const recordedBy = judgments.some((judgment) => judgment.basis === "model") ? "model" as const : "rules" as const;
+        judged.push({ record, reliability: reliability ?? 0.5, judgments, recordedBy });
+      }
+      // The judgments are saved before any of this chunk's evidence enters
+      // Speck's ledger. If the run dies after that, nothing recorded lacks
+      // its judgments; a record saved but not yet recorded is reassessed.
+      await this.saveAssessment({
+        schema: ASSESSMENT_SCHEMA, runId, at: new Date().toISOString(), judged, failed,
+        chunk: chunkNumber, model: this.reasoner.takeTrace?.() ?? null, notes: assessment.notes
+      });
+      const recordedNow = new Set<string>();
+      for (const { record, reliability, judgments, recordedBy } of judged) {
         // The evidence enters Speck's ledger without relations; reconcile()
         // applies the ones that take effect. A record with any model judgment
         // is recorded as the model's, so Speck caps its reliability
@@ -398,13 +666,13 @@ export class EvidenceDesk extends EventEmitter {
           workerId: worker.id,
           content: `[${record.id}] ${record.content}`,
           source: `${record.source.system}/${record.id}`,
-          reliability: reliability ?? 0.5,
+          reliability,
           relations: [],
           actor: recordedBy === "model"
             ? { kind: "model", source: `nemotron/${this.reasoner.describe().model}`, correlationId: runId }
             : { kind: "tool", source: "evidence-desk/fact-rules", correlationId: runId }
         });
-        assessed.push({ record, reliability: reliability ?? 0.5, judgments, recordedBy });
+        assessed.push({ record, reliability, judgments, recordedBy });
         recordedNow.add(record.id);
       }
       const { basis, recomputation } = await this.reconcile({ correlationId: runId, trigger: `run evidence ${[...recordedNow].join(", ") || "none"}`, inFlight: assessed, newRecords: recordedNow });
@@ -424,6 +692,16 @@ export class EvidenceDesk extends EventEmitter {
       });
     } finally {
       unsubscribe();
+    }
+    // A failure inside a chunk (for example while reconciling) leaves beliefs
+    // behind the ledger; try once more so the snapshot describes reconciled
+    // state, and say so if that fails too.
+    if (!this.beliefsReconciled()) {
+      try {
+        await this.reconcile({ correlationId: runId, trigger: "end of run", recovery: true });
+      } catch (error) {
+        notes.push(`Beliefs could not be reconciled with the evidence ledger: ${error instanceof Error ? error.message : String(error)}. They are reconciled when the desk is next opened or run.`);
+      }
     }
     const reached = new Set(assessed.map((item) => item.record.id));
     const unprocessed = pending.filter((record) => !reached.has(record.id)).map((record) => record.id);
@@ -446,6 +724,7 @@ export class EvidenceDesk extends EventEmitter {
       execution: {
         engine: MARKOVIAN_SOURCE,
         runId: execution.id,
+        timestamp: execution.timestamp,
         status: execution.status,
         error: execution.error ?? null,
         chunkConfig: execution.chunkConfig,
@@ -456,9 +735,12 @@ export class EvidenceDesk extends EventEmitter {
       },
       assessed,
       unprocessed,
+      recovered: recovered.map((item) => item.runId),
       notes: collapse(notes),
       conclusion: this.conclusionFromSpeck(assessed),
-      explanation
+      explanation,
+      retrieval,
+      explanationCall: reflection.call
     };
     await this.runtime.recordMemory({
       workerId: worker.id, type: "episodic",
@@ -472,13 +754,15 @@ export class EvidenceDesk extends EventEmitter {
 
   // Speck's current belief state as a conclusion.
   conclusionFromSpeck(inFlight: readonly AssessedEvidence[] = []): Conclusion {
-    const records = assessedRecords(this.runs(), inFlight);
     const ledger = this.ledger(inFlight);
+    // Every record in Speck's ledger, including any from a run interrupted
+    // before its snapshot was saved.
+    const records = ledger.map((entry) => entry.record).sort(byObservation);
     const byRecordId = new Map(ledger.map((entry) => [entry.record.id, entry]));
     const objectToRecord = new Map<string, string>();
     for (const [recordId, objectId] of this.recordedEvidence()) objectToRecord.set(objectId, recordId);
     const { supportedThreshold, supportBonus, modelReliabilityCeiling } = this.runtime.config.beliefRevision;
-    return deriveConclusion({
+    const conclusion = deriveConclusion({
       ranked: this.rankedCurrent(),
       assessed: records,
       evidenceFor: (objectId, hypothesisKey) => {
@@ -493,8 +777,15 @@ export class EvidenceDesk extends EventEmitter {
       },
       questions: this.scenario.questions,
       belief: { supportedThreshold, supportBonus, modelReliabilityCeiling },
-      invalidated: deriveBasis(ledger, this.scenario.hypotheses.map((hypothesis) => hypothesis.key)).invalid
+      invalidated: deriveBasis(ledger, this.scenario.hypotheses.map((hypothesis) => hypothesis.key)).invalid,
+      judgmentsFor: (recordId) => byRecordId.get(recordId)?.judgments ?? []
     });
+    // Never present beliefs that lag the ledger as if they were current.
+    if (!this.beliefsReconciled(inFlight)) {
+      conclusion.reconciled = false;
+      conclusion.uncertainty.notes.unshift("Speck's current beliefs do not yet reflect every recorded judgment (a run or recomputation was interrupted). They are reconciled when the desk is next opened or run.");
+    }
+    return conclusion;
   }
 
   // Makes Speck's current hypotheses equal a replay of the evidence and
@@ -505,6 +796,8 @@ export class EvidenceDesk extends EventEmitter {
   // state it does nothing.
   private async reconcile(input: {
     correlationId: string; trigger: string; inFlight?: readonly AssessedEvidence[]; newRecords?: ReadonlySet<string>;
+    // Repairing state left by an interruption rather than responding to a change.
+    recovery?: boolean;
   }): Promise<{ basis: BeliefBasis; recomputation: Recomputation | null }> {
     const workerId = this.worker().id;
     const ledger = this.ledger(input.inFlight);
@@ -525,12 +818,49 @@ export class EvidenceDesk extends EventEmitter {
       else replace.push({ key: spec.key, statement: spec.statement, prior: spec.prior, previous: hypothesis, applied });
     }
 
+    // Hypotheses extended with relations from records that were already in
+    // the ledger: reinstated by an invalidation, or left unapplied by an
+    // interrupted run. Unlike new evidence, these need explaining.
+    const newRecords = input.newRecords ?? new Set<string>();
+    const extended = this.scenario.hypotheses.flatMap((spec) => {
+      if (!startAt.has(spec.key)) return [];
+      const tail = basis.plan.get(spec.key)!.slice(startAt.get(spec.key));
+      return tail.some((relation) => !newRecords.has(relation.recordId))
+        ? [{ key: spec.key, hypothesis: current.get(spec.key)!, tail: tail.filter((relation) => !newRecords.has(relation.recordId)) }]
+        : [];
+    });
+
     const hypothesisIds = new Map([...current].map(([key, object]) => [key, object.id]));
     let recomputation: Recomputation | null = null;
-    if (replace.length) {
+    if (replace.length || extended.length) {
       const actor: ActorInput = { kind: "tool", source: "evidence-desk/recompute", correlationId: input.correlationId };
       const version = this.recomputations().length + 1;
       const entries: Recomputation["hypotheses"] = [];
+      for (const item of replace) entries.push(describeReplacement(item, basis, newRecords, input.recovery === true));
+      for (const item of extended) {
+        const added = item.tail.map((relation) => ({ recordId: relation.recordId, direction: relation.direction, reinstated: input.recovery !== true }));
+        entries.push({
+          key: item.key, mode: "extended", previousId: item.hypothesis.id, replacementId: item.hypothesis.id,
+          previous: { confidence: round(item.hypothesis.confidence), status: String(item.hypothesis.data.status) },
+          dropped: [], added, replayed: added.map((relation) => `${relation.recordId} ${relation.direction}`),
+          cause: input.recovery ? `${added.map((relation) => relation.recordId).join(", ")} applied after an interrupted run or recomputation`
+            : `${[...new Set(added.map((relation) => relation.recordId))].join(", ")} count${added.length === 1 ? "s" : ""} again`
+        });
+      }
+      recomputation = {
+        schema: RECOMPUTE_SCHEMA, version, at: new Date().toISOString(), correlationId: input.correlationId,
+        trigger: input.trigger, hypotheses: entries
+      };
+      // The record is written before anything changes, so every replacement
+      // points at a record that explains it, and its version is never reused.
+      // If the process stops before a replacement is made, a later
+      // recomputation makes it and recomputations() shows this one as not
+      // carried out.
+      await this.runtime.recordMemory({
+        workerId, type: "episodic",
+        content: `Recomputation ${version}: ${entries.map((entry) => `${entry.key} (${entry.cause})`).join("; ")}`,
+        data: recomputation as unknown as Record<string, unknown>, actor
+      });
       for (const item of replace) {
         const replacement = await this.runtime.proposeHypothesis({
           workerId, content: item.statement, confidence: item.prior,
@@ -538,17 +868,7 @@ export class EvidenceDesk extends EventEmitter {
         });
         hypothesisIds.set(item.key, replacement.id);
         startAt.set(item.key, 0);
-        entries.push(describeReplacement(item, replacement.id, basis, input.newRecords ?? new Set()));
       }
-      recomputation = {
-        schema: RECOMPUTE_SCHEMA, version, at: new Date().toISOString(), correlationId: input.correlationId,
-        trigger: input.trigger, hypotheses: entries
-      };
-      await this.runtime.recordMemory({
-        workerId, type: "episodic",
-        content: `Recomputation ${version}: ${entries.map((entry) => `${entry.key} (${entry.cause})`).join("; ")}`,
-        data: recomputation as unknown as Record<string, unknown>, actor
-      });
     }
     this.retireReplaced();
 
@@ -588,10 +908,7 @@ export class EvidenceDesk extends EventEmitter {
     for (const object of all) {
       if (current.has(object.id) || object.data.status === "superseded") continue;
       const replacement = all.find((other) => other.data.replaces === object.id);
-      this.runtime.mentalObjects.update({
-        ...object, status: "superseded",
-        data: { ...object.data, status: "superseded", statusWhenReplaced: object.data.status, supersededBy: replacement?.id ?? null, supersededAt: now }
-      });
+      retireHypothesis(this.runtime, object.id, replacement?.id ?? null, now);
     }
   }
 
@@ -600,19 +917,90 @@ export class EvidenceDesk extends EventEmitter {
   }
 
   // Every record in Speck's evidence ledger for the case, with the judgments
-  // the reasoner gave it and whether it has been withdrawn.
+  // saved for it and whether it has been withdrawn. A record in the ledger
+  // with no saved judgments (possible only in a database written before
+  // judgments were saved per chunk) counts for nothing; the listing marks it
+  // failed rather than letting it pass as "no bearing".
   private ledger(inFlight: readonly AssessedEvidence[] = []): LedgerEntry[] {
-    const withdrawn = new Map<string, { reason: string; at: string }>();
+    const history = this.assessmentHistory();
+    const inFlightById = new Map(inFlight.map((item) => [item.record.id, item]));
+    const entries: LedgerEntry[] = [];
     for (const object of this.runtime.mentalObjects.listForWorker(this.worker().id)) {
+      if (object.kind !== "evidence") continue;
+      const recordId = recordIdOf(object);
+      const item = inFlightById.get(recordId) ?? [...(history.get(recordId) ?? [])].reverse().find((attempt) => attempt.item)?.item;
+      if (!item) continue;
       const marker = object.data.withdrawn as { reason?: unknown; at?: unknown } | undefined;
-      if (object.kind !== "evidence" || !marker) continue;
-      const source = String(object.data.source ?? "");
-      withdrawn.set(source.slice(source.lastIndexOf("/") + 1), { reason: String(marker.reason ?? ""), at: String(marker.at ?? "") });
+      entries.push({
+        record: item.record, judgments: item.judgments,
+        withdrawn: marker ? { reason: String(marker.reason ?? ""), at: String(marker.at ?? "") } : null
+      });
     }
-    const latest = new Map<string, AssessedEvidence>();
-    for (const run of this.runs()) for (const item of run.assessed) latest.set(item.record.id, item);
-    for (const item of inFlight) latest.set(item.record.id, item);
-    return [...latest.values()].map((item) => ({ record: item.record, judgments: item.judgments, withdrawn: withdrawn.get(item.record.id) ?? null }));
+    return entries;
+  }
+
+  private async saveAssessment(attempt: AssessmentAttempt): Promise<void> {
+    await this.runtime.recordMemory({
+      workerId: this.worker().id, type: "episodic",
+      content: `Assessment in run ${attempt.runId.slice(0, 8)}: judged ${attempt.judged.map((item) => item.record.id).join(", ") || "none"}`
+        + (attempt.failed.length ? `; failed ${attempt.failed.map((item) => item.record.id).join(", ")}` : ""),
+      data: attempt as unknown as Record<string, unknown>,
+      actor: { kind: "tool", source: "evidence-desk/assessment", correlationId: attempt.runId }
+    });
+  }
+
+  // Record id -> every attempt to assess it, oldest first: the per-chunk
+  // assessments saved in Speck, and the run snapshots of runs that predate
+  // them.
+  private assessmentHistory(): Map<string, Array<{ runId: string; at: string; item: AssessedEvidence | null; error: string | null }>> {
+    const objects = this.runtime.mentalObjects.listForWorker(this.worker().id);
+    const attempts = objects.filter((object) => object.data.schema === ASSESSMENT_SCHEMA).map((object) => object.data as unknown as AssessmentAttempt);
+    const covered = new Set(attempts.map((attempt) => attempt.runId));
+    const legacy = this.runs().filter((run) => !covered.has(run.runId))
+      .map((run): AssessmentAttempt => ({ schema: ASSESSMENT_SCHEMA, runId: run.runId, at: run.finishedAt, judged: run.assessed, failed: [] }));
+    const history = new Map<string, Array<{ runId: string; at: string; item: AssessedEvidence | null; error: string | null }>>();
+    const add = (recordId: string, entry: { runId: string; at: string; item: AssessedEvidence | null; error: string | null }) => {
+      history.set(recordId, [...(history.get(recordId) ?? []), entry]);
+    };
+    for (const attempt of [...legacy, ...attempts].sort((left, right) => left.at.localeCompare(right.at))) {
+      for (const item of attempt.judged) add(item.record.id, { runId: attempt.runId, at: attempt.at, item, error: null });
+      for (const item of attempt.failed) add(item.record.id, { runId: attempt.runId, at: attempt.at, item: null, error: item.error });
+    }
+    return history;
+  }
+
+  // Runs that saved assessments but no snapshot (the process stopped first),
+  // and not yet reported by a later run: which of their records entered the
+  // ledger and which did not.
+  private interruptedRuns(): Array<{ runId: string; recorded: string[]; unrecorded: string[] }> {
+    const runs = this.runs();
+    const finished = new Set(runs.map((run) => run.runId));
+    const reported = new Set(runs.flatMap((run) => run.recovered ?? []));
+    const recorded = this.recordedEvidence();
+    const byRun = new Map<string, Set<string>>();
+    for (const object of this.runtime.mentalObjects.listForWorker(this.worker().id)) {
+      if (object.data.schema !== ASSESSMENT_SCHEMA) continue;
+      const attempt = object.data as unknown as AssessmentAttempt;
+      if (finished.has(attempt.runId) || reported.has(attempt.runId)) continue;
+      const ids = byRun.get(attempt.runId) ?? new Set<string>();
+      for (const item of attempt.judged) ids.add(item.record.id);
+      byRun.set(attempt.runId, ids);
+    }
+    return [...byRun].map(([runId, ids]) => ({
+      runId, recorded: [...ids].filter((id) => recorded.has(id)), unrecorded: [...ids].filter((id) => !recorded.has(id))
+    }));
+  }
+
+  // Whether every current hypothesis carries exactly the relations its plan
+  // calls for: false after an interrupted or failed reconciliation.
+  beliefsReconciled(inFlight: readonly AssessedEvidence[] = []): boolean {
+    const basis = this.basis(inFlight);
+    const recordOf = new Map([...this.recordedEvidence()].map(([recordId, objectId]) => [objectId, recordId]));
+    return [...this.currentHypotheses()].every(([key, hypothesis]) => {
+      const applied = appliedRelations(hypothesis, recordOf);
+      const plan = basis.plan.get(key) ?? [];
+      return applied.length === plan.length && isPrefix(applied, plan);
+    });
   }
 
   private allHypotheses(): MentalObject[] {
@@ -648,9 +1036,7 @@ export class EvidenceDesk extends EventEmitter {
   private recordedEvidence(): Map<string, string> {
     const recorded = new Map<string, string>();
     for (const object of this.runtime.mentalObjects.listForWorker(this.worker().id)) {
-      if (object.kind !== "evidence") continue;
-      const source = String(object.data.source ?? "");
-      recorded.set(source.slice(source.lastIndexOf("/") + 1), object.id);
+      if (object.kind === "evidence") recorded.set(recordIdOf(object), object.id);
     }
     return recorded;
   }
@@ -671,14 +1057,17 @@ export class EvidenceDesk extends EventEmitter {
   }
 }
 
-function assessedRecords(runs: readonly RunSnapshot[], inFlight: readonly AssessedEvidence[]): EvidenceRecord[] {
-  const byId = new Map<string, EvidenceRecord>();
-  for (const run of runs) for (const item of run.assessed) byId.set(item.record.id, item.record);
-  for (const item of inFlight) byId.set(item.record.id, item.record);
-  return [...byId.values()].sort(byObservation);
+interface AppliedRelation { recordId: string; direction: string }
+
+function numberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-interface AppliedRelation { recordId: string; direction: string }
+// The evidence record a Speck evidence object was recorded for.
+function recordIdOf(object: MentalObject): string {
+  const source = String(object.data.source ?? "");
+  return source.slice(source.lastIndexOf("/") + 1);
+}
 
 // The relations Speck has applied to a hypothesis, in order, from its own
 // revision history.
@@ -689,9 +1078,9 @@ function appliedRelations(hypothesis: MentalObject, recordOf: ReadonlyMap<string
 
 function describeReplacement(
   item: { key: string; previous: MentalObject; applied: AppliedRelation[] },
-  replacementId: string,
   basis: BeliefBasis,
-  newRecords: ReadonlySet<string>
+  newRecords: ReadonlySet<string>,
+  recovery: boolean
 ): Recomputation["hypotheses"][number] {
   const plan = basis.plan.get(item.key)!;
   const same = (left: AppliedRelation, right: AppliedRelation | PlannedRelation) => left.recordId === right.recordId && left.direction === right.direction;
@@ -704,13 +1093,14 @@ function describeReplacement(
     return { ...applied, reason };
   });
   const added = plan.filter((planned) => !item.applied.some((applied) => same(applied, planned)))
-    .map((planned) => ({ recordId: planned.recordId, direction: planned.direction, reinstated: !newRecords.has(planned.recordId) }));
+    .map((planned) => ({ recordId: planned.recordId, direction: planned.direction, reinstated: !recovery && !newRecords.has(planned.recordId) }));
   const reinstated = added.filter((entry) => entry.reinstated);
   const cause = dropped.length ? dropped.map((entry) => entry.reason).join("; ")
     : reinstated.length ? `${reinstated.map((entry) => entry.recordId).join(", ")} count${reinstated.length === 1 ? "s" : ""} again`
+    : recovery ? "applied after an interrupted run or recomputation"
     : "evidence observed earlier arrived later; replayed in observation order";
   return {
-    key: item.key, previousId: item.previous.id, replacementId,
+    key: item.key, mode: "replaced", previousId: item.previous.id, replacementId: null,
     previous: { confidence: round(item.previous.confidence), status: String(item.previous.data.status) },
     dropped, added, replayed: plan.map((planned) => `${planned.recordId} ${planned.direction}`), cause
   };
@@ -722,7 +1112,9 @@ function revisionNotes(basis: BeliefBasis, recomputation: Recomputation | null, 
     .filter((entry) => recordedNow.has(entry.recordId) || recordedNow.has(entry.refutedBy))
     .map((entry) => `Withheld from Speck: ${entry.recordId} supports ${entry.hypothesisKey} (${entry.basis}), which ${entry.refutedBy} refutes decisively.`);
   for (const entry of recomputation?.hypotheses ?? []) {
-    notes.push(`Recomputed ${entry.key} from its prior (was ${entry.previous.status} ${entry.previous.confidence}): ${entry.cause}.`);
+    notes.push(entry.mode === "extended"
+      ? `Revised ${entry.key} (was ${entry.previous.status} ${entry.previous.confidence}): ${entry.cause}.`
+      : `Recomputed ${entry.key} from its prior (was ${entry.previous.status} ${entry.previous.confidence}): ${entry.cause}.`);
   }
   return notes;
 }

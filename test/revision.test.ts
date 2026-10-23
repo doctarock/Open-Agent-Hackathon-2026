@@ -107,6 +107,33 @@ test("bank reversal: the superseded payment's effect leaves current belief", asy
   });
 });
 
+test("whole-record replacement says which facts and judgments went with the record, and what that changed", async () => {
+  await withDesk(testConfig({ scenarioDir: payScenario() }), async (desk) => {
+    await runTo(desk, "reversal");
+    const [item] = desk.conclusionFromSpeck().noLongerCounted;
+    // P3 states only that the payment was reversed. It never addresses the
+    // amount, but replacing P1 removes P1's amount fact and, with it,
+    // H-PARTIAL's only refutation.
+    assert.deepEqual(item!.unrestatedFacts, [{ fact: "payment.received", value: "true" }, { fact: "payment.amount_matches", value: "true" }]);
+    assert.deepEqual(item!.lostJudgments, [
+      { hypothesisKey: "H-PAID", direction: "supports", decisive: false },
+      { hypothesisKey: "H-UNPAID", direction: "contradicts", decisive: false },
+      { hypothesisKey: "H-PARTIAL", direction: "contradicts", decisive: true }
+    ]);
+    assert.deepEqual(item!.consequences, ["H-PARTIAL is no longer ruled out: P1 was its decisive refutation, and it is now proposed at 0.2."]);
+    assert.match(item!.explanation, /^P3 replaces all of P1, not only the facts it restates\. No record that still counts states payment\.received=true, payment\.amount_matches=true\./);
+    assert.ok(desk.conclusionFromSpeck().uncertainty.notes.includes(item!.explanation), "the consequence is stated in the conclusion's notes");
+  });
+  // A fact another counting record restates is not reported as lost.
+  await withDesk(testConfig({ scenarioDir: payScenario() }), async (desk) => {
+    await runTo(desk, "reversal");
+    await desk.withdrawRecord("P4", "belongs to INV-12");
+    const p4 = desk.conclusionFromSpeck().noLongerCounted.find((entry) => entry.recordId === "P4")!;
+    assert.deepEqual(p4.unrestatedFacts, [{ fact: "ledger.status", value: "reopened" }]);
+    assert.deepEqual(p4.consequences, []);
+  });
+});
+
 test("invalidated support: withdrawing a record recomputes every belief that rested on it", async () => {
   await withDesk(testConfig({ scenarioDir: payScenario() }), async (desk) => {
     await runTo(desk, "credit");
@@ -122,7 +149,7 @@ test("invalidated support: withdrawing a record recomputes every belief that res
       ["H-UNPAID", ["P1 withdrawn (Credit belongs to a different customer)"]],
       ["H-PARTIAL", ["P1 withdrawn (Credit belongs to a different customer)"]]
     ]);
-    await assert.rejects(desk.withdrawRecord("P9", "x"), /has not been assessed/);
+    await assert.rejects(desk.withdrawRecord("P9", "x"), /not evidence available in this case/);
     await assert.rejects(desk.withdrawRecord("P2", "  "), /reason is required/);
   });
 });

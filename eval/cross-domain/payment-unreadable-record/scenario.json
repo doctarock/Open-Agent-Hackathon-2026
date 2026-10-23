@@ -1,0 +1,83 @@
+{
+  "id": "xd-payment-unreadable",
+  "caseId": "XD-PAY-03",
+  "title": "Was invoice INV-619 paid?",
+  "question": "INV-619 was paid, then the bank returned the payment. One remittance document cannot be read. Is INV-619 paid?",
+  "sources": {
+    "bank": {
+      "name": "Bank statement feed",
+      "reliability": 0.95
+    },
+    "ledger": {
+      "name": "Accounts ledger",
+      "reliability": 0.85
+    },
+    "remittance": {
+      "name": "Remittance inbox",
+      "reliability": 0.7
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "Invoice INV-619 has been paid.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.status",
+          "equals": "paid",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-UNPAID",
+      "statement": "Invoice INV-619 remains unpaid.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "credit",
+      "label": "Credit received (2 Dec)",
+      "asOf": "2026-12-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "return",
+      "label": "Return and an unreadable remittance (5 Dec)",
+      "asOf": "2026-12-05T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "unreadable-withdrawn",
+      "label": "Investigator withdraws the unreadable record (6 Dec)",
+      "asOf": "2026-12-06T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

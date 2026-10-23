@@ -1,0 +1,86 @@
+{
+  "id": "xd-procurement-price-amendment",
+  "caseId": "XD-PRO-02",
+  "title": "Was INV-S-2290 overcharged?",
+  "question": "Invoice INV-S-2290 bills USD 12 per unit against a PO price of USD 10. The supplier cites amendment A-17. Was the buyer overcharged?",
+  "sources": {
+    "supplier": {
+      "name": "Supplier portal",
+      "reliability": 0.7
+    },
+    "contracts": {
+      "name": "Contract management system",
+      "reliability": 0.95
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-OVERCHARGED",
+      "statement": "The invoice price exceeds the agreed price.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "invoice.price_vs_po",
+          "equals": "above",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "amendment.status",
+          "equals": "rejected",
+          "direction": "supports"
+        },
+        {
+          "fact": "amendment.status",
+          "equals": "approved",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-PRICE-AGREED",
+      "statement": "The invoice price was agreed through amendment A-17.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "amendment.claimed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "amendment.status",
+          "equals": "approved",
+          "direction": "supports"
+        },
+        {
+          "fact": "amendment.status",
+          "equals": "rejected",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "invoice",
+      "label": "Invoice and supplier claim (18 Sep)",
+      "asOf": "2026-09-18T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "contract-check",
+      "label": "Contract system check (20 Sep)",
+      "asOf": "2026-09-20T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "re-approved",
+      "label": "Amendment re-approved (24 Sep)",
+      "asOf": "2026-09-24T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

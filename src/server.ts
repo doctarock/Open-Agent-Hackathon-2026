@@ -3,8 +3,8 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ConfigError, loadConfig, loadDotEnv, type AppConfig } from "./config.js";
-import { EvidenceProviderError } from "./evidence/types.js";
-import { EvidenceDesk, MARKOVIAN_SOURCE, ReasonerNotReadyError, RunInProgressError, WithdrawalError, relativeDataPath } from "./investigation/desk.js";
+import { deskApi, errorResponse, RequestError } from "./investigation/api.js";
+import { EvidenceDesk, relativeDataPath } from "./investigation/desk.js";
 
 // A small HTTP server: JSON API under /api, the static UI from public/, and
 // run progress (Meterless progress events) as server-sent events.
@@ -26,37 +26,15 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
   desk.on("run", (summary) => broadcast("run", summary));
   desk.on("revision", (summary) => broadcast("revision", summary));
 
+  const api = deskApi(desk, config, relativeDataPath(config, config.databasePath));
   const routes: Record<string, (request: http.IncomingMessage, response: http.ServerResponse) => Promise<void>> = {
-    "GET /api/status": async (_request, response) => json(response, 200, status(desk, config)),
-    "GET /api/evidence": async (_request, response) => json(response, 200, await desk.listEvidence()),
-    "GET /api/investigation": async (_request, response) => {
-      const runs = desk.runs();
-      json(response, 200, {
-        // What Speck believes now, read from its persisted state. The page
-        // shows this, not the copy stored with the last run.
-        current: runs.length ? desk.conclusionFromSpeck() : null,
-        latestRun: runs.at(-1) ?? null,
-        runs: runs.map((run) => ({
-          runNumber: run.runNumber, runId: run.runId, finishedAt: run.finishedAt, stage: run.stage,
-          status: run.execution.status, conclusion: run.conclusion.state, hypothesis: run.conclusion.hypothesis?.key ?? null,
-          evidenceMode: run.evidence.mode, reasoner: run.reasoner.kind, model: run.reasoner.model
-        })),
-        hypotheses: desk.hypotheses(),
-        // Beliefs no longer held because what they rested on was invalidated:
-        // history, kept apart from the current state above.
-        history: { recomputations: desk.recomputations(), replaced: desk.replacedHypotheses() },
-        timeline: desk.timeline()
-      });
-    },
-    "POST /api/run": async (_request, response) => json(response, 200, await desk.run()),
-    "POST /api/evidence/withdraw": async (request, response) => {
-      const body = await readJson(request) as { recordId?: unknown; reason?: unknown };
-      if (typeof body.recordId !== "string" || typeof body.reason !== "string") {
-        return json(response, 400, { error: "recordId and reason are required", kind: "request" });
-      }
-      json(response, 200, { recomputation: await desk.withdrawRecord(body.recordId, body.reason) });
-    },
-    "POST /api/update": async (_request, response) => json(response, 200, { stage: await desk.introduceNextUpdate(), next: desk.nextStage() }),
+    "GET /api/status": async (_request, response) => json(response, 200, api.status()),
+    "GET /api/evidence": async (_request, response) => json(response, 200, await api.evidence()),
+    "GET /api/trace": async (_request, response) => json(response, 200, api.trace()),
+    "GET /api/investigation": async (_request, response) => json(response, 200, api.investigation()),
+    "POST /api/run": async (_request, response) => json(response, 200, await api.run()),
+    "POST /api/evidence/withdraw": async (request, response) => json(response, 200, await api.withdraw(await readJson(request))),
+    "POST /api/update": async (_request, response) => json(response, 200, await api.update()),
     "GET /api/events": async (request, response) => {
       response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
       response.write(": connected\n\n");
@@ -78,31 +56,11 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
   });
 }
 
-function status(desk: EvidenceDesk, config: AppConfig) {
-  return {
-    case: { caseId: desk.scenario.caseId, title: desk.scenario.title, question: desk.scenario.question, scenarioId: desk.scenario.id },
-    stage: desk.currentStage(),
-    nextStage: desk.nextStage(),
-    running: desk.isRunning,
-    evidence: desk.provider.describe(),
-    reasoner: { ...desk.reasoner.describe(), usage: desk.reasoner.usage() },
-    execution: { engine: MARKOVIAN_SOURCE, maxChunks: config.execution.maxChunks, batchSize: config.execution.batchSize },
-    speck: { database: relativeDataPath(config, config.databasePath) }
-  };
-}
-
 function sendError(response: http.ServerResponse, error: unknown): void {
   if (response.headersSent) { response.end(); return; }
-  if (error instanceof EvidenceProviderError) {
-    return json(response, 502, { error: error.message, hint: error.hint, detail: error.detail, kind: "evidence", mode: error.mode });
-  }
-  if (error instanceof RunInProgressError) return json(response, 409, { error: error.message, kind: "busy" });
-  if (error instanceof ReasonerNotReadyError) return json(response, 503, { error: error.message, hint: error.hint, kind: "reasoner" });
-  if (error instanceof RequestError || error instanceof WithdrawalError) return json(response, 400, { error: error.message, kind: "request" });
-  json(response, 500, { error: error instanceof Error ? error.message : String(error), kind: "internal" });
+  const { status, body } = errorResponse(error);
+  json(response, status, body);
 }
-
-class RequestError extends Error {}
 
 async function readJson(request: http.IncomingMessage): Promise<unknown> {
   let body = "";

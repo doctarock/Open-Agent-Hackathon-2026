@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { contractInstruction, parseModelCompletion, type StructuredOutputContract } from "#speck";
+import { contractInstruction, parseModelCompletion, type SpeckRuntime, type StructuredOutputContract } from "#speck";
 import { loadConfig, type AppConfig, type NemotronConfig } from "../config.js";
 import { FixtureEvidenceProvider } from "../evidence/fixture-provider.js";
 import { byObservation, EvidenceProviderError, type EvidenceProvider, type EvidenceRecord } from "../evidence/types.js";
@@ -9,7 +9,8 @@ import { ZetarisEvidenceProvider } from "../evidence/zetaris-provider.js";
 import type { Conclusion } from "../investigation/conclusion.js";
 import { EvidenceDesk, type RunSnapshot } from "../investigation/desk.js";
 import { NemotronProcessor, NemotronReasoner } from "../reasoning/nemotron.js";
-import { ruleJudgments } from "../reasoning/rules.js";
+import { RuleReasoner, ruleJudgments } from "../reasoning/rules.js";
+import type { Reasoner } from "../reasoning/types.js";
 import type { EvalCase } from "./cases.js";
 
 // The systems the evaluation compares. Each takes a case and returns, for
@@ -31,6 +32,10 @@ export interface CheckpointOutcome {
   supportCitations: string[];
   // Records cited as support for anything presented as current or favoured.
   presentedSupport: string[];
+  // Records that bear on any current belief (Speck: every current hypothesis's
+  // supporting and contradicting records; rule baseline: every record a rule
+  // scored; model baseline: what it cited, since nothing else is observable).
+  influencing?: string[];
   visibleEvidence: string[];
   // Speck systems with a model: whether the explanation matched Speck's state.
   explanationAgrees: boolean | null;
@@ -68,7 +73,7 @@ function providerFor(item: EvalCase, config: AppConfig): EvidenceProvider {
     : new FixtureEvidenceProvider(path.join(item.dir, "evidence.json"), config.rootDir);
 }
 
-function caseConfig(item: EvalCase, reasoner: ReasonerChoice): AppConfig {
+export function caseConfig(item: EvalCase, reasoner: ReasonerChoice): AppConfig {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "evidence-desk-eval-"));
   return loadConfig({}, {
     scenarioDir: item.dir, databasePath: path.join(dir, "desk.sqlite"), historyDir: path.join(dir, "meterless"),
@@ -78,7 +83,7 @@ function caseConfig(item: EvalCase, reasoner: ReasonerChoice): AppConfig {
 
 // Scored on Speck's current conclusion, which equals the run's own unless
 // records were withdrawn after it.
-function speckOutcome(stage: string, c: Conclusion, run: RunSnapshot, visible: string[]): CheckpointOutcome {
+export function speckOutcome(stage: string, c: Conclusion, run: RunSnapshot, visible: string[], influencing: string[] = []): CheckpointOutcome {
   const views = [c.hypothesis, ...c.alternatives, ...c.rejected].flatMap((view) => (view ? [view] : []));
   const concluded = c.state === "supported" ? c.hypothesis : null;
   const presented = [...new Set([c.hypothesis?.key, c.direction.pointsTo?.key].filter((key): key is string => Boolean(key)))];
@@ -90,6 +95,7 @@ function speckOutcome(stage: string, c: Conclusion, run: RunSnapshot, visible: s
     citations: [...new Set([...views.flatMap((view) => [...view.supporting, ...view.contradicting].map((ref) => ref.recordId)), ...(run.explanation?.citedEvidence ?? [])])],
     supportCitations: concluded ? concluded.supporting.map((ref) => ref.recordId) : [],
     presentedSupport: [...new Set(views.filter((view) => presented.includes(view.key)).flatMap((view) => view.supporting.map((ref) => ref.recordId)))],
+    influencing,
     visibleEvidence: visible,
     explanationAgrees: run.explanation ? run.explanation.agreement.agrees : null,
     executionStatus: run.execution.status
@@ -99,7 +105,7 @@ function speckOutcome(stage: string, c: Conclusion, run: RunSnapshot, visible: s
 function errorOutcome(stage: string, error: unknown): CheckpointOutcome {
   return {
     stage, error: error instanceof EvidenceProviderError ? `evidence: ${error.message}` : `error: ${error instanceof Error ? error.message : String(error)}`,
-    conclusion: null, tentative: null, presentedAsCurrent: [], citations: [], supportCitations: [], presentedSupport: [], visibleEvidence: [],
+    conclusion: null, tentative: null, presentedAsCurrent: [], citations: [], supportCitations: [], presentedSupport: [], influencing: [], visibleEvidence: [],
     explanationAgrees: null, executionStatus: null
   };
 }
@@ -125,14 +131,39 @@ function withdrawnBy(item: EvalCase, index: number): Array<{ recordId: string; r
   return item.checkpoints.slice(0, index + 1).flatMap((checkpoint) => checkpoint.withdrawBefore ?? []);
 }
 
-async function visibleIds(desk: EvidenceDesk): Promise<string[]> {
+export async function visibleIds(desk: EvidenceDesk): Promise<string[]> {
   return (await desk.listEvidence()).records.map((record) => record.id);
 }
 
-function deskOptions(item: EvalCase, config: AppConfig, reasoner: ReasonerChoice): Parameters<typeof EvidenceDesk.open>[1] {
+// Records behind Speck's current beliefs.
+export function speckInfluencing(desk: EvidenceDesk): string[] {
+  return [...new Set(desk.hypotheses().flatMap((view) => [...view.supporting, ...view.contradicting].map((ref) => ref.recordId)))].sort();
+}
+
+// Fault injection (cross-domain suite): assessment fails for any batch that
+// holds one of the case's failAssessment records, as a model failure would.
+export const ASSESSMENT_FAILURE = "assessment failed (injected by the evaluation harness)";
+
+function failingOn(inner: Reasoner, failing: readonly string[]): Reasoner {
+  return {
+    kind: inner.kind,
+    describe: () => inner.describe(),
+    usage: () => inner.usage(),
+    async assess(input) {
+      if (input.batch.some((record) => failing.includes(record.id))) throw new Error(ASSESSMENT_FAILURE);
+      return inner.assess(input);
+    }
+  };
+}
+
+export function deskOptions(item: EvalCase, config: AppConfig, reasoner: ReasonerChoice): Parameters<typeof EvidenceDesk.open>[1] {
+  const reasonerFor = (runtime: SpeckRuntime): Reasoner =>
+    reasoner.kind === "nemotron" ? new NemotronReasoner(runtime, reasoner.config) : new RuleReasoner();
   return {
     provider: providerFor(item, config),
-    ...(reasoner.kind === "nemotron" ? { reasoner: (runtime) => new NemotronReasoner(runtime, reasoner.config) } : {})
+    ...(item.failAssessment?.length
+      ? { reasoner: (runtime: SpeckRuntime) => failingOn(reasonerFor(runtime), item.failAssessment!) }
+      : reasoner.kind === "nemotron" ? { reasoner: reasonerFor } : {})
   };
 }
 
@@ -152,7 +183,7 @@ export function speckDesk(reasoner: ReasonerChoice): EvalSystem {
           try {
             for (const withdrawal of checkpoint.withdrawBefore ?? []) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
             const run = await desk.run();
-            checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk)));
+            checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk), speckInfluencing(desk)));
           } catch (error) {
             checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           }
@@ -183,7 +214,7 @@ export function speckFresh(reasoner: ReasonerChoice): EvalSystem {
           const run = await desk.run();
           // Everything is assessed at once, then every withdrawal so far applied.
           for (const withdrawal of withdrawnBy(item, index)) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
-          checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk)));
+          checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk), speckInfluencing(desk)));
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
         } finally {
@@ -194,6 +225,12 @@ export function speckFresh(reasoner: ReasonerChoice): EvalSystem {
       return { checkpoints, model: mergeStats(stats) };
     }
   };
+}
+
+// A stateless baseline assesses every visible record in one pass, so a record
+// whose assessment fails (cross-domain fault injection) fails the checkpoint.
+function assessable(item: EvalCase, records: readonly EvidenceRecord[]): void {
+  if (records.some((record) => item.failAssessment?.includes(record.id))) throw new Error(ASSESSMENT_FAILURE);
 }
 
 // The stateless baselines see what is visible at the checkpoint, less what the
@@ -221,15 +258,18 @@ export function statelessRules(): EvalSystem {
         let records: EvidenceRecord[];
         try {
           records = await visibleAt(item, provider, index);
+          assessable(item, records);
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           continue;
         }
         const scores = new Map(item.scenario.hypotheses.map((hypothesis) => [hypothesis.key, 0]));
         const support = new Map<string, string[]>();
+        const scored = new Set<string>();
         for (const record of records) {
           const reliability = item.scenario.sources[record.source.system]?.reliability ?? 0.5;
           for (const judgment of ruleJudgments(record, item.scenario.hypotheses)) {
+            scored.add(record.id);
             const sign = judgment.direction === "supports" ? 1 : -1;
             scores.set(judgment.hypothesisKey, scores.get(judgment.hypothesisKey)! + sign * reliability * judgment.strength);
             if (sign > 0) support.set(judgment.hypothesisKey, [...(support.get(judgment.hypothesisKey) ?? []), record.id]);
@@ -242,6 +282,7 @@ export function statelessRules(): EvalSystem {
         checkpoints.push({
           stage: checkpoint.afterStage, error: null, conclusion: chosen, tentative: null,
           presentedAsCurrent: chosen ? [chosen] : [], citations: cited, supportCitations: cited, presentedSupport: cited,
+          influencing: [...scored].sort(),
           visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null
         });
       }
@@ -282,6 +323,7 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
         let records: EvidenceRecord[];
         try {
           records = await visibleAt(item, provider, index);
+          assessable(item, records);
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
           continue;
@@ -308,6 +350,7 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
         checkpoints.push({
           stage: checkpoint.afterStage, error: null, conclusion, tentative: null,
           presentedAsCurrent: conclusion ? [conclusion] : [], citations: cited, supportCitations: conclusion ? cited : [], presentedSupport: conclusion ? cited : [],
+          influencing: [...new Set(cited)].sort(),
           visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null
         });
       }

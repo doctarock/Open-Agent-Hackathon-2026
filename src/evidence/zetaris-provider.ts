@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import type { ZetarisConfig } from "../config.js";
-import { byObservation, EvidenceProviderError, validateEvidenceRecord, type EvidenceProvider, type EvidenceRecord, type ProviderDescription } from "./types.js";
+import { byObservation, EvidenceProviderError, validateEvidenceRecord, type EvidenceProvider, type EvidenceRecord, type FetchSummary, type ProviderDescription } from "./types.js";
 
 // Federated evidence through a Zetaris Lightning platform. The REST flow is
 // the one the platform's own verify.sh documents: POST /api/auth/login for a
@@ -24,6 +24,7 @@ const CASE_ID = /^[A-Za-z0-9_-]+$/;
 export class ZetarisEvidenceProvider implements EvidenceProvider {
   readonly mode = "zetaris" as const;
   private session: Session | null = null;
+  private fetched: FetchSummary | null = null;
 
   constructor(private readonly config: ZetarisConfig, private readonly fetchImpl: typeof fetch = fetch) {}
 
@@ -41,9 +42,12 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
     if (!CASE_ID.test(caseId)) throw new EvidenceProviderError(`Invalid case id "${caseId}"`, this.mode, "Case ids may contain only letters, digits, '-' and '_'.");
     const queries = this.queryConfig();
     const records: EvidenceRecord[] = [];
+    const sources: FetchSummary["sources"] = [];
     for (const source of queries.sources) {
       const sql = `SELECT ${queries.columns} FROM ${source.table} WHERE case_id = '${caseId}'`;
+      const began = performance.now();
       const result = await this.select(sql, source.table);
+      sources.push({ location: source.table, rows: result.records.length, queryToken: result.queryToken, latencyMs: Math.round(performance.now() - began) });
       const retrievedAt = new Date().toISOString();
       result.records.forEach((row, index) => {
         const record = this.toRecord(row, `${source.table} row ${index + 1}`);
@@ -55,7 +59,13 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
         records.push({ ...record, retrieval: { mode: this.mode, location: source.table, retrievedAt, ...(result.queryToken ? { queryToken: result.queryToken } : {}) } });
       });
     }
+    this.fetched = { mode: this.mode, at: new Date().toISOString(), sources };
     return records.sort(byObservation);
+  }
+
+  // Each SELECT of the last successful fetch, as sent through the platform.
+  lastFetch(): FetchSummary | null {
+    return this.fetched;
   }
 
   // One SELECT through the platform. Exposed for the connectivity check.

@@ -74,7 +74,10 @@ export interface Conclusion {
   openQuestions: Array<{ id: string; text: string }>;
   answeredQuestions: Array<{ id: string; text: string; answer: string; recordId: string }>;
   // Assessed records that no longer count towards any current belief.
-  noLongerCounted: Array<{ recordId: string; invalidation: Invalidation; reason: string }>;
+  noLongerCounted: NoLongerCounted[];
+  // False when Speck's beliefs lag the evidence ledger (an interrupted run or
+  // recomputation); set by the desk, which can check it.
+  reconciled: boolean;
   uncertainty: {
     speckConfidence: number | null;
     speckStatus: string | null;
@@ -82,6 +85,24 @@ export interface Conclusion {
     margin: number | null;
     notes: string[];
   };
+}
+
+// An assessed record that no longer counts, and what that took away. A
+// record is replaced or withdrawn whole, so this says which of its facts no
+// counting record restates, which of its judgments stopped applying, and what
+// that changed, so a fact the correction never addressed does not vanish
+// unexplained.
+export interface NoLongerCounted {
+  recordId: string;
+  invalidation: Invalidation;
+  reason: string;
+  // Facts it stated that no record still counting states.
+  unrestatedFacts: Array<{ fact: string; value: string }>;
+  // Its judgments, none of which apply any more.
+  lostJudgments: Array<{ hypothesisKey: string; direction: RelationJudgment["direction"]; decisive: boolean }>;
+  // Effects on current belief, such as a refutation that no longer stands.
+  consequences: string[];
+  explanation: string;
 }
 
 // Speck's belief-revision settings the explanation refers to.
@@ -110,6 +131,9 @@ export function deriveConclusion(input: {
   // Records that no longer count. Without it, supersession is read from the
   // records' own claims.
   invalidated?: ReadonlyMap<string, Invalidation>;
+  // The judgments recorded for an assessed record, to say what an
+  // invalidated record's removal took away.
+  judgmentsFor?: (recordId: string) => readonly RelationJudgment[];
 }): Conclusion {
   const invalidated = input.invalidated ?? new Map<string, Invalidation>();
   const supersededBy = new Map<string, string>();
@@ -178,10 +202,11 @@ export function deriveConclusion(input: {
   if (supersededSupport.length) notes.push(`Support from ${supersededSupport.map((item) => `${item.recordId} (superseded by ${item.supersededBy})`).join(", ")} has been replaced by its source.`);
   const noLongerCounted = input.assessed.flatMap((record) => {
     const invalidation = invalidated.get(record.id);
-    return invalidation ? [{ recordId: record.id, invalidation, reason: describeInvalidation(record.id, invalidation) }] : [];
+    return invalidation ? [explainInvalidation(record, invalidation, counting, views, input.judgmentsFor?.(record.id) ?? [])] : [];
   });
   if (noLongerCounted.length) {
     notes.push(`No longer counted: ${noLongerCounted.map((item) => item.reason).join("; ")}. Current beliefs were recomputed from the remaining evidence; what these records contributed before is in the history, not here.`);
+    for (const item of noLongerCounted) if (item.consequences.length) notes.push(item.explanation);
   }
   if (openQuestions.length) notes.push(`${openQuestions.length} question(s) remain unanswered by any evidence.`);
   if (!input.assessed.length) notes.push("No evidence has been assessed yet.");
@@ -201,6 +226,7 @@ export function deriveConclusion(input: {
     openQuestions,
     answeredQuestions,
     noLongerCounted,
+    reconciled: true,
     uncertainty: {
       speckConfidence: top ? top.confidence : null,
       speckStatus: top ? top.status : null,
@@ -290,6 +316,39 @@ function justify(input: {
     reasons,
     wouldChange
   };
+}
+
+function explainInvalidation(
+  record: EvidenceRecord,
+  invalidation: Invalidation,
+  counting: readonly EvidenceRecord[],
+  views: readonly HypothesisView[],
+  judgments: readonly RelationJudgment[]
+): NoLongerCounted {
+  const reason = describeInvalidation(record.id, invalidation);
+  const unrestatedFacts = Object.entries(record.facts)
+    .filter(([fact, value]) => !counting.some((other) => other.facts[fact] === value))
+    .map(([fact, value]) => ({ fact, value }));
+  const lostJudgments = judgments.map((judgment) => ({ hypothesisKey: judgment.hypothesisKey, direction: judgment.direction, decisive: judgment.decisive }));
+  const consequences: string[] = [];
+  for (const judgment of lostJudgments) {
+    const view = views.find((candidate) => candidate.key === judgment.hypothesisKey);
+    if (!view) continue;
+    // A refutation that came from this record and no longer stands.
+    if (judgment.decisive && judgment.direction === "contradicts" && !OUT.has(view.status)) {
+      consequences.push(`${view.key} is no longer ruled out: ${record.id} was its decisive refutation, and it is now ${view.status} at ${view.confidence}.`);
+    }
+  }
+  const replacedBy = invalidation.kind === "superseded" ? invalidation.by : null;
+  const explanation = [
+    replacedBy ? `${replacedBy} replaces all of ${record.id}, not only the facts it restates.` : `${record.id} was withdrawn (${invalidation.kind === "withdrawn" ? invalidation.reason : ""}).`,
+    unrestatedFacts.length ? `No record that still counts states ${unrestatedFacts.map((item) => `${item.fact}=${item.value}`).join(", ")}.` : "",
+    lostJudgments.length
+      ? `Its judgments no longer apply: ${lostJudgments.map((item) => `${item.direction} ${item.hypothesisKey}${item.decisive ? " decisively" : ""}`).join("; ")}.`
+      : "",
+    ...consequences
+  ].filter(Boolean).join(" ");
+  return { recordId: record.id, invalidation, reason, unrestatedFacts, lostJudgments, consequences, explanation };
 }
 
 function ids(value: unknown): string[] {

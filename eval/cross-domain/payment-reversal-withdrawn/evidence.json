@@ -1,0 +1,64 @@
+{
+  "caseId": "XD-PAY-02",
+  "records": [
+    {
+      "id": "XP2-01",
+      "caseId": "XD-PAY-02",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-11-01T01:00:00Z",
+      "content": "Credit AUD 3,400.00, reference INV-552.",
+      "facts": {
+        "payment.received": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp2-01",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP2-02",
+      "caseId": "XD-PAY-02",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-11-01T04:00:00Z",
+      "content": "INV-552 matched to the bank credit and marked paid.",
+      "facts": {
+        "ledger.status": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "xp2-02",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP2-03",
+      "caseId": "XD-PAY-02",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-11-03T01:00:00Z",
+      "content": "Return of credit AUD 3,400.00, reference INV-552: payer account closed.",
+      "facts": {
+        "payment.reversed": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp2-03",
+        "author": "bank-feed",
+        "supersedes": [
+          "XP2-01"
+        ]
+      }
+    }
+  ]
+}

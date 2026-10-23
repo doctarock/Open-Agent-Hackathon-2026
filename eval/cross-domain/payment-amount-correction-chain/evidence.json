@@ -1,0 +1,107 @@
+{
+  "caseId": "XD-PAY-01",
+  "records": [
+    {
+      "id": "XP1-01",
+      "caseId": "XD-PAY-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-10-02T01:00:00Z",
+      "content": "Credit USD 1,200.00, reference INV-884.",
+      "facts": {
+        "payment.amount": "full"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp1-01",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP1-02",
+      "caseId": "XD-PAY-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-10-04T01:00:00Z",
+      "content": "Correction to the 2 Oct credit: the amount received was USD 1,020.00, not USD 1,200.00.",
+      "facts": {
+        "payment.amount": "partial"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp1-02",
+        "author": "bank-feed",
+        "supersedes": [
+          "XP1-01"
+        ]
+      }
+    },
+    {
+      "id": "XP1-03",
+      "caseId": "XD-PAY-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-10-04T03:00:00Z",
+      "content": "INV-884: USD 180.00 outstanding after the bank's amount correction.",
+      "facts": {
+        "ledger.balance": "outstanding"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "xp1-03",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP1-04",
+      "caseId": "XD-PAY-01",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-10-09T01:00:00Z",
+      "content": "The 4 Oct amount correction was a keying error and is reversed. USD 1,200.00 was received on 2 Oct.",
+      "facts": {
+        "payment.amount": "full"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp1-04",
+        "author": "bank-feed",
+        "supersedes": [
+          "XP1-02",
+          "XP1-01"
+        ]
+      }
+    },
+    {
+      "id": "XP1-05",
+      "caseId": "XD-PAY-01",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-10-09T03:00:00Z",
+      "content": "INV-884 balance cleared after the bank reversed its correction.",
+      "facts": {
+        "ledger.balance": "zero"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "xp1-05",
+        "author": "ledger-feed",
+        "supersedes": [
+          "XP1-03"
+        ]
+      }
+    }
+  ]
+}

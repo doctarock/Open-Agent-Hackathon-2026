@@ -1,0 +1,96 @@
+{
+  "id": "xd-procurement-short-delivery",
+  "caseId": "XD-PRO-01",
+  "title": "Was PO-4410 delivered in full?",
+  "question": "The supplier invoiced 100 valves on PO-4410; the buyer disputes the quantity. Was it delivered in full?",
+  "sources": {
+    "supplier": {
+      "name": "Supplier portal",
+      "reliability": 0.7
+    },
+    "warehouse": {
+      "name": "Warehouse receiving",
+      "reliability": 0.9
+    },
+    "carrier": {
+      "name": "Freight carrier",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-FULL",
+      "statement": "PO-4410 was delivered in full (100 units).",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "invoice.quantity",
+          "equals": "100",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "grn.quantity",
+          "equals": "100",
+          "direction": "supports"
+        },
+        {
+          "fact": "grn.quantity",
+          "equals": "80",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "manifest.quantity",
+          "equals": "80",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-SHORT",
+      "statement": "PO-4410 was short-delivered.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "grn.quantity",
+          "equals": "80",
+          "direction": "supports"
+        },
+        {
+          "fact": "manifest.quantity",
+          "equals": "80",
+          "direction": "supports"
+        },
+        {
+          "fact": "grn.quantity",
+          "equals": "100",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "receipt",
+      "label": "Invoice and goods receipt (11 Sep)",
+      "asOf": "2026-09-11T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "recount",
+      "label": "Goods receipt amended (15 Sep)",
+      "asOf": "2026-09-15T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "manifest",
+      "label": "Carrier manifest (17 Sep)",
+      "asOf": "2026-09-17T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

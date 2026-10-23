@@ -1,0 +1,81 @@
+{
+  "caseId": "XD-PAY-03",
+  "records": [
+    {
+      "id": "XP3-01",
+      "caseId": "XD-PAY-03",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-12-02T01:00:00Z",
+      "content": "Credit EUR 960.00, reference INV-619.",
+      "facts": {
+        "payment.received": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp3-01",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP3-02",
+      "caseId": "XD-PAY-03",
+      "source": {
+        "system": "ledger",
+        "name": "Accounts ledger"
+      },
+      "observedAt": "2026-12-02T04:00:00Z",
+      "content": "INV-619 matched to the bank credit and marked paid.",
+      "facts": {
+        "ledger.status": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Accounts ledger",
+        "recordRef": "xp3-02",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP3-03",
+      "caseId": "XD-PAY-03",
+      "source": {
+        "system": "remittance",
+        "name": "Remittance inbox"
+      },
+      "observedAt": "2026-12-05T01:00:00Z",
+      "content": "Scanned remittance advice (image only; the text layer is empty).",
+      "facts": {},
+      "provenance": {
+        "systemOfRecord": "Remittance inbox",
+        "recordRef": "xp3-03",
+        "author": "remittance-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XP3-04",
+      "caseId": "XD-PAY-03",
+      "source": {
+        "system": "bank",
+        "name": "Bank statement feed"
+      },
+      "observedAt": "2026-12-05T02:00:00Z",
+      "content": "Return of credit EUR 960.00, reference INV-619: insufficient funds.",
+      "facts": {
+        "payment.reversed": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Bank statement feed",
+        "recordRef": "xp3-04",
+        "author": "bank-feed",
+        "supersedes": [
+          "XP3-01"
+        ]
+      }
+    }
+  ]
+}

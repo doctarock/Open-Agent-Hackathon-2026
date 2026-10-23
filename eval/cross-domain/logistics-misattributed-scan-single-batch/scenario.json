@@ -1,0 +1,105 @@
+{
+  "id": "xd-logistics-misattributed-scan-batch",
+  "caseId": "XD-LOG-01",
+  "title": "Where is parcel PX-5521?",
+  "question": "Parcel PX-5521 shows as delivered but the customer says it never arrived. Where is it?",
+  "sources": {
+    "carrier": {
+      "name": "Carrier tracking feed",
+      "reliability": 0.9
+    },
+    "depot": {
+      "name": "Depot inventory system",
+      "reliability": 0.9
+    },
+    "customer": {
+      "name": "Customer service desk",
+      "reliability": 0.6
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DELIVERED",
+      "statement": "Parcel PX-5521 was delivered to the customer.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "scan.status",
+          "equals": "delivered",
+          "direction": "supports"
+        },
+        {
+          "fact": "customer.received",
+          "equals": "false",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "scan.status",
+          "equals": "at_depot",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "depot.holding",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-AT-DEPOT",
+      "statement": "Parcel PX-5521 is being held at the Sunshine depot.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "scan.status",
+          "equals": "at_depot",
+          "direction": "supports"
+        },
+        {
+          "fact": "depot.holding",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "scan.status",
+          "equals": "delivered",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-LOST",
+      "statement": "Parcel PX-5521 has been lost in transit.",
+      "prior": 0.2,
+      "rules": [
+        {
+          "fact": "customer.received",
+          "equals": "false",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "scan.status",
+          "equals": "delivered",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "depot.holding",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "all",
+      "label": "Everything at once (8 Sep)",
+      "asOf": "2026-09-08T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

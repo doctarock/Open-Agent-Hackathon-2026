@@ -120,6 +120,65 @@ test("a record the model says nothing about stays pending instead of counting as
   }
 });
 
+test("the trace records each Nemotron call: served model, constraints, contract retries, and what was kept", async () => {
+  process.env.EVIDENCE_DESK_TEST_KEY = "test-key-not-a-secret";
+  let assessmentCalls = 0;
+  const endpoint = await fakeEndpoint((prompt) => {
+    if (prompt.includes("cited_evidence")) {
+      return { explanation: "Delivered.", cited_evidence: ["EV-CAR-003", "EV-INVENTED-9"], stated_conclusion: "H-DELIVERED", stated_established: true };
+    }
+    assessmentCalls += 1;
+    // The first reply breaks the contract; Speck's registry rejects it and asks again.
+    if (assessmentCalls === 1) return { summary: "missing the judgments array" };
+    const judgments = chunkIds(prompt).flatMap((id) => {
+      if (id === "EV-WMS-002") return [
+        { evidence_id: id, hypothesis: "H-NOT-SHIPPED", relation: "supports", strength: 0.4, rationale: "contrary to the decisive rule" },
+        { evidence_id: id, hypothesis: "H-MADE-UP", relation: "supports", strength: 1, rationale: "not a hypothesis" }
+      ];
+      if (id === "EV-CAR-003") return [
+        { evidence_id: id, hypothesis: "H-DELIVERED", relation: "supports", strength: 0.9, rationale: "scan" },
+        { evidence_id: id, hypothesis: "H-DELIVERED", relation: "supports", strength: 0.9, rationale: "scan, repeated" }
+      ];
+      return [{ evidence_id: id, hypothesis: "H-DELIVERED", relation: "neutral", strength: 0.1, rationale: "no bearing" }];
+    });
+    return { judgments, summary: "" };
+  });
+  try {
+    await withDesk(testConfig({}, nemotronEnv(endpoint.url)), async (desk) => {
+      const run = await desk.run();
+      const trace = desk.trace().find((entry) => entry.kind === "run")!;
+      assert.ok(trace.kind === "run");
+      assert.deepEqual(trace.reasoner, { kind: "nemotron", model: "test/nemotron-stand-in", endpoint: endpoint.url });
+      const [first, second] = trace.steps.filter((step) => step.kind === "chunk").map((step) => step.kind === "chunk" ? step : null);
+      // Chunk 1: one rejected reply, then a valid one, all reported by the endpoint as the stand-in model.
+      assert.deepEqual([first!.model!.attempts, first!.model!.contractFailures, first!.model!.transportFailures, first!.model!.outcome], [2, 1, 0, "valid"]);
+      assert.equal(first!.model!.httpCalls.length, 2);
+      assert.deepEqual(first!.model!.servedModels, ["test/nemotron-stand-in"]);
+      assert.deepEqual(first!.model!.constraints, { contract: "evidence_relations", requiredPairs: 6, temperature: 0.1, maxAttempts: 2, maxTokens: 4096, reasoningEffort: "none" });
+      // What was kept: the unknown hypothesis discarded, the decisive rule kept over the model.
+      assert.deepEqual(first!.model!.judgments, { returned: 3, neutral: 1, kept: 0, discardedUnknown: 1, ruleKept: 1, repeated: 0, unanswered: [] });
+      assert.deepEqual(first!.judgments, { rule: 1, model: 0, noBearing: ["EV-OMS-001"] });
+      // Chunk 2: the repeated pair is counted, not silently dropped.
+      assert.deepEqual([second!.model!.attempts, second!.model!.judgments!.kept, second!.model!.judgments!.repeated, second!.model!.judgments!.neutral], [1, 1, 1, 1]);
+      assert.equal(trace.flags.retries, 1);
+      assert.equal(trace.flags.contractFailures, 1);
+      // The evidence list shows the source's reliability and what Speck applied after its cap.
+      const car = (await desk.listEvidence()).records.find((record) => record.id === "EV-CAR-003")!;
+      assert.deepEqual([car.assessment?.recordedBy, car.assessment?.reliability, car.assessment?.appliedReliability], ["model", 0.85, 0.4]);
+      // The explanation call and its invented citation.
+      const explanation = trace.steps.find((step) => step.kind === "explanation")!;
+      assert.ok(explanation.kind === "explanation");
+      assert.equal(explanation.model?.constraints.contract, "investigation_explanation");
+      assert.deepEqual(explanation.invalidCitations, ["EV-INVENTED-9"]);
+      assert.deepEqual(trace.flags.invalidCitations, run.explanation!.invalidCitations);
+      assert.equal(explanation.agrees, false);
+    });
+  } finally {
+    endpoint.close();
+    delete process.env.EVIDENCE_DESK_TEST_KEY;
+  }
+});
+
 test("a non-Nemotron or unset model is refused before anything runs", async () => {
   await withDesk(testConfig({}, { REASONER: "nemotron" }), async (desk) => {
     assert.equal(desk.reasoner.describe().ready, false);

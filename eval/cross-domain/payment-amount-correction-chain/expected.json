@@ -1,0 +1,52 @@
+{
+  "id": "payment-amount-correction-chain",
+  "domain": "payments",
+  "family": null,
+  "order": "as recorded",
+  "category": "replacement chain",
+  "description": "A credit is corrected to a partial amount, then that correction is itself replaced by a record restating the full amount.",
+  "checkpoints": [
+    {
+      "afterStage": "credit",
+      "conclusion": "H-PAID-FULL",
+      "notCurrent": [],
+      "unsupported": [
+        "H-PARTIAL",
+        "H-UNPAID"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "first-correction",
+      "conclusion": "H-PARTIAL",
+      "notCurrent": [
+        "H-PAID-FULL",
+        "H-UNPAID"
+      ],
+      "unsupported": [
+        "H-PAID-FULL",
+        "H-UNPAID"
+      ],
+      "invalidated": [
+        "XP1-01"
+      ]
+    },
+    {
+      "afterStage": "second-correction",
+      "conclusion": "H-PAID-FULL",
+      "notCurrent": [
+        "H-PARTIAL",
+        "H-UNPAID"
+      ],
+      "unsupported": [
+        "H-PARTIAL",
+        "H-UNPAID"
+      ],
+      "invalidated": [
+        "XP1-01",
+        "XP1-02",
+        "XP1-03"
+      ]
+    }
+  ]
+}

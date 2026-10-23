@@ -30,6 +30,7 @@ export interface TimelineEntry {
 const STAGE_KEY = "evidence-desk.stage";
 const RUN_SCHEMA = "evidence-desk.run.v1";
 const RECOMPUTE_SCHEMA = "evidence-desk.recompute.v1";
+const EXCLUSION_SCHEMA = "evidence-desk.exclusion.v1";
 
 export function buildTimeline(input: {
   events: readonly CognitiveEvent[];
@@ -114,12 +115,18 @@ export function buildTimeline(input: {
       }
       case "memory.recorded": {
         const data = objects.get(payload.objectId)?.data;
+        if (data?.schema === EXCLUSION_SCHEMA) {
+          entries.push({ ...base, kind: "evidence", recordId: String(data.recordId), significant: true,
+            title: `${String(data.recordId)} withdrawn before assessment`,
+            detail: `Reason: ${String(data.reason)}.${data.lastError ? ` Its last assessment had failed: ${String(data.lastError)}.` : ""} It is not assessed and has no effect on beliefs.` });
+          break;
+        }
         if (data?.schema === RECOMPUTE_SCHEMA) {
           const recomputation = data as unknown as Recomputation;
           entries.push({ ...base, kind: "recomputation", significant: true,
-            title: `Recomputation ${recomputation.version}: ${recomputation.hypotheses.map((item) => item.key).join(", ")} rebuilt from evidence that still counts`,
+            title: `Recomputation ${recomputation.version}: ${recomputation.hypotheses.map((item) => `${item.key} ${item.mode === "extended" ? "revised" : "rebuilt"}`).join(", ")} from evidence that still counts`,
             detail: recomputation.hypotheses.map((item) => `${item.key} was ${item.previous.status} ${num(item.previous.confidence)}; ${item.cause}.`
-              + ` Replayed: ${item.replayed.join(", ") || "nothing (prior only)"}.`).join(" ") });
+              + (item.mode === "extended" ? ` Applied: ${item.replayed.join(", ")}.` : ` Replayed: ${item.replayed.join(", ") || "nothing (prior only)"}.`)).join(" ") });
           break;
         }
         const snapshot = data as unknown as RunSnapshot | undefined;

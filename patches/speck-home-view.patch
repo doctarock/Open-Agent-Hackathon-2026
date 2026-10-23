@@ -1,0 +1,177 @@
+diff --git a/README.md b/README.md
+index 0b8a6a3..95b3321 100644
+--- a/README.md
++++ b/README.md
+@@ -89,7 +89,7 @@ node dist/server.js            # the interface on http://127.0.0.1:4310
+ node dist/cli.js chat "Hello"  # one message on the default path
+ ```
+ 
+-Models and roles are configured in `data/genesis-runtime/model-processors.json`. Settings and the conversation are kept under `data/`; override the database with `SPECK_DB_PATH`.
++Models and roles are configured in `data/genesis-runtime/model-processors.json`. Settings and the conversation are kept under `data/`; override the database with `SPECK_DB_PATH`. `SPECK_HOME_VIEW` sets the view the interface opens on and returns to: `world` (the default), a panel such as `tasks`, or a plugin tab as `plugin:<pluginId>:<tabId>`, which is then placed first in the rail.
+ 
+ Plugins are discovered only below this repository's `plugins/` directory. They load without hashing by default. To lock them, set `"mode": "allowlist"` with module hashes in `plugins/.runtime/plugin-trust.json`.
+ 
+diff --git a/public/index.html b/public/index.html
+index 200f3a5..506a5b0 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -14,7 +14,7 @@
+   <canvas id="ambientCanvas" aria-hidden="true"></canvas>
+   <div class="shell">
+     <header class="topbar">
+-      <button class="brand" data-view="world" aria-label="Return to workspace">
++      <button id="brandButton" class="brand" aria-label="Return to the home view">
+         <span class="brand-mark"><i></i><i></i><i></i></span>
+         <span><strong>Speck</strong><small>living workspace</small></span>
+       </button>
+@@ -36,6 +36,7 @@
+     </header>
+ 
+     <nav class="rail" aria-label="Workspace views">
++      <div id="homeRail" class="plugin-rail"></div>
+       <button class="rail-button active" data-view="world"><span>✦</span><small>World</small></button>
+       <button class="rail-button" data-view="tasks"><span>◎</span><small>Queue</small><b id="taskBadge">0</b></button>
+       <button class="rail-button" data-view="threads"><span>≋</span><small>Threads</small></button>
+diff --git a/public/speck.js b/public/speck.js
+index 955884b..6c0908e 100644
+--- a/public/speck.js
++++ b/public/speck.js
+@@ -1,15 +1,16 @@
+ // The Speck interface: startup. Everything else lives in ./ui/.
+ import { createWorldScene } from "./world-3d.js";
+ import { createMemoryScene } from "./memory-3d.js";
+-import { $, $$, scenes } from "./ui/core.js";
+-import { refreshWorkspace, setWorldMode, selectMemory, activateWorldEntity, describeWorldEntity, describeMemory, setView, initializeAmbientCanvas } from "./ui/workspace.js";
++import { state, $, $$, scenes, jsonFetch } from "./ui/core.js";
++import { refreshWorkspace, setWorldMode, selectMemory, activateWorldEntity, describeWorldEntity, describeMemory, setView, openHomeView, initializeAmbientCanvas } from "./ui/workspace.js";
+ import { openTaskDialog, createTask } from "./ui/tasks.js";
+ import { submitQuickPrompt, resizeQuickPrompt } from "./ui/conversation.js";
+ import { initializeVoice, toggleVoice } from "./ui/voice.js";
+ 
+ $$('[data-view]').forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+ $$('[data-world-mode]').forEach((button) => button.addEventListener("click", () => setWorldMode(button.dataset.worldMode)));
+-$("#closePanelButton").addEventListener("click", () => setView("world"));
++$("#brandButton").addEventListener("click", openHomeView);
++$("#closePanelButton").addEventListener("click", openHomeView);
+ $("#newTaskButton").addEventListener("click", openTaskDialog);
+ $("#speckSprite").addEventListener("click", openTaskDialog);
+ $("#cancelTaskButton").addEventListener("click", () => $("#taskDialog").close());
+@@ -52,4 +53,12 @@ try {
+ }
+ initializeAmbientCanvas();
+ initializeVoice();
+-refreshWorkspace({ quiet: true });
++startWorkspace();
++
++// The configured home view (SPECK_HOME_VIEW) opens once the plugins are known.
++async function startWorkspace() {
++  const settings = await jsonFetch("/api/ui/settings").catch(() => ({}));
++  if (typeof settings.homeView === "string" && settings.homeView) state.homeView = settings.homeView;
++  await refreshWorkspace({ quiet: true });
++  if (state.view === "world") openHomeView();
++}
+diff --git a/public/ui/core.js b/public/ui/core.js
+index 369b2b8..b0fcdbc 100644
+--- a/public/ui/core.js
++++ b/public/ui/core.js
+@@ -2,7 +2,7 @@
+ 
+ export const state = {
+   tasks: [], files: [], events: [], cron: [], plugins: null, memoryGraph: { nodes: [], edges: [], truncated: false },
+-  view: "world", adminToken: "", selectedFileKind: "all", selectedFilePath: "", filePreview: null, selectedTaskId: "", queueTab: "queued", queuePaused: false, taskHistories: {}, taskCognition: {},
++  view: "world", homeView: "world", adminToken: "", selectedFileKind: "all", selectedFilePath: "", filePreview: null, selectedTaskId: "", queueTab: "queued", queuePaused: false, taskHistories: {}, taskCognition: {},
+   worldMode: localStorage.getItem("speck.worldMode") === "memory" ? "memory" : "world", selectedMemoryId: "",
+   systemTab: "overview", system: null, systemLoading: false, systemError: "",
+   conversation: loadConversation(), activeConversationTaskId: loadConversationTaskId(),
+diff --git a/public/ui/workspace.js b/public/ui/workspace.js
+index c3d5ad9..b552a3e 100644
+--- a/public/ui/workspace.js
++++ b/public/ui/workspace.js
+@@ -63,19 +63,35 @@ export function renderBadges() {
+   renderPluginRail();
+ }
+ 
+-// Each plugin primary tab is a view of its own in the rail.
++// Each plugin primary tab is a view of its own in the rail. A plugin tab that
++// is the home view goes first, above World.
+ export function renderPluginRail() {
+   const tabs = pluginPrimaryTabs();
+   const rail = $("#pluginRail");
+-  const key = tabs.map((tab) => `${pluginViewId(tab)}|${tab.title}`).join(",");
++  const homeRail = $("#homeRail");
++  const key = `${state.homeView}#${tabs.map((tab) => `${pluginViewId(tab)}|${tab.title}`).join(",")}`;
+   if (!rail || rail.dataset.key === key) return;
+   rail.dataset.key = key;
+-  rail.innerHTML = tabs.map((tab) => `<button class="rail-button ${state.view === pluginViewId(tab) ? "active" : ""}" data-view="${escapeHtml(pluginViewId(tab))}" title="${escapeHtml(tab.title)}">
+-    <span>${escapeHtml(String(tab.title || tab.id || "?").trim().charAt(0).toUpperCase())}</span><small>${escapeHtml(tab.title || tab.id)}</small></button>`).join("");
+-  $$("[data-view]", rail).forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
++  const button = (tab) => `<button class="rail-button ${state.view === pluginViewId(tab) ? "active" : ""}" data-view="${escapeHtml(pluginViewId(tab))}" title="${escapeHtml(tab.title)}">
++    <span>${escapeHtml(String(tab.title || tab.id || "?").trim().charAt(0).toUpperCase())}</span><small>${escapeHtml(tab.title || tab.id)}</small></button>`;
++  const isHome = (tab) => Boolean(homeRail) && pluginViewId(tab) === state.homeView;
++  rail.innerHTML = tabs.filter((tab) => !isHome(tab)).map(button).join("");
++  if (homeRail) homeRail.innerHTML = tabs.filter(isHome).map(button).join("");
++  for (const container of [rail, homeRail]) {
++    if (container) $$("[data-view]", container).forEach((item) => item.addEventListener("click", () => setView(item.dataset.view)));
++  }
+   if (state.view.startsWith("plugin:") && !tabs.some((tab) => pluginViewId(tab) === state.view)) setView("plugins");
+ }
+ 
++// The home view, once the plugin list is known. A plugin tab that is not
++// loaded leaves the world view showing.
++export function openHomeView() {
++  const home = state.homeView;
++  if (home === "world") return setView("world");
++  if (home.startsWith("plugin:") && !pluginPrimaryTabs().some((tab) => pluginViewId(tab) === home)) return setView("world");
++  setView(home);
++}
++
+ export function worldEntities() {
+   const visibleTaskIds = new Set(state.tasks.map((task) => task.id).filter(Boolean));
+   const tasks = state.tasks.map((task) => ({
+diff --git a/src/config.ts b/src/config.ts
+index f47a5d8..ea9086b 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -9,6 +9,9 @@ export interface SpeckConfig {
+   pluginImportMode: "allowlist" | "permissive";
+   host: string;
+   port: number;
++  // The interface view Speck opens on and returns to: "world", a panel such as
++  // "tasks", or a plugin tab as "plugin:<pluginId>:<tabId>".
++  homeView: string;
+   workingMemoryCapacity: number;
+   recoverInterruptedWorkers: boolean;
+   memoryActivation: MemoryActivationConfig;
+@@ -571,6 +574,7 @@ export function loadConfig(overrides: SpeckConfigOverrides = {}): SpeckConfig {
+     pluginImportMode: overrides.pluginImportMode ?? (/^permissive$/i.test(process.env.SPECK_PLUGIN_IMPORT_MODE ?? "") ? "permissive" : "allowlist"),
+     host: overrides.host ?? process.env.SPECK_HOST ?? "127.0.0.1",
+     port: overrides.port ?? (Number.isInteger(configuredPort) && configuredPort > 0 ? configuredPort : 4310),
++    homeView: overrides.homeView ?? (process.env.SPECK_HOME_VIEW?.trim() || "world"),
+     workingMemoryCapacity: overrides.workingMemoryCapacity ?? positiveInteger(process.env.SPECK_WORKING_MEMORY_CAPACITY, 4),
+     recoverInterruptedWorkers: overrides.recoverInterruptedWorkers ?? !/^(0|false|no)$/i.test(process.env.SPECK_RECOVER_INTERRUPTED ?? "true"),
+     memoryActivation: {
+diff --git a/src/genesis-host.ts b/src/genesis-host.ts
+index dcf2cb6..869b510 100644
+--- a/src/genesis-host.ts
++++ b/src/genesis-host.ts
+@@ -154,6 +154,7 @@ export async function createGenesisSpeckHost(
+ 
+   await pluginManager.registerRoutes();
+   app.get("/api/health", (_req, res) => res.json({ ok: true }));
++  app.get("/api/ui/settings", (_req, res) => res.json({ homeView: config.homeView }));
+ 
+   return {
+     app,
+diff --git a/src/tests/genesis-host.test.ts b/src/tests/genesis-host.test.ts
+index fc691e1..6082e7f 100644
+--- a/src/tests/genesis-host.test.ts
++++ b/src/tests/genesis-host.test.ts
+@@ -144,6 +144,8 @@ test("Speck hosts Genesis plugins and exposes host-owned cognitive capabilities"
+       body: Buffer.from("replacement")
+     });
+     assert.equal(duplicateResponse.status, 409);
++    assert.deepEqual(await (await fetch(`${origin}/api/ui/settings`, { headers: { origin } })).json(), { homeView: "world" });
++    assert.equal(loadConfig({ homeView: "plugin:compat-test:main" }).homeView, "plugin:compat-test:main");
+   } finally {
+     if (priorExternalPluginDirectory === undefined) delete process.env.GENESIS_PLUGIN_DIR;
+     else process.env.GENESIS_PLUGIN_DIR = priorExternalPluginDirectory;

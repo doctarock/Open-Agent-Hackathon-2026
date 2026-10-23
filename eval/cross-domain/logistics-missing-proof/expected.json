@@ -1,0 +1,24 @@
+{
+  "id": "logistics-missing-proof",
+  "domain": "logistics",
+  "family": null,
+  "order": "as recorded",
+  "category": "missing evidence",
+  "description": "A carrier scan against a customer's denial, and the proof that would settle it does not exist.",
+  "checkpoints": [
+    {
+      "afterStage": "dispute",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "proof-requested",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    }
+  ]
+}

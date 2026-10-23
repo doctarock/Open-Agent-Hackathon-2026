@@ -1,11 +1,15 @@
-import type { ModelProcessor, ModelProcessorDescriptor, ModelRequest, ProcessorCompletion, SpeckRuntime, StructuredOutputContract } from "#speck";
+import { ModelRegistry, type ModelProcessor, type ModelProcessorDescriptor, type ModelRequest, type ProcessorCompletion, type SpeckRuntime, type StructuredOutputContract } from "#speck";
 import type { NemotronConfig } from "../config.js";
 import type { EvidenceRecord } from "../evidence/types.js";
 import type { HypothesisSpec } from "../scenario.js";
 import { describeJudgments, ruleJudgments } from "./rules.js";
-import type { BatchAssessment, Explanation, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "./types.js";
+import type { BatchAssessment, Explanation, ModelCallTrace, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "./types.js";
 
 export const NEMOTRON_PROCESSOR_ID = "nemotron";
+// How every structured call is made: low temperature, and at most two
+// attempts through Speck's registry (a reply that fails its contract is retried once).
+const TEMPERATURE = 0.1;
+const MAX_ATTEMPTS = 2;
 
 // One OpenAI-compatible chat completion against the Nemotron endpoint,
 // plugged into Speck's model registry. Speck's built-in processor caps output
@@ -15,20 +19,23 @@ export const NEMOTRON_PROCESSOR_ID = "nemotron";
 // records the model name the endpoint reports serving.
 export class NemotronProcessor implements ModelProcessor {
   readonly servedModels = new Set<string>();
-  // Every HTTP call as measured here: wall-clock latency and whether the
-  // endpoint returned answer content (contract validity is judged later).
-  readonly calls: Array<{ latencyMs: number; answered: boolean }> = [];
+  // Every HTTP call as measured here: wall-clock latency, whether the
+  // endpoint returned answer content (contract validity is judged later), and
+  // the model name the response reported.
+  readonly calls: Array<{ latencyMs: number; answered: boolean; servedModel: string | null }> = [];
+  private lastServed: string | null = null;
 
   constructor(private readonly config: NemotronConfig) {}
 
   async infer(request: ModelRequest): Promise<ProcessorCompletion> {
     const began = performance.now();
+    this.lastServed = null;
     try {
       const completion = await this.complete(request);
-      this.calls.push({ latencyMs: Math.round(performance.now() - began), answered: true });
+      this.calls.push({ latencyMs: Math.round(performance.now() - began), answered: true, servedModel: this.lastServed });
       return completion;
     } catch (error) {
-      this.calls.push({ latencyMs: Math.round(performance.now() - began), answered: false });
+      this.calls.push({ latencyMs: Math.round(performance.now() - began), answered: false, servedModel: this.lastServed });
       throw error;
     }
   }
@@ -58,7 +65,7 @@ export class NemotronProcessor implements ModelProcessor {
     const text = await response.text();
     if (!response.ok) throw new Error(`Nemotron endpoint returned HTTP ${response.status}: ${text.slice(0, 300)}`);
     const body = JSON.parse(text);
-    if (typeof body.model === "string") this.servedModels.add(body.model);
+    if (typeof body.model === "string") { this.servedModels.add(body.model); this.lastServed = body.model; }
     const choice = body.choices?.[0];
     const content = typeof choice?.message?.content === "string" ? choice.message.content : "";
     if (!content.trim()) {
@@ -81,15 +88,21 @@ export class NemotronProcessor implements ModelProcessor {
 export class NemotronReasoner implements Reasoner {
   readonly kind = "nemotron" as const;
   private readonly processor: NemotronProcessor;
+  // Speck's model registry class, privately: Speck's contract validation and
+  // retries apply to every call, but the model is not added to the Speck
+  // runtime's own registry, where Speck's other components (its chat, for
+  // one) could select it. That matters when Evidence Desk runs inside Speck.
+  private readonly registry = new ModelRegistry();
+  private lastTrace: ModelCallTrace | null = null;
 
-  constructor(private readonly runtime: SpeckRuntime, private readonly config: NemotronConfig) {
+  constructor(_runtime: SpeckRuntime, private readonly config: NemotronConfig) {
     this.processor = new NemotronProcessor(config);
     if (!this.problem()) {
       const descriptor: ModelProcessorDescriptor = {
         id: NEMOTRON_PROCESSOR_ID, provider: "openai-compatible", model: config.model,
         tier: 2, contextSize: 32_768, specialties: ["reasoning"], enabled: true
       };
-      runtime.registerModelProcessor(descriptor, this.processor);
+      this.registry.register(descriptor, this.processor);
     }
   }
 
@@ -109,15 +122,24 @@ export class NemotronReasoner implements Reasoner {
     if (!input.batch.length) return { judgments, notes, narrative: "" };
     const ids = input.batch.map((record) => record.id);
     const keys = input.hypotheses.map((hypothesis) => hypothesis.key);
-    const response = await this.runtime.modelRegistry.infer({
-      processorId: NEMOTRON_PROCESSOR_ID,
-      prompt: assessmentPrompt(input.chunkPrompt, input.batch, input.hypotheses),
-      contract: relationsContract(ids, keys),
-      temperature: 0.1,
-      timeoutMs: this.config.timeoutMs,
-      maxAttempts: 2
-    });
+    const contract = relationsContract(ids, keys);
+    const trace = this.beginTrace("relation-judgments", contract.name, ids.length * keys.length);
+    let response;
+    try {
+      response = await this.registry.infer({
+        processorId: NEMOTRON_PROCESSOR_ID,
+        prompt: assessmentPrompt(input.chunkPrompt, input.batch, input.hypotheses),
+        contract,
+        temperature: TEMPERATURE,
+        timeoutMs: this.config.timeoutMs,
+        maxAttempts: MAX_ATTEMPTS
+      });
+    } catch (error) {
+      this.lastTrace = trace.end("failed", error);
+      throw error;
+    }
     const structured = response.structured as { judgments: Array<Record<string, unknown>>; summary: string };
+    const counts = { returned: structured.judgments.length, neutral: 0, kept: 0, discardedUnknown: 0, ruleKept: 0, repeated: 0 };
     const answered = new Set<string>();
     for (const raw of structured.judgments) {
       const recordId = String(raw.evidence_id);
@@ -126,13 +148,16 @@ export class NemotronReasoner implements Reasoner {
       const key = keys.find((candidate) => named === candidate || named.startsWith(`${candidate}:`)) ?? named;
       const relation = String(raw.relation);
       if (!ids.includes(recordId) || !keys.includes(key)) {
+        counts.discardedUnknown += 1;
         notes.push(`Discarded a model judgment about unknown ${!ids.includes(recordId) ? `evidence "${recordId}"` : `hypothesis "${key}"`}.`);
         continue;
       }
       answered.add(recordId);
-      if (relation === "neutral") continue;
+      if (relation === "neutral") { counts.neutral += 1; continue; }
       const existing = judgments[recordId]!.find((judgment) => judgment.hypothesisKey === key);
       if (existing) {
+        if (existing.direction !== relation && existing.basis === "rule") counts.ruleKept += 1;
+        else counts.repeated += 1;
         if (existing.direction !== relation) {
           notes.push(existing.basis === "rule"
             ? `Model said ${recordId} ${relation} ${key}; kept the rule judgment (${existing.direction}${existing.decisive ? ", decisive" : ""}).`
@@ -149,25 +174,37 @@ export class NemotronReasoner implements Reasoner {
         basis: "model",
         rationale: String(raw.rationale ?? "").slice(0, 400)
       });
+      counts.kept += 1;
     }
     // A record the model said nothing about (not even "neutral") is left
     // unjudged rather than passed off as having no bearing; the desk keeps it
     // pending for the next run.
+    const unanswered: string[] = [];
     for (const id of ids) {
       if (answered.has(id)) continue;
       delete judgments[id];
+      unanswered.push(id);
       notes.push(`The model returned no judgment for ${id}.`);
     }
+    this.lastTrace = { ...trace.end("valid", null), judgments: { ...counts, unanswered } };
     const lines = input.batch.filter((record) => judgments[record.id]).map((record) => describeJudgments(record, judgments[record.id]!));
     return { judgments, notes, narrative: [String(structured.summary ?? "").trim(), ...lines].filter(Boolean).join("\n") };
   }
 
   async explain(prompt: string): Promise<Explanation> {
     this.assertReady();
-    const response = await this.runtime.modelRegistry.infer({
-      processorId: NEMOTRON_PROCESSOR_ID, prompt, contract: explanationContract,
-      temperature: 0.1, timeoutMs: this.config.timeoutMs, maxAttempts: 2
-    });
+    const trace = this.beginTrace("explanation", explanationContract.name, 0);
+    let response;
+    try {
+      response = await this.registry.infer({
+        processorId: NEMOTRON_PROCESSOR_ID, prompt, contract: explanationContract,
+        temperature: TEMPERATURE, timeoutMs: this.config.timeoutMs, maxAttempts: MAX_ATTEMPTS
+      });
+    } catch (error) {
+      this.lastTrace = trace.end("failed", error);
+      throw error;
+    }
+    this.lastTrace = trace.end("valid", null);
     const structured = response.structured as { explanation: string; cited_evidence: unknown[]; stated_conclusion: string; stated_established: boolean };
     return {
       text: String(structured.explanation), citedEvidence: structured.cited_evidence.map(String),
@@ -175,12 +212,51 @@ export class NemotronReasoner implements Reasoner {
     };
   }
 
+  takeTrace(): ModelCallTrace | null {
+    const trace = this.lastTrace;
+    this.lastTrace = null;
+    return trace;
+  }
+
+  // Measures one call: Speck's registry counters and this processor's HTTP
+  // calls before and after it, so retries and contract rejections are the
+  // registry's own counts for this call alone.
+  private beginTrace(purpose: ModelCallTrace["purpose"], contract: string, requiredPairs: number) {
+    const before = this.registrySnapshot();
+    const firstCall = this.processor.calls.length;
+    return {
+      end: (outcome: ModelCallTrace["outcome"], error: unknown): ModelCallTrace => {
+        const after = this.registrySnapshot();
+        const calls = this.processor.calls.slice(firstCall);
+        return {
+          purpose, processor: NEMOTRON_PROCESSOR_ID, requestedModel: this.config.model, endpoint: this.config.baseUrl,
+          servedModels: [...new Set(calls.flatMap((call) => (call.servedModel ? [call.servedModel] : [])))],
+          constraints: {
+            contract, requiredPairs, temperature: TEMPERATURE, maxAttempts: MAX_ATTEMPTS,
+            maxTokens: this.config.maxTokens, reasoningEffort: this.config.reasoningEffort || null
+          },
+          attempts: after.calls - before.calls,
+          contractFailures: after.contractFailures - before.contractFailures,
+          transportFailures: after.transportFailures - before.transportFailures,
+          httpCalls: calls.map((call) => ({ latencyMs: call.latencyMs, answered: call.answered })),
+          outcome,
+          error: error === null ? null : error instanceof Error ? error.message : String(error)
+        };
+      }
+    };
+  }
+
+  private registrySnapshot(): { calls: number; contractFailures: number; transportFailures: number } {
+    const snapshot = this.registry.list().find((processor) => processor.id === NEMOTRON_PROCESSOR_ID);
+    return { calls: snapshot?.calls ?? 0, contractFailures: snapshot?.contractFailures ?? 0, transportFailures: snapshot?.transportFailures ?? 0 };
+  }
+
   usage(): ReasonerUsage | null {
-    const snapshot = this.runtime.modelRegistry.list().find((processor) => processor.id === NEMOTRON_PROCESSOR_ID);
+    const snapshot = this.registry.list().find((processor) => processor.id === NEMOTRON_PROCESSOR_ID);
     return snapshot
       ? {
           calls: snapshot.calls, successes: snapshot.successes, failures: snapshot.failures, lastError: snapshot.lastError,
-          servedModels: [...this.processor.servedModels], httpCalls: [...this.processor.calls]
+          servedModels: [...this.processor.servedModels], httpCalls: this.processor.calls.map((call) => ({ latencyMs: call.latencyMs, answered: call.answered }))
         }
       : null;
   }

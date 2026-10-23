@@ -1,11 +1,33 @@
 # Open-Agent-Hackathon-2026 — Speck Evidence Desk
 
-Evidence Desk investigates a disputed delivery whose evidence conflicts and changes over time.
-It shows why persistent cognition helps: when a later record contradicts an earlier claim, the
-system revises what it believes, says which evidence caused the revision, and keeps the old
-belief on record as refuted rather than presenting both claims side by side.
+> **For judges:** Evidence Desk is a **Speck plugin**. Start Speck (`npm run speck`) and open the
+> **Evidence** tab in its rail.
+> - [docs/SUBMISSION.md](docs/SUBMISSION.md): what it does, verified sponsor use, and results,
+>   in one page.
+> - [DEMO.md](DEMO.md): the 3-minute walkthrough.
+> - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
+>   could not observe.
 
-This is the first vertical slice: one scenario, one plain web page, one investigation loop.
+Evidence Desk investigates a disputed delivery whose evidence conflicts and changes over time.
+When a later record contradicts or replaces an earlier claim, it:
+- revises what it believes;
+- says which evidence caused the revision;
+- keeps the old belief on record as history, rather than presenting both claims side by side.
+
+Its evaluation finds no measurable accuracy difference between keeping beliefs across runs and
+recomputing them from scratch (see *Evaluation*). What it does provide is an auditable record of
+how and why each conclusion changed.
+
+It runs inside Speck as a plugin:
+- **A case is a Speck worker** in Speck's own database, beside Speck's other work.
+- **The page is a tab** in Speck's interface, and it is the interface's home: Speck opens on it.
+- **One project-local change to Speck:** a general `SPECK_HOME_VIEW` setting chooses the view
+  Speck's interface opens on and returns to. It is kept in this repository as
+  `patches/speck-home-view.patch` and applied by `npm run setup`. It is never committed to Speck,
+  and the submodule stays pinned to upstream Speck. Everything else Evidence Desk needs is
+  Speck's existing plugin system.
+
+A standalone server serving the same page remains, for development and as a fallback.
 
 ## The scenario
 
@@ -37,21 +59,140 @@ With the deterministic rule assessor the outcome is:
 ## Architecture
 
 ```
-            UI (public/, plain JS)  ──HTTP──  src/server.ts
-                                                  │
-                                    src/investigation/desk.ts (EvidenceDesk)
-             ┌───────────────────────┬────────────┼─────────────────────────┐
-     EvidenceProvider          Meterless Markovian      Reasoner                 Speck runtime
-  fixture │ Zetaris (live)   engine (vendored, runs      rules │ Nemotron      (submodule speck/)
+  Speck (speck/; npm run speck, home view = the Evidence tab)
+  ├─ Speck's interface ── Evidence tab, first in the rail (plugin/ui/evidence-desk-ui.js → public/app.js)
+  └─ plugin: speck/plugins/evidence-desk/   (installed by npm run plugin:install)
+       plugin/evidence-desk-plugin.ts  ── routes under /api/plugins/evidence-desk/cases/<case>
+                    │                       (src/investigation/api.ts, shared with src/server.ts)
+       src/investigation/desk.ts (EvidenceDesk.attach to Speck's own runtime)
+        ┌───────────────────────┬────────────┼─────────────────────────┐
+  EvidenceProvider          Meterless Markovian      Reasoner                 Speck runtime
+  fixture │ Zetaris (live)   engine (vendored, runs      rules │ Nemotron      (the one Speck runs)
   src/evidence/            the investigation loop)   src/reasoning/          belief, memory, events
+
+  Standalone fallback: src/server.ts serves the same page and API at :4320 (EvidenceDesk.open,
+  with its own Speck runtime on data/evidence-desk.sqlite).
 ```
+
+**How it fits into Speck.** Speck discovers plugins in its `plugins/` folder and hands each one
+its runtime, with routes and a tab in its interface.
+
+| What Speck required | What Evidence Desk does |
+|---|---|
+| Plugins load only from `speck/plugins/`, if their entry module's hash is in Speck's allowlist (`speck/plugins/.runtime/plugin-trust.json`) | `npm run plugin:install` copies the compiled plugin and its data there. It adds the entry module's hash to the allowlist, which is Speck's documented approval step. That allowlist file is the only tracked Speck file it changes. |
+| Speck counts workers in `created` or `ready` as queued tasks, and pauses background cognition for all workers while any is queued | Each case worker moves `created → ready → waiting` through Speck's own transitions. In Speck's Task queue the cases show under **Waiting**. |
+| Speck's background embedding job can write a stale copy of an object over a concurrent revision (demonstrated in `test/speck-compat.test.ts`) | Every change to a case takes Speck's foreground lease and waits for any background job already running. Background cognition then runs over the cases like any other worker. |
+| Speck's chat could select any model in its runtime registry | Nemotron goes through a private instance of Speck's `ModelRegistry` class: the same contract validation and retries, but no model is added to Speck. |
+| Speck's interface always opened on its World view, with plugin tabs after Speck's own | The one change to Speck's code, kept in this project as `patches/speck-home-view.patch` (applied by `npm run speck:patch`, part of `npm run setup`; never committed to Speck): `SPECK_HOME_VIEW` (default `world`) names the view the interface opens on and returns to (brand button, panel close). A plugin tab named there is placed first in the rail. `npm run speck` sets it to the Evidence tab; `SPECK_HOME_VIEW=world npm run speck` restores Speck's default. Speck's own tests cover the setting (`src/tests/genesis-host.test.ts`). |
 
 | Concern | Owner | How it is used |
 |---|---|---|
-| Cognition | **Speck** (`speck/`, unmodified, imported as `#speck`) | The case is a Speck worker. Hypotheses come from `proposeHypothesis`. Evidence goes into the ledger through `recordEvidence`, which caps reliability for model-judged evidence. The relations that currently take effect are applied through `reviseHypothesesFromEvidence`, which runs Speck's belief revision with decisive refutation. When invalidated evidence makes that necessary, a hypothesis is replaced and the relations are replayed (see *Revision* below). Withdrawals use `withdrawEvidence`. Ranking uses `rankHypotheses`. The released evidence stage is held with `setWorldState`, and each run's outcome is saved as episodic memory through `recordMemory`. The timeline is Speck's event log (`belief.revised`, `evidence.recorded`, …). Model calls go through Speck's model registry, which validates contracts and retries. All of this persists in one Speck SQLite database. |
+| Cognition | **Speck** (`speck/`, imported as `#speck`; its cognition is unmodified) | The case is a Speck worker. Hypotheses come from `proposeHypothesis`. Evidence goes into the ledger through `recordEvidence`, which caps reliability for model-judged evidence. The relations that currently take effect are applied through `reviseHypothesesFromEvidence`, which runs Speck's belief revision with decisive refutation. When invalidated evidence makes that necessary, a hypothesis is replaced and the relations are replayed (see *Revision* below). Withdrawals use `withdrawEvidence`. Ranking uses `rankHypotheses`. The released evidence stage is held with `setWorldState`, and each run's outcome is saved as episodic memory through `recordMemory`. The timeline is Speck's event log (`belief.revised`, `evidence.recorded`, …). Model calls go through Speck's model registry, which validates contracts and retries. All of this persists in one Speck SQLite database. |
 | Federated evidence | **Zetaris** | `EvidenceProvider` interface with a fixture implementation and a live Zetaris adapter (`src/evidence/zetaris-provider.ts`). The adapter uses the platform's REST API (`/api/auth/login`, then `/api/proxy/query/sql/start`) with one SELECT per source table, configured in `config/zetaris-queries.json`. `EVIDENCE_MODE` selects the mode explicitly, and there is never a fallback. Every record carries its retrieval mode, table and Zetaris query token. |
 | Execution | **Meterless** Markovian engine | The Apache-2.0 reference implementation, vendored unmodified at `vendor/meterless-markovian/` (pinned commit and hashes are in its `NOTICE.md`). Each run is a `Markovian.run`. The injected generator assesses one bounded batch of new evidence per chunk and ends each chunk with a `[STATE_CHECKPOINT]` carryover block, or `[TASK_COMPLETE]` on the last one. `maxChunks` caps the run. Run history goes to `data/meterless/history.json`. Progress events stream to the UI. In Nemotron mode, the reflection pass produces the model's explanation. |
-| Reasoning model | **NVIDIA Nemotron** | `src/reasoning/nemotron.ts`: a model processor for any OpenAI-compatible chat endpoint, registered into Speck's model registry. The model judges how each evidence item bears on each hypothesis, and decisive rules still take precedence. Speck records model-judged evidence as `model`-provenance and caps its reliability at 0.4. The explanation's citations are checked against the real evidence ids. The model name the endpoint reports serving is recorded with every run. |
+| Reasoning model | **NVIDIA Nemotron** | `src/reasoning/nemotron.ts`: a model processor for any OpenAI-compatible chat endpoint, called through a private instance of Speck's `ModelRegistry` (Speck's contract validation and retries, without adding a model to Speck's own runtime). The model judges how each evidence item bears on each hypothesis, and decisive rules still take precedence. Speck records model-judged evidence as `model`-provenance and caps its reliability at 0.4. The explanation's citations are checked against the real evidence ids. The model name the endpoint reports serving is recorded with every run. |
+
+## Sponsor integrations and the execution trace
+
+The **Execution trace** panel on the page (and `GET /api/trace`) shows, for each run, what each
+technology actually did. It is read back from saved state only, so it is the same after a
+restart, and nothing in it is simulated:
+
+1. **Evidence.** The provider's record of the fetch.
+2. **Meterless.** The engine's run record, checked against the engine's own `history.json`.
+3. **Assessment, per chunk.** Each chunk's assessment, saved in Speck before the chunk's
+   evidence entered the ledger, with the Nemotron call behind it.
+4. **Speck.** Speck's event log for the run.
+
+Evidence Desk's own steps are labelled **EVIDENCE DESK**, never as a sponsor's: reconciliation,
+recovery after an interrupted run, withdrawals and recomputations.
+
+### Zetaris
+
+- **Code:** `src/evidence/zetaris-provider.ts`.
+- **What it does:** logs in (`/api/auth/login`), then sends one SELECT per source table through
+  `/api/proxy/query/sql/start` (tables in `config/zetaris-queries.json`). Each record carries the
+  table and Zetaris query token it came from.
+- **Shown in the trace:** every SELECT of the run, including tables that returned no rows, with
+  row count, measured latency and query token.
+- **Fixture mode is unmistakable.** It is labelled FIXTURE FILE - NOT ZETARIS in the header, on
+  every record and in the trace, and the trace says no Zetaris query was made. There is never a
+  fallback: if Zetaris fails, the API returns 502 and nothing is recorded.
+- **Verified:**
+  - against a local Zetaris platform (`npm run zetaris:check`, and live runs on 2026-10-22);
+  - in tests, through a stand-in HTTP layer that exercises the real adapter.
+
+### Meterless
+
+- **Engine:** the Markovian reference engine, `@meterless/markovian-reference@0.1.0`, vendored
+  unmodified from upstream commit `1742dec` (`vendor/meterless-markovian/NOTICE.md`).
+- **Invocation:** one `Markovian.run` per investigation run.
+  - Each chunk is one call to Evidence Desk's injected generator, which assesses one batch of
+    evidence and returns a `[STATE_CHECKPOINT]` carryover.
+  - When a model is configured, the engine's reflection pass produces the explanation.
+- **Shown in the trace:**
+  - the engine's run id, status, and chunks used out of the maximum;
+  - per chunk, the estimated tokens and whether carryover came in;
+  - whether the run appears in the engine's `history.json`, matched by id and the engine's own
+    timestamp. The engine numbers runs `run-1`, `run-2` and so on in each process, so the id
+    alone is ambiguous after a restart.
+- **Not Meterless:** Meterless does not do Evidence Desk's recovery, reconciliation or
+  withdrawal, and the trace does not attribute them to it.
+
+### NVIDIA Nemotron (local)
+
+- **Code:** `src/reasoning/nemotron.ts`, an OpenAI-compatible chat client registered as a
+  processor in Speck's model registry.
+- **Verified with:** `nemotron-3-nano:4b` served by **local Ollama** (`npm run model:check`
+  confirms the served model). The trace records, for every call, the model name the endpoint
+  reported.
+- **How judgments are constrained and validated:**
+  - Speck validates each reply against a contract with enumerated evidence ids and hypothesis
+    keys, covering every required (evidence, hypothesis) pair.
+  - Settings: temperature 0.1, at most 2 attempts (a reply that fails the contract is retried
+    once), and the configured output budget and reasoning effort.
+  - Unknown ids are discarded, and a deterministic decisive rule always wins over the model.
+  - A record the model says nothing about stays pending.
+  - Speck caps model-judged evidence at reliability **0.4**. The evidence list shows both the
+    source reliability and the 0.4 Speck applied.
+  - Explanation citations are checked against real record ids, and an explanation that
+    disagrees with Speck's state is flagged.
+- **Shown in the trace, per call:**
+  - attempts and contract rejections;
+  - per-HTTP-call latency;
+  - how many judgments were returned, kept, neutral, already judged, discarded, or overruled
+    by a rule.
+- **Not demonstrated:** the client also accepts NVIDIA's hosted API (see *Configuration*), but
+  only local Ollama was used here. No hosted NVIDIA inference or other NVIDIA infrastructure is
+  claimed.
+
+### Speck
+
+- **Repository:** `speck/`, a submodule pinned to upstream Speck `29d5bb3`. This project patches
+  its working tree with one change, the `SPECK_HOME_VIEW` interface setting
+  (`patches/speck-home-view.patch`). Belief revision, memory and the event log are as upstream.
+- **Role:** holds the case, beliefs and history.
+- **Shown in the trace, per chunk:** evidence recorded, every belief revision (marked when the
+  belief has since been replaced), and recomputations.
+
+### Cursor
+
+The team reports developing Evidence Desk with Cursor. It is a development tool, not a runtime
+integration, and nothing in this repository records its use.
+
+### What the trace flags
+
+These appear as badges on each run's summary line:
+- pending and failed assessments;
+- model retries;
+- invented citations;
+- runs recovered after an interruption;
+- recomputations.
+
+A run that was interrupted before it finished appears as **Interrupted run**, with no Meterless
+record (the engine never recorded it) and the assessments it had saved.
+
+## How conclusions are derived
 
 The conclusion always comes from Speck's belief state (`src/investigation/conclusion.ts`):
 - **supported:** the top live hypothesis is Speck-`supported`/`confirmed` and has supporting evidence.
@@ -123,8 +264,20 @@ still valid:
     `superseded` and keeps its revision history. A recomputation record says what stopped
     counting and why.
   - Hypotheses that did not depend on the change are left alone.
-- **Withdrawal.** An investigator can withdraw an assessed record (for example, it belongs to
-  another case) with **Withdraw** on the evidence list, or `POST /api/evidence/withdraw`.
+- **Withdrawal.** An investigator can withdraw a record with **Withdraw** on the evidence list,
+  or with `POST /api/evidence/withdraw` (`{ "recordId", "reason" }`).
+  - **An assessed record** stops counting, and beliefs that rested on it are recomputed. An
+    example is a record that belongs to another case.
+  - **A pending or failed record** is *withdrawn before assessment*: it is never assessed, no
+    judgment is recorded or invented for it, current beliefs do not change, and it supersedes
+    nothing. Without this, one record whose assessment always fails would stall every later
+    record in the case.
+  - Withdrawing a record again does nothing. Withdrawing one that is not in the case returns
+    HTTP 400 with the reason.
+- **Whole-record replacement is explained.** A superseding record replaces the whole earlier
+  record. "Why this changed" lists which of the earlier record's facts no counting record
+  restates, which of its judgments stopped applying, and what that changed. For example, after
+  the bank return: "H-PARTIAL is no longer ruled out: EV-BNK-101 was its decisive refutation".
 
 Every current adjustment therefore traces to a record and a judgment. The page shows each one
 with its basis (deterministic rule or model interpretation) and the confidence change it made.
@@ -133,39 +286,137 @@ changed" and marked as history, not as current reasoning. The 0.4 cap on model-j
 is unchanged. A record with any model judgment is capped as a whole, so a withheld model judgment
 cannot escape the cap later.
 
+### Recovery from interrupted runs (Build 3.1)
+
+- **Saving judgments.** Each chunk's judgments are saved in Speck, as an
+  `evidence-desk.assessment.v1` memory, *before* any of that chunk's evidence enters the ledger.
+  A process that dies mid-run therefore never leaves a recorded record without its judgments.
+  - A record that was judged but not yet recorded is simply assessed again.
+  - A failed assessment is saved too, with its error.
+- **Status of each record.** Every visible record is `pending`, `failed` (retried by the next run)
+  or `completed`.
+- **Reconciling.** Current beliefs are reconciled with the ledger when the desk opens, at the start
+  of each run, and again at the end of a run if a chunk failed mid-reconciliation.
+  - Reconciling is idempotent: a half-replayed rebuild is completed by appending, not rebuilt
+    again.
+  - If beliefs ever lag the ledger, the conclusion says so instead of presenting them as current.
+- **What the next run reports.** It says which interrupted runs it recovered, and which of their
+  records were kept or assessed again. Withdrawing a record a second time does nothing.
+- **Recomputation records come first.** A recomputation record is written *before* any
+  hypothesis is replaced. Every replacement therefore points at the record that explains it, and
+  versions are never reused.
+  - If an interruption stops a replacement after its record was written, a later recomputation
+    makes it.
+  - The earlier record then shows that entry as not carried out.
+  - `test/interruption.test.ts` kills the process at every Speck write of a run and of a
+    withdrawal. It then kills recovery again at several points, and checks that the case ends
+    as if it had never been interrupted.
+
 ## Setup
 
 Requires Node.js 22+ and git. From the repository root:
 
 ```bash
 git submodule update --init --recursive   # speck/ at the pinned commit
-npm run setup                             # npm ci here, npm ci + build in speck/
 cp .env.example .env                      # optional: defaults are fixture mode, no model
+npm run setup                             # npm ci here and in speck/, build Speck, install the plugin
 npm test                                  # build + all tests (no credentials needed)
-npm start                                 # http://127.0.0.1:4320
+npm run speck                             # Speck on http://127.0.0.1:4310, opening on the Evidence tab
 ```
 
-In the browser, use the buttons in this order:
+- **Where the case lives.** Inside Speck, each case is a worker in Speck's own database. Speck
+  stores that under `speck/data/` by default; set `SPECK_DB_PATH` to use another file.
+- **Plugin settings.** `speck/plugins/evidence-desk/.env` holds the plugin's settings. It is
+  copied from `.env` on the first install, and it is git-ignored.
+- **Changing settings.** Edit that file and restart Speck.
+- **Changing Evidence Desk's code.** Run `npm run plugin:install` again, then restart Speck.
+
+The tab offers two cases:
+- **Disputed delivery** follows the plugin's settings (live Zetaris and Nemotron, or fixtures).
+- **Bank return** always runs on its fixture with the rule assessor.
+
+**Standalone fallback.** `npm start` serves the same page on http://127.0.0.1:4320, outside
+Speck, with its own database at `data/evidence-desk.sqlite`.
+
+In the Evidence tab (or the standalone page), use the buttons in this order:
 1. **Run investigation**
 2. **Introduce prepared update**
 3. **Run investigation** again
 
 Then read the conclusion panel and the revision timeline.
 
+**Disputed delivery** (the default scenario), with rules in fixture mode:
+- Run 1 is *leading* H-DELIVERED.
+- After the update, run 2 is *supported* H-MISDELIVERED (0.70).
+- "Why this changed" shows that EV-CAR-003 no longer counts.
+
+**Bank return** (the held-out `correction-supersedes` case). It's the second case in the
+Evidence tab. On the standalone server, give it its own database so it doesn't share the
+disputed-delivery case:
+
+```bash
+EVIDENCE_DESK_SCENARIO=eval/scenarios/correction-supersedes EVIDENCE_DESK_DB=bank-return.sqlite npm start
+```
+
+- Run 1 is *supported* H-PAID.
+- After the update, run 2 is *supported* H-UNPAID (0.66).
+- "Why this changed" explains that the return replaced EV-BNK-101 whole, and that H-PARTIAL is
+  no longer ruled out.
+
+To try withdrawal, press **Withdraw** on a record and give a reason. Withdrawing EV-SUP-006 in the
+disputed-delivery case moves H-MISDELIVERED from supported 0.70 to leading 0.58.
+
+**Sponsor demo (live Zetaris and local Nemotron).** These steps need the local Zetaris platform
+and Ollama running.
+1. Check both services:
+   ```bash
+   npm run zetaris:check
+   npm run model:check
+   ```
+   `zetaris:check` should report 6 records for DISPUTE-1042. `model:check` should print the
+   served model, e.g. `nemotron-3-nano:4b`.
+2. Set `EVIDENCE_MODE=zetaris` and `REASONER=nemotron` in `speck/plugins/evidence-desk/.env`.
+   Then run `npm run speck` and open the Evidence tab's Disputed delivery case. (Standalone:
+   set them in `.env` and use `npm start`, after `npm run db:reset` for a clean case.)
+3. Check the header and records:
+   - the header shows **ZETARIS LIVE**, the Nemotron model and endpoint, and the Meterless
+     engine and commit;
+   - every record is labelled **Zetaris live**, with its table and query token.
+4. Run, introduce the update, and run again. Each run takes tens of seconds on a small local
+   model.
+5. Open **Execution trace**. The latest run shows:
+   - each SELECT with its query token;
+   - the Meterless run id, confirmed in the engine's `history.json`;
+   - per chunk, the Nemotron call: served model, contract, required pairs, attempts and
+     retries, latency, and judgments kept or overruled by a rule;
+   - per chunk, Speck's recorded evidence, belief revisions and recomputation;
+   - the explanation call, with any disagreement or invented citation flagged.
+6. Restart the server and reload: the trace is unchanged.
+
+The model's judgments vary between runs. On 2026-10-22, the second run ended *leading*
+H-MISDELIVERED, held back by the 0.4 cap on model-judged evidence.
+
+In that run, Speck's contract check rejected one Nemotron reply and the retry succeeded. The trace
+showed this as one retry.
+
 | Command | What it does |
 |---|---|
-| `npm run setup` | Install dependencies here and in `speck/`, then build Speck |
+| `npm run setup` | Install dependencies here and in `speck/`, build Speck, and install the plugin |
+| `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. |
+| `npm run eval:cross-domain` | The separate cross-domain suite (`eval/cross-domain/`): logistics, payment reversals, procurement; refuses to run if its locked expectations changed. Findings: `docs/cross-domain-evaluation.md` |
+| `npm run plugin:install` | Build, then (re)install the plugin into `speck/plugins/evidence-desk/` and approve its entry hash in Speck's allowlist. Keeps the plugin's `.env` and case data. Restart Speck afterwards. |
 | `npm run build` | Compile TypeScript to `dist/` |
-| `npm start` | Start the server (reads `.env` when present) |
+| `npm start` | Start the standalone server (reads `.env` when present) |
 | `npm run dev` | Build, then start with restart on changes in `dist/` (run `npx tsc -w` alongside) |
 | `npm test` | Build and run every test in `dist/test/` |
 | `npm run db:reset` | Delete Evidence Desk's Speck database and Meterless history. Stop the server first. |
 | `npm run zetaris:seed` | Load the scenario's evidence into a local Zetaris platform (see below) |
 | `npm run zetaris:check` | Exercise the live Zetaris path: login, probe query, case evidence |
 | `npm run model:check` | One call to the Nemotron endpoint; prints the model it reports serving |
+| `npm run sponsors:verify` | Runs a real two-stage investigation with the services in `.env`, on throwaway storage (`data/` is untouched). Checks each sponsor's contribution against an independent source and prints OBSERVED or NOT OBSERVED for each. Exits 1 if any configured sponsor was not observed. Saves the report and trace to `eval/results/sponsor-check.json`. |
 
-The app keeps its own database at `data/evidence-desk.sqlite`, separate from anything in
-`speck/data/`. `npm run db:reset` gives a clean case.
+The standalone server keeps its own database at `data/evidence-desk.sqlite`, separate from
+anything in `speck/data/`. `npm run db:reset` gives it a clean case.
 
 ## Configuration
 
@@ -197,13 +448,17 @@ fixture data is substituted.
 
 ### Nemotron
 
-Any OpenAI-compatible endpoint serving a Nemotron model works:
+The client speaks the OpenAI chat API, so any compatible endpoint serving a Nemotron model can be
+configured:
 
-- **NVIDIA hosted API:** `NEMOTRON_BASE_URL=https://integrate.api.nvidia.com/v1`, a Nemotron
-  model id in `NEMOTRON_MODEL`, and the key in `NEMOTRON_API_KEY`.
-- **Local Ollama:** `NEMOTRON_BASE_URL=http://127.0.0.1:11434/v1`, `NEMOTRON_MODEL` set to a
-  local Nemotron tag, and `NEMOTRON_REASONING_EFFORT=none`. With reasoning on, the trace uses
-  up the output budget.
+- **Local Ollama (the configuration used and verified here):**
+  - `NEMOTRON_BASE_URL=http://127.0.0.1:11434/v1`;
+  - `NEMOTRON_MODEL` set to a local Nemotron tag (verified with `nemotron-3-nano:4b`);
+  - `NEMOTRON_REASONING_EFFORT=none`. With reasoning on, the model's reasoning trace uses up the
+    output budget.
+- **NVIDIA hosted API (supported by configuration, not exercised in this project's
+  verification):** `NEMOTRON_BASE_URL=https://integrate.api.nvidia.com/v1`, a Nemotron model id
+  in `NEMOTRON_MODEL`, and the key in `NEMOTRON_API_KEY`.
 
 Run `npm run model:check` before claiming Nemotron was used. Each run also records
 `servedModels`, the names the endpoint returned.
@@ -213,7 +468,12 @@ Run `npm run model:check` before claiming Nemotron was used. Each run also recor
 ```bash
 npm run eval        # deterministic: no model, no credentials; same result every run
 npm run eval:live   # same cases with the configured Nemotron endpoint (exits 2 if none is configured)
+npm run eval:cross-domain   # the separate cross-domain suite (logistics, payments, procurement)
 ```
+
+The cross-domain suite is reported apart from the two groups below. Its labels were locked
+before its first run. Its findings, including two defects it exposed, are in
+[docs/cross-domain-evaluation.md](docs/cross-domain-evaluation.md).
 
 Each run prints a table per group. It writes the full per-checkpoint reports to
 `eval/results/<mode>.json` (held-out cases) and `eval/results/<mode>-regression.json`
@@ -387,7 +647,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 41 tests with no network access beyond localhost and no credentials:
+`npm test` runs 70 tests with no network access beyond localhost and no credentials:
 
 - **Fixture mode:** runs with an empty environment.
 - **Citations:** every cited record exists and keeps its source metadata.
@@ -442,8 +702,108 @@ What these runs show:
   - The basis resolves supersession chains newest first.
 - **Regression evaluation:** the correction-sequence cases load apart from the held-out set and
   evaluate deterministically.
+- **Cross-domain suite** (`test/cross-domain.test.ts`): the expectations match their lock and a
+  later edit is refused; the suite shares nothing with the other cases and covers each claimed
+  behaviour; an injected assessment failure reaches each system as documented. No score is
+  asserted.
+- **Recovery** (`test/recovery.test.ts`). Each test interrupts a run (Speck calls fail, and the
+  run snapshot is never written), reopens the database, and compares with an uninterrupted run:
+  - A crash mid-chunk loses no judgment. The rerun assesses only the unrecorded record, matches
+    the uninterrupted beliefs exactly, records nothing twice, and is idempotent.
+  - A crash mid-reconciliation is flagged as unreconciled and repaired on reopen, without a second
+    rebuild.
+  - Assessment statuses are pending, failed or completed, and failed records are retried.
+- **Speck compatibility** (`test/speck-compat.test.ts`):
+  - A retired hypothesis keeps its confidence, statement, provenance, evidence lists and revision
+    history, before and after a reopen.
+  - Its `belief.revised` events remain in Speck's log.
+  - Retiring is idempotent and refuses non-hypotheses.
+  - Speck keeps `superseded` terminal and ranks it below live statuses.
+  - Speck's background embedding job, held open on purpose, overwrites a revision made while it
+    waits (0.7 back to 0.5). With the foreground lease, a case's revisions survive a background
+    slice in flight, a slice that starts during a run is deferred, and beliefs equal an isolated
+    run's.
+- **Speck plugin** (`test/plugin.test.ts`), against a real Speck runtime and Speck's own Express:
+  - the plugin declares the Evidence tab and its manifest permissions;
+  - the bank-return case runs through the plugin routes to H-UNPAID at 0.66, supported;
+  - the case worker is left `waiting`, and an unrelated Speck worker is untouched;
+  - bad requests give 400, an unknown case 404, and the tab's assets are served;
+  - cases survive a Speck restart on the same database, as the same worker;
+  - the bank-return case always runs on its fixture with the rules, whatever the settings;
+  - the installer copies the plugin, points `#speck` at Speck's own build, makes the entry the
+    only plugin module, approves exactly its hash, and keeps `.env` and case data on reinstall.
+- **Correction chains** (`test/correction-chains.test.ts`):
+  - a replacement of a replacement, read both ways;
+  - withdrawal of a replacement;
+  - repeated withdrawal (no event, no recomputation, the first reason stands).
+
+  An independently refuted hypothesis is never rebuilt, and every step stays in the history.
+- **Exhaustive interruption** (`test/interruption.test.ts`):
+  - Every Speck write in run 2 of the disputed delivery (23 points) and in a withdrawal
+    (16 points) is used as a crash point.
+  - At each point, recovery is itself interrupted in five patterns, and the case is then
+    restarted.
+  - Final beliefs must equal an uninterrupted run, versions must be unique, every replacement
+    must be explained by its record, and every announced replacement must be carried out.
+- **Withdrawal before assessment** (`test/exclusion.test.ts`):
+  - A record that always fails stalls the case until it is withdrawn. After that, the rest is
+    assessed.
+  - No judgment is invented, beliefs do not change, and the record never enters Speck's ledger.
+  - A correction withdrawn before assessment supersedes nothing.
+- **Current beliefs only** (`test/current-beliefs.test.ts`). With a superseded hypothesis ranked
+  *first* by Speck, none of these presents it as current:
+  - the conclusion;
+  - `hypotheses()`;
+  - the model's carryover and explanation prompt;
+  - the timeline;
+  - the API.
+- **Whole-record replacement** (`test/revision.test.ts`): the facts and judgments a superseded
+  record took with it, and their consequences, are stated.
+- **Execution trace** (`test/trace.test.ts`, plus one test each in `test/nemotron.test.ts` and
+  `test/zetaris.test.ts`). Each part of the trace is checked against the state it is read from:
+  - **Evidence:** the fixture file, labelled not-Zetaris, with no query tokens; or every Zetaris
+    SELECT through the real adapter, including an empty table.
+  - **Meterless:** the engine's run, confirmed in its `history.json` by id and the engine's own
+    timestamp. The engine restarts its `run-N` ids in each process, so a decoy entry with the
+    same id is not accepted.
+  - **Chunks:** mapped to the records Speck recorded.
+  - **Speck revisions:** every one in the event log, each exactly once.
+  - **Nemotron calls:** a forced contract rejection and retry, the served model, the
+    constraints, and the judgment accounting.
+  - **Explanation:** an invented citation in it.
+  - **Actions:** withdrawals, withdrawals before assessment and recovery appear as Evidence Desk
+    actions, and an interrupted run appears as interrupted.
+  - **Persistence:** the trace is identical after a reopen and through the API.
 
 ## Known limits of this slice
+
+- **Project-local Speck patch.**
+  - `npm run speck:patch` applies `patches/speck-home-view.patch` to `speck/`'s working tree,
+    and is safe to run again. The submodule therefore always shows as modified, and the patch is
+    never committed there.
+  - If the Speck pin moves, the patch may need updating; the command says so rather than
+    applying it partly.
+- **Plugin installation.**
+  - Speck's allowlist hashes only the plugin's entry module. Changes elsewhere in the installed
+    plugin are not detected by Speck's trust check; the installer re-approves the entry on every
+    install.
+  - After a code change, run `npm run plugin:install` and restart Speck. Speck does not reload
+    plugins.
+  - Installing modifies the Speck submodule's working tree: `plugins/.runtime/plugin-trust.json`
+    gains an `evidence-desk` entry and `plugins/evidence-desk/` is untracked.
+  - The installed plugin imports Speck by absolute file URL (so Speck's own tests, which copy
+    `plugins/` elsewhere, still load it). Reinstall if the repository moves.
+  - The tab offers two fixed cases (disputed delivery and bank return). There is no way to open
+    a new case from Speck.
+  - The Speck tab has no live progress stream; it refreshes when an action finishes. The
+    standalone page (`npm start`) keeps its server-sent events.
+
+- **Older runs have a partial trace.** Runs recorded before the execution trace existed show no
+  per-chunk model call or fetch summary; the trace says "not recorded" rather than guessing.
+- **Session counters aren't per run.** The Nemotron session counters in the page header count
+  calls since the server started. Per-run figures are in the trace.
+- **A failed Zetaris fetch leaves no trace entry.** It records no run at all (HTTP 502), so it
+  appears in the error box, not in the trace.
 
 - The scenario's fact rules are hand-written fixture data. The deterministic assessor needs
   them; Nemotron mode uses only the decisive ones.
@@ -456,27 +816,45 @@ What these runs show:
   declared firmness and citations, not by reading its prose. If it disagrees, or is out of date,
   the page hides the text behind a warning.
 - **Supersession is record-level.** A superseding record replaces the whole earlier record, so
-  every judgment on that record stops counting. In `correction-supersedes`, the returned credit
-  was also H-PARTIAL's only refutation (the amount matched). After the return, H-PARTIAL is back
-  at its 0.20 prior and is no longer listed as ruled out. Facts that should survive a correction
-  must be restated by the correcting record.
+  every judgment on that record stops counting.
+  - In `correction-supersedes`, the returned credit was also H-PARTIAL's only refutation (the
+    amount matched). After the return, H-PARTIAL is back at its 0.20 prior and is no longer listed
+    as ruled out.
+  - Facts that should survive a correction must be restated by the correcting record.
+  - This is now stated on the page and in the conclusion's notes (see *Whole-record replacement
+    is explained*), but it is not prevented.
 - **Supersession must be stated.** Supersession is never inferred. A ledger entry derived from a
   reversed payment ("marked paid") keeps counting unless its source says otherwise; here the
   decisive reversal still rules H-PAID out.
 - **A correction of a correction reinstates the original.** If a correction is itself superseded,
   the record it replaced counts again. A source that amends an amendment and still means to
   replace the original must list both.
-- **Replaced hypotheses stay in Speck's worker.** Speck has no public API to retire a hypothesis,
-  so Evidence Desk marks replaced ones `superseded` through Speck's mental-object repository, as
-  Speck's own `mind` component does. This change is not an event of its own; the recomputation
-  memory recorded alongside it is. Any other Speck consumer reading this worker must ignore
-  superseded hypotheses.
-- **An interrupted run can lose judgments.** The reasoner's judgments are saved with the run
-  snapshot at the end of a run. If the process dies mid-run, records already in Speck's ledger
-  have no judgments and count for nothing.
-- **Build 2 databases are corrected on the next run.** A database written by Build 2 is
-  reconciled on the next run or withdrawal, not when it is opened. Its runs stored judgments
-  after withholding, so support withheld then cannot be reinstated.
+- **Retiring a hypothesis relies on Speck internals.** Speck (pinned at `29d5bb3`) has no public
+  API to retire a worker's hypothesis. Its only archive method, `archiveSharedMemory`, refuses
+  worker objects.
+  - Evidence Desk therefore marks replaced hypotheses `superseded` through Speck's mental-object
+    repository, as Speck's own `mind` component does.
+  - That single write is isolated in `src/investigation/speck-compat.ts`, which lists its four
+    assumptions. It reads the object back after writing and throws `SpeckCompatibilityError` if
+    anything that records the old belief changed. `test/speck-compat.test.ts` checks each
+    assumption.
+  - The write emits no event of its own; the recomputation memory is the audit record.
+  - Speck's raw `rankHypotheses` still lists superseded hypotheses, ranked by confidence, so any
+    other consumer of this worker must filter on status.
+- **Recomputation records describe intent.**
+  - A recomputation record is written before its replacements are made and its relations
+    applied.
+  - If that is interrupted, the record stays. A later `recovery on open` (or `end of run`) record
+    shows the repair, and the earlier one shows any replacement it did not carry out.
+- **Older databases.**
+  - A database written by Build 2, or by Build 3 before 3.1, is reconciled when it is opened.
+  - Build 2 runs stored judgments after withholding, so support withheld then cannot be
+    reinstated.
+  - A Build 3.0 run interrupted before its snapshot left records without saved judgments. These
+    show as `failed` ("in Speck's ledger without saved judgments") and count for nothing.
+- **Withdrawal before assessment cannot be undone.** A record withdrawn before assessment is
+  never assessed. There is no way to reinstate it short of starting a new case. The same holds
+  for withdrawn assessed records.
 - Nemotron's judgments vary between runs. On identical evidence, run 1 has come out both
   *leading* (0.572) and *supported* (0.652), depending on whether the model counts the
   customer's complaint against delivery.

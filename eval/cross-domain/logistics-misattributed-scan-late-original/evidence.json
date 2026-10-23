@@ -1,0 +1,83 @@
+{
+  "caseId": "XD-LOG-01",
+  "records": [
+    {
+      "id": "XL1-01",
+      "caseId": "XD-LOG-01",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier tracking feed"
+      },
+      "observedAt": "2026-09-09T06:00:00Z",
+      "content": "Delivered scan for PX-5521: left at front door, 14 Harbour St. Received late from the handheld sync; scan time 5 Sep 10:00.",
+      "facts": {
+        "scan.status": "delivered"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier tracking feed",
+        "recordRef": "xl1-01",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XL1-02",
+      "caseId": "XD-LOG-01",
+      "source": {
+        "system": "customer",
+        "name": "Customer service desk"
+      },
+      "observedAt": "2026-09-06T09:00:00Z",
+      "content": "Customer reports parcel PX-5521 has not arrived.",
+      "facts": {
+        "customer.received": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Customer service desk",
+        "recordRef": "xl1-02",
+        "author": "customer-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "XL1-03",
+      "caseId": "XD-LOG-01",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier tracking feed"
+      },
+      "observedAt": "2026-09-07T15:00:00Z",
+      "content": "Scan correction: the 5 Sep delivered scan was recorded against PX-5521 in error; it belongs to PX-5512. PX-5521 was last scanned in at the Sunshine depot.",
+      "facts": {
+        "scan.status": "at_depot"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier tracking feed",
+        "recordRef": "xl1-03",
+        "author": "carrier-feed",
+        "supersedes": [
+          "XL1-01"
+        ]
+      }
+    },
+    {
+      "id": "XL1-04",
+      "caseId": "XD-LOG-01",
+      "source": {
+        "system": "depot",
+        "name": "Depot inventory system"
+      },
+      "observedAt": "2026-09-08T08:00:00Z",
+      "content": "Depot inventory: PX-5521 on the hold shelf, address label damaged.",
+      "facts": {
+        "depot.holding": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Depot inventory system",
+        "recordRef": "xl1-04",
+        "author": "depot-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

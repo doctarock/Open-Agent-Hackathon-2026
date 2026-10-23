@@ -1,0 +1,45 @@
+{
+  "id": "procurement-short-delivery",
+  "domain": "procurement",
+  "family": "short-delivery",
+  "order": "as recorded",
+  "category": "replacement + decisive refutation",
+  "description": "A goods receipt for the full quantity is amended after a recount, and the carrier manifest confirms the short shipment.",
+  "checkpoints": [
+    {
+      "afterStage": "receipt",
+      "conclusion": "H-FULL",
+      "notCurrent": [],
+      "unsupported": [
+        "H-SHORT"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "recount",
+      "conclusion": "H-SHORT",
+      "notCurrent": [
+        "H-FULL"
+      ],
+      "unsupported": [
+        "H-FULL"
+      ],
+      "invalidated": [
+        "XR1-02"
+      ]
+    },
+    {
+      "afterStage": "manifest",
+      "conclusion": "H-SHORT",
+      "notCurrent": [
+        "H-FULL"
+      ],
+      "unsupported": [
+        "H-FULL"
+      ],
+      "invalidated": [
+        "XR1-02"
+      ]
+    }
+  ]
+}

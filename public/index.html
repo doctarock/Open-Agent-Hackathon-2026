@@ -6,41 +6,11 @@
   <title>Evidence Desk</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <header>
-    <h1 id="case-title">Evidence Desk</h1>
-    <p id="case-question"></p>
-    <dl id="configuration" class="configuration"></dl>
-  </header>
-
-  <div id="error" class="error" hidden></div>
-
-  <section class="controls">
-    <button id="run-button" type="button">Run investigation</button>
-    <button id="update-button" type="button">Introduce prepared update</button>
-    <span id="stage"></span>
-    <div id="progress" class="progress" hidden></div>
-  </section>
-
-  <main>
-    <section class="panel" aria-labelledby="evidence-heading">
-      <h2 id="evidence-heading">Evidence</h2>
-      <p id="evidence-summary" class="muted"></p>
-      <ol id="evidence-list" class="evidence-list"></ol>
-    </section>
-
-    <section class="panel" aria-labelledby="conclusion-heading">
-      <h2 id="conclusion-heading">Conclusion</h2>
-      <div id="conclusion"><p class="muted">No investigation has been run yet.</p></div>
-    </section>
-  </main>
-
-  <section class="panel" aria-labelledby="timeline-heading">
-    <h2 id="timeline-heading">Revision timeline</h2>
-    <label class="muted"><input id="timeline-all" type="checkbox"> Show every event (not only changes)</label>
-    <ol id="timeline" class="timeline"></ol>
-  </section>
-
-  <script src="app.js" type="module"></script>
+<body class="edk-standalone">
+  <div id="app"></div>
+  <script type="module">
+    import { mountEvidenceDesk } from "./app.js";
+    mountEvidenceDesk(document.getElementById("app"), { apiBase: "/api", eventsUrl: "/api/events" });
+  </script>
 </body>
 </html>

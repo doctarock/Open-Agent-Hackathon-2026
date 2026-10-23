@@ -50,6 +50,48 @@ export interface Explanation {
   statedEstablished: boolean;
 }
 
+// One structured model call as it actually happened: what was asked for, how
+// it was constrained, what Speck's model registry did with the replies, and
+// what was kept. Measured, never estimated.
+export interface ModelCallTrace {
+  purpose: "relation-judgments" | "explanation";
+  processor: string;
+  requestedModel: string;
+  // Model names the endpoint reported in its responses to this call.
+  servedModels: string[];
+  endpoint: string;
+  constraints: {
+    contract: string;
+    // Every (evidence, hypothesis) pair the reply must cover; 0 for explanations.
+    requiredPairs: number;
+    temperature: number;
+    maxAttempts: number;
+    maxTokens: number;
+    reasoningEffort: string | null;
+  };
+  // Attempts made by Speck's registry; a reply that fails the contract is retried.
+  attempts: number;
+  contractFailures: number;
+  transportFailures: number;
+  httpCalls: Array<{ latencyMs: number; answered: boolean }>;
+  outcome: "valid" | "failed";
+  error: string | null;
+  // Relation judgments only: what the model returned and what was kept.
+  judgments?: {
+    returned: number;
+    neutral: number;
+    kept: number;
+    discardedUnknown: number;
+    // The model disagreed with a deterministic rule; the rule was kept.
+    ruleKept: number;
+    // A pair already judged, by an earlier answer or by an agreeing rule; the
+    // existing judgment was kept.
+    repeated: number;
+    // Records the model said nothing about (left unjudged and pending).
+    unanswered: string[];
+  };
+}
+
 export interface Reasoner {
   readonly kind: "rules" | "nemotron";
   describe(): ReasonerDescription;
@@ -57,4 +99,7 @@ export interface Reasoner {
   // Absent when there is no model to explain with.
   explain?(prompt: string): Promise<Explanation>;
   usage(): ReasonerUsage | null;
+  // The trace of the most recent model call (assess or explain), whether it
+  // succeeded or failed, then cleared. Absent for reasoners without a model.
+  takeTrace?(): ModelCallTrace | null;
 }

@@ -11,7 +11,8 @@
     "#speck": "./speck/dist/index.js"
   },
   "scripts": {
-    "setup": "npm ci && npm --prefix speck ci && npm --prefix speck run build",
+    "setup": "npm ci && npm --prefix speck ci && npm run speck:patch && npm --prefix speck run build && npm run plugin:install",
+    "speck:patch": "node scripts/speck-patches.mjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "dev": "npm run build && node --watch-path=dist dist/src/server.js",
@@ -21,7 +22,11 @@
     "zetaris:check": "npm run build && node dist/src/scripts/zetaris-check.js",
     "model:check": "npm run build && node dist/src/scripts/model-check.js",
     "eval": "npm run build && node dist/src/scripts/eval.js",
-    "eval:live": "npm run build && node dist/src/scripts/eval.js --live"
+    "eval:live": "npm run build && node dist/src/scripts/eval.js --live",
+    "eval:cross-domain": "npm run build && node dist/src/scripts/eval-cross-domain.js",
+    "sponsors:verify": "npm run build && node dist/src/scripts/sponsor-check.js",
+    "plugin:install": "npm run build && node dist/src/scripts/plugin-install.js",
+    "speck": "node dist/src/scripts/speck.js"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

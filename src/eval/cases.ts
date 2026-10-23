@@ -36,12 +36,21 @@ export interface EvalCase {
   forbiddenCitations: string[];
   provider: "fixture" | "zetaris-unreachable";
   expectError: "evidence" | null;
+  // Cross-domain suite only (eval/cross-domain/README.md). Records whose
+  // assessment the harness makes fail, the case's domain, and the family of
+  // cases sharing its records in another arrival order.
+  failAssessment?: string[];
+  domain?: string | null;
+  family?: string | null;
+  order?: string | null;
 }
 
 export const EVAL_DIR = path.join(ROOT_DIR, "eval", "scenarios");
 // Correction-sequence regression cases (Build 3), reported apart from the
 // held-out cases above.
 export const REGRESSION_DIR = path.join(ROOT_DIR, "eval", "regression");
+// The cross-domain suite, reported apart from both (npm run eval:cross-domain).
+export const CROSS_DOMAIN_DIR = path.join(ROOT_DIR, "eval", "cross-domain");
 export const DEV_FIXTURES_DIR = path.join(ROOT_DIR, "fixtures", "scenarios");
 
 export function loadEvalCases(dir = EVAL_DIR): EvalCase[] {
@@ -62,6 +71,8 @@ function loadCase(dir: string): EvalCase {
   const checkpoints = expected.checkpoints as Checkpoint[];
   if (!checkpoints?.length) throw new Error(`${where}: expected.json needs checkpoints`);
   const recordIds = new Set((JSON.parse(fs.readFileSync(path.join(dir, "evidence.json"), "utf8")) as { records: Array<{ id: string }> }).records.map((record) => record.id));
+  const failAssessment = (expected.failAssessment ?? []) as string[];
+  for (const id of failAssessment) if (!recordIds.has(id)) throw new Error(`${where}: unknown record ${id}`);
   for (const checkpoint of checkpoints) {
     for (const id of [...(checkpoint.withdrawBefore ?? []).map((item) => item.recordId), ...(checkpoint.invalidated ?? [])]) {
       if (!recordIds.has(id)) throw new Error(`${where}: unknown record ${id}`);
@@ -75,7 +86,8 @@ function loadCase(dir: string): EvalCase {
     id: expected.id, dir, category: expected.category, description: expected.description, scenario, checkpoints,
     forbiddenCitations: expected.forbiddenCitations ?? [],
     provider: expected.provider ?? "fixture",
-    expectError: expected.expectError ?? null
+    expectError: expected.expectError ?? null,
+    failAssessment, domain: expected.domain ?? null, family: expected.family ?? null, order: expected.order ?? null
   };
 }
 

@@ -1,0 +1,54 @@
+{
+  "id": "payment-unreadable-record",
+  "domain": "payments",
+  "family": null,
+  "order": "as recorded",
+  "category": "failed assessment",
+  "failAssessment": [
+    "XP3-03"
+  ],
+  "description": "The assessor fails on one unreadable record (fault injected by the harness) that arrives with a decisive bank return; the investigator later withdraws it.",
+  "checkpoints": [
+    {
+      "afterStage": "credit",
+      "conclusion": "H-PAID",
+      "notCurrent": [],
+      "unsupported": [
+        "H-UNPAID"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "return",
+      "conclusion": "H-UNPAID",
+      "notCurrent": [
+        "H-PAID"
+      ],
+      "unsupported": [
+        "H-PAID"
+      ],
+      "invalidated": [
+        "XP3-01"
+      ]
+    },
+    {
+      "afterStage": "unreadable-withdrawn",
+      "conclusion": "H-UNPAID",
+      "notCurrent": [
+        "H-PAID"
+      ],
+      "unsupported": [
+        "H-PAID"
+      ],
+      "invalidated": [
+        "XP3-01"
+      ],
+      "withdrawBefore": [
+        {
+          "recordId": "XP3-03",
+          "reason": "Image-only scan with no readable content; the bank statement is the record of the payment."
+        }
+      ]
+    }
+  ]
+}

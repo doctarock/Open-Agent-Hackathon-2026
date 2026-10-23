@@ -1,0 +1,25 @@
+{
+  "id": "logistics-misattributed-scan-single-batch",
+  "domain": "logistics",
+  "family": "misattributed-scan",
+  "order": "all at once",
+  "category": "arrival order",
+  "description": "The same four records, all available at the first and only checkpoint.",
+  "checkpoints": [
+    {
+      "afterStage": "all",
+      "conclusion": "H-AT-DEPOT",
+      "notCurrent": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "unsupported": [
+        "H-DELIVERED",
+        "H-LOST"
+      ],
+      "invalidated": [
+        "XL1-01"
+      ]
+    }
+  ]
+}

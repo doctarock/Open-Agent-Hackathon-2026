@@ -40,10 +40,20 @@ export interface ProviderDescription {
   problem: string | null;
 }
 
+// What the last successful fetch actually did: for Zetaris, each SELECT sent
+// through the platform with its row count and query token (including tables
+// that returned nothing); for fixtures, the file read.
+export interface FetchSummary {
+  mode: RetrievalMode;
+  at: string;
+  sources: Array<{ location: string; rows: number; queryToken: string | null; latencyMs: number | null }>;
+}
+
 export interface EvidenceProvider {
   readonly mode: RetrievalMode;
   describe(): ProviderDescription;
   fetchCaseEvidence(caseId: string): Promise<EvidenceRecord[]>;
+  lastFetch?(): FetchSummary | null;
 }
 
 export class EvidenceProviderError extends Error {

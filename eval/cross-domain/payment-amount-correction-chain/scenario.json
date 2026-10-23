@@ -1,0 +1,114 @@
+{
+  "id": "xd-payment-amount-chain",
+  "caseId": "XD-PAY-01",
+  "title": "Is invoice INV-884 paid in full?",
+  "question": "Invoice INV-884 is for USD 1,200. The bank has corrected the received amount twice. Is it paid in full?",
+  "sources": {
+    "bank": {
+      "name": "Bank statement feed",
+      "reliability": 0.95
+    },
+    "ledger": {
+      "name": "Accounts ledger",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID-FULL",
+      "statement": "INV-884 has been paid in full.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "payment.amount",
+          "equals": "full",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.balance",
+          "equals": "zero",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.amount",
+          "equals": "partial",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "ledger.balance",
+          "equals": "outstanding",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-PARTIAL",
+      "statement": "INV-884 has been paid in part, with a balance outstanding.",
+      "prior": 0.2,
+      "rules": [
+        {
+          "fact": "payment.amount",
+          "equals": "partial",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.balance",
+          "equals": "outstanding",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.amount",
+          "equals": "full",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "ledger.balance",
+          "equals": "zero",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-UNPAID",
+      "statement": "Nothing has been paid against INV-884.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "payment.amount",
+          "equals": "full",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "payment.amount",
+          "equals": "partial",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "credit",
+      "label": "Credit received (2 Oct)",
+      "asOf": "2026-10-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "first-correction",
+      "label": "Amount corrected (4 Oct)",
+      "asOf": "2026-10-04T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "second-correction",
+      "label": "Correction reversed (9 Oct)",
+      "asOf": "2026-10-09T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

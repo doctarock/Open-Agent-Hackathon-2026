@@ -1,0 +1,96 @@
+{
+  "id": "xd-logistics-missing-proof",
+  "caseId": "XD-LOG-02",
+  "title": "Was parcel PX-7730 delivered?",
+  "question": "The carrier scanned PX-7730 as delivered; the customer says it never arrived. Was it delivered, and where?",
+  "sources": {
+    "carrier": {
+      "name": "Carrier tracking feed",
+      "reliability": 0.9
+    },
+    "customer": {
+      "name": "Customer service desk",
+      "reliability": 0.6
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DELIVERED",
+      "statement": "PX-7730 was delivered to the customer's address.",
+      "prior": 0.4,
+      "rules": [
+        {
+          "fact": "scan.status",
+          "equals": "delivered",
+          "direction": "supports"
+        },
+        {
+          "fact": "pod.photo",
+          "equals": "matches_address",
+          "direction": "supports"
+        },
+        {
+          "fact": "pod.photo",
+          "equals": "wrong_address",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "customer.received",
+          "equals": "false",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-MISDELIVERED",
+      "statement": "PX-7730 was left at the wrong address.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "pod.photo",
+          "equals": "wrong_address",
+          "direction": "supports"
+        },
+        {
+          "fact": "pod.photo",
+          "equals": "matches_address",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-DELIVERED",
+      "statement": "PX-7730 was never delivered.",
+      "prior": 0.2,
+      "rules": [
+        {
+          "fact": "customer.received",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "scan.status",
+          "equals": "delivered",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "dispute",
+      "label": "Scan and complaint (12 Sep)",
+      "asOf": "2026-09-12T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "proof-requested",
+      "label": "Proof of delivery requested (14 Sep)",
+      "asOf": "2026-09-14T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

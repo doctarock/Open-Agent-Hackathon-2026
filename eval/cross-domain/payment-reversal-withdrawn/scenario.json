@@ -1,0 +1,79 @@
+{
+  "id": "xd-payment-reversal-withdrawn",
+  "caseId": "XD-PAY-02",
+  "title": "Was invoice INV-552 paid?",
+  "question": "A payment for INV-552 arrived and was then shown as returned. The return was later found to belong to another invoice. Is INV-552 paid?",
+  "sources": {
+    "bank": {
+      "name": "Bank statement feed",
+      "reliability": 0.95
+    },
+    "ledger": {
+      "name": "Accounts ledger",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "Invoice INV-552 has been paid.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.status",
+          "equals": "paid",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-UNPAID",
+      "statement": "Invoice INV-552 remains unpaid.",
+      "prior": 0.3,
+      "rules": [
+        {
+          "fact": "payment.reversed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "payment.received",
+          "equals": "true",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "credit",
+      "label": "Credit received (1 Nov)",
+      "asOf": "2026-11-01T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "return",
+      "label": "Return posted (3 Nov)",
+      "asOf": "2026-11-03T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "return-withdrawn",
+      "label": "Investigator withdraws the return (5 Nov)",
+      "asOf": "2026-11-05T12:00:00Z",
+      "description": ""
+    }
+  ]
+}
