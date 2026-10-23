@@ -23,6 +23,7 @@ const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 const ASSETS: Record<string, { file: string; type: string }> = {
   "ui.js": { file: path.join(ROOT_DIR, "plugin", "ui", "evidence-desk-ui.js"), type: "text/javascript" },
   "app.js": { file: path.join(PUBLIC_DIR, "app.js"), type: "text/javascript" },
+  "tour.js": { file: path.join(PUBLIC_DIR, "tour.js"), type: "text/javascript" },
   "style.css": { file: path.join(PUBLIC_DIR, "style.css"), type: "text/css" }
 };
 

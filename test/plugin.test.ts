@@ -84,7 +84,7 @@ test("the plugin declares a Speck tab and runs a case on Speck's own runtime, be
     assert.equal((await call(base, `${bank}/evidence/withdraw`, "POST", { recordId: "EV-BNK-101" })).status, 400);
     assert.equal((await call(base, "/api/plugins/evidence-desk/cases/nope/status")).status, 404);
     // The tab's assets are served.
-    for (const asset of ["ui.js", "app.js", "style.css"]) {
+    for (const asset of ["ui.js", "app.js", "tour.js", "style.css"]) {
       const response = await fetch(`${base}/plugins/evidence-desk/${asset}`);
       assert.equal(response.status, 200, asset);
     }
@@ -141,7 +141,7 @@ test("the installer copies the plugin into Speck's plugins folder and approves e
   const target = path.join(speckDir, "plugins", "evidence-desk");
   assert.equal(first.target, target);
   for (const file of ["dist/plugin/evidence-desk-plugin.js", "dist/src/investigation/desk.js", "plugin/ui/evidence-desk-ui.js", "public/app.js", "public/style.css",
-    "fixtures/scenarios/disputed-delivery/scenario.json", "eval/scenarios/correction-supersedes/scenario.json", "config/zetaris-queries.json"]) {
+    "fixtures/scenarios/disputed-delivery/scenario.json", "eval/scenarios/correction-supersedes/scenario.json", "config/zetaris-queries.json", "public/tour.js"]) {
     assert.ok(fs.existsSync(path.join(target, file)), file);
   }
   // "#speck" now points at the stand-in Speck's own dist/index.js.

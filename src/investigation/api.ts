@@ -27,6 +27,8 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
       case: { caseId: desk.scenario.caseId, title: desk.scenario.title, question: desk.scenario.question, scenarioId: desk.scenario.id },
       stage: desk.currentStage(),
       nextStage: desk.nextStage(),
+      // Every stage of the case in order, for the page's progress view.
+      stages: desk.scenario.stages.map((stage) => ({ id: stage.id, label: stage.label, description: stage.description })),
       running: desk.isRunning,
       evidence: desk.provider.describe(),
       reasoner: { ...desk.reasoner.describe(), usage: desk.reasoner.usage() },

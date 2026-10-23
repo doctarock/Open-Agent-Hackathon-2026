@@ -4,48 +4,60 @@
 
 .edk {
   --edk-text: #1d1f23;
-  --edk-muted: #5d6470;
+  --edk-muted: #5a6270;
   --edk-border: #d5d9e0;
   --edk-surface: #ffffff;
+  --edk-surface-raised: #ffffff;
   --edk-background: #f4f5f7;
   --edk-accent: #1f5fbf;
+  --edk-accent-soft: rgba(31, 95, 191, .08);
   --edk-on-accent: #fff;
   --edk-good: #1d7a45;
-  --edk-warn: #9a6200;
+  --edk-warn: #8f5b00;
   --edk-bad: #b3261e;
   --edk-fixture: #6b4fa3;
+  --edk-shadow: 0 8px 28px rgba(15, 20, 30, .18);
+  --edk-radius: 8px;
   color: var(--edk-text);
+  container-type: inline-size;
+  container-name: edk;
 }
 
 @media (prefers-color-scheme: dark) {
   .edk {
     --edk-text: #e6e8eb;
-    --edk-muted: #9aa2ae;
+    --edk-muted: #a3abb7;
     --edk-border: #3a3f47;
     --edk-surface: #1e2126;
+    --edk-surface-raised: #262a31;
     --edk-background: #15171a;
     --edk-accent: #79a7f0;
-    --edk-on-accent: #fff;
+    --edk-accent-soft: rgba(121, 167, 240, .12);
+    --edk-on-accent: #0b1220;
     --edk-good: #5cc48a;
     --edk-warn: #e0a73c;
     --edk-bad: #f07b72;
     --edk-fixture: #b49ae6;
+    --edk-shadow: 0 8px 28px rgba(0, 0, 0, .5);
   }
 }
 
 /* Inside Speck: Speck's own palette and glass surfaces. */
 .edk.edk-in-speck {
   --edk-text: var(--ink, #f3f0ff);
-  --edk-muted: var(--muted, #9e9ab4);
-  --edk-border: var(--line, rgba(214, 205, 255, .12));
+  --edk-muted: var(--muted, #a9a5bf);
+  --edk-border: var(--line, rgba(214, 205, 255, .14));
   --edk-surface: rgba(255, 255, 255, .03);
+  --edk-surface-raised: #171527;
   --edk-background: transparent;
   --edk-accent: var(--cyan, #75e6dc);
+  --edk-accent-soft: rgba(117, 230, 220, .1);
   --edk-on-accent: #081018;
   --edk-good: #8be0a4;
   --edk-warn: var(--gold, #f5cd78);
   --edk-bad: var(--rose, #ff8eaa);
   --edk-fixture: var(--lavender, #d8cbff);
+  --edk-shadow: 0 10px 32px rgba(0, 0, 0, .55);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -56,36 +68,52 @@
 body.edk-standalone {
   margin: 0;
   padding: 16px;
-  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #1d1f23;
   background: #f4f5f7;
 }
+body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 @media (prefers-color-scheme: dark) {
   body.edk-standalone { color: #e6e8eb; background: #15171a; }
 }
 
-.edk h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.edk h2 { font-size: 1.1rem; margin: 0 0 8px; }
-.edk h3 { font-size: 0.95rem; margin: 16px 0 4px; }
-
+.edk h1 { font-size: 1.55rem; line-height: 1.25; margin: 0 0 6px; }
+.edk h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.edk h3 { font-size: 0.98rem; margin: 18px 0 6px; }
+.edk h4 { font-size: 0.9rem; margin: 12px 0 4px; color: var(--edk-muted); }
+.edk p { margin: 6px 0; }
 .edk .muted { color: var(--edk-muted); }
+.edk code { font-family: ui-monospace, Consolas, monospace; font-size: 0.88em; }
+.edk .eyebrow { margin: 0 0 4px; font-size: 0.78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }
 
-.edk .configuration {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 2px 12px;
-  margin: 12px 0 0;
-  font-size: 0.9rem;
+/* Buttons: one filled primary per area, outlined secondary, quiet links. */
+.edk button {
+  font: inherit;
+  padding: 7px 14px;
+  border: 1px solid var(--edk-accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--edk-accent);
+  cursor: pointer;
+  transition: background-color .15s ease;
 }
-.edk .configuration dt { color: var(--edk-muted); }
-.edk .configuration dd { margin: 0; overflow-wrap: anywhere; }
+.edk button.primary { background: var(--edk-accent); color: var(--edk-on-accent); font-weight: 600; }
+.edk button.secondary:hover:not(:disabled), .edk button.link:hover:not(:disabled) { background: var(--edk-accent-soft); }
+.edk button.link { padding: 2px 6px; border-color: transparent; font-size: 0.85rem; text-decoration: underline; text-underline-offset: 2px; }
+.edk button.danger { border-color: var(--edk-bad); color: var(--edk-bad); }
+.edk form button.danger { background: var(--edk-bad); color: #fff; font-weight: 600; }
+.edk button:disabled { opacity: 0.55; cursor: not-allowed; }
+.edk button:focus-visible, .edk summary:focus-visible, .edk input:focus-visible, .edk textarea:focus-visible, .edk [tabindex]:focus-visible {
+  outline: 3px solid var(--edk-accent);
+  outline-offset: 2px;
+}
 
 .edk .badge {
   display: inline-block;
   padding: 0 6px;
   border: 1px solid currentColor;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -93,50 +121,90 @@ body.edk-standalone {
 .edk .badge.zetaris, .edk .badge.supported, .edk .badge.ok { color: var(--edk-good); }
 .edk .badge.leading, .edk .badge.pending, .edk .badge.warn { color: var(--edk-warn); }
 .edk .badge.unresolved, .edk .badge.rejected, .edk .badge.bad { color: var(--edk-bad); }
+.edk .badge.long { white-space: normal; }
+.edk .badge.state { font-size: 0.95rem; padding: 2px 10px; text-transform: capitalize; }
+
+/* The case. */
+.edk .case-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 4px 0 12px;
+}
+.edk .case-identity { min-width: 0; }
+.edk .question { margin: 0 0 8px; font-size: 1.02rem; max-width: 72ch; }
+.edk .sources { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.edk .sources > .badge { white-space: normal; }
+
+/* First-run introduction: in the page, not over it. */
+.edk .intro {
+  margin: 0 0 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--edk-accent);
+  border-radius: var(--edk-radius);
+  background: var(--edk-accent-soft);
+}
+.edk .intro h2 { font-size: 1.2rem; }
+.edk .intro ul { margin: 8px 0; padding-left: 20px; }
+.edk .intro li { margin: 4px 0; max-width: 80ch; }
+.edk .intro-actions, .edk .guide-actions, .edk .dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 .edk .error {
   margin: 12px 0;
-  padding: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--edk-bad);
-  border-radius: 6px;
+  border-radius: var(--edk-radius);
   color: var(--edk-bad);
   background: var(--edk-surface);
-  white-space: pre-wrap;
 }
+.edk .error p { white-space: pre-wrap; overflow-wrap: anywhere; }
 
-.edk .controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 16px 0;
+/* The investigation's steps and actions. */
+.edk .workflow {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--edk-border);
+  border-radius: var(--edk-radius);
+  background: var(--edk-surface);
 }
-.edk button {
-  font: inherit;
-  padding: 6px 12px;
-  border: 1px solid var(--edk-accent);
-  border-radius: 6px;
-  background: var(--edk-accent);
-  color: var(--edk-on-accent);
-  cursor: pointer;
-}
-.edk button:disabled { opacity: 0.5; cursor: not-allowed; }
-.edk #edk-update-button { background: transparent; color: var(--edk-accent); }
-
-.edk .progress {
-  flex-basis: 100%;
-  font: 0.8rem/1.4 ui-monospace, Consolas, monospace;
-  color: var(--edk-muted);
-  white-space: pre-wrap;
-}
-
-.edk main {
+.edk .stages {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  counter-reset: stage;
 }
-@media (min-width: 900px) {
-  .edk main { grid-template-columns: 1fr 1fr; }
+.edk .stages li {
+  counter-increment: stage;
+  padding: 8px 10px;
+  border: 1px solid var(--edk-border);
+  border-left-width: 4px;
+  border-radius: 6px;
+}
+.edk .stages li::before { content: "Stage " counter(stage); display: block; font-size: 0.75rem; color: var(--edk-muted); }
+.edk .stages li.current { border-left-color: var(--edk-accent); background: var(--edk-accent-soft); }
+.edk .stages li.done { border-left-color: var(--edk-good); }
+.edk .stages li.upcoming { opacity: .8; }
+.edk .stage-label { display: block; font-weight: 600; }
+.edk .stage-state { display: block; font-size: 0.78rem; color: var(--edk-muted); }
+.edk .stage-description { display: block; font-size: 0.85rem; color: var(--edk-muted); margin-top: 2px; }
+.edk .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.edk .action { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.edk .hint { margin: 0; font-size: 0.86rem; color: var(--edk-muted); }
+.edk .progress {
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--edk-accent);
+  font-size: 0.88rem;
+}
+
+/* Conclusion beside evidence when there is room; the conclusion first. */
+.edk .workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@container edk (min-width: 980px) {
+  .edk .workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
 }
 
 .edk .panel {
@@ -144,33 +212,45 @@ body.edk-standalone {
   margin-bottom: 16px;
   padding: 16px;
   border: 1px solid var(--edk-border);
-  border-radius: 8px;
+  border-radius: var(--edk-radius);
   background: var(--edk-surface);
 }
+.edk .conclusion-panel { border-top: 4px solid var(--edk-accent); }
+.edk .state-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.edk .headline { font-size: 1.15rem; font-weight: 650; margin: 10px 0 4px; }
+.edk .state-meaning { color: var(--edk-muted); font-size: 0.9rem; }
+.edk .confidence { margin: 10px 0; }
+.edk .confidence ul { margin: 6px 0; padding-left: 20px; font-size: 0.9rem; }
+.edk meter { width: 100%; max-width: 360px; height: 14px; }
+.edk .empty .headline { margin-top: 0; }
 
-.edk .evidence-list, .edk .timeline, .edk .refs { margin: 0; padding: 0; list-style: none; }
-
-.edk .evidence-list > li {
-  padding: 10px 0;
-  border-top: 1px solid var(--edk-border);
-}
-.edk .evidence-list > li.superseded .content { text-decoration: line-through; color: var(--edk-muted); }
-.edk .record-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
-.edk .record-head strong { font-family: ui-monospace, Consolas, monospace; }
-.edk .content { margin: 4px 0; }
-.edk .meta { font-size: 0.82rem; color: var(--edk-muted); overflow-wrap: anywhere; }
-
-.edk .headline { font-size: 1.05rem; font-weight: 600; margin: 6px 0; }
 .edk .outcome {
-  margin: 12px 0;
-  padding: 8px 12px;
+  margin: 14px 0;
+  padding: 10px 14px;
   border: 1px solid var(--edk-border);
   border-radius: 6px;
 }
-.edk .outcome h3 { margin-top: 4px; }
-.edk meter { width: 100%; max-width: 320px; }
-.edk .refs li { font-size: 0.9rem; }
-.edk .refs code, .edk .timeline code { font-size: 0.85rem; }
+.edk .outcome.changed { border-color: var(--edk-warn); }
+.edk .outcome h3 { margin-top: 2px; }
+
+/* Contextual help. */
+.edk details.help { margin: 6px 0; font-size: 0.88rem; }
+.edk details.help > summary { color: var(--edk-accent); font-size: 0.85rem; }
+.edk details.help[open] { padding: 6px 10px; border-left: 3px solid var(--edk-accent); background: var(--edk-accent-soft); border-radius: 0 6px 6px 0; }
+.edk details.help p { max-width: 80ch; }
+
+.edk .evidence-list, .edk .timeline, .edk .refs, .edk .features { margin: 0; padding: 0; list-style: none; }
+.edk .evidence-list > li { padding: 12px 0; border-top: 1px solid var(--edk-border); }
+.edk .evidence-list > li.superseded .content { text-decoration: line-through; color: var(--edk-muted); }
+.edk .record-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.edk .record-head strong { font-family: ui-monospace, Consolas, monospace; }
+.edk .record-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.edk .content { margin: 6px 0; }
+.edk .meta { font-size: 0.84rem; color: var(--edk-muted); overflow-wrap: anywhere; margin: 4px 0; }
+.edk .record-details > summary { font-size: 0.86rem; }
+.edk .record-details[open] { padding-bottom: 4px; }
+.edk .refs li { font-size: 0.9rem; margin: 3px 0; overflow-wrap: anywhere; }
+.edk .explanations li { margin: 6px 0; }
 
 .edk .timeline li {
   padding: 6px 0 6px 12px;
@@ -179,39 +259,126 @@ body.edk-standalone {
 }
 .edk .timeline li.significant { border-left-color: var(--edk-accent); }
 .edk .timeline li.kind-stage { border-left-color: var(--edk-warn); }
+.edk .timeline li.kind-recomputation { border-left-color: var(--edk-warn); }
+.edk .timeline li.historical { border-left-style: dashed; color: var(--edk-muted); }
 .edk .timeline .when { font-size: 0.8rem; color: var(--edk-muted); }
 .edk .timeline .title { font-weight: 600; }
 .edk .timeline .detail { font-size: 0.88rem; color: var(--edk-muted); overflow-wrap: anywhere; }
+.edk .toggle { display: inline-block; margin: 4px 0 8px; font-size: 0.88rem; }
 
-.edk details { margin-top: 12px; }
+.edk details { margin-top: 10px; }
 .edk summary { cursor: pointer; color: var(--edk-accent); }
 .edk pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; }
-
-.edk button.link {
-  padding: 0 6px;
-  font-size: 0.8rem;
-  background: transparent;
-  color: var(--edk-accent);
-}
-.edk .outcome.historical, .edk .timeline li.historical { color: var(--edk-muted); }
-.edk .timeline li.historical { border-left-style: dashed; }
-.edk .timeline li.kind-recomputation { border-left-color: var(--edk-warn); }
-.edk .badge.long { white-space: normal; }
+.edk .outcome.historical { color: var(--edk-muted); }
 
 .edk .trace-entry { border-top: 1px solid var(--edk-border); padding: 6px 0; margin: 0; }
-.edk .trace-entry > summary { color: var(--edk-text); font-size: 0.9rem; }
+.edk .trace-entry > summary { color: var(--edk-text); font-size: 0.9rem; overflow-wrap: anywhere; }
 .edk .trace-body { padding: 4px 0 4px 16px; font-size: 0.88rem; }
 .edk .trace-row { margin: 4px 0; overflow-wrap: anywhere; }
 .edk .trace-steps { padding-left: 20px; margin: 6px 0; }
 .edk .trace-steps > li { margin-bottom: 6px; overflow-wrap: anywhere; }
-.edk .badge.sponsor.zetaris { color: var(--edk-good); }
+.edk .badge.sponsor.zetaris, .edk .badge.sponsor.nemotron { color: var(--edk-good); }
 .edk .badge.sponsor.meterless, .edk .badge.sponsor.speck { color: var(--edk-accent); }
-.edk .badge.sponsor.nemotron { color: var(--edk-good); }
 .edk .badge.desk { color: var(--edk-muted); }
 
-/* Inside Speck: one column, as Speck's tab area is narrower than a page. */
-.edk.edk-in-speck main { grid-template-columns: 1fr; }
-@media (min-width: 1400px) {
-  .edk.edk-in-speck main { grid-template-columns: 1fr 1fr; }
+.edk .system > summary { font-weight: 600; }
+.edk .configuration {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 12px 0 0;
+  font-size: 0.9rem;
 }
-.edk.edk-in-speck > header h1 { font-size: 1.15rem; }
+.edk .configuration dt { color: var(--edk-muted); }
+.edk .configuration dd { margin: 0; overflow-wrap: anywhere; }
+
+/* What the guided tour is pointing at. */
+.edk .edk-spotlight {
+  outline: 3px solid var(--edk-accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* The tour's panel: docked, never covering the page centre. */
+.edk .coach {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  width: min(400px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 16px 18px;
+  border: 1px solid var(--edk-accent);
+  border-radius: 10px;
+  background: var(--edk-surface-raised);
+  box-shadow: var(--edk-shadow);
+}
+.edk .coach h2 { font-size: 1.05rem; }
+.edk .coach-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.edk .coach.collapsed { max-height: none; padding: 10px 14px; }
+.edk .coach.collapsed h2 { margin: 0; font-size: 0.95rem; }
+@media (max-width: 600px) {
+  .edk .coach { right: 8px; bottom: 8px; width: calc(100vw - 16px); max-height: 48vh; }
+}
+.edk .coach-body { font-size: 0.92rem; }
+.edk .coach-body ul { margin: 4px 0; padding-left: 18px; }
+.edk .coach-status { margin: 10px 0 0; padding: 6px 10px; border-radius: 6px; font-size: 0.88rem; font-weight: 600; }
+.edk .coach-status.waiting { background: var(--edk-accent-soft); color: var(--edk-accent); }
+.edk .coach-status.working { background: var(--edk-accent-soft); color: var(--edk-warn); }
+.edk .coach-status.done { color: var(--edk-good); border: 1px solid var(--edk-good); }
+.edk .coach-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+
+/* The feature guide: a side sheet. */
+.edk .guide {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 41;
+  width: min(440px, calc(100vw - 32px));
+  overflow-y: auto;
+  padding: 16px 18px;
+  border: 1px solid var(--edk-border);
+  border-radius: 10px;
+  background: var(--edk-surface-raised);
+  box-shadow: var(--edk-shadow);
+}
+.edk .guide-head { display: flex; justify-content: space-between; align-items: center; }
+.edk .features > li { padding: 10px 0; border-top: 1px solid var(--edk-border); }
+.edk .feature-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
+.edk .features p { margin: 4px 0; font-size: 0.9rem; }
+
+/* Withdrawal confirmation. */
+.edk .withdraw-dialog {
+  width: min(480px, calc(100vw - 32px));
+  padding: 18px 20px;
+  border: 1px solid var(--edk-bad);
+  border-radius: 10px;
+  color: var(--edk-text);
+  background: var(--edk-surface-raised);
+  box-shadow: var(--edk-shadow);
+}
+.edk .withdraw-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.edk .withdraw-dialog label { display: block; margin-top: 10px; font-weight: 600; font-size: 0.9rem; }
+.edk .withdraw-dialog textarea {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  font: inherit;
+  color: var(--edk-text);
+  background: var(--edk-surface);
+  border: 1px solid var(--edk-border);
+  border-radius: 6px;
+}
+.edk .dialog-error { color: var(--edk-bad); font-size: 0.88rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .edk button { transition: none; }
+}
+
+/* Inside Speck: the tab area is narrower than a page. */
+.edk.edk-in-speck > .case-header h1 { font-size: 1.25rem; }
+
+/* Inside Speck: the case picker above the page. */
+.edk .case-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }

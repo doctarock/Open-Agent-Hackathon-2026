@@ -25,7 +25,8 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
   const shell = document.createElement("div");
   shell.className = "edk edk-in-speck";
   const picker = document.createElement("div");
-  picker.className = "controls";
+  picker.className = "case-picker";
+  picker.setAttribute("aria-label", "Cases");
   picker.setAttribute("role", "tablist");
   const page = document.createElement("div");
   page.className = "edk-in-speck";
@@ -38,7 +39,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     for (const button of picker.querySelectorAll("button")) {
       const selected = button.dataset.case === id;
       button.setAttribute("aria-selected", String(selected));
-      button.className = selected ? "" : "link";
+      button.className = selected ? "primary" : "secondary";
     }
     mounted = mountEvidenceDesk(page, { apiBase: `${API_BASE}/cases/${encodeURIComponent(id)}`, fetchImpl: fetcher });
   };

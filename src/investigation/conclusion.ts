@@ -281,6 +281,10 @@ function justify(input: {
   }
   if (input.state === "supported") {
     reasons.push(`Speck holds ${subject.key} as ${subject.status} at ${subject.confidence}, at or above its supported threshold of ${belief.supportedThreshold}.`);
+  } else if (input.state === "leading" && gap === 0) {
+    // At or above the threshold but not established: Speck marks a belief
+    // weakening when the latest evidence applied to it counted against it.
+    reasons.push(`${subject.key} is at ${subject.confidence}, at or above Speck's supported threshold of ${belief.supportedThreshold}, but Speck holds it as ${subject.status}: the latest evidence applied to it counted against it, so it is not established.`);
   } else if (input.state === "leading") {
     reasons.push(`${subject.key} is at ${subject.confidence}: above the ${LEADING_MIN_CONFIDENCE} needed to lead, but ${gap} short of Speck's supported threshold of ${belief.supportedThreshold}.`);
   } else if (!subject.supporting.length) {
