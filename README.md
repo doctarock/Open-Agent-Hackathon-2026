@@ -412,6 +412,7 @@ showed this as one retry.
 | `npm run db:reset` | Delete Evidence Desk's Speck database and Meterless history. Stop the server first. |
 | `npm run zetaris:seed` | Load the scenario's evidence into a local Zetaris platform (see below) |
 | `npm run zetaris:check` | Exercise the live Zetaris path: login, probe query, case evidence |
+| `npm run zetaris:usl` | Build and check the Zetaris Unified Semantic Layer over a warehouse and a carrier source, with a data-quality rule (separate from the live path). See `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md` |
 | `npm run model:check` | One call to the Nemotron endpoint; prints the model it reports serving |
 | `npm run sponsors:verify` | Runs a real two-stage investigation with the services in `.env`, on throwaway storage (`data/` is untouched). Checks each sponsor's contribution against an independent source and prints OBSERVED or NOT OBSERVED for each. Exits 1 if any configured sponsor was not observed. Saves the report and trace to `eval/results/sponsor-check.json`. |
 
