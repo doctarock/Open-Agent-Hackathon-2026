@@ -96,6 +96,14 @@ Deterministic (2 identical runs): both match the labels at both stages (Speck su
   difference from persistence alone.
 - **Traceability is the consistent difference**: in every sample, Speck's state said which
   records count, which stopped counting and why, and what was believed before.
+- **These samples are with reasoning off.** Every live comparison here was made with the model's
+  reasoning off, as the assessor runs.
+  - With reasoning on, the stateless baseline did much better on the evaluation's labelled
+    checkpoints: 35/48 correct against 19/48, with unsupported claims falling from 19 to 3 and
+    every refuted claim kept out. Speck stayed at 27/48 against 26/48.
+  - So the stateless call's habit of keeping "delivered" and citing the replaced scan is a property
+    of the small model with reasoning off, not of stateless calls in general.
+  - See the README, *Reasoning on or off*; the reports are in `eval/results/experiments/reasoning/`.
 
 ## Decisive mode (experimental)
 

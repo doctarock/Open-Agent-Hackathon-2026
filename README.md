@@ -128,7 +128,7 @@ bottom of each case page).
 
 ### Decisive mode (experimental)
 
-A switch in the comparison panel turns on an extra
+A switch at the top of each case's conclusion (and in the comparison panel) turns on an extra
 reading that combines Speck with the stateless baseline: the stateless answer is accepted only if
 every record it cites still counts and Speck holds or points to the same explanation; otherwise
 Speck's own conclusion stands, or nothing is concluded. *What is decisive mode?* beside the switch
@@ -139,6 +139,11 @@ browser, and never changes Speck's belief state, the evidence or the history.
 - On the case page, after each run it asks the same stateless baseline (`GET`/`POST opinion`;
   one model call when live) for an answer on the case as it stands, and shows the reading only
   while that answer still matches the latest run, stage and records.
+- That one call is made with the model's **reasoning on** (`NEMOTRON_DECISIVE_REASONING_EFFORT`,
+  default `medium` for Ollama and Meterless, the provider's default elsewhere; `none` turns it
+  off), whatever the assessor uses. Reasoning made the stateless answer markedly better (see
+  *Reasoning on or off*). The prompt and the reasoning fit easily in the 4,096-token window:
+  measured, a 1,007-token prompt and 250-470 reply tokens.
 - It was designed after looking at the saved comparisons, including a held-out case, and has not
   been evaluated on other cases. The replay and its cost are in
   [docs/comparison.md](docs/comparison.md#decisive-mode-experimental).
@@ -671,6 +676,7 @@ showed this as one retry.
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. |
 | `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
 | `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
+| `npm run eval:reasoning` | The live evaluation on local Ollama with the model's reasoning off and on (three repeats each, alternated); writes each report and a `summary.md` to `eval/results/experiments/reasoning/<time>/`, never `live.json`. Needs the 16K model: `ollama create nemotron-3-nano-4b-ctx16k -f config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile`. `-- --summarize <dir>` re-summarises a folder. |
 | `npm run eval:cross-domain` | The separate cross-domain suite (`eval/cross-domain/`): logistics, payment reversals, procurement; refuses to run if its locked expectations changed. Findings: `docs/cross-domain-evaluation.md` |
 | `npm run plugin:install` | Build, then (re)install the plugin into `speck/plugins/evidence-desk/` and approve its entry hash in Speck's allowlist. Keeps the case data; the plugin reads the repository's `.env`. Restart Speck afterwards. |
 | `npm run build` | Compile TypeScript to `dist/` |
@@ -831,6 +837,65 @@ Measured on 2026-10-24: the disputed delivery's two stages, fixture evidence,
 
 Speck's own chat uses a separate model, the 9B Nemotron Nano, with a 16,384-token window (see
 *Inside Speck*).
+
+### Reasoning on or off
+
+The 4B model can reason before it answers. The assessor runs with reasoning off
+(`NEMOTRON_REASONING_EFFORT=none`). To see what reasoning and a larger window would change,
+`npm run eval:reasoning` runs the live evaluation (both groups: 8 held-out and 8 regression
+checkpoints with fixed labels) under two settings, alternated, three times each:
+- **reasoning off:** `nemotron-3-nano:4b`, 4,096-token window, replies capped at 4,096 tokens;
+- **reasoning on:** the same weights in a 16,384-token window
+  (`config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile`), replies capped at 12,288.
+
+Every system uses the same model in each setting: Speck, Speck rebuilt from scratch at each
+checkpoint, and the stateless baseline.
+
+**Results** (48 labelled checkpoints per cell, 2026-10-24). Each report is in
+`eval/results/experiments/reasoning/`, with a `summary.md` per run.
+
+| Conclusion correct | Reasoning off | Reasoning on |
+|---|---|---|
+| Speck (the case as the app runs it) | 26/48 | 27/48 |
+| Speck, rebuilt from scratch | 27/48 | 28/48 |
+| Stateless baseline | 19/48 | **35/48** |
+| Time for one pass of both groups | about 5 min | about 7 min |
+
+- **Speck does not improve.** It almost never states a wrong conclusion: 0-1 unsupported claims
+  in either setting. What it misses, it misses by abstaining when a conclusion was due (22 of 30
+  such checkpoints with reasoning off, 20 with it on). That comes from Speck's conclusion policy,
+  not from the model's judgments: model-judged evidence is capped at reliability 0.4, and a
+  conclusion must clear a threshold. Better judgments do not move it.
+- **The stateless baseline improves markedly.** With reasoning on:
+  - unsupported claims fall from 19 of 44 of its conclusions to 3 of 43;
+  - it keeps every refuted claim out of its answer (27/27, against 19/27);
+  - it never cites a replaced record as support (15/15, against 10/15).
+- **Where the comparison's claim holds.** The side-by-side comparison's finding (the stateless call
+  keeps "delivered" and cites the replaced scan) was measured with reasoning off. With reasoning
+  on, the baseline mostly stops doing that.
+- **Cost.** Reasoning takes longer: a median of about 4-6 s per Speck call against about 2 s, and
+  about 1.6 s per baseline call against 0.7 s.
+- **A fix the experiment found.** With reasoning on, the model sometimes splits an identifier
+  after its hyphen ("H- MISDELIVERED", "EV- SUP-006"), and the contract check rejected those
+  replies: 12 of 54 baseline replies in the first run
+  (`eval/results/experiments/reasoning/2026-10-24-strict-ids/`).
+  - The model client now joins such identifiers back together, for every call alike
+    (`joinSplitIdentifiers` in `src/reasoning/nemotron.ts`). Only a quoted value made of
+    uppercase letters, digits and hyphens is treated as an identifier; other text is left as
+    written.
+  - The reasoning-on numbers above are the rerun with the fix (`2026-10-24-ids-joined/`), in which
+    every baseline reply was valid. Before the fix, reasoning on scored 26, 26 and 32 of 48.
+  - The reasoning-off numbers come from the first run. That setting produced no split
+    identifiers, so the fix does not touch it.
+
+What follows from it:
+- **The assessor stays at reasoning off**, which is as accurate for Speck and about twice as fast.
+- **Decisive mode's stateless call uses reasoning on**, where it helps (see *Decisive mode*).
+- **The lever for Speck is its conclusion policy**, not the model. Changing it is a design
+  decision, and would be measured the same way against the same pre-registered labels.
+
+These are three live samples per setting on 16 checkpoints, so differences of one or two counts
+are within run-to-run variation. The 19 versus 35 difference for the baseline is not.
 
 ## Evaluation
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
@@ -90,6 +91,38 @@ test("the second opinion reads the case as it stands, and the page treats it as 
     assert.equal(reading.conclusion, "H-UNPAID");
     assert.equal(desk.runs().length, runsBefore + 1, "asking for an opinion runs nothing on the case");
   });
+});
+
+test("decisive mode's stateless call is made with reasoning on, and an identifier split by the model is read as written", async () => {
+  // A stand-in Ollama: it records each request's reasoning setting and
+  // answers as Nemotron Nano 4B does with reasoning on ("H- UNPAID").
+  const seen: Array<string | undefined> = [];
+  const server = http.createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    request.on("end", () => {
+      seen.push(JSON.parse(body).reasoning_effort);
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ model: "nemotron-stand-in", choices: [{ message: { role: "assistant",
+        content: JSON.stringify({ conclusion: "H- UNPAID", cited_evidence: ["EV- BNK-103"], rationale: "The bank returned the payment - it was not paid." }) } }] }));
+    });
+  }).listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  const url = `http://127.0.0.1:${(server.address() as { port: number }).port}/v1`;
+  try {
+    const config = testConfig({ scenarioDir: BANK }, { REASONER: "nemotron", MODEL_PROVIDER: "ollama", NEMOTRON_BASE_URL: url, NEMOTRON_MODEL: "nemotron-stand-in", NEMOTRON_REASONING_EFFORT: "none" });
+    assert.equal(config.nemotron.decisiveReasoningEffort, "medium", "on by default for Ollama");
+    await withDesk(config, async (desk) => {
+      const { opinion } = await deskApi(desk, config, "test").requestOpinion() as any;
+      assert.deepEqual(seen, ["medium"], "one call, with reasoning on, although the assessor's is off");
+      assert.deepEqual([opinion.answer.concluded, opinion.answer.cited, opinion.model.reasoningEffort], ["H-UNPAID", ["EV-BNK-103"], "medium"]);
+      assert.equal(opinion.answer.rationale, "The bank returned the payment - it was not paid.", "ordinary text is left as written");
+    });
+  } finally {
+    server.close();
+  }
+  assert.equal(testConfig({}, { MODEL_PROVIDER: "nvidia" }).nemotron.decisiveReasoningEffort, "", "the provider's default where the parameter may be refused");
+  assert.equal(testConfig({}, { MODEL_PROVIDER: "ollama", NEMOTRON_DECISIVE_REASONING_EFFORT: "none" }).nemotron.decisiveReasoningEffort, "none");
 });
 
 test("the preference is per viewer and off when storage is unavailable", () => {

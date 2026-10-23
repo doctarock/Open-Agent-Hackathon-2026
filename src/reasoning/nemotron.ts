@@ -42,6 +42,15 @@ export function modelConfigProblem(config: NemotronConfig): string | null {
   return null;
 }
 
+// With reasoning on, Nemotron Nano 4B sometimes writes an identifier with a
+// space after a hyphen ("H- MISDELIVERED", "EV- SUP-006"; measured
+// 2026-10-24), which the contract check rightly rejects. A quoted value made
+// only of uppercase letters, digits and hyphens is an identifier, so its
+// stray spaces after hyphens are removed; other text is left as written.
+export function joinSplitIdentifiers(text: string): string {
+  return text.replace(/"([A-Z][A-Z0-9]*(?:-\s*[A-Z0-9]+)+)"/g, (_match, id: string) => `"${id.replace(/-\s+/g, "-")}"`);
+}
+
 // One plain-text chat completion ("Reply with the single word: ready"), as
 // npm run model:check and npm run configure make it. Throws with the
 // endpoint's own words on any failure, including content that is not a string.
@@ -138,7 +147,7 @@ export class NemotronProcessor implements ModelProcessor {
       throw new Error(`${name} returned no answer content (finish_reason ${choice?.finish_reason ?? "unknown"}, ${body.usage?.completion_tokens ?? "?"} completion tokens). Raise NEMOTRON_MAX_TOKENS or set NEMOTRON_REASONING_EFFORT=none.`);
     }
     return {
-      text: content,
+      text: joinSplitIdentifiers(content),
       ...(Number.isFinite(body.usage?.prompt_tokens) ? { inputTokens: body.usage.prompt_tokens } : {}),
       ...(Number.isFinite(body.usage?.completion_tokens) ? { outputTokens: body.usage.completion_tokens } : {})
     };

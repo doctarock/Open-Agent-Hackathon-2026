@@ -20,6 +20,7 @@ export const DECISIVE_EXPLANATION = [
   "Decisive mode adds a second reading beside Speck's conclusion. It asks a stateless model call (or, without a model, the fact rules) for an answer over the same records, then checks that answer against Speck's state.",
   "The stateless answer is accepted only if every record it cites still counts (none replaced by a later record, none that does not exist) and it names the explanation Speck holds or points to. Otherwise Speck's own conclusion stands, or nothing is concluded.",
   "Why: Speck caps model-judged evidence, so it can stay unresolved when the evidence clearly points one way; a stateless call is more decisive but keeps relying on records that have been corrected. Decisive mode keeps Speck's check on corrections and lets agreement settle the rest.",
+  "The stateless call is made with the model's reasoning on (NEMOTRON_DECISIVE_REASONING_EFFORT; on by default for Ollama and Meterless): in a measured comparison, reasoning made stateless answers markedly more accurate. It takes a few seconds longer.",
   "The cost: when both lean the same way it concludes where Speck alone would wait, and both opinions come from the same model, so their agreement is not independent evidence.",
   "Experimental: the rule was written after looking at six live comparisons per prepared case, including a held-out evaluation case, and has not been evaluated on other cases. Speck's belief state, the evidence and the history are unchanged; switching it off removes the reading."
 ];

@@ -1089,18 +1089,16 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   function renderDecisive() {
     if (destroyed) return;
     const holder = $("decisive");
-    // Off, it is not shown here at all: its switch is in the comparison
-    // panel, and only an active reading appears beside the conclusion.
-    holder.hidden = !decisiveOn;
-    if (!decisiveOn) { holder.replaceChildren(); return; }
     const parts = [decisiveSwitch(decisiveOn)];
-    if (!view.investigation?.latestRun) {
+    if (!decisiveOn) {
+      parts.push(el("p", { className: "meta" }, "Off: Speck's conclusion below is the only reading."));
+    } else if (!view.investigation?.latestRun) {
       parts.push(el("p", { className: "meta" }, "Run the investigation first: decisive mode reads Speck's state after a run."));
     } else if (view.listing?.pending?.length) {
       parts.push(el("p", { className: "meta" }, `${view.listing.pending.length} record(s) are not yet assessed. Run the investigation; decisive mode then checks again.`));
     } else if (opinionState.loading) {
       parts.push(el("p", { className: "meta", role: "status" }, view.status?.reasoner?.kind === "nemotron"
-        ? "Asking the stateless baseline: one live model call, usually a few seconds…" : "Asking the stateless baseline (fact rules)…"));
+        ? "Asking the stateless baseline: one live model call with reasoning, usually a few seconds…" : "Asking the stateless baseline (fact rules)…"));
     } else if (opinionState.error) {
       parts.push(el("p", {}, badge(`The stateless answer could not be obtained: ${opinionState.error}. Speck's conclusion below stands.`, "bad long")),
         el("button", { type: "button", className: "link", "data-decisive-retry": "" }, "Try again"));
@@ -1121,7 +1119,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
           badge(reading.basis === "agreement" ? "Speck and the stateless answer agree" : reading.basis === "speck" ? "Speck's own conclusion" : "nothing established", reading.basis === "agreement" ? "ok" : "warn")),
         reading.conclusion ? el("p", {}, (view.investigation.hypotheses ?? []).find((h) => h.key === reading.conclusion)?.statement ?? "") : null,
         el("p", { className: "meta" }, reading.reason),
-        el("p", { className: "meta" }, `Stateless answer (${o.kind === "live" ? `live call to ${o.model?.model}` : "fact rules, no model"}, ${when(o.at)}): ${o.answer.error ? `error: ${o.answer.error}` : o.answer.concluded ?? "unresolved"}${o.answer.cited?.length ? `, citing ${o.answer.cited.join(", ")}` : ""}.`),
+        el("p", { className: "meta" }, `Stateless answer (${o.kind === "live" ? `live call to ${o.model?.model}${o.model?.reasoningEffort && o.model.reasoningEffort !== "none" ? ", reasoning on" : ""}` : "fact rules, no model"}, ${when(o.at)}): ${o.answer.error ? `error: ${o.answer.error}` : o.answer.concluded ?? "unresolved"}${o.answer.cited?.length ? `, citing ${o.answer.cited.join(", ")}` : ""}.`),
         o.answer.rationale ? el("blockquote", { className: "cmp-rationale" }, badge("model's words", "warn"), " ", o.answer.rationale) : null,
         el("p", { className: "meta" }, "Speck's belief state below is unchanged; this reading is not saved in Speck.")));
     }

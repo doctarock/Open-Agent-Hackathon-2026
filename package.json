@@ -25,6 +25,7 @@
     "model:check": "npm run build && node dist/src/scripts/model-check.js",
     "eval": "npm run build && node dist/src/scripts/eval.js",
     "eval:live": "npm run build && node dist/src/scripts/eval.js --live",
+    "eval:reasoning": "npm run build && node dist/src/scripts/eval-reasoning.js",
     "eval:cross-domain": "npm run build && node dist/src/scripts/eval-cross-domain.js",
     "compare": "npm run build && node dist/src/scripts/compare.js",
     "compare:live": "npm run build && node dist/src/scripts/compare.js --live",

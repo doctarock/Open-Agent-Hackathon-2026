@@ -1,0 +1,4 @@
+# Nemotron Nano 4B in a 16,384-token window, for npm run eval:reasoning.
+# ollama create nemotron-3-nano-4b-ctx16k -f config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile
+FROM nemotron-3-nano:4b
+PARAMETER num_ctx 16384

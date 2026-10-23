@@ -65,7 +65,9 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
   // a new one whenever the case has moved on since.
   let opinion: Record<string, unknown> | null = null;
   let opinionInFlight: Promise<Record<string, unknown>> | null = null;
-  const processor = config.reasoner === "nemotron" ? new NemotronProcessor(config.nemotron) : null;
+  // Decisive mode's stateless call, with its own reasoning setting.
+  const decisiveModel = { ...config.nemotron, reasoningEffort: config.nemotron.decisiveReasoningEffort };
+  const processor = config.reasoner === "nemotron" ? new NemotronProcessor(decisiveModel) : null;
 
   return {
     status: () => ({
@@ -179,7 +181,7 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
           replaced: [...replaced].map(([recordId, by]) => ({ recordId, by })),
           answer,
           kind: answer.method === "nemotron" ? "live" : "deterministic",
-          model: answer.method === "nemotron" ? { model: config.nemotron.model, endpoint: config.nemotron.baseUrl } : null
+          model: answer.method === "nemotron" ? { model: config.nemotron.model, endpoint: config.nemotron.baseUrl, reasoningEffort: decisiveModel.reasoningEffort || null } : null
         };
       })();
       try {

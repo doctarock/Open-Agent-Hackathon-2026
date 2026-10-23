@@ -1,0 +1,742 @@
+{
+ "generatedAt": "2026-10-23T14:33:22.245Z",
+ "config": "4k-noreason",
+ "settings": {
+  "NEMOTRON_MODEL": "nemotron-3-nano:4b",
+  "NEMOTRON_REASONING_EFFORT": "none",
+  "NEMOTRON_MAX_TOKENS": "4096"
+ },
+ "repeat": 2,
+ "group": "held-out",
+ "wallMs": 130420,
+ "mode": "live",
+ "cases": [
+  {
+   "id": "conflicting-sources",
+   "category": "conflict",
+   "checkpoints": 1
+  },
+  {
+   "id": "correction-supersedes",
+   "category": "correction",
+   "checkpoints": 2
+  },
+  {
+   "id": "ghost-citation",
+   "category": "citation",
+   "checkpoints": 1
+  },
+  {
+   "id": "missing-evidence",
+   "category": "abstention",
+   "checkpoints": 1
+  },
+  {
+   "id": "model-misreading",
+   "category": "model-interpretation",
+   "checkpoints": 2
+  },
+  {
+   "id": "partial-support",
+   "category": "partial-support",
+   "checkpoints": 1
+  },
+  {
+   "id": "provider-failure",
+   "category": "provider-failure",
+   "checkpoints": 1
+  }
+ ],
+ "systems": [
+  {
+   "system": "speck-desk/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "conflicting-sources",
+     "category": "conflict",
+     "stage": "day",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "correction-supersedes",
+     "category": "correction",
+     "stage": "before-return",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "correction-supersedes",
+     "category": "correction",
+     "stage": "after-return",
+     "expected": "H-UNPAID",
+     "concluded": null,
+     "tentative": "H-UNPAID",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "ghost-citation",
+     "category": "citation",
+     "stage": "records",
+     "expected": "H-REFUNDED",
+     "concluded": null,
+     "tentative": "H-REFUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "missing-evidence",
+     "category": "abstention",
+     "stage": "claim",
+     "expected": null,
+     "concluded": null,
+     "tentative": "H-DEFECT",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "model-misreading",
+     "category": "model-interpretation",
+     "stage": "carrier-scan",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "model-misreading",
+     "category": "model-interpretation",
+     "stage": "pickup-report",
+     "expected": "H-AWAITING",
+     "concluded": null,
+     "tentative": "H-AWAITING",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "partial-support",
+     "category": "partial-support",
+     "stage": "arrival",
+     "expected": null,
+     "concluded": null,
+     "tentative": "H-CARRIER-LIABLE",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "provider-failure",
+     "category": "provider-failure",
+     "stage": "only",
+     "expected": "error:evidence",
+     "concluded": null,
+     "tentative": null,
+     "error": "evidence: Zetaris is not reachable at http://127.0.0.1:9 (login: fetch failed)",
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 5,
+     "of": 8,
+     "rate": 0.625
+    },
+    "validCitations": {
+     "count": 16,
+     "of": 16,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 1,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 5,
+     "of": 5,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "appropriateAbstention": {
+     "count": 4,
+     "of": 4,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 3,
+     "of": 4,
+     "rate": 0.75
+    },
+    "failureSurfaced": {
+     "count": 1,
+     "of": 1,
+     "rate": 1
+    },
+    "explanationAgreement": {
+     "count": 6,
+     "of": 8,
+     "rate": 0.75
+    },
+    "model": {
+     "httpCalls": 16,
+     "answered": {
+      "count": 16,
+      "of": 16,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 16,
+      "of": 16,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 2839,
+      "median": 1868,
+      "max": 6319
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "conflicting-sources",
+     "category": "conflict",
+     "stage": "day",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "correction-supersedes",
+     "category": "correction",
+     "stage": "before-return",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "correction-supersedes",
+     "category": "correction",
+     "stage": "after-return",
+     "expected": "H-UNPAID",
+     "concluded": null,
+     "tentative": "H-UNPAID",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "ghost-citation",
+     "category": "citation",
+     "stage": "records",
+     "expected": "H-REFUNDED",
+     "concluded": null,
+     "tentative": "H-REFUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "missing-evidence",
+     "category": "abstention",
+     "stage": "claim",
+     "expected": null,
+     "concluded": null,
+     "tentative": "H-DEFECT",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "model-misreading",
+     "category": "model-interpretation",
+     "stage": "carrier-scan",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "model-misreading",
+     "category": "model-interpretation",
+     "stage": "pickup-report",
+     "expected": "H-AWAITING",
+     "concluded": null,
+     "tentative": "H-AWAITING",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "partial-support",
+     "category": "partial-support",
+     "stage": "arrival",
+     "expected": null,
+     "concluded": null,
+     "tentative": "H-CARRIER-LIABLE",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [
+      "EV-EDSP-501",
+      "EV-RECV-502"
+     ],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "provider-failure",
+     "category": "provider-failure",
+     "stage": "only",
+     "expected": "error:evidence",
+     "concluded": null,
+     "tentative": null,
+     "error": "evidence: Zetaris is not reachable at http://127.0.0.1:9 (login: fetch failed)",
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 5,
+     "of": 8,
+     "rate": 0.625
+    },
+    "validCitations": {
+     "count": 16,
+     "of": 18,
+     "rate": 0.889
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 1,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 5,
+     "of": 5,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "appropriateAbstention": {
+     "count": 4,
+     "of": 4,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 3,
+     "of": 4,
+     "rate": 0.75
+    },
+    "failureSurfaced": {
+     "count": 1,
+     "of": 1,
+     "rate": 1
+    },
+    "explanationAgreement": {
+     "count": 4,
+     "of": 8,
+     "rate": 0.5
+    },
+    "model": {
+     "httpCalls": 18,
+     "answered": {
+      "count": 18,
+      "of": 18,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 17,
+      "of": 18,
+      "rate": 0.944
+     },
+     "latencyMs": {
+      "mean": 4382,
+      "median": 2217,
+      "max": 31814
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "baseline-stateless/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "conflicting-sources",
+     "category": "conflict",
+     "stage": "day",
+     "expected": null,
+     "concluded": "H-DELIVERED",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "correction-supersedes",
+     "category": "correction",
+     "stage": "before-return",
+     "expected": "H-PAID",
+     "concluded": "H-UNPAID",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "correction-supersedes",
+     "category": "correction",
+     "stage": "after-return",
+     "expected": "H-UNPAID",
+     "concluded": "H-UNPAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "ghost-citation",
+     "category": "citation",
+     "stage": "records",
+     "expected": "H-REFUNDED",
+     "concluded": "H-REFUNDED",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "missing-evidence",
+     "category": "abstention",
+     "stage": "claim",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "model-misreading",
+     "category": "model-interpretation",
+     "stage": "carrier-scan",
+     "expected": null,
+     "concluded": "H-COLLECTED",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "model-misreading",
+     "category": "model-interpretation",
+     "stage": "pickup-report",
+     "expected": "H-AWAITING",
+     "concluded": "H-LOST",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-LOST"
+     ],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "partial-support",
+     "category": "partial-support",
+     "stage": "arrival",
+     "expected": null,
+     "concluded": "H-SHIPPER-PACKING",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "provider-failure",
+     "category": "provider-failure",
+     "stage": "only",
+     "expected": "error:evidence",
+     "concluded": null,
+     "tentative": null,
+     "error": "evidence: Zetaris is not reachable at http://127.0.0.1:9 (login: fetch failed)",
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 3,
+     "of": 8,
+     "rate": 0.375
+    },
+    "validCitations": {
+     "count": 12,
+     "of": 12,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 4,
+     "of": 7,
+     "rate": 0.571
+    },
+    "correctionHandling": {
+     "count": 4,
+     "of": 5,
+     "rate": 0.8
+    },
+    "invalidatedExcluded": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "appropriateAbstention": {
+     "count": 1,
+     "of": 4,
+     "rate": 0.25
+    },
+    "overAbstention": {
+     "count": 0,
+     "of": 4,
+     "rate": 0
+    },
+    "failureSurfaced": {
+     "count": 1,
+     "of": 1,
+     "rate": 1
+    },
+    "explanationAgreement": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "model": {
+     "httpCalls": 8,
+     "answered": {
+      "count": 8,
+      "of": 8,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 8,
+      "of": 8,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 687,
+      "median": 691,
+      "max": 781
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  }
+ ],
+ "differences": [
+  "All model-backed systems use the same Nemotron endpoint, model, temperature (0.1), reasoning effort and output budget, and at most two attempts per structured reply.",
+  "Speck systems call the model once per evidence chunk (relation judgments) plus once for the explanation; the baseline calls it once per checkpoint with all visible evidence. Call counts and latencies are therefore not like for like.",
+  "Speck systems also apply the scenario's decisive fact rules and Speck's 0.4 reliability cap on model-judged evidence; the baseline sees the same facts in its prompt but has no rules, so differences cannot be attributed to persistence alone.",
+  "The baseline is told to answer \"unresolved\" when nothing is established; Speck systems abstain through Speck's thresholds. Only Speck systems produce an explanation, so explanation agreement exists only for them.",
+  "Evidence comes from the held-out fixture files in both modes; the provider-failure case uses the real Zetaris adapter against an unreachable port."
+ ]
+}

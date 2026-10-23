@@ -1,0 +1,686 @@
+{
+ "generatedAt": "2026-10-23T23:21:00.415Z",
+ "config": "16k-reason",
+ "settings": {
+  "NEMOTRON_MODEL": "nemotron-3-nano-4b-ctx16k",
+  "NEMOTRON_REASONING_EFFORT": "",
+  "NEMOTRON_MAX_TOKENS": "12288"
+ },
+ "repeat": 2,
+ "group": "regression",
+ "wallMs": 306164,
+ "mode": "live",
+ "cases": [
+  {
+   "id": "misattributed-scan",
+   "category": "correction-independent-chain",
+   "checkpoints": 2
+  },
+  {
+   "id": "return-cancelled",
+   "category": "correction-withdrawn",
+   "checkpoints": 3
+  },
+  {
+   "id": "withdrawn-scan",
+   "category": "invalidated-support",
+   "checkpoints": 3
+  }
+ ],
+ "systems": [
+  {
+   "system": "speck-desk/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "misattributed-scan",
+     "category": "correction-independent-chain",
+     "stage": "scan",
+     "expected": "H-DELIVERED",
+     "concluded": "H-DELIVERED",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "misattributed-scan",
+     "category": "correction-independent-chain",
+     "stage": "correction",
+     "expected": "H-IN-DEPOT",
+     "concluded": null,
+     "tentative": "H-IN-DEPOT",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [
+      "EV‑RV3‑01",
+      "EV‑RV3‑03",
+      "EV‑RV3‑04"
+     ],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "credit",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "return",
+     "expected": "H-UNPAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-PAID"
+     ],
+     "staleSupport": [
+      "EV-RV1-01"
+     ],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "return-cancelled",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "scans",
+     "expected": "H-RECEIVED",
+     "concluded": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "withdrawn",
+     "expected": null,
+     "concluded": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "audit",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 5,
+     "of": 8,
+     "rate": 0.625
+    },
+    "validCitations": {
+     "count": 18,
+     "of": 21,
+     "rate": 0.857
+    },
+    "unsupportedClaims": {
+     "count": 1,
+     "of": 4,
+     "rate": 0.25
+    },
+    "correctionHandling": {
+     "count": 3,
+     "of": 4,
+     "rate": 0.75
+    },
+    "invalidatedExcluded": {
+     "count": 4,
+     "of": 5,
+     "rate": 0.8
+    },
+    "appropriateAbstention": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 2,
+     "of": 6,
+     "rate": 0.333
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 7,
+     "of": 8,
+     "rate": 0.875
+    },
+    "model": {
+     "httpCalls": 16,
+     "answered": {
+      "count": 16,
+      "of": 16,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 16,
+      "of": 16,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 5290,
+      "median": 4775,
+      "max": 10024
+     },
+     "servedModels": [
+      "nemotron-3-nano-4b-ctx16k"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "misattributed-scan",
+     "category": "correction-independent-chain",
+     "stage": "scan",
+     "expected": "H-DELIVERED",
+     "concluded": null,
+     "tentative": "H-DELIVERED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "misattributed-scan",
+     "category": "correction-independent-chain",
+     "stage": "correction",
+     "expected": "H-IN-DEPOT",
+     "concluded": null,
+     "tentative": "H-IN-DEPOT",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "credit",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "return",
+     "expected": "H-UNPAID",
+     "concluded": null,
+     "tentative": "H-UNPAID",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "return-cancelled",
+     "expected": "H-PAID",
+     "concluded": null,
+     "tentative": "H-UNPAID",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [
+      "EV‑RV1‑03",
+      "EV‑RV1‑04",
+      "EV‑RV1‑02"
+     ],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-UNPAID"
+     ],
+     "staleSupport": [
+      "EV-RV1-03",
+      "EV-RV1-04"
+     ],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "scans",
+     "expected": "H-RECEIVED",
+     "concluded": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "withdrawn",
+     "expected": null,
+     "concluded": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "audit",
+     "expected": null,
+     "concluded": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 3,
+     "of": 8,
+     "rate": 0.375
+    },
+    "validCitations": {
+     "count": 20,
+     "of": 23,
+     "rate": 0.87
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 1,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 3,
+     "of": 4,
+     "rate": 0.75
+    },
+    "invalidatedExcluded": {
+     "count": 4,
+     "of": 5,
+     "rate": 0.8
+    },
+    "appropriateAbstention": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 5,
+     "of": 6,
+     "rate": 0.833
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 6,
+     "of": 8,
+     "rate": 0.75
+    },
+    "model": {
+     "httpCalls": 22,
+     "answered": {
+      "count": 21,
+      "of": 22,
+      "rate": 0.955
+     },
+     "contractValid": {
+      "count": 21,
+      "of": 22,
+      "rate": 0.955
+     },
+     "latencyMs": {
+      "mean": 9393,
+      "median": 5220,
+      "max": 93897
+     },
+     "servedModels": [
+      "nemotron-3-nano-4b-ctx16k"
+     ]
+    }
+   }
+  },
+  {
+   "system": "baseline-stateless/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "misattributed-scan",
+     "category": "correction-independent-chain",
+     "stage": "scan",
+     "expected": "H-DELIVERED",
+     "concluded": "H-DELIVERED",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "misattributed-scan",
+     "category": "correction-independent-chain",
+     "stage": "correction",
+     "expected": "H-IN-DEPOT",
+     "concluded": "H-IN-DEPOT",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "credit",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "return",
+     "expected": "H-UNPAID",
+     "concluded": "H-UNPAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "return-cancelled",
+     "category": "correction-withdrawn",
+     "stage": "return-cancelled",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": true,
+     "invalidCitations": [
+      "EV-06",
+      "EV-05"
+     ],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "scans",
+     "expected": "H-RECEIVED",
+     "concluded": "H-RECEIVED",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "withdrawn",
+     "expected": null,
+     "concluded": "H-RECEIVED",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "withdrawn-scan",
+     "category": "invalidated-support",
+     "stage": "audit",
+     "expected": null,
+     "concluded": "H-RECEIVED",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 6,
+     "of": 8,
+     "rate": 0.75
+    },
+    "validCitations": {
+     "count": 12,
+     "of": 14,
+     "rate": 0.857
+    },
+    "unsupportedClaims": {
+     "count": 1,
+     "of": 8,
+     "rate": 0.125
+    },
+    "correctionHandling": {
+     "count": 4,
+     "of": 4,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 5,
+     "of": 5,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 0,
+     "of": 2,
+     "rate": 0
+    },
+    "overAbstention": {
+     "count": 0,
+     "of": 6,
+     "rate": 0
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "model": {
+     "httpCalls": 8,
+     "answered": {
+      "count": 8,
+      "of": 8,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 8,
+      "of": 8,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 1771,
+      "median": 1763,
+      "max": 2689
+     },
+     "servedModels": [
+      "nemotron-3-nano-4b-ctx16k"
+     ]
+    }
+   }
+  }
+ ],
+ "differences": [
+  "All model-backed systems use the same Nemotron endpoint, model, temperature (0.1), reasoning effort and output budget, and at most two attempts per structured reply.",
+  "Speck systems call the model once per evidence chunk (relation judgments) plus once for the explanation; the baseline calls it once per checkpoint with all visible evidence. Call counts and latencies are therefore not like for like.",
+  "Speck systems also apply the scenario's decisive fact rules and Speck's 0.4 reliability cap on model-judged evidence; the baseline sees the same facts in its prompt but has no rules, so differences cannot be attributed to persistence alone.",
+  "The baseline is told to answer \"unresolved\" when nothing is established; Speck systems abstain through Speck's thresholds. Only Speck systems produce an explanation, so explanation agreement exists only for them.",
+  "Evidence comes from the held-out fixture files in both modes; the provider-failure case uses the real Zetaris adapter against an unreachable port."
+ ]
+}

@@ -45,6 +45,11 @@ export interface NemotronConfig {
   // Sent as reasoning_effort when set (e.g. "none" turns Nemotron's
   // reasoning trace off on Ollama); omitted when empty.
   reasoningEffort: string;
+  // The same, for decisive mode's one stateless call. Reasoning on by default
+  // where the provider is known to take the parameter (Ollama, Meterless),
+  // because reasoning made the stateless answer markedly better (README,
+  // "Reasoning on or off"); the provider's default elsewhere.
+  decisiveReasoningEffort: string;
 }
 
 export interface AppConfig {
@@ -141,10 +146,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
 function modelConfig(env: NodeJS.ProcessEnv): NemotronConfig {
   const nemotronBase = env.NEMOTRON_BASE_URL?.trim() ?? "";
   const provider = oneOf(env.MODEL_PROVIDER, MODEL_PROVIDERS, nemotronBase ? "openai-compatible" : "meterless", "MODEL_PROVIDER");
+  // Providers known to take reasoning_effort: Ollama (also when named by its
+  // port) and Meterless.
+  const takesReasoningEffort = provider === "ollama" || provider === "meterless" || (provider === "openai-compatible" && /:11434\b/.test(nemotronBase));
   const common = {
     timeoutMs: positiveInt(env.NEMOTRON_TIMEOUT_MS, 180_000, "NEMOTRON_TIMEOUT_MS"),
     maxTokens: positiveInt(env.NEMOTRON_MAX_TOKENS, 4096, "NEMOTRON_MAX_TOKENS"),
-    reasoningEffort: env.NEMOTRON_REASONING_EFFORT?.trim() ?? ""
+    reasoningEffort: env.NEMOTRON_REASONING_EFFORT?.trim() ?? "",
+    decisiveReasoningEffort: env.NEMOTRON_DECISIVE_REASONING_EFFORT?.trim() || (takesReasoningEffort ? "medium" : "")
   };
   // .env.example's placeholders (<...>) are not values.
   const secret = (name: string) => (env[name] ?? "").trim().replace(/^<.*>$/, "");
