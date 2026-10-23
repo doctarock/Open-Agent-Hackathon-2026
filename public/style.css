@@ -437,7 +437,11 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .demo-offer { margin-bottom: 14px; }
 
 /* Speck beside a stateless model call (public/compare.js). */
-.edk .compare-panel { border-top: 4px solid var(--edk-accent); }
+/* A second layer below the case: a summary row, the panel itself closed until opened. */
+.edk .cmp-summary { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.edk .cmp-summary h2 { margin: 0 0 4px; }
+.edk .cmp-summary p { margin: 0; max-width: 70ch; }
+.edk #edk-compare { margin-top: 14px; }
 .edk .cmp-head { display: grid; gap: 12px; }
 @container edk (min-width: 760px) {
   .edk .cmp-head { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); align-items: start; }

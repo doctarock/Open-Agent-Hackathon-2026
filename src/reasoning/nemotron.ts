@@ -2,6 +2,7 @@ import { ModelRegistry, type ModelProcessor, type ModelProcessorDescriptor, type
 import type { NemotronConfig } from "../config.js";
 import type { EvidenceRecord } from "../evidence/types.js";
 import type { HypothesisSpec } from "../scenario.js";
+import { isMeterlessModel, meterlessHeaders, METERLESS_NAME } from "./meterless.js";
 import { describeJudgments, ruleJudgments } from "./rules.js";
 import type { BatchAssessment, Explanation, ModelCallTrace, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "./types.js";
 
@@ -10,6 +11,67 @@ export const NEMOTRON_PROCESSOR_ID = "nemotron";
 // attempts through Speck's registry (a reply that fails its contract is retried once).
 const TEMPERATURE = 0.1;
 const MAX_ATTEMPTS = 2;
+
+// Where a chat completion goes and what it carries, for every provider.
+export function chatEndpoint(config: NemotronConfig): { url: string; headers: Record<string, string> } {
+  const base = config.baseUrl.replace(/\/+$/, "");
+  const auth: Record<string, string> = config.provider === "meterless"
+    ? meterlessHeaders(config.apiKey, { chat: true })
+    : config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {};
+  return { url: `${base}${base.endsWith("/v1") ? "" : "/v1"}/chat/completions`, headers: { "content-type": "application/json", ...auth } };
+}
+
+export function providerLabel(config: NemotronConfig): string {
+  return config.provider === "meterless" ? METERLESS_NAME
+    : config.provider === "ollama" ? "Nemotron on local Ollama"
+      : config.provider === "nvidia" ? "Nemotron on NVIDIA's hosted API"
+        : "Nemotron via OpenAI-compatible endpoint";
+}
+
+// What stops the assessor running with these settings, or null.
+export function modelConfigProblem(config: NemotronConfig): string | null {
+  if (!config.baseUrl) return "NEMOTRON_BASE_URL is not set";
+  if (config.provider === "meterless") {
+    if (!isMeterlessModel(config.model)) return `METERLESS_MODEL "${config.model}" is not a Meterless routing mode (meterless/...)`;
+    if (!config.apiKey) return `${config.apiKeyEnv} is not set (the runtime writes its token to <stateDir>/proxy-token; run npm run configure)`;
+    return null;
+  }
+  if (!config.model) return "NEMOTRON_MODEL is not set";
+  if (!/nemotron/i.test(config.model)) return `NEMOTRON_MODEL "${config.model}" does not name a Nemotron model`;
+  if (config.provider === "nvidia" && !config.apiKey) return `${config.apiKeyEnv} is not set (NVIDIA's hosted API needs a key)`;
+  return null;
+}
+
+// One plain-text chat completion ("Reply with the single word: ready"), as
+// npm run model:check and npm run configure make it. Throws with the
+// endpoint's own words on any failure, including content that is not a string.
+export async function plainTextCheck(config: NemotronConfig): Promise<{ url: string; content: string; served: string | null; latencyMs: number; usage: unknown }> {
+  const { url, headers } = chatEndpoint(config);
+  const began = performance.now();
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: config.model, temperature: 0, max_tokens: config.maxTokens,
+        ...(config.reasoningEffort ? { reasoning_effort: config.reasoningEffort } : {}),
+        messages: [{ role: "user", content: "Reply with the single word: ready" }]
+      }),
+      signal: AbortSignal.timeout(config.timeoutMs)
+    });
+  } catch (error) {
+    throw new Error(`${url} unreachable: ${error instanceof Error ? error.message : error}`);
+  }
+  const body = await response.json().catch(() => ({})) as any;
+  if (!response.ok) {
+    const hint = response.status === 401 || response.status === 403 ? ` Is ${config.apiKeyEnv} set to a valid key?` : "";
+    throw new Error(`HTTP ${response.status} from ${url}: ${JSON.stringify(body).slice(0, 400)}.${hint}`);
+  }
+  const content = body.choices?.[0]?.message?.content;
+  if (typeof content !== "string") throw new Error(`the reply's content is ${content === undefined ? "missing" : typeof content}, not a string`);
+  return { url, content, served: typeof body.model === "string" ? body.model : null, latencyMs: Math.round(performance.now() - began), usage: body.usage ?? null };
+}
 
 // One OpenAI-compatible chat completion against the Nemotron endpoint,
 // plugged into Speck's model registry. Speck's built-in processor caps output
@@ -42,13 +104,14 @@ export class NemotronProcessor implements ModelProcessor {
 
   private async complete(request: ModelRequest): Promise<ProcessorCompletion> {
     const base = this.config.baseUrl.replace(/\/+$/, "");
-    const apiKey = process.env[this.config.apiKeyEnv];
+    const endpoint = chatEndpoint(this.config);
+    const name = this.config.provider === "meterless" ? METERLESS_NAME : "Nemotron endpoint";
     const signals = [AbortSignal.timeout(request.timeoutMs), ...(request.signal ? [request.signal] : [])];
     let response: Response;
     try {
-      response = await fetch(`${base}${base.endsWith("/v1") ? "" : "/v1"}/chat/completions`, {
+      response = await fetch(endpoint.url, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}) },
+        headers: endpoint.headers,
         body: JSON.stringify({
           model: this.config.model,
           messages: [...(request.system ? [{ role: "system", content: request.system }] : []), { role: "user", content: request.prompt }],
@@ -60,16 +123,19 @@ export class NemotronProcessor implements ModelProcessor {
         signal: AbortSignal.any(signals)
       });
     } catch (error) {
-      throw new Error(`Nemotron endpoint ${base} unreachable: ${error instanceof Error ? (error.name === "TimeoutError" ? `timed out after ${request.timeoutMs} ms` : error.message) : error}`);
+      throw new Error(`${name} ${base} unreachable: ${error instanceof Error ? (error.name === "TimeoutError" ? `timed out after ${request.timeoutMs} ms` : error.message) : error}`);
     }
     const text = await response.text();
-    if (!response.ok) throw new Error(`Nemotron endpoint returned HTTP ${response.status}: ${text.slice(0, 300)}`);
+    if (!response.ok) {
+      const hint = response.status === 401 || response.status === 403 ? ` (unauthorized: check ${this.config.apiKeyEnv})` : "";
+      throw new Error(`${name} returned HTTP ${response.status}${hint}: ${text.slice(0, 300)}`);
+    }
     const body = JSON.parse(text);
     if (typeof body.model === "string") { this.servedModels.add(body.model); this.lastServed = body.model; }
     const choice = body.choices?.[0];
     const content = typeof choice?.message?.content === "string" ? choice.message.content : "";
     if (!content.trim()) {
-      throw new Error(`Nemotron returned no answer content (finish_reason ${choice?.finish_reason ?? "unknown"}, ${body.usage?.completion_tokens ?? "?"} completion tokens). Raise NEMOTRON_MAX_TOKENS or set NEMOTRON_REASONING_EFFORT=none.`);
+      throw new Error(`${name} returned no answer content (finish_reason ${choice?.finish_reason ?? "unknown"}, ${body.usage?.completion_tokens ?? "?"} completion tokens). Raise NEMOTRON_MAX_TOKENS or set NEMOTRON_REASONING_EFFORT=none.`);
     }
     return {
       text: content,
@@ -109,7 +175,7 @@ export class NemotronReasoner implements Reasoner {
   describe(): ReasonerDescription {
     const problem = this.problem();
     return {
-      kind: this.kind, label: "NVIDIA Nemotron via OpenAI-compatible endpoint", provider: "openai-compatible",
+      kind: this.kind, label: providerLabel(this.config), provider: this.config.provider,
       model: this.config.model || null, endpoint: this.config.baseUrl || null, ready: !problem, problem
     };
   }
@@ -262,15 +328,12 @@ export class NemotronReasoner implements Reasoner {
   }
 
   private problem(): string | null {
-    if (!this.config.baseUrl) return "NEMOTRON_BASE_URL is not set";
-    if (!this.config.model) return "NEMOTRON_MODEL is not set";
-    if (!/nemotron/i.test(this.config.model)) return `NEMOTRON_MODEL "${this.config.model}" does not name a Nemotron model`;
-    return null;
+    return modelConfigProblem(this.config);
   }
 
   private assertReady(): void {
     const problem = this.problem();
-    if (problem) throw new Error(`Nemotron reasoner is not configured: ${problem}. Set it in .env (see .env.example) or use REASONER=rules.`);
+    if (problem) throw new Error(`The model assessor is not configured: ${problem}. Run npm run configure, set it in .env (see .env.example), or use REASONER=rules.`);
   }
 }
 

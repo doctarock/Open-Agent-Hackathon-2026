@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { loadConfig, loadDotEnv, ROOT_DIR } from "../config.js";
+import { providerLabel } from "../reasoning/nemotron.js";
 import { EvidenceDesk, MARKOVIAN_ENGINE } from "../investigation/desk.js";
 import { findEngineRun, readEngineHistory, type RunTrace } from "../investigation/trace.js";
 import { writeReport } from "../eval/results.js";
@@ -101,12 +102,13 @@ try {
     const overCap = modelEvidence.filter((object) => Number(object.data.reliability) > 0.4);
     if (!modelEvidence.length && calls.length) problems.push("no evidence in Speck carries model provenance");
     if (overCap.length) problems.push(`${overCap.length} model-judged evidence object(s) above Speck's 0.4 cap`);
-    evidence.push(`${calls.length} call(s) to ${config.nemotron.baseUrl}; endpoint reported serving ${served.join(", ") || "nothing"}`);
+    evidence.push(`${calls.length} call(s) to ${providerLabel(config.nemotron)} at ${config.nemotron.baseUrl}${config.nemotron.provider === "meterless" ? ` (routing mode ${config.nemotron.model})` : ""}; endpoint reported serving ${served.join(", ") || "nothing"}`);
     evidence.push(`${calls.reduce((sum, call) => sum + call.attempts, 0)} attempt(s): ${calls.reduce((sum, call) => sum + call.contractFailures, 0)} rejected by Speck's contract check, `
       + `${calls.reduce((sum, call) => sum + call.transportFailures, 0)} transport failure(s) (no usable answer), then retried; ${calls.filter((call) => call.outcome === "valid").length} of ${calls.length} call(s) ended with a valid reply`);
     evidence.push(`${modelEvidence.length} evidence object(s) in Speck with model provenance, all at reliability <= 0.4`);
   }
-  verdict("NVIDIA Nemotron (local)", evidence, problems, config.reasoner === "nemotron");
+  const where = { meterless: "via Meterless Runtime", ollama: "local", nvidia: "NVIDIA API", "openai-compatible": "OpenAI-compatible endpoint" }[config.nemotron.provider];
+  verdict(`NVIDIA Nemotron (${where})`, evidence, problems, config.reasoner === "nemotron");
 }
 
 // Speck: every belief revision in its raw event log appears in the trace once.

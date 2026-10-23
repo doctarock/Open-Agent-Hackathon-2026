@@ -169,10 +169,11 @@ test("the installer copies the plugin into Speck's plugins folder and approves e
   fs.mkdirSync(path.join(speckDir, "plugins", ".runtime"), { recursive: true });
   const existing = { allowlist: { "social-media-manager": { hashes: ["abc"] } }, mode: "allowlist" };
   fs.writeFileSync(path.join(speckDir, "plugins", ".runtime", "plugin-trust.json"), JSON.stringify(existing));
-  const settingsFile = path.join(tempDir(), ".env");
-  fs.writeFileSync(settingsFile, "EVIDENCE_MODE=fixture\n");
+  // A plugin-folder .env from an earlier version is set aside, not read.
+  fs.mkdirSync(path.join(speckDir, "plugins", "evidence-desk"), { recursive: true });
+  fs.writeFileSync(path.join(speckDir, "plugins", "evidence-desk", ".env"), "EVIDENCE_MODE=zetaris\n");
 
-  const first = installPlugin({ speckDir, settingsFile });
+  const first = installPlugin({ speckDir });
   const target = path.join(speckDir, "plugins", "evidence-desk");
   assert.equal(first.target, target);
   for (const file of ["dist/plugin/evidence-desk-plugin.js", "dist/src/investigation/desk.js", "plugin/ui/evidence-desk-ui.js", "public/app.js", "public/style.css",
@@ -191,16 +192,17 @@ test("the installer copies the plugin into Speck's plugins folder and approves e
   // Trust: the entry's hash is added; other plugins and the mode are kept.
   const trust = JSON.parse(fs.readFileSync(path.join(speckDir, "plugins", ".runtime", "plugin-trust.json"), "utf8"));
   assert.deepEqual(trust, { allowlist: { "social-media-manager": { hashes: ["abc"] }, "evidence-desk": { hashes: [first.entryHash] } }, mode: "allowlist" });
-  assert.equal(fs.readFileSync(path.join(target, ".env"), "utf8"), "EVIDENCE_MODE=fixture\n");
+  assert.ok(!fs.existsSync(path.join(target, ".env")));
+  assert.equal(fs.readFileSync(path.join(target, ".env.old"), "utf8"), "EVIDENCE_MODE=zetaris\n");
+  assert.match(first.settings, /renamed \.env\.old/);
 
-  // A reinstall keeps the plugin's settings and the cases' data.
-  fs.writeFileSync(path.join(target, ".env"), "EVIDENCE_MODE=zetaris\n");
+  // A reinstall keeps the cases' data.
   fs.mkdirSync(path.join(target, "data", "bank-return"), { recursive: true });
   fs.writeFileSync(path.join(target, "data", "bank-return", "kept.txt"), "x");
-  const second = installPlugin({ speckDir, settingsFile });
-  assert.match(second.settings, /kept/);
-  assert.equal(fs.readFileSync(path.join(target, ".env"), "utf8"), "EVIDENCE_MODE=zetaris\n");
+  const second = installPlugin({ speckDir });
+  assert.doesNotMatch(second.settings, /renamed/);
   assert.ok(fs.existsSync(path.join(target, "data", "bank-return", "kept.txt")));
+  assert.ok(fs.existsSync(path.join(target, ".env.old")));
 });
 
 function walk(directory: string): string[] {

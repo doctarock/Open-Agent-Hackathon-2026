@@ -19,15 +19,18 @@ test("configuration needs no secrets and has no credential defaults", () => {
   assert.equal(config.reasoner, "rules");
   assert.equal(config.zetaris.username, "");
   assert.equal(config.zetaris.password, "");
-  assert.equal(config.nemotron.baseUrl, "");
-  assert.equal(config.nemotron.model, "");
+  // The default provider is a Meterless Runtime on this machine, with no token.
+  assert.deepEqual([config.nemotron.provider, config.nemotron.baseUrl, config.nemotron.model], ["meterless", "http://127.0.0.1:8088/v1", "meterless/auto"]);
+  assert.equal(config.nemotron.apiKey, "");
+  assert.equal(loadConfig({ MODEL_PROVIDER: "openai-compatible" }).nemotron.baseUrl, "");
+  assert.equal(loadConfig({ MODEL_PROVIDER: "nvidia" }).nemotron.apiKey, "");
   assert.throws(() => loadConfig({ EVIDENCE_MODE: "live" }), /EVIDENCE_MODE must be one of fixture, zetaris/);
 });
 
 test(".env.example holds placeholders only", () => {
   const example = fs.readFileSync(path.join(ROOT_DIR, ".env.example"), "utf8");
-  const values = Object.fromEntries(example.split(/\r?\n/).filter((line) => /^[A-Z_]+=/.test(line)).map((line) => line.split(/=(.*)/s).slice(0, 2)));
-  for (const key of ["ZETARIS_USERNAME", "ZETARIS_PASSWORD", "NEMOTRON_API_KEY"]) assert.match(values[key] ?? "", /^<.+>$/, `${key} must be a placeholder`);
+  const values = Object.fromEntries(example.split(/\r?\n/).filter((line) => /^[A-Za-z_]+=/.test(line)).map((line) => line.split(/=(.*)/s).slice(0, 2)));
+  for (const key of ["ZETARIS_USERNAME", "ZETARIS_PASSWORD", "NEMOTRON_API_KEY", "meterless_runtime_token"]) assert.match(values[key] ?? "", /^<.+>$/, `${key} must be a placeholder`);
 });
 
 test("no credential-shaped strings in the project's own files", () => {

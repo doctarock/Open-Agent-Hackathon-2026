@@ -1,5 +1,6 @@
 import path from "node:path";
 import { loadConfig, loadDotEnv, ROOT_DIR } from "../config.js";
+import { modelConfigProblem } from "../reasoning/nemotron.js";
 import { loadEvalCases, REGRESSION_DIR } from "../eval/cases.js";
 import { runEvaluation, systemsFor, type EvalMode, type EvalReport } from "../eval/harness.js";
 import type { Rate } from "../eval/metrics.js";
@@ -13,8 +14,9 @@ let nemotron;
 if (mode === "live") {
   loadDotEnv();
   nemotron = loadConfig().nemotron;
-  if (!nemotron.baseUrl || !nemotron.model || !/nemotron/i.test(nemotron.model)) {
-    console.log("Live evaluation skipped: NEMOTRON_BASE_URL and a Nemotron NEMOTRON_MODEL must be set (see .env.example).");
+  const problem = modelConfigProblem(nemotron);
+  if (problem) {
+    console.log(`Live evaluation skipped: ${problem} (run npm run configure, or see .env.example).`);
     process.exit(2);
   }
   console.log(`Live evaluation against ${nemotron.model} @ ${nemotron.baseUrl}`);

@@ -21,8 +21,8 @@ points to and why that is not yet enough.
 
 ## Demonstration
 
-The first panel of each case runs the case twice, stage by stage, on the same records with the
-same assessor: once as the evaluation's stateless baseline (a fresh model call per stage, or the
+A panel on each case (below the case itself, opened on request and at the end of the guided
+demo) runs the case twice, stage by stage, on the same records with the same assessor: once as the evaluation's stateless baseline (a fresh model call per stage, or the
 fact rules summed from scratch), once through Speck. It shows what each concluded, what it cited,
 what the correction replaced, whether either still leans on the replaced record, and the revision
 Speck recorded. Then the judge does it by hand on the case: run, introduce the correction, run

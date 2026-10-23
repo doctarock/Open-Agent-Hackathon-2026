@@ -1,0 +1,619 @@
+diff --git a/public/ui/system.js b/public/ui/system.js
+index 9ac8f16..950ce04 100644
+--- a/public/ui/system.js
++++ b/public/ui/system.js
+@@ -318,15 +318,20 @@ export function brainEditor(processor = {}) {
+       <strong>${escapeHtml(processor.id || "New processor")}</strong>${qualificationBadge(processor)}<button class="ghost-button" data-remove-brain type="button">Remove</button></div>
+     <div class="brain-editor-fields">
+       <label>ID<input data-brain-field="id" value="${escapeHtml(processor.id || "")}" placeholder="local-worker" /></label>
+-      <label>Provider<select data-brain-field="provider">${["ollama", "openai-compatible", "llama.cpp", "nli"].map((provider) => `<option ${processor.provider === provider ? "selected" : ""}>${provider}</option>`).join("")}</select></label>
+-      <label class="wide">Endpoint URL<div class="field-action"><input data-brain-field="baseUrl" value="${escapeHtml(processor.baseUrl || "http://127.0.0.1:11434")}" placeholder="http://127.0.0.1:11434" /><button class="ghost-button" data-discover-brains type="button">Discover</button></div></label>
+-      <label class="wide">Model<input data-brain-field="model" list="discoveredBrainModels" value="${escapeHtml(processor.model || "")}" placeholder="qwen3:14b" /></label>
++      <label>Provider<select data-brain-field="provider">${[["ollama", "ollama"], ["openai-compatible", "openai-compatible"], ["llama.cpp", "llama.cpp"], ["nli", "nli"], ["meterless", "Meterless Runtime"]].map(([provider, label]) => `<option value="${provider}" ${processor.provider === provider ? "selected" : ""}>${label}</option>`).join("")}</select></label>
++      <label class="wide">${processor.provider === "meterless" ? "Runtime address or connect link" : "Endpoint URL"}<div class="field-action"><input data-brain-field="baseUrl" value="${escapeHtml(processor.baseUrl || "http://127.0.0.1:11434")}" placeholder="http://127.0.0.1:11434" /><button class="ghost-button" data-discover-brains type="button">Discover</button><button class="ghost-button" data-meterless-detect type="button" ${processor.provider === "meterless" ? "" : "hidden"}>Auto Detect</button></div></label>
++      <div class="wide meterless-panel" data-meterless-panel ${processor.provider === "meterless" ? "" : "hidden"}>
++        <p data-meterless-status>Press Discover to check the runtime, or Auto Detect to find one on this machine.</p>
++        <label data-meterless-token-row hidden>Runtime token<div class="field-action"><input data-meterless-token type="password" autocomplete="off" placeholder="From the runtime's &lt;stateDir&gt;/proxy-token" /><button class="ghost-button" data-meterless-save-token type="button">Save token</button></div></label>
++        <p class="muted">The token is kept in Speck's secret store as <code>meterless_runtime_token</code> and never shown again.</p>
++      </div>
++      <label class="wide">${processor.provider === "meterless" ? "Routing mode" : "Model"}<input data-brain-field="model" list="discoveredBrainModels" value="${escapeHtml(processor.model || "")}" placeholder="${processor.provider === "meterless" ? "meterless/auto" : "qwen3:14b"}" /></label>
+       <label>Tier<select data-brain-field="tier">${[1, 2, 3, 4].map((tier) => `<option value="${tier}" ${Number(processor.tier || 2) === tier ? "selected" : ""}>Tier ${tier}</option>`).join("")}</select></label>
+       <label>Context size<input data-brain-field="contextSize" type="number" min="256" step="256" value="${Number(processor.contextSize || 32768)}" /></label>
+       <label>Parameters<input data-brain-field="parameters" type="number" min="0" value="${Number(processor.parameters || 0)}" /></label>
+       <label>Hardware<input data-brain-field="hardware" value="${escapeHtml(processor.hardware || "local")}" /></label>
+       <label class="wide">Specialties<input data-brain-field="specialties" value="${escapeHtml((processor.specialties || ["general"]).join(", "))}" placeholder="general, coding, planning" /></label>
+-      <label class="wide">API key environment variable<input data-brain-field="apiKeyEnv" value="${escapeHtml(processor.apiKeyEnv || "")}" placeholder="Optional; the secret itself is never stored" /></label>
++      <label class="wide" data-api-key-row ${processor.provider === "meterless" ? "hidden" : ""}>API key environment variable<input data-brain-field="apiKeyEnv" value="${escapeHtml(processor.apiKeyEnv || "")}" placeholder="Optional; the secret itself is never stored" /></label>
+     </div></article>`;
+ }
+ 
+@@ -336,12 +341,31 @@ export function bindBrainEditorActions() {
+     if (!$("[data-brain-editor]")) $("#brainConfigList").innerHTML = `<div class="empty-state">No processors are configured. Add one to enable model inference.</div>`;
+   });
+   $$('[data-discover-brains]').forEach((button) => button.onclick = discoverBrainModels);
++  $$('[data-meterless-detect]').forEach((button) => button.onclick = detectMeterless);
++  $$('[data-meterless-save-token]').forEach((button) => button.onclick = saveMeterlessToken);
++  // A pasted connect link carries the token: it goes to the secret store at
++  // once and the field keeps only the address.
++  $$('[data-brain-field="baseUrl"]').forEach((input) => input.addEventListener("change", () => {
++    const editor = input.closest("[data-brain-editor]");
++    if ($('[data-brain-field="provider"]', editor)?.value === "meterless" && /\/connect\/?#k=/.test(input.value)) saveMeterlessToken({ currentTarget: input }, { connectLink: input.value.trim() });
++  }));
+   // An NLI cross-encoder is served by the sidecar (sidecars/nli) and reads a
+   // short premise and hypothesis; switching to it fills its defaults where
+-  // the fields still hold another provider's.
++  // the fields still hold another provider's. A Meterless Runtime has its own
++  // panel, address and routing modes.
+   $$('[data-brain-field="provider"]').forEach((select) => select.onchange = () => {
+     const editor = select.closest("[data-brain-editor]");
+     const field = (name) => $(`[data-brain-field="${name}"]`, editor);
++    const meterless = select.value === "meterless";
++    $("[data-meterless-panel]", editor).hidden = !meterless;
++    $("[data-meterless-detect]", editor).hidden = !meterless;
++    $("[data-api-key-row]", editor).hidden = meterless;
++    field("model").placeholder = meterless ? "meterless/auto" : "qwen3:14b";
++    if (meterless) {
++      if (/:11434\/?$/.test(field("baseUrl").value.trim()) || !field("baseUrl").value.trim()) field("baseUrl").value = "http://127.0.0.1:8088/v1";
++      if (!/^meterless\//.test(field("model").value.trim())) field("model").value = "meterless/auto";
++      field("hardware").value = field("hardware").value.trim() || "local";
++    }
+     if (select.value === "nli") {
+       if (/:11434\/?$/.test(field("baseUrl").value.trim()) || !field("baseUrl").value.trim()) field("baseUrl").value = "http://127.0.0.1:8765";
+       if (Number(field("contextSize").value) > 4096) field("contextSize").value = "512";
+@@ -362,10 +386,67 @@ export function addBrainEditor() {
+   $$('[data-brain-field="id"]').at(-1)?.focus();
+ }
+ 
++// A Meterless Runtime's answer: online lists its routing modes; unauthorized
++// asks for the token; offline says so. Never shows the token.
++function showMeterless(editor, result) {
++  const status = $("[data-meterless-status]", editor);
++  const tokenRow = $("[data-meterless-token-row]", editor);
++  if (result.baseUrl) $('[data-brain-field="baseUrl"]', editor).value = result.baseUrl;
++  tokenRow.hidden = result.status !== "unauthorized";
++  if (result.status === "online") {
++    status.innerHTML = `<span class="status-pill">online</span> ${escapeHtml(result.baseUrl)}: ${result.modes.length} routing mode${result.modes.length === 1 ? "" : "s"}.`;
++    $("#discoveredBrainModels").innerHTML = result.modes.map((mode) => `<option value="${escapeHtml(mode.id)}">${escapeHtml(mode.description)}</option>`).join("");
++    const model = $('[data-brain-field="model"]', editor);
++    if (!result.models.includes(model.value.trim())) model.value = result.models.includes("meterless/auto") ? "meterless/auto" : result.models[0];
++  } else if (result.status === "unauthorized") {
++    status.innerHTML = `<span class="status-pill">unauthorized</span> ${escapeHtml(result.baseUrl)} is running but did not accept the token. Paste the one in its &lt;stateDir&gt;/proxy-token.`;
++    $("[data-meterless-token]", editor).focus();
++  } else {
++    status.innerHTML = `<span class="status-pill">offline</span> ${escapeHtml(result.baseUrl || "No runtime")}: ${escapeHtml(result.detail || "not answering")}.`;
++  }
++}
++
++export async function detectMeterless(event) {
++  const editor = event.currentTarget.closest("[data-brain-editor]");
++  event.currentTarget.disabled = true;
++  try {
++    const result = await adminJson("/api/meterless/detect", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
++    if (result.found) showMeterless(editor, result.found);
++    else showMeterless(editor, { status: "offline", baseUrl: "", detail: "no Meterless Runtime on ports 8088, 8090, 8787 or 11434 of this machine" });
++  } catch (error) { showToast(error.message, true); }
++  finally { event.currentTarget.disabled = false; }
++}
++
++export async function saveMeterlessToken(event, body) {
++  const editor = event.currentTarget.closest("[data-brain-editor]");
++  const input = $("[data-meterless-token]", editor);
++  const baseUrl = $('[data-brain-field="baseUrl"]', editor);
++  try {
++    const result = await adminJson("/api/meterless/token", {
++      method: "POST", headers: { "content-type": "application/json" },
++      body: JSON.stringify(body ?? { token: input.value, baseUrl: baseUrl.value.trim() })
++    });
++    input.value = "";
++    showToast(result.message);
++    showMeterless(editor, result);
++  } catch (error) {
++    // A connect link that could not be used must not stay in the field.
++    if (body?.connectLink) baseUrl.value = "";
++    showToast(error.message, true);
++  }
++}
++
+ export async function discoverBrainModels(event) {
+   const editor = event.currentTarget.closest("[data-brain-editor]");
+   const baseUrl = $('[data-brain-field="baseUrl"]', editor)?.value.trim();
+   const provider = $('[data-brain-field="provider"]', editor)?.value;
++  if (provider === "meterless") {
++    event.currentTarget.disabled = true;
++    try { showMeterless(editor, await adminJson("/api/meterless/probe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ baseUrl }) })); }
++    catch (error) { showToast(error.message, true); }
++    finally { event.currentTarget.disabled = false; }
++    return;
++  }
+   event.currentTarget.disabled = true;
+   try {
+     const result = await adminJson("/api/brains/discover", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ baseUrl, provider }) });
+diff --git a/src/config.ts b/src/config.ts
+index ea9086b..2b67ba2 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -1,6 +1,7 @@
+ import path from "node:path";
+ import fs from "node:fs";
+ import { judgmentOnly, type ConfiguredModelProcessor } from "./models/types.js";
++import { isMeterlessModel, normaliseMeterlessUrl } from "./models/meterless.js";
+ 
+ export interface SpeckConfig {
+   databasePath: string;
+@@ -450,12 +451,17 @@ export function validateModelProcessors(value: unknown): ConfiguredModelProcesso
+     const id = String(input.id ?? "").trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+     const provider = String(input.provider ?? "ollama") as ConfiguredModelProcessor["provider"];
+     const model = String(input.model ?? "").trim();
+-    const baseUrl = String(input.baseUrl ?? "").trim().replace(/\/+$/, "");
++    // A Meterless Runtime address is kept as <host>/v1, whatever form was pasted.
++    let baseUrl = String(input.baseUrl ?? "").trim().replace(/\/+$/, "");
++    if (provider === "meterless") {
++      try { baseUrl = normaliseMeterlessUrl(baseUrl); } catch { throw new TypeError(`processor ${String(input.id ?? index + 1)} has an invalid Meterless Runtime address`); }
++    }
+     const tier = Number(input.tier);
+     const contextSize = Number(input.contextSize);
+     if (!id || ids.has(id)) throw new TypeError(`processor ${index + 1} requires a unique id`);
+-    if (!["ollama", "openai-compatible", "llama.cpp", "nli"].includes(provider)) throw new TypeError(`processor ${id} has an unsupported provider`);
++    if (!["ollama", "openai-compatible", "llama.cpp", "nli", "meterless"].includes(provider)) throw new TypeError(`processor ${id} has an unsupported provider`);
+     if (!model) throw new TypeError(`processor ${id} requires a model`);
++    if (provider === "meterless" && !isMeterlessModel(model)) throw new TypeError(`processor ${id} needs a Meterless routing mode (meterless/...), not ${model}`);
+     if (!/^https?:\/\//i.test(baseUrl)) throw new TypeError(`processor ${id} requires an HTTP(S) base URL`);
+     if (![1, 2, 3, 4].includes(tier)) throw new TypeError(`processor ${id} tier must be 1 through 4`);
+     if (!Number.isInteger(contextSize) || contextSize < 256) throw new TypeError(`processor ${id} requires a valid context size`);
+diff --git a/src/genesis-host.ts b/src/genesis-host.ts
+index 869b510..02ab67d 100644
+--- a/src/genesis-host.ts
++++ b/src/genesis-host.ts
+@@ -16,6 +16,7 @@ import { STANDARD_TASK_SUITE } from "./benchmark/suites.js";
+ import { createStandardVariants } from "./benchmark/ablations.js";
+ import { BENCHMARK_HARNESS_VERSION } from "./benchmark/harness.js";
+ import { registerGenesisUi, type GenesisUiBridge } from "./genesis-ui.js";
++import { METERLESS_TOKEN_HANDLE, setMeterlessTokenSource } from "./models/meterless.js";
+ import { SecretStore } from "./security/secret-store.js";
+ 
+ export interface GenesisSpeckHost {
+@@ -57,6 +58,8 @@ export async function createGenesisSpeckHost(
+ 
+   await fs.mkdir(config.genesisRuntimePath, { recursive: true });
+   const secretStore = new SecretStore(config.genesisRuntimePath);
++  // Meterless processors send the runtime token kept in the secret store.
++  setMeterlessTokenSource(() => secretStore.get(METERLESS_TOKEN_HANDLE));
+   await registerSpeckCoreTools(runtime, path.join(config.genesisRuntimePath, "workspace"));
+   const profilePreferencePath = path.join(config.genesisRuntimePath, "profile-selection.json");
+   const hasSavedProfile = await fs.access(profilePreferencePath).then(() => true, () => false);
+diff --git a/src/genesis-ui/routes/config.ts b/src/genesis-ui/routes/config.ts
+index 3b98739..edf6c67 100644
+--- a/src/genesis-ui/routes/config.ts
++++ b/src/genesis-ui/routes/config.ts
+@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
+ import path from "node:path";
+ import { browserRuntimeConfigPath, modelProcessorConfigPath, validateBrowserRuntime, validateEmbeddingRuntime, validateModelProcessors, validateModelRoles } from "../../config.js";
+ import { createConfiguredProcessor } from "../../models/providers.js";
++import { autoDetectMeterless, describeMeterlessModel, METERLESS_TOKEN_HANDLE, type MeterlessProbe, meterlessToken, parseMeterlessConnectLink, probeMeterless, usableMeterlessToken } from "../../models/meterless.js";
+ import { normalizeMemoryAdmissionPolicy } from "../../memory/admission.js";
+ import { componentSwitches, normalizeComponentSwitches } from "../../speck/components/index.js";
+ import { playwrightHealth } from "../../tools/playwright.js";
+@@ -82,6 +83,35 @@ export function registerConfigRoutes(ctx: UiContext): void {
+       res.status(400).json({ ok: false, error: errorMessage(error) });
+     }
+   });
++  // A Meterless Runtime: its status and routing modes, Auto Detect, and its
++  // token, which goes to the secret store and is never returned.
++  app.post("/api/meterless/probe", async (req, res) => {
++    try {
++      res.json({ ok: true, ...meterlessView(await probeMeterless(String(req.body?.baseUrl ?? ""), await meterlessToken())) });
++    } catch (error) {
++      res.status(400).json({ ok: false, error: errorMessage(error) });
++    }
++  });
++  app.post("/api/meterless/detect", async (_req, res) => {
++    try {
++      const found = await autoDetectMeterless(await meterlessToken());
++      res.json({ ok: true, found: found ? meterlessView(found) : null });
++    } catch (error) {
++      res.status(400).json({ ok: false, error: errorMessage(error) });
++    }
++  });
++  app.post("/api/meterless/token", async (req, res) => {
++    try {
++      const link = parseMeterlessConnectLink(String(req.body?.connectLink ?? ""));
++      const token = usableMeterlessToken(link?.token ?? String(req.body?.token ?? ""));
++      if (!token) throw new TypeError("Paste the runtime's token from <stateDir>/proxy-token, or its connect link (rt-local is a placeholder, not a token).");
++      await options.secretStore.set(METERLESS_TOKEN_HANDLE, token);
++      const baseUrl = link?.baseUrl ?? String(req.body?.baseUrl ?? "");
++      res.json({ ok: true, handle: METERLESS_TOKEN_HANDLE, ...meterlessView(await probeMeterless(baseUrl, token)), message: `Token saved as secret ${METERLESS_TOKEN_HANDLE}.` });
++    } catch (error) {
++      res.status(400).json({ ok: false, error: errorMessage(error) });
++    }
++  });
+   app.get("/api/tools/config", (_req, res) => res.json(toolConfig(runtime, state)));
+   app.post("/api/tools/config", async (req, res) => {
+     state.toolApprovals = req.body?.toolApprovals && typeof req.body.toolApprovals === "object"
+@@ -153,3 +183,8 @@ export function registerConfigRoutes(ctx: UiContext): void {
+     res.json({ ok: true, policy: state.memoryAdmission, message: "Memory admission settings saved and applied." });
+   });
+ }
++
++// A probe as the System view shows it: each routing mode with what it selects.
++function meterlessView(probe: MeterlessProbe) {
++  return { ...probe, modes: probe.models.map((id) => ({ id, description: describeMeterlessModel(id) })) };
++}
+diff --git a/src/index.ts b/src/index.ts
+index 82e1a7c..c4fa413 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -24,6 +24,7 @@ export * from "./context/builder.js";
+ export * from "./models/types.js";
+ export * from "./models/response.js";
+ export * from "./models/providers.js";
++export * from "./models/meterless.js";
+ export * from "./models/registry.js";
+ export * from "./models/genesis.js";
+ export * from "./tools/types.js";
+diff --git a/src/models/meterless.ts b/src/models/meterless.ts
+new file mode 100644
+index 0000000..68398a8
+--- /dev/null
++++ b/src/models/meterless.ts
+@@ -0,0 +1,109 @@
++// Meterless Runtime (1.4, provider contract v4): an OpenAI-compatible
++// endpoint whose model ids are routing modes (meterless/auto, meterless/deep,
++// meterless/<class>.<disposition>, ...), not models. The runtime writes its
++// token to <stateDir>/proxy-token; Speck keeps it in the secret store under
++// METERLESS_TOKEN_HANDLE and sends it on every call.
++
++export const METERLESS_PROVIDER = "meterless";
++export const METERLESS_NAME = "Meterless Runtime";
++export const METERLESS_DEFAULT_BASE_URL = "http://127.0.0.1:8088/v1";
++export const METERLESS_DEFAULT_MODEL = "meterless/auto";
++export const METERLESS_TOKEN_HANDLE = "meterless_runtime_token";
++// Sent as meterless-app: Speck's own calls, unless a caller names its app.
++export const METERLESS_APP_ID = "speck";
++// A model load can take minutes.
++export const METERLESS_TIMEOUT_MS = 180_000;
++const PLACEHOLDER_TOKEN = "rt-local";
++
++export const METERLESS_DISPOSITIONS = ["auto", "fast", "deep", "cheap", "local", "fusion"] as const;
++export const METERLESS_AUTO_DETECT_PORTS = [8088, 8090, 8787, 11434];
++export const METERLESS_AUTO_DETECT_HOSTS = ["127.0.0.1", "localhost", "[::1]"];
++
++// A pasted address, with or without a scheme, /v1, /v1/chat/completions,
++// /v1/models or /healthz, as <host>/v1. Never /v1/v1.
++export function normaliseMeterlessUrl(input: string): string {
++  const trimmed = String(input ?? "").trim();
++  if (!trimmed) return METERLESS_DEFAULT_BASE_URL;
++  const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`);
++  return `${url.origin}/v1`;
++}
++
++// A connect link (http://<host>:<port>/connect#k=<key>): the base URL from its
++// origin, and the key. Null for anything else. Never log the result.
++export function parseMeterlessConnectLink(input: string): { baseUrl: string; token: string } | null {
++  let url: URL;
++  try { url = new URL(String(input ?? "").trim()); } catch { return null; }
++  if (!/^\/connect\/?$/.test(url.pathname)) return null;
++  const token = new URLSearchParams(url.hash.replace(/^#/, "")).get("k")?.trim();
++  return token ? { baseUrl: `${url.origin}/v1`, token } : null;
++}
++
++export function usableMeterlessToken(token: string | null | undefined): string {
++  const value = String(token ?? "").trim();
++  return value === PLACEHOLDER_TOKEN ? "" : value;
++}
++
++export const isMeterlessModel = (id: string) => /^meterless\/\S+$/.test(id);
++
++// What a routing id selects. Ids this version does not know are kept, never dropped.
++export function describeMeterlessModel(id: string): string {
++  const mode = id.replace(/^meterless\//, "");
++  const dispositions: readonly string[] = METERLESS_DISPOSITIONS;
++  if (dispositions.includes(mode)) return `${mode} routing`;
++  const [cls, disposition, ...rest] = mode.split(".");
++  if (!rest.length && disposition && dispositions.includes(disposition)) return `${cls} class, ${disposition} routing`;
++  if (!disposition && cls) return `${cls} class`;
++  return "routing mode";
++}
++
++export function meterlessHeaders(token: string, options: { app?: string; chat?: boolean } = {}): Record<string, string> {
++  return {
++    ...(token ? { authorization: `Bearer ${token}` } : {}),
++    "meterless-app": options.app ?? METERLESS_APP_ID,
++    ...(options.chat ? { "meterless-scope": "user" } : {})
++  };
++}
++
++export type MeterlessStatus = "online" | "unauthorized" | "offline";
++export interface MeterlessProbe { status: MeterlessStatus; baseUrl: string; models: string[]; detail: string }
++
++// /healthz only proves the process is up; /v1/models decides. 401 or 403 is
++// unauthorized, 200 listing meterless ids is online, anything else offline.
++export async function probeMeterless(baseUrl: string, token: string, options: { app?: string; timeoutMs?: number } = {}): Promise<MeterlessProbe> {
++  let base: string;
++  try { base = normaliseMeterlessUrl(baseUrl); } catch { return { status: "offline", baseUrl: String(baseUrl), models: [], detail: "not a valid address" }; }
++  let response: Response;
++  try {
++    response = await fetch(`${base}/models`, {
++      headers: meterlessHeaders(usableMeterlessToken(token), { ...(options.app ? { app: options.app } : {}) }),
++      signal: AbortSignal.timeout(options.timeoutMs ?? 3000)
++    });
++  } catch (error) {
++    return { status: "offline", baseUrl: base, models: [], detail: error instanceof Error ? error.message : String(error) };
++  }
++  if (response.status === 401 || response.status === 403) return { status: "unauthorized", baseUrl: base, models: [], detail: `HTTP ${response.status}` };
++  if (response.status !== 200) return { status: "offline", baseUrl: base, models: [], detail: `HTTP ${response.status}` };
++  const body = await response.json().catch(() => null) as { data?: Array<{ id?: unknown }> } | null;
++  const models = (body?.data ?? []).flatMap((model) => (typeof model.id === "string" && isMeterlessModel(model.id) ? [model.id] : []));
++  return models.length
++    ? { status: "online", baseUrl: base, models, detail: `${models.length} routing mode(s)` }
++    : { status: "offline", baseUrl: base, models: [], detail: "answered, but lists no meterless/* models (another server on this port)" };
++}
++
++// Tries each port on each host; the first online or unauthorized one, in
++// that order, or null.
++export async function autoDetectMeterless(token: string, options: { app?: string; candidates?: string[] } = {}): Promise<MeterlessProbe | null> {
++  const candidates = options.candidates
++    ?? METERLESS_AUTO_DETECT_PORTS.flatMap((port) => METERLESS_AUTO_DETECT_HOSTS.map((host) => `http://${host}:${port}/v1`));
++  const results = await Promise.all(candidates.map((candidate) => probeMeterless(candidate, token, { ...(options.app ? { app: options.app } : {}), timeoutMs: 1500 })));
++  return results.find((result) => result.status !== "offline") ?? null;
++}
++
++// Where Speck's Meterless processors get the token: the host sets it to its
++// secret store; until then (and in tests) the meterless_runtime_token variable.
++let tokenSource: () => Promise<string | null> = async () => process.env[METERLESS_TOKEN_HANDLE] ?? null;
++export function setMeterlessTokenSource(source: () => Promise<string | null>): void { tokenSource = source; }
++export async function meterlessToken(): Promise<string> {
++  const stored = usableMeterlessToken(await tokenSource().catch(() => null));
++  return stored || usableMeterlessToken(process.env[METERLESS_TOKEN_HANDLE]);
++}
+diff --git a/src/models/providers.ts b/src/models/providers.ts
+index 25b321b..1a682c6 100644
+--- a/src/models/providers.ts
++++ b/src/models/providers.ts
+@@ -1,4 +1,5 @@
+ import { atomicEntailmentContract } from "../metacognition/qualification.js";
++import { METERLESS_TIMEOUT_MS, meterlessHeaders, meterlessToken, normaliseMeterlessUrl } from "./meterless.js";
+ import { contractJsonSchema } from "./response.js";
+ import type { ConfiguredModelProcessor, ModelProcessor, ModelRequest, NativeToolCall, ProcessorCompletion } from "./types.js";
+ 
+@@ -6,19 +7,21 @@ abstract class HttpModelProcessor implements ModelProcessor {
+   constructor(protected readonly descriptor: ConfiguredModelProcessor) {}
+   abstract infer(request: ModelRequest): Promise<ProcessorCompletion>;
+ 
++  // Sent on every call besides content-type: the API key, when configured.
++  protected async headers(): Promise<Record<string, string>> {
++    const apiKey = this.descriptor.apiKeyEnv ? process.env[this.descriptor.apiKeyEnv] : undefined;
++    return apiKey ? { authorization: `Bearer ${apiKey}` } : {};
++  }
++
+   protected async post(url: string, body: unknown, request: ModelRequest): Promise<any> {
+     const controller = new AbortController();
+     const timeout = setTimeout(() => controller.abort(), request.timeoutMs);
+     const abort = () => controller.abort();
+     request.signal?.addEventListener("abort", abort, { once: true });
+-    const apiKey = this.descriptor.apiKeyEnv ? process.env[this.descriptor.apiKeyEnv] : undefined;
+     try {
+       const response = await fetch(url, {
+         method: "POST",
+-        headers: {
+-          "content-type": "application/json",
+-          ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {})
+-        },
++        headers: { "content-type": "application/json", ...(await this.headers()) },
+         body: JSON.stringify(body),
+         signal: controller.signal
+       });
+@@ -248,6 +251,25 @@ export class OpenAiCompatibleProcessor extends HttpModelProcessor {
+   }
+ }
+ 
++// A Meterless Runtime (src/models/meterless.ts): OpenAI-compatible chat at
++// <host>/v1, whose model is a routing mode. Every call carries the runtime's
++// token from the secret store and meterless-app; chat carries
++// meterless-scope: user. A model load can take minutes, so no call is given
++// less than the runtime's 180 s.
++export class MeterlessProcessor extends OpenAiCompatibleProcessor {
++  constructor(descriptor: ConfiguredModelProcessor) {
++    super({ ...descriptor, baseUrl: normaliseMeterlessUrl(descriptor.baseUrl) });
++  }
++
++  protected override async headers(): Promise<Record<string, string>> {
++    return meterlessHeaders(await meterlessToken(), { chat: true });
++  }
++
++  override infer(request: ModelRequest): Promise<ProcessorCompletion> {
++    return super.infer({ ...request, timeoutMs: Math.max(request.timeoutMs, METERLESS_TIMEOUT_MS) });
++  }
++}
++
+ // An NLI cross-encoder served by the sidecar in sidecars/nli: a premise and a
+ // hypothesis in, entailment / contradiction / neutral out. It answers only the
+ // atomic-entailment judgment, from the request's input fields; it reads no
+@@ -267,6 +289,7 @@ export class NliProcessor extends HttpModelProcessor {
+ 
+ export function createConfiguredProcessor(descriptor: ConfiguredModelProcessor): ModelProcessor {
+   if (descriptor.provider === "nli") return new NliProcessor(descriptor);
++  if (descriptor.provider === "meterless") return new MeterlessProcessor(descriptor);
+   return descriptor.provider === "ollama"
+     ? new OllamaProcessor(descriptor)
+     : new OpenAiCompatibleProcessor(descriptor);
+diff --git a/src/models/types.ts b/src/models/types.ts
+index 46338e0..6eaa5c3 100644
+--- a/src/models/types.ts
++++ b/src/models/types.ts
+@@ -1,5 +1,5 @@
+ export type ModelTier = 1 | 2 | 3 | 4;
+-export type ModelProviderKind = "ollama" | "openai-compatible" | "llama.cpp" | "genesis" | "nli";
++export type ModelProviderKind = "ollama" | "openai-compatible" | "llama.cpp" | "genesis" | "nli" | "meterless";
+ 
+ // A judgment-only processor (an NLI cross-encoder) answers one class of
+ // judgment and nothing else: it never fills a role, validates a reply or is
+diff --git a/src/speck/chat.ts b/src/speck/chat.ts
+index e68b9eb..e4077eb 100644
+--- a/src/speck/chat.ts
++++ b/src/speck/chat.ts
+@@ -8,9 +8,13 @@
+ // qwen3:4b build reasons anyway, closing with </think>), a budget large
+ // enough to finish reasoning, and replies taken after the reasoning.
+ 
++import { METERLESS_TIMEOUT_MS, meterlessHeaders, meterlessToken, normaliseMeterlessUrl } from "../models/meterless.js";
+ import { afterReasoning } from "../models/response.js";
+ 
+ export interface ChatSettings {
++  // Ollama's own chat API, or a Meterless Runtime's OpenAI-compatible one
++  // (src/models/meterless.ts). Ollama when unset.
++  provider?: "ollama" | "meterless";
+   baseUrl: string;
+   model: string;
+   temperature: number;
+@@ -34,6 +38,7 @@ export interface ChatReply {
+ 
+ export async function chat(settings: ChatSettings, messages: readonly ChatMessage[], fetchImpl: typeof fetch = fetch): Promise<ChatReply> {
+   const started = Date.now();
++  if (settings.provider === "meterless") return meterlessChat(settings, messages, fetchImpl, started);
+   const response = await fetchImpl(`${settings.baseUrl.replace(/\/+$/, "")}/api/chat`, {
+     method: "POST",
+     body: JSON.stringify({
+@@ -48,3 +53,20 @@ export async function chat(settings: ChatSettings, messages: readonly ChatMessag
+   const doneReason = body.done_reason ?? null;
+   return { reply: afterReasoning(raw).trim(), raw, doneReason, endedInsideReasoning: !/<\/think>/.test(raw) && doneReason === "length", latencyMs: Date.now() - started };
+ }
++
++// The same turn through a Meterless Runtime: the routing mode as the model,
++// plain-text messages, the runtime's token and app headers, and at least the
++// runtime's 180 s, since a model load can take minutes.
++async function meterlessChat(settings: ChatSettings, messages: readonly ChatMessage[], fetchImpl: typeof fetch, started: number): Promise<ChatReply> {
++  const response = await fetchImpl(`${normaliseMeterlessUrl(settings.baseUrl)}/chat/completions`, {
++    method: "POST",
++    headers: { "content-type": "application/json", ...meterlessHeaders(await meterlessToken(), { chat: true }) },
++    body: JSON.stringify({ model: settings.model, messages, temperature: settings.temperature, max_tokens: settings.outputBudget }),
++    signal: AbortSignal.timeout(Math.max(settings.timeoutMs, METERLESS_TIMEOUT_MS))
++  });
++  if (!response.ok) throw new Error(`Meterless Runtime answered ${response.status}${response.status === 401 || response.status === 403 ? " (unauthorized: check the meterless_runtime_token secret)" : ""}: ${(await response.text()).slice(0, 200)}`);
++  const body = await response.json() as { choices?: Array<{ message?: { content?: unknown }; finish_reason?: string }> };
++  const raw = typeof body.choices?.[0]?.message?.content === "string" ? String(body.choices[0].message.content).trim() : "";
++  const doneReason = body.choices?.[0]?.finish_reason ?? null;
++  return { reply: afterReasoning(raw).trim(), raw, doneReason, endedInsideReasoning: !/<\/think>/.test(raw) && doneReason === "length", latencyMs: Date.now() - started };
++}
+diff --git a/src/speck/configure.ts b/src/speck/configure.ts
+index 0bef59c..16a9867 100644
+--- a/src/speck/configure.ts
++++ b/src/speck/configure.ts
+@@ -12,11 +12,11 @@ export function defaultPathDependencies(config: SpeckConfig, registry: ModelRegi
+   const roles = config.modelRuntime.roles;
+   const answering = config.modelRuntime.processors.find((processor) => processor.id === roles.worker);
+   if (!answering) throw new Error("No worker model is configured");
+-  if (answering.provider !== "ollama") throw new Error(`The default path supports Ollama models; ${answering.id} is ${answering.provider}`);
++  if (answering.provider !== "ollama" && answering.provider !== "meterless") throw new Error(`The default path supports Ollama models and Meterless Runtimes; ${answering.id} is ${answering.provider}`);
+   return {
+     registry,
+     ...(runtime ? { runtime } : {}),
+     readerProcessorId: roles.intake || answering.id,
+-    chat: { baseUrl: answering.baseUrl, model: answering.model, temperature: config.modelRuntime.temperature, contextSize: 16_384, outputBudget: 8_192, timeoutMs: 900_000 }
++    chat: { provider: answering.provider, baseUrl: answering.baseUrl, model: answering.model, temperature: config.modelRuntime.temperature, contextSize: 16_384, outputBudget: 8_192, timeoutMs: 900_000 }
+   };
+ }
+diff --git a/src/tests/meterless-provider.test.ts b/src/tests/meterless-provider.test.ts
+new file mode 100644
+index 0000000..bd48347
+--- /dev/null
++++ b/src/tests/meterless-provider.test.ts
+@@ -0,0 +1,99 @@
++// The Meterless Runtime provider (Evidence Desk project patch): provider
++// contract v4 against a stand-in runtime that checks the token on every call.
++
++import assert from "node:assert/strict";
++import http from "node:http";
++import test from "node:test";
++import { validateModelProcessors } from "../config.js";
++import { autoDetectMeterless, describeMeterlessModel, normaliseMeterlessUrl, parseMeterlessConnectLink, probeMeterless, setMeterlessTokenSource } from "../models/meterless.js";
++import { createConfiguredProcessor, MeterlessProcessor } from "../models/providers.js";
++import { chat } from "../speck/chat.js";
++
++const TOKEN = "stand-in-token-not-a-secret";
++
++async function standIn(models = ["meterless/auto", "meterless/deep", "meterless/reasoning.fast", "meterless/new-mode"]) {
++  const seen: Array<{ path: string; headers: http.IncomingHttpHeaders; body: any }> = [];
++  const server = http.createServer((request, response) => {
++    let body = "";
++    request.on("data", (chunk) => { body += chunk; });
++    request.on("end", () => {
++      seen.push({ path: request.url ?? "", headers: request.headers, body: body ? JSON.parse(body) : null });
++      const send = (status: number, value: unknown) => { response.writeHead(status, { "content-type": "application/json" }); response.end(JSON.stringify(value)); };
++      if (request.url === "/healthz") return send(200, { ok: true });
++      if (request.headers.authorization !== `Bearer ${TOKEN}`) return send(401, { error: "unauthorized" });
++      if (request.url === "/v1/models") return send(200, { data: models.map((id) => ({ id })) });
++      if (request.url === "/v1/chat/completions") return send(200, { model: "routed", choices: [{ message: { role: "assistant", content: "ready" } }], usage: { prompt_tokens: 3, completion_tokens: 1 } });
++      send(404, {});
++    });
++  }).listen(0, "127.0.0.1");
++  await new Promise((resolve) => server.once("listening", resolve));
++  const { port } = server.address() as { port: number };
++  return { url: `http://127.0.0.1:${port}`, seen, close: () => server.close() };
++}
++
++test("a pasted address becomes <host>/v1, never /v1/v1; a connect link gives the address and the key", () => {
++  for (const pasted of ["127.0.0.1:8088", "http://127.0.0.1:8088/", "http://127.0.0.1:8088/v1", "http://127.0.0.1:8088/v1/chat/completions", "http://127.0.0.1:8088/v1/models", "http://127.0.0.1:8088/healthz"]) {
++    assert.equal(normaliseMeterlessUrl(pasted), "http://127.0.0.1:8088/v1", pasted);
++  }
++  assert.deepEqual(parseMeterlessConnectLink("http://10.0.0.5:8090/connect#k=abc"), { baseUrl: "http://10.0.0.5:8090/v1", token: "abc" });
++  assert.equal(parseMeterlessConnectLink("http://10.0.0.5:8090/v1"), null);
++  assert.equal(describeMeterlessModel("meterless/reasoning.fast"), "reasoning class, fast routing");
++});
++
++test("a Meterless processor is validated as a routing mode at <host>/v1", () => {
++  const [processor] = validateModelProcessors([{ id: "meterless", provider: "meterless", model: "meterless/auto", baseUrl: "127.0.0.1:8088/v1/models", tier: 2, contextSize: 32768 }]);
++  assert.equal(processor!.baseUrl, "http://127.0.0.1:8088/v1");
++  assert.ok(createConfiguredProcessor(processor!) instanceof MeterlessProcessor);
++  assert.throws(() => validateModelProcessors([{ id: "m", provider: "meterless", model: "qwen3:14b", baseUrl: "http://127.0.0.1:8088", tier: 2, contextSize: 32768 }]), /routing mode/);
++});
++
++test("a wrong token is unauthorized, not offline; Auto Detect finds the runtime and skips other servers", async () => {
++  const runtime = await standIn();
++  const other = await standIn(["llama3.1:8b"]);
++  try {
++    assert.equal((await probeMeterless(runtime.url, "wrong")).status, "unauthorized");
++    assert.equal((await probeMeterless(`${runtime.url}/healthz`, TOKEN)).status, "online");
++    assert.equal((await probeMeterless(other.url, TOKEN)).status, "offline");
++    const found = await autoDetectMeterless(TOKEN, { candidates: ["http://127.0.0.1:9/v1", `${other.url}/v1`, `${runtime.url}/v1`] });
++    assert.deepEqual([found?.status, found?.baseUrl], ["online", `${runtime.url}/v1`]);
++    assert.deepEqual(found?.models, ["meterless/auto", "meterless/deep", "meterless/reasoning.fast", "meterless/new-mode"], "unknown meterless ids are kept");
++  } finally {
++    runtime.close();
++    other.close();
++  }
++});
++
++test("a plain text request on meterless/auto returns a string, with the stored token, meterless-app and meterless-scope", async () => {
++  const runtime = await standIn();
++  setMeterlessTokenSource(async () => TOKEN);
++  try {
++    const processor = createConfiguredProcessor({ id: "meterless", provider: "meterless", model: "meterless/auto", baseUrl: `${runtime.url}/v1/chat/completions`, tier: 2, contextSize: 32768, specialties: ["general"], enabled: true });
++    const completion = await processor.infer({ prompt: "Reply with the single word: ready", temperature: 0, timeoutMs: 1000 });
++    assert.equal(completion.text, "ready");
++    const chat = runtime.seen.find((call) => call.path === "/v1/chat/completions")!;
++    assert.equal(chat.headers.authorization, `Bearer ${TOKEN}`);
++    assert.equal(chat.headers["meterless-app"], "speck");
++    assert.equal(chat.headers["meterless-scope"], "user");
++    assert.equal(typeof chat.body.messages.at(-1).content, "string");
++    setMeterlessTokenSource(async () => "wrong");
++    await assert.rejects(processor.infer({ prompt: "x", temperature: 0, timeoutMs: 1000 }), /HTTP 401/);
++  } finally {
++    setMeterlessTokenSource(async () => null);
++    runtime.close();
++  }
++});
++
++test("Speck's chat path answers through a Meterless Runtime when the worker is one", async () => {
++  const runtime = await standIn();
++  setMeterlessTokenSource(async () => TOKEN);
++  try {
++    const settings = { provider: "meterless" as const, baseUrl: runtime.url, model: "meterless/deep", temperature: 0.2, contextSize: 16_384, outputBudget: 512, timeoutMs: 1000 };
++    const answered = await chat(settings, [{ role: "user", content: "Hello" }]);
++    assert.equal(answered.reply, "ready");
++    const call = runtime.seen.find((entry) => entry.path === "/v1/chat/completions")!;
++    assert.deepEqual([call.body.model, call.body.messages[0].content, call.headers["meterless-scope"], call.headers["meterless-app"]], ["meterless/deep", "Hello", "user", "speck"]);
++  } finally {
++    setMeterlessTokenSource(async () => null);
++    runtime.close();
++  }
++});

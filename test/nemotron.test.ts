@@ -33,12 +33,11 @@ async function fakeEndpoint(reply: (prompt: string) => unknown): Promise<{ url: 
 const chunkIds = (prompt: string) => [...(prompt.split("EVIDENCE IN THIS CHUNK:")[1] ?? "").matchAll(/^\[(EV-[A-Z]+-\d+)\]/gm)].map((match) => match[1]!);
 
 const nemotronEnv = (url: string) => ({
-  REASONER: "nemotron", NEMOTRON_BASE_URL: url, NEMOTRON_MODEL: "test/nemotron-stand-in", NEMOTRON_API_KEY_ENV: "EVIDENCE_DESK_TEST_KEY",
+  REASONER: "nemotron", NEMOTRON_BASE_URL: url, NEMOTRON_MODEL: "test/nemotron-stand-in", NEMOTRON_API_KEY_ENV: "EVIDENCE_DESK_TEST_KEY", EVIDENCE_DESK_TEST_KEY: "test-key-not-a-secret",
   NEMOTRON_REASONING_EFFORT: "none"
 });
 
 test("model judgments go through Speck; decisive rules win; invented citations are flagged", async () => {
-  process.env.EVIDENCE_DESK_TEST_KEY = "test-key-not-a-secret";
   const endpoint = await fakeEndpoint((prompt) => {
     if (prompt.includes("cited_evidence")) {
       // Declares an established conclusion, whatever Speck holds.
@@ -92,7 +91,6 @@ test("model judgments go through Speck; decisive rules win; invented citations a
     });
   } finally {
     endpoint.close();
-    delete process.env.EVIDENCE_DESK_TEST_KEY;
   }
 });
 
@@ -121,7 +119,6 @@ test("a record the model says nothing about stays pending instead of counting as
 });
 
 test("the trace records each Nemotron call: served model, constraints, contract retries, and what was kept", async () => {
-  process.env.EVIDENCE_DESK_TEST_KEY = "test-key-not-a-secret";
   let assessmentCalls = 0;
   const endpoint = await fakeEndpoint((prompt) => {
     if (prompt.includes("cited_evidence")) {
@@ -175,14 +172,13 @@ test("the trace records each Nemotron call: served model, constraints, contract 
     });
   } finally {
     endpoint.close();
-    delete process.env.EVIDENCE_DESK_TEST_KEY;
   }
 });
 
 test("a non-Nemotron or unset model is refused before anything runs", async () => {
-  await withDesk(testConfig({}, { REASONER: "nemotron" }), async (desk) => {
+  await withDesk(testConfig({}, { REASONER: "nemotron", MODEL_PROVIDER: "ollama" }), async (desk) => {
     assert.equal(desk.reasoner.describe().ready, false);
-    await assert.rejects(desk.run(), /NEMOTRON_BASE_URL is not set/);
+    await assert.rejects(desk.run(), /NEMOTRON_MODEL is not set/);
     assert.equal(desk.runs().length, 0);
   });
   await withDesk(testConfig({}, { REASONER: "nemotron", NEMOTRON_BASE_URL: "http://127.0.0.1:9/v1", NEMOTRON_MODEL: "llama3.1:8b" }), async (desk) => {

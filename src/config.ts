@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, normaliseMeterlessUrl, usableToken } from "./reasoning/meterless.js";
 
 // Configuration comes from the environment (and a local, git-ignored .env).
 // Nothing here has a credential default: a missing credential is reported
@@ -8,6 +9,16 @@ import { fileURLToPath } from "node:url";
 
 export type EvidenceMode = "fixture" | "zetaris";
 export type ReasonerKind = "rules" | "nemotron";
+// Where the model assessor's calls go. meterless: a Meterless Runtime, which
+// routes each call (src/reasoning/meterless.ts). ollama, nvidia: a Nemotron
+// model on local Ollama or NVIDIA's hosted API. openai-compatible: any other
+// endpoint serving a Nemotron model.
+export type ModelProvider = "meterless" | "ollama" | "nvidia" | "openai-compatible";
+export const MODEL_PROVIDERS: readonly ModelProvider[] = ["meterless", "ollama", "nvidia", "openai-compatible"];
+const PROVIDER_BASE_URLS: Partial<Record<ModelProvider, string>> = {
+  ollama: "http://127.0.0.1:11434/v1",
+  nvidia: "https://integrate.api.nvidia.com/v1"
+};
 
 export interface ZetarisConfig {
   baseUrl: string;
@@ -19,11 +30,16 @@ export interface ZetarisConfig {
   timeoutMs: number;
 }
 
+// The model assessor's settings, whichever provider serves it.
 export interface NemotronConfig {
+  provider: ModelProvider;
   baseUrl: string;
   model: string;
-  // The name of the environment variable holding the API key, never the key.
+  // The name of the setting holding the API key or token.
   apiKeyEnv: string;
+  // Its value, read from the same settings as everything else (inside Speck
+  // those are the plugin's, not Speck's environment). Never logged.
+  apiKey: string;
   timeoutMs: number;
   maxTokens: number;
   // Sent as reasoning_effort when set (e.g. "none" turns Nemotron's
@@ -54,6 +70,16 @@ export class ConfigError extends Error {
 
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+// The repository Evidence Desk was installed from (the installed plugin
+// records it in install.json); otherwise rootDir itself.
+export function repositoryRoot(rootDir: string): string {
+  try {
+    const recorded = (JSON.parse(fs.readFileSync(path.join(rootDir, "install.json"), "utf8")) as { repository?: string }).repository;
+    if (recorded && fs.existsSync(recorded)) return recorded;
+  } catch { /* not an installed plugin */ }
+  return rootDir;
+}
+
 // Loads ROOT/.env into process.env when present. Values already in the
 // environment win, as with Node's own loader.
 export function loadDotEnv(rootDir = ROOT_DIR): string | null {
@@ -61,6 +87,23 @@ export function loadDotEnv(rootDir = ROOT_DIR): string | null {
   if (!fs.existsSync(file)) return null;
   process.loadEnvFile(file);
   return file;
+}
+
+// .env text with each given key set: an existing KEY= line is replaced in
+// place (the first, if repeated), a commented-out or missing key is appended,
+// and every other line, comments included, is kept. A value containing
+// whitespace, # or quotes is single-quoted, which Node's parser reads verbatim.
+export function updateEnvText(text: string, values: Record<string, string>): string {
+  const lines = text.split(/\r?\n/);
+  if (lines.at(-1) === "") lines.pop();
+  const quote = (value: string) => (/[\s#"'`]/.test(value) && !value.includes("'") ? `'${value}'` : value);
+  for (const [key, value] of Object.entries(values)) {
+    const index = lines.findIndex((line) => line.startsWith(`${key}=`));
+    const line = `${key}=${quote(value)}`;
+    if (index >= 0) lines[index] = line;
+    else lines.push(line);
+  }
+  return `${lines.join("\n")}\n`;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Partial<AppConfig> = {}): AppConfig {
@@ -82,14 +125,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
       timeoutMs: positiveInt(env.ZETARIS_TIMEOUT_MS, 120_000, "ZETARIS_TIMEOUT_MS")
     },
     reasoner: oneOf(env.REASONER, ["rules", "nemotron"], "rules", "REASONER"),
-    nemotron: {
-      baseUrl: env.NEMOTRON_BASE_URL?.trim() ?? "",
-      model: env.NEMOTRON_MODEL?.trim() ?? "",
-      apiKeyEnv: env.NEMOTRON_API_KEY_ENV?.trim() || "NEMOTRON_API_KEY",
-      timeoutMs: positiveInt(env.NEMOTRON_TIMEOUT_MS, 180_000, "NEMOTRON_TIMEOUT_MS"),
-      maxTokens: positiveInt(env.NEMOTRON_MAX_TOKENS, 4096, "NEMOTRON_MAX_TOKENS"),
-      reasoningEffort: env.NEMOTRON_REASONING_EFFORT?.trim() ?? ""
-    },
+    nemotron: modelConfig(env),
     execution: {
       maxChunks: positiveInt(env.MARKOVIAN_MAX_CHUNKS, 8, "MARKOVIAN_MAX_CHUNKS"),
       batchSize: positiveInt(env.EVIDENCE_BATCH_SIZE, 2, "EVIDENCE_BATCH_SIZE")
@@ -97,6 +133,37 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
     host: env.EVIDENCE_DESK_HOST?.trim() || "127.0.0.1",
     port: positiveInt(env.EVIDENCE_DESK_PORT, 4320, "EVIDENCE_DESK_PORT"),
     ...overrides
+  };
+}
+
+// MODEL_PROVIDER when set. Otherwise an explicit NEMOTRON_BASE_URL keeps the
+// endpoint it names (as before providers existed), and Meterless is the default.
+function modelConfig(env: NodeJS.ProcessEnv): NemotronConfig {
+  const nemotronBase = env.NEMOTRON_BASE_URL?.trim() ?? "";
+  const provider = oneOf(env.MODEL_PROVIDER, MODEL_PROVIDERS, nemotronBase ? "openai-compatible" : "meterless", "MODEL_PROVIDER");
+  const common = {
+    timeoutMs: positiveInt(env.NEMOTRON_TIMEOUT_MS, 180_000, "NEMOTRON_TIMEOUT_MS"),
+    maxTokens: positiveInt(env.NEMOTRON_MAX_TOKENS, 4096, "NEMOTRON_MAX_TOKENS"),
+    reasoningEffort: env.NEMOTRON_REASONING_EFFORT?.trim() ?? ""
+  };
+  // .env.example's placeholders (<...>) are not values.
+  const secret = (name: string) => (env[name] ?? "").trim().replace(/^<.*>$/, "");
+  if (provider === "meterless") {
+    return {
+      provider, ...common,
+      baseUrl: normaliseMeterlessUrl(env.METERLESS_BASE_URL ?? ""),
+      model: env.METERLESS_MODEL?.trim() || METERLESS_DEFAULT_MODEL,
+      apiKeyEnv: METERLESS_TOKEN_KEY,
+      apiKey: usableToken(secret(METERLESS_TOKEN_KEY))
+    };
+  }
+  const apiKeyEnv = env.NEMOTRON_API_KEY_ENV?.trim() || "NEMOTRON_API_KEY";
+  return {
+    provider, ...common,
+    baseUrl: nemotronBase || PROVIDER_BASE_URLS[provider] || "",
+    model: env.NEMOTRON_MODEL?.trim() ?? "",
+    apiKeyEnv,
+    apiKey: secret(apiKeyEnv)
   };
 }
 

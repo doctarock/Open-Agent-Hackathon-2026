@@ -2,7 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { AppConfig } from "../config.js";
+import { repositoryRoot, type AppConfig } from "../config.js";
+
+export { repositoryRoot };
 import type { Checkpoint } from "../eval/cases.js";
 import { statelessModelAnswer, statelessRulesAnswer } from "../eval/systems.js";
 import type { EvidenceProvider, EvidenceRecord, ProviderDescription } from "../evidence/types.js";
@@ -395,16 +397,6 @@ export async function runComparison(config: AppConfig, options: {
 // Two places, both per scenario: comparisons run from the page (beside the
 // case's other data), and comparisons run with npm run compare / compare:live
 // (eval/results/comparisons/ in the repository). The page reads both.
-
-// The repository Evidence Desk was installed from (the installed plugin
-// records it in install.json); otherwise rootDir itself.
-export function repositoryRoot(rootDir: string): string {
-  try {
-    const recorded = (JSON.parse(fs.readFileSync(path.join(rootDir, "install.json"), "utf8")) as { repository?: string }).repository;
-    if (recorded && fs.existsSync(recorded)) return recorded;
-  } catch { /* not an installed plugin */ }
-  return rootDir;
-}
 
 export const publishedComparisonsDir = (rootDir: string, scenarioId: string) =>
   path.join(repositoryRoot(rootDir), "eval", "results", "comparisons", scenarioId);

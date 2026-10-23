@@ -1,6 +1,6 @@
 // The guided demo inside Speck: one journey across both prepared cases (the
-// bank return first: deterministic, instant, with pre-registered labels; each
-// opens on Speck beside a stateless model call), then
+// disputed delivery, then the bank return, which ends on Speck beside a
+// stateless baseline once both cases have been seen to revise), then
 // Speck's own views of the same work (the world timeline, the memory map and
 // the chat), then an investigation of the person's own. Pure definitions;
 // the Evidence tab (plugin/ui/evidence-desk-ui.js) drives Speck's interface
@@ -18,19 +18,20 @@ export const SUGGESTED_QUESTION = "What did the bank return investigation conclu
 
 export const JOURNEY = [
   {
-    id: "bank",
-    kind: "case",
-    caseId: "bank-return",
-    label: "Part 1 of 6 · Bank return",
-    steps: ["case", "compare", "run", "update", "rerun", "changed"],
-    finishLabel: "Next: the disputed delivery, live"
-  },
-  {
     id: "delivery",
     kind: "case",
     caseId: "disputed-delivery",
-    label: "Part 2 of 6 · Disputed delivery",
-    steps: ["case", "compare", "run", "conclusion", "record", "update", "rerun", "changed", "history"],
+    label: "Part 1 of 6 · Disputed delivery",
+    steps: ["case", "run", "conclusion", "record", "update", "rerun", "changed", "history"],
+    finishLabel: "Next: the bank return"
+  },
+  {
+    id: "bank",
+    kind: "case",
+    caseId: "bank-return",
+    label: "Part 2 of 6 · Bank return",
+    // The comparison comes last, on the deterministic case (it takes a second).
+    steps: ["case", "run", "update", "rerun", "changed", "compare"],
     finishLabel: "Next: Speck's world view"
   },
   {

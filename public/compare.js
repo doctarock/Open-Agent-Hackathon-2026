@@ -163,7 +163,7 @@ function statelessColumn(report, index) {
   const s = stage.stateless;
   const checks = stage.checks.stateless;
   return el("div", { className: "cmp-side cmp-stateless" },
-    el("h4", {}, statelessName(report), " ", badge(s.method === "nemotron" ? "Nemotron, one call" : "rule scores", s.method === "nemotron" ? "warn" : "ok")),
+    el("h4", {}, statelessName(report), " ", badge(s.method === "nemotron" ? `${/^meterless\//.test(report.configuration.assessor.model ?? "") ? "Meterless Runtime" : "Nemotron"}, one call` : "rule scores", s.method === "nemotron" ? "warn" : "ok")),
     el("p", { className: "cmp-verdict" }, outcomeBadge(report, index, "stateless")),
     s.error ? el("p", {}, badge(s.error, "bad long")) : null,
     el("div", { className: "meta" }, "Cites as support: ", chips(checks.presentedSupport, index)),
@@ -186,7 +186,7 @@ function speckColumn(report, index) {
     item.basis ? [" ", badge(item.basis === "rule" ? "rule" : "model", item.basis === "rule" ? "ok" : "warn")] : null,
     item.decisive ? " decisive" : "", item.rationale ? ` - ${item.rationale}` : "");
   return el("div", { className: "cmp-side cmp-speck" },
-    el("h4", {}, "Speck", " ", badge(report.configuration.assessor.kind === "nemotron" ? "Nemotron + Speck belief state" : "rules + Speck belief state", "ok")),
+    el("h4", {}, "Speck", " ", badge(report.configuration.assessor.kind === "nemotron" ? `${/^meterless\//.test(report.configuration.assessor.model ?? "") ? "Meterless Runtime" : "Nemotron"} + Speck belief state` : "rules + Speck belief state", "ok")),
     el("p", { className: "cmp-verdict" }, outcomeBadge(report, index, "speck")),
     s.error ? el("p", {}, badge(s.error, "bad long")) : null,
     s.headline ? el("p", { className: "meta" }, s.headline) : null,
@@ -266,8 +266,6 @@ export function renderComparison(container, state) {
   const willRun = data?.willRun;
   const head = el("div", { className: "cmp-head" },
     el("div", {},
-      el("p", { className: "eyebrow" }, "The difference Speck makes"),
-      el("h2", { id: "edk-compare-heading" }, "Speck beside a stateless baseline, on the same evidence"),
       el("p", { className: "cmp-pitch" }, "A stateless baseline (a model call in live mode, the same fact rules in deterministic mode) answers from whatever evidence it is handed, from scratch every time. Speck keeps the evidence, its beliefs and every revision as state you can inspect. Run both on this case and see what each does when a record is corrected.")),
     el("div", { className: "cmp-action" },
       el("button", { type: "button", className: "primary", "data-cmp": "run", disabled: running || state.starting || (willRun && !willRun.assessor.ready) ? "" : null },

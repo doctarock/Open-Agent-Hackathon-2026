@@ -1,9 +1,9 @@
 # Open-Agent-Hackathon-2026 — Speck Evidence Desk
 
 > **For judges:** Evidence Desk is a **Speck plugin**. Start Speck (`npm run speck`) and open the
-> **Evidence** tab in its rail. The first panel on each case is **Speck beside a stateless
-> baseline**: one click runs the same case, with the same evidence and the same correction,
-> through both, and shows what each actually did.
+> **Evidence** tab in its rail and take the guided demo. It ends on **Speck beside a stateless
+> baseline**, a panel at the bottom of each case: one click runs the same case, with the same
+> evidence and the same correction, through both, and shows what each actually did.
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
 >   and every saved result.
@@ -36,7 +36,7 @@ on, and how and why it changed.
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
 - **The page is a tab** in Speck's interface, and it is the interface's home: Speck opens on it.
-- **Three project-local changes to Speck**, kept in this repository as patches in `patches/`. They
+- **Four project-local changes to Speck**, kept in this repository as patches in `patches/`. They
   are applied by `npm run setup` and never committed to Speck; the submodule stays pinned to
   upstream Speck.
   - `speck-home-view.patch`: a general `SPECK_HOME_VIEW` setting chooses the view Speck's
@@ -47,6 +47,11 @@ It runs inside Speck as a plugin:
   - `speck-chat-investigations.patch`: adds an *Evidence Desk investigations* component to
     Speck's chat. When a message names an investigation, the chat is given the case summaries
     Evidence Desk published to Speck and told to answer only from them (see *Inside Speck*).
+  - `speck-meterless-provider.patch`: adds the Meterless Runtime as a Speck model provider (see
+    *Model providers*):
+    - the contract itself (`src/models/meterless.ts`), which Evidence Desk also uses;
+    - a processor and Speck's chat path through it;
+    - a Meterless panel in the System view, with the token kept in Speck's secret store.
 
   Everything else Evidence Desk needs is Speck's existing plugin system and memory API.
 
@@ -54,8 +59,8 @@ A standalone server serving the same page remains, for development and as a fall
 
 ### Speck beside a stateless baseline
 
-The first panel on every case runs the whole case twice, stage by stage, and shows the two side
-by side. Code: `src/compare/comparison.ts` (server), `public/compare.js` (page); tests:
+A panel at the bottom of every case, closed until opened (the guided demo opens it as its last
+case step), runs the whole case twice, stage by stage, and shows the two side by side. Code: `src/compare/comparison.ts` (server), `public/compare.js` (page); tests:
 `test/compare.test.ts` and a route test in `test/plugin.test.ts`.
 
 | | Stateless baseline | Speck |
@@ -109,7 +114,7 @@ bottom of each case page).
 
 ### Decisive mode (experimental)
 
-A switch at the top of each case's conclusion (and in the comparison panel) turns on an extra
+A switch in the comparison panel turns on an extra
 reading that combines Speck with the stateless baseline: the stateless answer is accepted only if
 every record it cites still counts and Speck holds or points to the same explanation; otherwise
 Speck's own conclusion stands, or nothing is concluded. *What is decisive mode?* beside the switch
@@ -188,11 +193,11 @@ Inside Speck the Evidence tab replaces the per-case introduction with one **guid
 offered at the top of the tab (*Start the guided demo* or *Explore on my own*), and the *Guided
 demo* link beside the case picker starts or resumes it.
 
-1. **Bank return** (deterministic, instant): the explanations, then **Speck beside a stateless
-   baseline** on the whole case, then a run, the prepared update (the bank's return of the
-   payment), a second run, and which record no longer counts.
-2. **Disputed delivery** (live when configured): the case tour above, opening with the
-   side-by-side comparison, without its last overview step.
+1. **Disputed delivery** (live when configured): the case tour above, without its comparison
+   and last overview steps.
+2. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
+   bank's return of the payment), a second run, and which record no longer counts. It ends on
+   **Speck beside a stateless baseline**: the panel opens and runs the whole case both ways.
 3. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
    actions (Hypothesis Proposed, Memory Recorded, Belief Revised, Association Reinforced) are laid
    out in time; right-drag travels back. The panel quotes Speck's own timeline status and each
@@ -229,11 +234,14 @@ case identifier (such as `ORD-1042`) or mentions an investigation, dispute or ev
 the model to answer only from them. Other messages take Speck's ordinary path. Speck's own tests
 cover it (`src/tests/investigations-component.test.ts`).
 
-Speck's chat needs a model of its own. This setup uses the local Nemotron Nano 9B through Ollama,
-set in Speck's System view (or `POST /api/brains/config`) as a processor for Speck's roles. Speck
-saves that in `speck/data/genesis-runtime/model-processors.json`, which is runtime data and not
-committed; restart Speck after changing it. The 4B model used for assessments was tried first and
-invented details more often.
+Speck's chat needs a model of its own, set in Speck's System view (or `POST /api/brains/config`)
+as a processor for Speck's roles: an Ollama model or a Meterless Runtime. `npm run configure`
+offers to point it at the same Meterless Runtime as the assessor. Speck saves that in
+`speck/data/genesis-runtime/model-processors.json`, which is runtime data and not committed;
+restart Speck after changing it.
+
+The local alternative used here is Nemotron Nano 9B through Ollama. The 4B model used for
+assessments was tried first and invented details more often.
 
 **Your own investigations.** *+ New investigation* takes a title, the question, two to five
 competing explanations (equal priors) and optionally the first evidence.
@@ -536,21 +544,41 @@ cannot escape the cap later.
 
 ## Setup
 
-Requires Node.js 22+ and git. From the repository root:
+Requires Node.js 22+ and git. Clone the repository, then from its root:
 
 ```bash
-git submodule update --init --recursive   # speck/ at the pinned commit
-cp .env.example .env                      # optional: defaults are fixture mode, no model
-npm run setup                             # npm ci here and in speck/, build Speck, install the plugin
-npm test                                  # build + all tests (no credentials needed)
-npm run speck                             # Speck on http://127.0.0.1:4310, opening on the Evidence tab
+npm run setup    # fetch speck/, install, build Speck, install the plugin, then ask two questions
+npm run speck    # Speck on http://127.0.0.1:4310, opening on the Evidence tab
 ```
 
+On the first run `npm run setup` asks the two questions of `npm run configure`, and checks each
+answer against the real service before saving it to `.env`:
+
+1. **Which model weighs the evidence:**
+   - **Meterless Runtime** (the default). It finds a runtime on this machine (ports 8088, 8090,
+     8787 and 11434), or takes a pasted address or connect link. It asks for the token if the
+     runtime wants one, and offers its routing modes.
+   - **Nemotron on local Ollama.** It lists your Nemotron models and offers to download
+     `nemotron-3-nano:4b` if there are none.
+   - **Nemotron on NVIDIA's hosted API.** It takes your key and lists the Nemotron models
+     available to it.
+   - **No model.** The deterministic fact rules.
+2. **Where the evidence comes from:**
+   - fixture files;
+   - **local Zetaris** (the Docker bundle). It signs in and offers to load the scenario's evidence;
+   - **another Zetaris address.** It signs in and checks the tables; this is not tested beyond
+     the local bundle.
+
+Run `npm run configure` again at any time to change these (`--model`, `--evidence` and `--yes`
+skip the questions). Secrets are typed hidden and never printed. Without a `.env`, the cases run
+on fixtures with the rule assessor. `npm test` builds and runs every test, with no credentials.
+
+- **One settings file.** The repository's `.env` is read by the standalone server, the scripts
+  and the Speck plugin, which finds it through the `install.json` it was installed with.
+  It is git-ignored. After changing it, restart Speck. A `.env` left in
+  `speck/plugins/evidence-desk/` by an earlier version is renamed `.env.old` and no longer read.
 - **Where the case lives.** Inside Speck, each case is a worker in Speck's own database. Speck
   stores that under `speck/data/` by default; set `SPECK_DB_PATH` to use another file.
-- **Plugin settings.** `speck/plugins/evidence-desk/.env` holds the plugin's settings. It is
-  copied from `.env` on the first install, and it is git-ignored.
-- **Changing settings.** Edit that file and restart Speck.
 - **Changing Evidence Desk's code.** Run `npm run plugin:install` again, then restart Speck.
 
 The tab offers two cases:
@@ -597,9 +625,10 @@ and Ollama running.
    ```
    `zetaris:check` should report 6 records for DISPUTE-1042. `model:check` should print the
    served model, e.g. `nemotron-3-nano:4b`.
-2. Set `EVIDENCE_MODE=zetaris` and `REASONER=nemotron` in `speck/plugins/evidence-desk/.env`.
+2. Choose them with `npm run configure -- --model ollama --evidence zetaris-local` (or set
+   `EVIDENCE_MODE=zetaris`, `REASONER=nemotron` and `MODEL_PROVIDER=ollama` in `.env`).
    Then run `npm run speck` and open the Evidence tab's Disputed delivery case. (Standalone:
-   set them in `.env` and use `npm start`, after `npm run db:reset` for a clean case.)
+   `npm start`, after `npm run db:reset` for a clean case.)
 3. Check the header and records:
    - the header shows **ZETARIS LIVE**, the Nemotron model and endpoint, and the Meterless
      engine and commit;
@@ -623,12 +652,13 @@ showed this as one retry.
 
 | Command | What it does |
 |---|---|
-| `npm run setup` | Install dependencies here and in `speck/`, build Speck, and install the plugin |
+| `npm run setup` | Fetch `speck/`, install dependencies here and in it, build Speck, install the plugin, and on a first run ask the `configure` questions |
+| `npm run configure` | Choose the model (Meterless Runtime, local Ollama, NVIDIA's API, or rules) and the evidence source (fixtures, local Zetaris, another Zetaris address); checks each against the real service and writes `.env`. `--model`, `--evidence`, `--yes` skip the questions. |
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. |
 | `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
-| `npm run compare:live` | The same with the settings in `.env`: the Nemotron endpoint for both cases, and Zetaris for the disputed delivery. Exits 2 if no Nemotron endpoint is configured. |
+| `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
 | `npm run eval:cross-domain` | The separate cross-domain suite (`eval/cross-domain/`): logistics, payment reversals, procurement; refuses to run if its locked expectations changed. Findings: `docs/cross-domain-evaluation.md` |
-| `npm run plugin:install` | Build, then (re)install the plugin into `speck/plugins/evidence-desk/` and approve its entry hash in Speck's allowlist. Keeps the plugin's `.env` and case data. Restart Speck afterwards. |
+| `npm run plugin:install` | Build, then (re)install the plugin into `speck/plugins/evidence-desk/` and approve its entry hash in Speck's allowlist. Keeps the case data; the plugin reads the repository's `.env`. Restart Speck afterwards. |
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Start the standalone server (reads `.env` when present) |
 | `npm run dev` | Build, then start with restart on changes in `dist/` (run `npx tsc -w` alongside) |
@@ -637,7 +667,7 @@ showed this as one retry.
 | `npm run zetaris:seed` | Load the scenario's evidence into a local Zetaris platform (see below) |
 | `npm run zetaris:check` | Exercise the live Zetaris path: login, probe query, case evidence |
 | `npm run zetaris:usl` | Build and check the Zetaris Unified Semantic Layer over a warehouse and a carrier source, with a data-quality rule (separate from the live path). See `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md` |
-| `npm run model:check` | One call to the Nemotron endpoint; prints the model it reports serving |
+| `npm run model:check` | One plain-text call to the configured model provider (for a Meterless Runtime, after checking its status and routing modes); prints the model it reports serving |
 | `npm run sponsors:verify` | Runs a real two-stage investigation with the services in `.env`, on throwaway storage (`data/` is untouched). Checks each sponsor's contribution against an independent source and prints OBSERVED or NOT OBSERVED for each. Exits 1 if any configured sponsor was not observed. Saves the report and trace to `eval/results/sponsor-check.json`. |
 
 The standalone server keeps its own database at `data/evidence-desk.sqlite`, separate from
@@ -645,12 +675,16 @@ anything in `speck/data/`. `npm run db:reset` gives it a clean case.
 
 ## Configuration
 
-All settings are environment variables, set in a git-ignored `.env`. `.env.example` lists them
-with placeholders. There are no credential defaults in code.
+All settings are environment variables, set in a git-ignored `.env`, which `npm run configure`
+writes. `.env.example` lists them with placeholders. There are no credential defaults in code.
 
 - `EVIDENCE_MODE=fixture|zetaris` selects the evidence source explicitly.
-- `REASONER=rules|nemotron` selects the reasoner.
-- In Nemotron mode an unset or non-Nemotron `NEMOTRON_MODEL` is refused before anything runs.
+- `REASONER=rules|nemotron` selects the reasoner: the fact rules, or the model assessor.
+- `MODEL_PROVIDER=meterless|ollama|nvidia|openai-compatible` selects where the model assessor's
+  calls go (see *Model providers*). Unset, it is `meterless`, unless an older `.env` sets
+  `NEMOTRON_BASE_URL`, which keeps that endpoint.
+- An unusable model is refused before anything runs: a Meterless model that is not a routing mode
+  or has no token, or, for the other providers, an unset or non-Nemotron `NEMOTRON_MODEL`.
 
 ### Live Zetaris (local Docker Compose bundle)
 
@@ -671,23 +705,80 @@ If Zetaris is unreachable, rejects the login, or lacks a table, the API returns 
 the page shows the error, the server's message and what to do. No run is recorded and no
 fixture data is substituted.
 
-### Nemotron
+### Model providers
 
-The client speaks the OpenAI chat API, so any compatible endpoint serving a Nemotron model can be
-configured:
+The model client (`src/reasoning/nemotron.ts`) speaks the OpenAI chat API. `MODEL_PROVIDER`
+chooses the endpoint:
 
-- **Local Ollama (the configuration used and verified here):**
-  - `NEMOTRON_BASE_URL=http://127.0.0.1:11434/v1`;
-  - `NEMOTRON_MODEL` set to a local Nemotron tag (verified with `nemotron-3-nano:4b`);
+- **Meterless Runtime (`meterless`, the default).** Meterless Runtime 1.4, provider contract v4.
+  - **What it is.** A separate program, by default on port 8088, that routes each call to a
+    model. Start it before configuring.
+  - **Code.**
+    - The contract is implemented once, in Speck (`speck/src/models/meterless.ts`, from
+      `speck-meterless-provider.patch`).
+    - Evidence Desk uses it through `src/reasoning/meterless.ts`, under its own app id.
+  - **Not the engine.** This is separate from the Meterless engine that executes each run
+    (`vendor/meterless-markovian/`), which is unchanged.
+  - **Where to set it:** `npm run configure`, `.env`, or Speck's System view.
+    - In Speck's System view, under Brains, the provider *Meterless Runtime* shows a panel:
+      - the address field also takes a connect link;
+      - *Auto Detect* finds a runtime on this machine;
+      - *Discover* checks the runtime and lists its routing modes;
+      - a token field appears when the runtime says *unauthorized*.
+    - The token is kept in Speck's encrypted secret store as `meterless_runtime_token`, and no
+      route ever returns it.
+    - Inside Speck, a token in the secret store wins over `.env`, so a token saved in the System
+      view also reaches Evidence Desk's cases. `npm run configure` writes the token to both.
+  - `METERLESS_BASE_URL` (default `http://127.0.0.1:8088/v1`). A pasted address with or without
+    a scheme, `/v1`, `/v1/chat/completions`, `/v1/models` or `/healthz` is normalised to
+    `<host>/v1`. A connect link (`http://<host>:<port>/connect#k=<key>`) gives both the address
+    and the token; `npm run configure` reads it and never prints it.
+  - `meterless_runtime_token`: the token the runtime writes to `<stateDir>/proxy-token`. It is
+    sent as `Authorization: Bearer` on every call; the placeholder `rt-local` counts as no token.
+  - `METERLESS_MODEL` (default `meterless/auto`): a routing mode, not a model:
+    - `meterless/<disposition>`: `auto`, `fast`, `deep`, `cheap`, `local` or `fusion`;
+    - `meterless/<class>`, or `meterless/<class>.<disposition>`;
+    - any other `meterless/*` id the runtime lists is kept.
+  - Every request carries `meterless-app`: `evidence-desk` for the assessor, `speck` for Speck's
+    chat. Chat requests also carry `meterless-scope: user`. Calls time out after 180 s (`NEMOTRON_TIMEOUT_MS`), because a
+    model load can take minutes.
+  - Status comes from `GET /v1/models`: 401 or 403 is *unauthorized*; 200 with `meterless/*` ids
+    is *online*; anything else is *offline* (`/healthz` only shows the process is up).
+  - Auto Detect tries ports 8088, 8090, 8787 and 11434 on 127.0.0.1, localhost and [::1], and
+    keeps the first that is online or unauthorized.
+  - Tested against a stand-in runtime (`test/meterless-runtime.test.ts`, and Speck's
+    `src/tests/meterless-provider.test.ts`):
+    - a wrong token shows *unauthorized*, not *offline*;
+    - Auto Detect finds the runtime and skips an Ollama-like server;
+    - a plain-text request on `meterless/auto` returns a string;
+    - Speck's chat path answers through it.
+
+    The same stand-in, driven through a running Speck, showed each of these:
+    - detected *unauthorized*;
+    - a connect link saved the token and showed the runtime *online*;
+    - a chat turn was answered through it;
+    - Evidence Desk's assessor called it with the token from Speck's secret store.
+
+    No real Meterless Runtime was available while this was written.
+  - The runtime chooses the model for each call. The trace records the model it reports serving.
+    `npm run sponsors:verify` still requires that model to be Nemotron before it reports Nemotron
+    as used.
+- **Nemotron on local Ollama (`ollama`; the configuration used and verified here):**
+  - `NEMOTRON_MODEL` set to a local Nemotron tag (verified with `nemotron-3-nano:4b`); the base
+    URL defaults to `http://127.0.0.1:11434/v1`;
   - `NEMOTRON_REASONING_EFFORT=none`. With reasoning on, the model's reasoning trace uses up the
     output budget.
-- **NVIDIA hosted API (supported by configuration, not exercised in this project's
-  verification):** `NEMOTRON_BASE_URL=https://integrate.api.nvidia.com/v1`, a Nemotron model id
-  in `NEMOTRON_MODEL`, and the key in `NEMOTRON_API_KEY`.
+- **Nemotron on NVIDIA's hosted API (`nvidia`; supported by configuration, not exercised in this
+  project's verification):**
+  - a Nemotron model id in `NEMOTRON_MODEL`, and the key in `NEMOTRON_API_KEY`;
+  - the base URL defaults to `https://integrate.api.nvidia.com/v1`;
+  - the key is read from the same `.env` as everything else, so it also reaches the plugin
+    inside Speck.
+- **`openai-compatible`:** any other endpoint serving Nemotron, at `NEMOTRON_BASE_URL`.
 
-Run `npm run model:check` before claiming Nemotron was used. Each run also records
-`servedModels`, the names the endpoint returned.
-
+Run `npm run model:check` before claiming a model was used. For a Meterless Runtime it first
+reports the runtime's status and routing modes. Each run also records `servedModels`, the names
+the endpoint returned.
 ## Evaluation
 
 ```bash

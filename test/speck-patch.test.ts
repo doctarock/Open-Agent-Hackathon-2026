@@ -38,3 +38,11 @@ test("the chat patch adds only the investigations component, its test, and its p
   const files = [...fs.readFileSync(chat, "utf8").matchAll(/^diff --git a\/(\S+) b\//gm)].map((match) => match[1]).sort();
   assert.deepEqual(files, ["src/speck/components/index.ts", "src/speck/components/investigations.ts", "src/tests/component-switches.test.ts", "src/tests/investigations-component.test.ts"]);
 });
+
+test("the Meterless patch adds only the Meterless Runtime provider: its module and test, the processor, its validation, routes, System view panel and chat path", () => {
+  const meterless = path.join(ROOT_DIR, "patches", "speck-meterless-provider.patch");
+  git("apply", "--check", "--reverse", meterless);
+  const files = [...fs.readFileSync(meterless, "utf8").matchAll(/^diff --git a\/(\S+) b\//gm)].map((match) => match[1]).sort();
+  assert.deepEqual(files, ["public/ui/system.js", "src/config.ts", "src/genesis-host.ts", "src/genesis-ui/routes/config.ts", "src/index.ts",
+    "src/models/meterless.ts", "src/models/providers.ts", "src/models/types.ts", "src/speck/chat.ts", "src/speck/configure.ts", "src/tests/meterless-provider.test.ts"]);
+});

@@ -317,7 +317,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     if (offer.hidden) return;
     offer.replaceChildren(
       el("h2", { id: "edk-demo-offer-title" }, "Take the guided demo"),
-      el("p", {}, "Two investigations where the evidence changes: a bank return and a disputed delivery. Each opens with Speck beside a stateless model call on the same evidence, so you can see what each does when a record is corrected. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
+      el("p", {}, "Two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
       el("p", { className: "meta" }, "Each step that asks you to act waits for the real result; nothing is scripted."),
       el("div", { className: "intro-actions" },
         el("button", { type: "button", className: "primary", "data-demo": "start" }, "Start the guided demo"),
@@ -377,7 +377,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     const form = el("form", { className: "panel new-case", novalidate: "" },
       el("h2", { id: "edk-new-case-title", tabindex: "-1" }, "Start an investigation of your own"),
       el("p", { className: "muted" }, "Write the question, the explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases: each record is weighed against each explanation, corrections replace what they correct, and every change is kept in the history."),
-      el("p", { className: "meta" }, "Your evidence is free text, so only a reasoning model can weigh it (the local Nemotron assessor, with Speck's 0.4 cap on model-judged evidence). It is stored in this plugin's data folder, not sent anywhere."),
+      el("p", { className: "meta" }, "Your evidence is free text, so only a reasoning model can weigh it (the model assessor, with Speck's 0.4 cap on model-judged evidence). It is stored in this plugin's data folder and sent only to the configured model provider."),
       el("label", { className: "field" }, "Title", el("input", { type: "text", name: "title", maxlength: "120", placeholder: "e.g. Missing laptop return" })),
       el("label", { className: "field" }, "The question", el("textarea", { name: "question", rows: "2", maxlength: "600", placeholder: "e.g. The customer says they returned laptop SN-4471; the warehouse has no record of it. Was it returned?" })),
       el("fieldset", {}, el("legend", {}, "Competing explanations (2 to 5)"), explanations,

@@ -1,7 +1,7 @@
 # Speck beside a stateless baseline
 
 The same case, the same evidence, the same correction, processed two ways, with what each
-actually did. This is what the first panel of every case page runs, and what
+actually did. This is what the comparison panel at the bottom of every case page runs, and what
 `npm run compare` / `npm run compare:live` save. Every report behind the numbers below is in
 `eval/results/comparisons/<scenario>/` (tracked in git; each run is its own file and none is
 ever overwritten).

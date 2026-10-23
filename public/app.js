@@ -95,10 +95,6 @@ const TEMPLATE = `
 
 <div id="edk-error" class="error" role="alert" hidden></div>
 
-<section class="panel compare-panel" id="edk-compare-panel" aria-labelledby="edk-compare-heading">
-  <div id="edk-compare"><p class="muted">Loading the comparison…</p></div>
-</section>
-
 <section class="workflow" aria-label="Investigation steps">
   <ol id="edk-stages" class="stages"></ol>
   <div class="actions">
@@ -135,6 +131,17 @@ const TEMPLATE = `
   <div id="edk-timeline-help"></div>
   <label class="muted toggle"><input id="edk-timeline-all" type="checkbox"> Show every event, not only changes</label>
   <ol id="edk-timeline" class="timeline"></ol>
+</section>
+
+<section class="panel compare-panel" id="edk-compare-panel" aria-labelledby="edk-compare-heading">
+  <div class="cmp-summary">
+    <div>
+      <h2 id="edk-compare-heading">Speck beside a stateless baseline</h2>
+      <p class="muted" id="edk-compare-teaser">The same case, run again on the same records by a stateless baseline that answers from scratch each time, to show what Speck's kept state changes.</p>
+    </div>
+    <button id="edk-compare-toggle" class="secondary" type="button" aria-expanded="false" aria-controls="edk-compare">Show the comparison</button>
+  </div>
+  <div id="edk-compare" hidden><p class="muted">Loading the comparison…</p></div>
 </section>
 
 <section class="panel" id="edk-trace-panel" aria-labelledby="edk-trace-heading">
@@ -226,7 +233,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     // Through el(), which drops null; replaceChildren would print it.
     $("sources").replaceChildren(...el("span", {},
       badge(evidence.mode === "zetaris" ? "Evidence: Zetaris live" : "Evidence: fixture file, not Zetaris", evidence.mode),
-      badge(reasoner.kind === "nemotron" ? `Assessor: Nemotron (${reasoner.model})` : "Assessor: deterministic rules", reasoner.ready ? "ok" : "bad"),
+      badge(reasoner.kind === "nemotron" ? `Assessor: ${reasoner.label} (${reasoner.model})` : "Assessor: deterministic rules", reasoner.ready ? "ok" : "bad"),
       evidence.problem ? badge(evidence.problem, "bad long") : null,
       reasoner.problem ? badge(reasoner.problem, "bad long") : null).childNodes);
     const usage = reasoner.usage ? ` - ${reasoner.usage.successes} successful / ${reasoner.usage.calls} calls this session` : "";
@@ -341,8 +348,8 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       ...(view.listing?.records ?? []).filter((record) => !record.invalidation).map((record) => el("option", { value: record.id }, `${record.id}: ${record.content.slice(0, 60)}${record.content.length > 60 ? "…" : ""}`)));
     select.value = [...select.options].some((option) => option.value === chosen) ? chosen : "";
     addForm.querySelector("[data-assessor-note]").textContent = view.status?.reasoner?.kind === "nemotron"
-      ? "Your evidence is free text, so the local model weighs it against each explanation; Speck caps model-judged evidence at reliability 0.4."
-      : "This workspace uses the deterministic rule assessor, which matches structured facts. Your free-text evidence has none, so runs assess it but cannot weigh it: set REASONER=nemotron in the plugin's .env to have the model weigh it.";
+      ? "Your evidence is free text, so the model weighs it against each explanation; Speck caps model-judged evidence at reliability 0.4."
+      : "This workspace uses the deterministic rule assessor, which matches structured facts. Your free-text evidence has none, so runs assess it but cannot weigh it: run npm run configure to choose a model (Meterless Runtime, local Ollama or NVIDIA's API) and restart Speck.";
   }
 
   function renderEvidence(listing) {
@@ -584,11 +591,18 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       : "FIXTURE FILE (not Zetaris)";
   }
 
+  // Where a run's model calls went. Runs recorded before providers existed
+  // carry "openai-compatible", and were local.
+  function modelSponsor(provider) {
+    if (provider === "meterless") return sponsor("METERLESS RUNTIME", "meterless");
+    return sponsor(provider === "nvidia" ? "NEMOTRON (NVIDIA API)" : "NEMOTRON (local)", "nemotron");
+  }
+
   function modelSummary(run) {
     const calls = run.steps.flatMap((step) => (step.kind === "chunk" || step.kind === "explanation") && step.model ? [step.model] : []);
     if (!calls.length) return run.reasoner?.kind === "rules" ? "rule assessor (no model)" : "no model call recorded";
     const served = [...new Set(calls.flatMap((call) => call.servedModels))].join(", ") || "model name not reported";
-    return `Nemotron ${served}: ${calls.length} call(s), ${run.flags.retries} retr${run.flags.retries === 1 ? "y" : "ies"}`;
+    return `${calls.some((call) => /^meterless\//.test(call.requestedModel)) ? `Meterless Runtime (${calls[0].requestedModel}) served` : "Nemotron"} ${served}: ${calls.length} call(s), ${run.flags.retries} retr${run.flags.retries === 1 ? "y" : "ies"}`;
   }
 
   function renderRunTrace(run, open) {
@@ -616,7 +630,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
           run.meterless.reflection ? "; reflection pass used for the explanation" : "",
           run.meterless.inHistory === true ? " - present in the engine's history.json" : run.meterless.inHistory === false ? [" ", badge("not found in the engine's history.json", "bad")] : " - engine history not readable")
           : el("div", { className: "trace-row" }, sponsor("METERLESS", "meterless"), " The run stopped before the engine recorded it; only its saved assessments remain."),
-        run.reasoner ? el("div", { className: "trace-row" }, run.reasoner.kind === "nemotron" ? sponsor("NEMOTRON (local)", "nemotron") : badge("RULES", "ok"),
+        run.reasoner ? el("div", { className: "trace-row" }, run.reasoner.kind === "nemotron" ? modelSponsor(run.reasoner.provider) : badge("RULES", "ok"),
           run.reasoner.kind === "nemotron" ? ` requested ${run.reasoner.model} at ${run.reasoner.endpoint}` : " deterministic fact rules; no model was called") : null,
         el("ol", { className: "trace-steps" }, run.steps.map(renderTraceStep)))
     );
@@ -637,7 +651,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const c = call.constraints;
     const j = call.judgments;
     return el("div", { className: "meta" },
-      sponsor("NEMOTRON", "nemotron"), ` served ${call.servedModels.join(", ") || "(no model name reported)"} (requested ${call.requestedModel}); `,
+      /^meterless\//.test(call.requestedModel) ? sponsor("METERLESS RUNTIME", "meterless") : sponsor("NEMOTRON", "nemotron"), ` served ${call.servedModels.join(", ") || "(no model name reported)"} (requested ${call.requestedModel}); `,
       call.outcome === "valid" ? badge("reply valid", "ok") : badge(`failed: ${call.error}`, "bad long"),
       ` ${call.attempts} attempt(s)${call.contractFailures ? `, ${call.contractFailures} rejected by Speck's contract check` : ""}${call.transportFailures ? `, ${call.transportFailures} transport failure(s)` : ""}; `,
       `latency ${call.httpCalls.map((item) => `${item.latencyMs} ms`).join(" + ") || "n/a"}.`,
@@ -928,7 +942,20 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   function drawComparison() {
     if (destroyed) return;
     renderComparison($("compare"), { ...comparisonState, decisive: decisiveOn });
+    const latest = comparisonState.data?.current;
+    $("compare-teaser").textContent = latest
+      ? `The same case, run again on the same records by a stateless baseline that answers from scratch each time. Last compared ${new Date(latest.finishedAt).toLocaleString()} (${latest.kind === "live" ? "live model calls" : "deterministic"}).`
+      : "The same case, run again on the same records by a stateless baseline that answers from scratch each time, to show what Speck's kept state changes.";
   }
+
+  // A second layer: closed until asked for (or until the guide reaches it),
+  // so the case itself comes first.
+  function setComparisonOpen(open) {
+    $("compare").hidden = !open;
+    $("compare-toggle").setAttribute("aria-expanded", String(open));
+    $("compare-toggle").textContent = open ? "Hide the comparison" : "Show the comparison";
+  }
+  $("compare-toggle").addEventListener("click", () => setComparisonOpen($("compare").hidden));
 
   async function loadComparison() {
     try {
@@ -1062,10 +1089,12 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   function renderDecisive() {
     if (destroyed) return;
     const holder = $("decisive");
+    // Off, it is not shown here at all: its switch is in the comparison
+    // panel, and only an active reading appears beside the conclusion.
+    holder.hidden = !decisiveOn;
+    if (!decisiveOn) { holder.replaceChildren(); return; }
     const parts = [decisiveSwitch(decisiveOn)];
-    if (!decisiveOn) {
-      parts.push(el("p", { className: "meta" }, "Off: Speck's conclusion below is the only reading."));
-    } else if (!view.investigation?.latestRun) {
+    if (!view.investigation?.latestRun) {
       parts.push(el("p", { className: "meta" }, "Run the investigation first: decisive mode reads Speck's state after a run."));
     } else if (view.listing?.pending?.length) {
       parts.push(el("p", { className: "meta" }, `${view.listing.pending.length} record(s) are not yet assessed. Run the investigation; decisive mode then checks again.`));
@@ -1120,7 +1149,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
 
   const TARGETS = {
     case: () => $("case"),
-    compare: () => $("compare-panel"),
+    compare: () => { setComparisonOpen(true); return $("compare-panel"); },
     "run-button": () => $("run-button"),
     "update-button": () => $("update-button"),
     conclusion: () => $("conclusion-panel"),

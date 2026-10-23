@@ -2,12 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import type { SpeckRuntime } from "#speck";
-import { loadConfig, ROOT_DIR, type AppConfig } from "../src/config.js";
+import { loadConfig, repositoryRoot, ROOT_DIR, type AppConfig } from "../src/config.js";
 import { deskApi, errorResponse, type DeskApi } from "../src/investigation/api.js";
 import { EvidenceDesk } from "../src/investigation/desk.js";
 import { FixtureEvidenceProvider } from "../src/evidence/fixture-provider.js";
 import { addUserEvidence, createUserCase, listUserCases, UserCaseError } from "../src/investigation/user-cases.js";
 import { evaluationSummary } from "../src/compare/evaluation.js";
+import { METERLESS_TOKEN_KEY } from "../src/reasoning/meterless.js";
 
 // Evidence Desk as a Speck plugin. Speck loads this file (as
 // speck/plugins/evidence-desk/dist/plugin/evidence-desk-plugin.js, put there
@@ -15,8 +16,9 @@ import { evaluationSummary } from "../src/compare/evaluation.js";
 // worker in Speck's database, beside Speck's other workers, and the page is
 // a tab in Speck's interface (its home view when started with npm run speck).
 //
-// Settings come from speck/plugins/evidence-desk/.env (the same variables as
-// the standalone .env), read without touching Speck's environment; a
+// Settings come from the .env of the repository the plugin was installed from
+// (install.json), the same file the standalone server and npm run configure
+// use, read on each case's first use without touching Speck's environment; a
 // variable already set in Speck's environment wins.
 
 export const PLUGIN_ID = "evidence-desk";
@@ -51,7 +53,7 @@ export const CASES: CaseSpec[] = [
 ];
 
 export function pluginSettings(rootDir = ROOT_DIR): NodeJS.ProcessEnv {
-  const file = path.join(rootDir, ".env");
+  const file = path.join(repositoryRoot(rootDir), ".env");
   const fromFile = fs.existsSync(file) ? parseEnv(fs.readFileSync(file, "utf8")) : {};
   return { ...fromFile, ...process.env };
 }
@@ -70,7 +72,10 @@ export const userCasesDir = (rootDir = ROOT_DIR) => path.join(rootDir, "data", "
 // The cases, attached to Speck's runtime on first use: the prepared ones,
 // then the investigations created from the tab.
 // userCasesDir: where a person's investigations are kept (tests use a temporary one).
-export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootDir?: string; settings?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; userCasesDir?: string } = {}) {
+// secret: Speck's secret store (speck:secret-get), where Speck keeps the
+// Meterless Runtime token; when it holds one, it wins over .env, so a token
+// saved in Speck's System view reaches the cases too.
+export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootDir?: string; settings?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; userCasesDir?: string; secret?: (handle: string) => Promise<string | null> } = {}) {
   const rootDir = options.rootDir ?? ROOT_DIR;
   const ownDir = options.userCasesDir ?? userCasesDir(rootDir);
   const opened = new Map<string, Promise<{ desk: EvidenceDesk; api: DeskApi }>>();
@@ -108,7 +113,9 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
       let entry = opened.get(id);
       if (!entry) {
         entry = (async () => {
-          const config = caseConfig(spec, options.settings ?? pluginSettings(rootDir), rootDir);
+          const settings = options.settings ?? pluginSettings(rootDir);
+          const token = await options.secret?.(METERLESS_TOKEN_KEY).catch(() => null);
+          const config = caseConfig(spec, token ? { ...settings, [METERLESS_TOKEN_KEY]: token } : settings, rootDir);
           const provider = spec.yours ? new FixtureEvidenceProvider(path.join(spec.scenarioDir, "evidence.json"), config.rootDir, "Evidence you entered (stored locally, not Zetaris)") : null;
           const desk = await EvidenceDesk.attach(runtime(), config, { ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}), ...(provider ? { provider } : {}) });
           return { desk, api: deskApi(desk, config, "Speck's own database (this case is a Speck worker)") };
@@ -130,6 +137,7 @@ type Handler = (req: { params: Record<string, string>; body?: unknown }, res: {
 interface RouteApp { get(path: string, handler: Handler): unknown; post(path: string, handler: Handler): unknown }
 interface PluginApi {
   getRuntimeContext(): { speck?: SpeckRuntime };
+  getCapability?(name: string): ((input: unknown) => unknown) | undefined;
   registerUiPrimaryTab?(tab: { id: string; title: string; order: number; scriptUrl: string }): unknown;
 }
 
@@ -196,7 +204,10 @@ export default function createEvidenceDeskPlugin() {
       const runtime = api.getRuntimeContext().speck;
       if (!runtime) throw new Error("Speck did not provide its runtime to the Evidence Desk plugin");
       return runtime;
-    });
+    }, { secret: async (handle) => {
+      const get = api.getCapability?.("speck:secret-get");
+      return typeof get === "function" ? (await get({ handle }) as string | null) : null;
+    } });
     return cases;
   };
   return {
@@ -207,7 +218,7 @@ export default function createEvidenceDeskPlugin() {
     manifest: {
       schemaVersion: 1,
       permissions: { routes: true, uiPanels: true, data: false, tools: [], capabilities: [], hooks: [], runtimeContext: ["speck"] },
-      dependencies: { requiredCapabilities: [], optionalCapabilities: [] },
+      dependencies: { requiredCapabilities: [], optionalCapabilities: ["speck:secret-get"] },
       security: { isolation: "inprocess" }
     },
     init(api: PluginApi) {

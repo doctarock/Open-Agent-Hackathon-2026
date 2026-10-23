@@ -24,9 +24,9 @@ Expect **OBSERVED** for Zetaris, Meterless, NVIDIA Nemotron (local) and Speck, a
 If Zetaris or Nemotron shows NOT OBSERVED, use the fallback at the end. Do not present the live
 case.
 
-The disputed-delivery case reads its settings from the plugin's own `.env`,
-`speck/plugins/evidence-desk/.env`. `npm run setup` copied the repository's `.env` there on
-first install. It must set `EVIDENCE_MODE=zetaris` and `REASONER=nemotron`.
+The disputed-delivery case reads its settings from the repository's `.env`. It must set
+`EVIDENCE_MODE=zetaris` and `REASONER=nemotron`, with the model provider you will show:
+`npm run configure -- --model ollama --evidence zetaris-local` sets and checks all three.
 
 Make sure the installed plugin is current, then start Speck on a fresh demo database, so the
 cases start empty and your everyday Speck database is not touched. The path is relative to
@@ -63,7 +63,7 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
 
 **The page explains itself.**
 - On first open the Evidence tab offers *Start the guided demo*. It walks both cases with the
-  real buttons (the bank return, then the disputed delivery, each opening on the side-by-side comparison), then opens Speck's **World** view
+  real buttons (the disputed delivery, then the bank return, which ends on the side-by-side comparison), then opens Speck's **World** view
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
   conclude.
@@ -81,8 +81,8 @@ delivery's panel then opens on a fresh live comparison (labelled with its time) 
 scan is corrected. A stateless model call answers from whatever it is handed; nothing ties its
 old answer to the record that was just replaced.
 
-**0:15 The difference, side by side (45 s).** Select **Disputed delivery**. The first panel is
-**Speck beside a stateless baseline**. If its badge says LIVE MODEL CALLS with today's time, use it;
+**0:15 The difference, side by side (45 s).** Select **Disputed delivery**, scroll to
+**Speck beside a stateless baseline** below the revision timeline, and press **Show the comparison**. If its badge says LIVE MODEL CALLS with today's time, use it;
 otherwise press **Run the side-by-side comparison** and talk over the 30-60 s.
 1. Point to the six steps across the top: observe, assess, correct, revise, verify, explain.
 2. Stage 2, the correction: "EV-CAR-005 replaces EV-CAR-003". Read the two columns:
@@ -201,7 +201,7 @@ requires it.
 
 ## Fallback (no Zetaris or no Ollama)
 
-Set `EVIDENCE_MODE=fixture` and `REASONER=rules` in `speck/plugins/evidence-desk/.env`, delete
+Set `EVIDENCE_MODE=fixture` and `REASONER=rules` in the repository's `.env`, delete
 the demo database and restart Speck. The bank-return case is unaffected either way.
 
 The trace labels the evidence **FIXTURE FILE - NOT ZETARIS** and says "rule assessor (no

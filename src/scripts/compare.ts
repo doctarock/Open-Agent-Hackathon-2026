@@ -1,5 +1,6 @@
 import path from "node:path";
 import { loadConfig, loadDotEnv, ROOT_DIR, type AppConfig } from "../config.js";
+import { modelConfigProblem } from "../reasoning/nemotron.js";
 import { publishedComparisonsDir, runComparison, saveComparison, type ComparisonReport, type SideChecks } from "../compare/comparison.js";
 import { loadScenario } from "../scenario.js";
 import { createEvidenceProvider } from "../evidence/provider.js";
@@ -30,8 +31,9 @@ function configFor(scenarioDir: string, fixtureOnly: boolean): AppConfig {
 
 if (live) {
   const nemotron = loadConfig().nemotron;
-  if (!nemotron.baseUrl || !/nemotron/i.test(nemotron.model)) {
-    console.log("Live comparison skipped: NEMOTRON_BASE_URL and a Nemotron NEMOTRON_MODEL must be set (see .env.example).");
+  const problem = modelConfigProblem(nemotron);
+  if (problem) {
+    console.log(`Live comparison skipped: ${problem} (run npm run configure, or see .env.example).`);
     process.exit(2);
   }
 }

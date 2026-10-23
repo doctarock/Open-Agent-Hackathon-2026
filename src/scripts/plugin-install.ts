@@ -15,8 +15,11 @@ import { ROOT_DIR } from "../config.js";
 //               elsewhere (reinstall if the repository moves)
 //   fixtures/, eval/scenarios/, config/   the cases' data
 //   public/app.js, tour.js, status.js, journey.js, compare.js, decisive.js, style.css, plugin/ui/   the tab's page
-//   install.json the repository it came from (for eval/results/)
-//   .env, data/  kept from an earlier install (settings, Meterless history)
+//   install.json the repository it came from: the plugin reads its settings
+//               from that repository's .env, and eval/results/ from there too
+//   data/        kept from an earlier install (cases' data, Meterless history)
+// A .env left in the plugin folder by an earlier version is no longer read:
+// it is renamed to .env.old, so only one settings file is ever in use.
 // Then it approves the plugin in Speck's allowlist
 // (speck/plugins/.runtime/plugin-trust.json), as Speck's plugin README asks
 // after reviewing a plugin change. Restart Speck to load it.
@@ -25,20 +28,28 @@ export const SPECK_DIR = path.join(ROOT_DIR, "speck");
 const PLUGIN_ID = "evidence-desk";
 const ENTRY = path.join("dist", "plugin", `${PLUGIN_ID}-plugin.js`);
 
-// settingsFile: the .env seeded into a first install (default: the repository's).
-export function installPlugin(options: { rootDir?: string; speckDir?: string; settingsFile?: string } = {}): { target: string; entryHash: string; settings: string } {
+export function installPlugin(options: { rootDir?: string; speckDir?: string } = {}): { target: string; entryHash: string; settings: string } {
   const rootDir = options.rootDir ?? ROOT_DIR;
   const speckDir = options.speckDir ?? SPECK_DIR;
-  const settingsFile = options.settingsFile ?? path.join(rootDir, ".env");
   const target = path.join(speckDir, "plugins", PLUGIN_ID);
   const speckIndex = path.join(speckDir, "dist", "index.js");
   if (!fs.existsSync(speckIndex)) throw new Error(`Speck is not built (${speckIndex} is missing). Run npm run setup.`);
   if (!fs.existsSync(path.join(rootDir, ENTRY))) throw new Error(`The plugin is not built (${ENTRY} is missing). Run npm run build.`);
 
-  // Replace everything but the settings and the cases' data.
+  // Settings: one file, the repository's .env. Never printed.
   fs.mkdirSync(target, { recursive: true });
+  const legacy = path.join(target, ".env");
+  let settings = fs.existsSync(path.join(rootDir, ".env"))
+    ? `read from ${path.join(rootDir, ".env")}`
+    : "no .env in the repository: the cases run on fixtures with the rule assessor (run npm run configure)";
+  if (fs.existsSync(legacy)) {
+    fs.renameSync(legacy, path.join(target, ".env.old"));
+    settings += "; the plugin folder's own .env is no longer read and was renamed .env.old";
+  }
+
+  // Replace everything but the cases' data.
   for (const entry of fs.readdirSync(target)) {
-    if (entry === ".env" || entry === "data") continue;
+    if (entry === "data" || entry === ".env.old") continue;
     fs.rmSync(path.join(target, entry), { recursive: true, force: true });
   }
 
@@ -64,17 +75,6 @@ export function installPlugin(options: { rootDir?: string; speckDir?: string; se
   // the saved comparisons from the repository's eval/results/ (git-ignored),
   // so it always shows the latest ones without a reinstall.
   fs.writeFileSync(path.join(target, "install.json"), `${JSON.stringify({ repository: rootDir }, null, 1)}\n`);
-
-  // Settings: the standalone .env, on first install only. Never printed.
-  let settings = "kept the plugin's existing .env";
-  if (!fs.existsSync(path.join(target, ".env"))) {
-    if (fs.existsSync(settingsFile)) {
-      fs.copyFileSync(settingsFile, path.join(target, ".env"));
-      settings = "copied .env from the repository (git-ignored in both repositories)";
-    } else {
-      settings = "no .env: the cases run on fixtures with the rule assessor (copy .env.example to speck/plugins/evidence-desk/.env to configure)";
-    }
-  }
 
   const entryHash = createHash("sha256").update(fs.readFileSync(path.join(target, ENTRY))).digest("hex");
   const trustFile = path.join(speckDir, "plugins", ".runtime", "plugin-trust.json");
