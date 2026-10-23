@@ -153,7 +153,8 @@ export function buildTrace(input: {
   const replaced = new Set(input.objects.flatMap((object) => (object.kind === "hypothesis" && object.data.replaces ? [String(object.data.replaces)] : [])));
   const recordIdOf = (objectId: unknown) => {
     const source = String(objects.get(String(objectId) as MentalObject["id"])?.data.source ?? "");
-    return source ? source.slice(source.lastIndexOf("/") + 1) : null;
+    // "<system>/<record id>"; the id itself may contain "/".
+    return source ? source.slice(source.indexOf("/") + 1) : null;
   };
   const schemaOf = (event: CognitiveEvent) => event.type === "memory.recorded"
     ? String(objects.get((event.payload as { objectId?: string }).objectId as MentalObject["id"])?.data.schema ?? "")
