@@ -330,11 +330,95 @@ export class EvidenceDesk extends EventEmitter {
         if (this.findWorker()?.id !== fresh.id) throw new Error(`Restart did not take effect: the case's current copy is not generation ${generation + 1}`);
         await this.runtime.transitionWorker(previous.id, "suspended", { kind: "user", source: "evidence-desk/reset" },
           `Demo case restarted: replaced by a fresh copy (generation ${generation + 1})`);
+        // The fresh copy has no conclusion: Speck's conversation stops recalling the old one.
+        await this.publishToSpeck();
         return { restarted: true, generation: generation + 1, previousGeneration: generation };
       });
     } finally {
       this.running = false;
     }
+  }
+
+  // Links the case's memories in Speck's own association graph (Speck's
+  // public reinforceAssociation), so Speck's activation and memory map see how
+  // they relate:
+  // - an assessment is derived-from each evidence record it judged;
+  // - an evidence record supports, or contradicts, the conclusion of each run
+  //   whose conclusion it bore on;
+  // - a correcting record is inhibitory towards the record it replaced, so
+  //   recalling the correction suppresses the outdated record.
+  // Each link is made once: an existing one is left as it is.
+  private async linkCaseMemories(): Promise<void> {
+    const worker = this.worker();
+    const actor: ActorInput = { kind: "runtime", source: "evidence-desk/links" };
+    const evidence = this.recordedEvidence();
+    const objects = new Map(this.runtime.mentalObjects.listForWorker(worker.id).map((object) => [object.id as string, object]));
+    const link = async (sourceId: string | undefined, targetId: string | undefined, kind: "derived-from" | "supports" | "contradicts" | "inhibitory") => {
+      if (!sourceId || !targetId || sourceId === targetId) return;
+      if (objects.get(sourceId)?.associations.some((edge) => edge.targetId === targetId && edge.kind === kind)) return;
+      const updated = await this.runtime.reinforceAssociation({ workerId: worker.id, sourceId: sourceId as MentalObjectId, targetId: targetId as MentalObjectId, kind, actor });
+      objects.set(updated.id, updated);
+    };
+    for (const object of [...objects.values()]) {
+      const data = object.data as { schema?: unknown; judged?: AssessedEvidence[]; conclusion?: Conclusion };
+      if (data.schema === ASSESSMENT_SCHEMA) {
+        for (const item of data.judged ?? []) await link(object.id, evidence.get(item.record.id), "derived-from");
+      }
+      if (data.schema === RUN_SCHEMA && data.conclusion) {
+        const c = data.conclusion;
+        const subject = c.hypothesis ?? c.alternatives?.find((view) => view.key === c.direction?.pointsTo?.key) ?? null;
+        for (const ref of subject?.supporting ?? []) await link(evidence.get(ref.recordId), object.id, "supports");
+        for (const ref of subject?.contradicting ?? []) await link(evidence.get(ref.recordId), object.id, "contradicts");
+      }
+    }
+    for (const entry of this.ledger()) {
+      for (const replaced of entry.record.provenance.supersedes) await link(evidence.get(entry.record.id), evidence.get(replaced), "inhibitory");
+    }
+  }
+
+  // What Speck's own conversation can recall about this case. A case's
+  // memories belong to its worker, which Speck's chat does not search; the
+  // chat recalls shared memories. So after every change to the case's
+  // beliefs, one shared memory states the case's current conclusion and the
+  // evidence behind it, read from Speck's state, and the previous one is
+  // archived so an outdated conclusion is never recalled. A case with no
+  // assessed evidence publishes nothing.
+  private async publishToSpeck(): Promise<void> {
+    const actor: ActorInput = { kind: "runtime", source: "evidence-desk/summary" };
+    for (const object of this.runtime.mentalObjects.listAll()) {
+      const tag = object.data.evidenceDeskSummary as { caseId?: unknown } | undefined;
+      if (object.workerId === null && object.status !== "archived" && tag?.caseId === this.scenario.caseId) {
+        await this.runtime.archiveSharedMemory(object.id, actor);
+      }
+    }
+    if (!this.recordedCount()) return;
+    const worker = this.worker();
+    await this.runtime.recordSharedMemory({
+      type: "semantic", content: this.caseSummary(), sourceWorkerId: worker.id, importance: 0.8, confidence: 1,
+      data: { evidenceDeskSummary: { caseId: this.scenario.caseId, generation: generationOf(worker), runNumber: this.runs().at(-1)?.runNumber ?? null } },
+      actor
+    });
+  }
+
+  // The case's current state in plain words, from Speck's beliefs.
+  caseSummary(): string {
+    const c = this.conclusionFromSpeck();
+    const content = new Map(this.ledger().map((entry) => [entry.record.id, entry.record]));
+    const quote = (id: string) => {
+      const record = content.get(id);
+      return record ? `${id} (${record.source.name}): "${record.content.length > 160 ? `${record.content.slice(0, 157)}…` : record.content}"` : id;
+    };
+    const subject = c.hypothesis ?? c.alternatives.find((view) => view.key === c.direction?.pointsTo?.key) ?? null;
+    const lines = [
+      `Evidence Desk investigation ${this.scenario.caseId}, "${this.scenario.title}". Question: ${this.scenario.question}`,
+      `Current conclusion (after run ${this.runs().at(-1)?.runNumber ?? "?"}, stage "${this.currentStage().label}"): ${c.headline}${c.justification?.confidence !== null && c.justification?.confidence !== undefined ? ` Speck confidence ${c.justification.confidence}, a belief-revision score, not a probability.` : ""}`,
+      subject?.supporting.length ? `Evidence supporting ${subject.statement}: ${subject.supporting.map((ref) => quote(ref.recordId)).join("; ")}.` : null,
+      subject?.contradicting.length ? `Evidence against it: ${subject.contradicting.map((ref) => quote(ref.recordId)).join("; ")}.` : null,
+      c.rejected.length ? `Ruled out: ${c.rejected.map((view) => `${view.statement}${view.contradicting.length ? ` (refuted by ${view.contradicting.map((ref) => ref.recordId).join(", ")})` : ""}`).join("; ")}.` : null,
+      c.noLongerCounted.length ? `No longer counts: ${c.noLongerCounted.map((item) => `${item.recordId}, ${item.invalidation.kind === "superseded" ? `replaced by its source with ${item.invalidation.by}` : `withdrawn (${item.invalidation.reason})`}`).join("; ")}.` : null,
+      c.openQuestions.length ? `Still open: ${c.openQuestions.map((q) => q.text).join(" ")}` : null
+    ];
+    return lines.filter(Boolean).join("\n");
   }
 
   // At its starting state: the first stage, and nothing in Speck but the
@@ -430,7 +514,12 @@ export class EvidenceDesk extends EventEmitter {
     if (this.running) throw new RunInProgressError();
     this.running = true;
     try {
-      return await this.exclusive(() => this.execute());
+      return await this.exclusive(async () => {
+        const snapshot = await this.execute();
+        await this.linkCaseMemories();
+        await this.publishToSpeck();
+        return snapshot;
+      });
     } finally {
       this.running = false;
     }
@@ -455,7 +544,10 @@ export class EvidenceDesk extends EventEmitter {
           workerId: this.worker().id, evidenceId: evidenceId as MentalObjectId, reason: why,
           actor: { kind: "user", source: "evidence-desk/withdraw", correlationId }
         });
-        return this.reconcile({ correlationId, trigger: `${recordId} withdrawn: ${why}` });
+        const result = await this.reconcile({ correlationId, trigger: `${recordId} withdrawn: ${why}` });
+        await this.linkCaseMemories();
+        await this.publishToSpeck();
+        return result;
       });
       this.emit("revision", { recordId, recomputation: recomputation?.version ?? null });
       return recomputation;
