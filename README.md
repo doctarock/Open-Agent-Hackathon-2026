@@ -33,6 +33,20 @@ runs and recomputing them from scratch, and Speck abstains more often than the b
 Evidence Desk adds is traceability: an auditable record of which evidence each conclusion rests
 on, and how and why it changed.
 
+**It is compact.** The model that weighs the evidence is a 4-billion-parameter Nemotron.
+- The model runs on one consumer GPU: Nemotron 3 Nano 4B, 4-bit (Q4_K_M), 2.8 GB, all on the GPU.
+- It works in a 4,096-token window, the window Ollama gives it inside Speck and standalone alike.
+  The model could take 262,144 tokens, but nothing here needs more.
+- Prompts stay small because the case's state lives in Speck, not in the prompt:
+  - the Meterless engine splits each run into chunks of at most 4,000 tokens, carrying at most
+    512 tokens from one chunk to the next;
+  - each chunk holds two records;
+  - a run assesses only records not yet assessed;
+  - beliefs and history are read from Speck, never replayed to the model.
+
+  So a prompt does not grow as the case does. See *Small model, small context* for the
+  measurements.
+
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
 - **The page is a tab** in Speck's interface, and it is the interface's home: Speck opens on it.
@@ -779,6 +793,45 @@ chooses the endpoint:
 Run `npm run model:check` before claiming a model was used. For a Meterless Runtime it first
 reports the runtime's status and routing modes. Each run also records `servedModels`, the names
 the endpoint returned.
+
+### Small model, small context
+
+The assessor runs on **Nemotron 3 Nano 4B**, served by local Ollama:
+- 4.0B parameters, quantised to 4 bits (Q4_K_M), 2.8 GB, entirely on the GPU;
+- a **4,096-token context window**, which is Ollama's default when a client sends no context size
+  and is what `ollama ps` reports. Evidence Desk sends none, so the window is the same inside Speck
+  and standalone;
+- replies are capped at 4,096 tokens (`NEMOTRON_MAX_TOKENS`).
+
+The model accepts 262,144 tokens; the design keeps every prompt far below even 4,096.
+- **Bounded chunks.** The Meterless engine caps each chunk at 4,000 tokens and carries at most
+  512 from one chunk to the next.
+- **Two records per chunk** (`EVIDENCE_BATCH_SIZE`).
+- **Only new evidence.** A run assesses only records not yet assessed; earlier judgments are
+  already in Speck.
+- **State in Speck, not in the prompt.** Beliefs, the evidence ledger and the revision history are
+  Speck's state. The model is never handed the case's history to re-read.
+
+Measured on 2026-10-24: the disputed delivery's two stages, fixture evidence,
+`nemotron-3-nano:4b` with reasoning off, one sample:
+
+| Call | Prompt tokens | Reply tokens | Time |
+|---|---|---|---|
+| Stage 1, two assessments | 911, 955 | 566, 633 | 6.5 s, 5.0 s |
+| Stage 1, explanation | 1,792 | 177 | 1.7 s |
+| Stage 2, two assessments | 956, 985 | 4,096, 607 | 31.3 s, 4.8 s |
+| Stage 2, explanation | 1,923 | 165 | 1.6 s |
+
+- **No growth with history.** Stage 2's prompts are the same size as stage 1's, although the case
+  had grown.
+- **The largest prompt** was 1,923 tokens, under half the window.
+- **One runaway reply.** One stage-2 assessment ran on to the 4,096-token output cap (31 s), the
+  kind of inconsistency a small model shows (see *Known limits of this slice*). Both runs still
+  completed: *leading* H-DELIVERED, then *leading* H-MISDELIVERED.
+
+Speck's own chat uses a separate model, the 9B Nemotron Nano, with a 16,384-token window (see
+*Inside Speck*).
+
 ## Evaluation
 
 ```bash
