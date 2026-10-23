@@ -35,6 +35,8 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
     "POST /api/run": async (_request, response) => json(response, 200, await api.run()),
     "POST /api/evidence/withdraw": async (request, response) => json(response, 200, await api.withdraw(await readJson(request))),
     "POST /api/update": async (_request, response) => json(response, 200, await api.update()),
+    "POST /api/reset": async (_request, response) => json(response, 200, await api.reset()),
+    "GET /api/progress": async (_request, response) => json(response, 200, api.progress()),
     "GET /api/events": async (request, response) => {
       response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
       response.write(": connected\n\n");
@@ -85,7 +87,9 @@ function serveStatic(publicDir: string, pathname: string, response: http.ServerR
   if (!file.startsWith(publicDir + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
     return json(response, 404, { error: "Not found" });
   }
-  response.writeHead(200, { "content-type": STATIC_TYPES[path.extname(file)] ?? "application/octet-stream" });
+  // no-cache (revalidate), as the plugin serves them: a browser must not keep
+  // running an older page after Evidence Desk is updated.
+  response.writeHead(200, { "content-type": STATIC_TYPES[path.extname(file)] ?? "application/octet-stream", "cache-control": "no-cache" });
   fs.createReadStream(file).pipe(response);
 }
 

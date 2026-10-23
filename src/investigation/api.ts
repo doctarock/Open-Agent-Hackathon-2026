@@ -17,14 +17,22 @@ export interface DeskApi {
   run(): Promise<unknown>;
   update(): Promise<unknown>;
   withdraw(body: unknown): Promise<unknown>;
+  reset(): Promise<unknown>;
+  progress(): unknown;
 }
 
 // speckDatabase: how to describe where the case is stored (a file path for
 // the standalone desk; Speck's own database inside Speck).
 export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: string): DeskApi {
+  // The execution engine's latest progress report for the current or last
+  // run, as Meterless emitted it. Nothing is estimated.
+  let latest: { runId: string; phase: string; phaseDetail: string; currentChunk: number; maxChunks: number; at: string } | null = null;
+  desk.on("progress", (state) => {
+    latest = { runId: state.runId, phase: state.phase, phaseDetail: state.phaseDetail, currentChunk: state.currentChunk, maxChunks: state.maxChunks, at: new Date().toISOString() };
+  });
   return {
     status: () => ({
-      case: { caseId: desk.scenario.caseId, title: desk.scenario.title, question: desk.scenario.question, scenarioId: desk.scenario.id },
+      case: { caseId: desk.scenario.caseId, title: desk.scenario.title, question: desk.scenario.question, scenarioId: desk.scenario.id, generation: desk.generation },
       stage: desk.currentStage(),
       nextStage: desk.nextStage(),
       // Every stage of the case in order, for the page's progress view.
@@ -65,7 +73,14 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
       const { recordId, reason } = (body && typeof body === "object" ? body : {}) as { recordId?: unknown; reason?: unknown };
       if (typeof recordId !== "string" || typeof reason !== "string") throw new RequestError("recordId and reason are required");
       return { recomputation: await desk.withdrawRecord(recordId, reason) };
-    }
+    },
+    // A fresh copy of the demo case; nothing is deleted (EvidenceDesk.restartCase).
+    reset: async () => {
+      const result = await desk.restartCase();
+      latest = null;
+      return { ...result, stage: desk.currentStage(), runs: desk.runs().length };
+    },
+    progress: () => ({ running: desk.isRunning, progress: latest })
   };
 }
 

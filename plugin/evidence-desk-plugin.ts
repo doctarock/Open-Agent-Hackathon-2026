@@ -24,6 +24,7 @@ const ASSETS: Record<string, { file: string; type: string }> = {
   "ui.js": { file: path.join(ROOT_DIR, "plugin", "ui", "evidence-desk-ui.js"), type: "text/javascript" },
   "app.js": { file: path.join(PUBLIC_DIR, "app.js"), type: "text/javascript" },
   "tour.js": { file: path.join(PUBLIC_DIR, "tour.js"), type: "text/javascript" },
+  "status.js": { file: path.join(PUBLIC_DIR, "status.js"), type: "text/javascript" },
   "style.css": { file: path.join(PUBLIC_DIR, "style.css"), type: "text/css" }
 };
 
@@ -122,6 +123,8 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
   app.post(`${base}/run`, route((api) => api.run()));
   app.post(`${base}/update`, route((api) => api.update()));
   app.post(`${base}/evidence/withdraw`, route((api, body) => api.withdraw(body)));
+  app.post(`${base}/reset`, route((api) => api.reset()));
+  app.get(`${base}/progress`, route((api) => api.progress()));
 }
 
 export default function createEvidenceDeskPlugin() {

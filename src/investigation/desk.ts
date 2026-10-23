@@ -286,8 +286,15 @@ export class EvidenceDesk extends EventEmitter {
   async ensureCase(): Promise<Worker> {
     const existing = this.findWorker();
     if (existing) return this.settleWorker(existing);
+    return this.createCaseWorker(1);
+  }
+
+  // A fresh copy of the case: a new worker at the first stage, hypotheses at
+  // their priors. Generation 1 is the original; a restart makes the next.
+  private async createCaseWorker(generation: number): Promise<Worker> {
     const actor: ActorInput = { kind: "user", source: `scenario/${this.scenario.id}` };
-    const worker = await this.runtime.createWorker(this.scenario.question, this.caseConstraints(), actor);
+    const constraints = generation > 1 ? [...this.caseConstraints(), `${GENERATION_TAG}${generation}`] : this.caseConstraints();
+    const worker = await this.runtime.createWorker(this.scenario.question, constraints, actor);
     for (const hypothesis of this.scenario.hypotheses) {
       await this.runtime.proposeHypothesis({
         workerId: worker.id, content: hypothesis.statement, confidence: hypothesis.prior,
@@ -298,6 +305,45 @@ export class EvidenceDesk extends EventEmitter {
       workerId: worker.id, key: STAGE_KEY, value: this.scenario.stages[0]!.id, epistemicStatus: "observed", actor
     });
     return this.settleWorker(this.runtime.workers.require(worker.id));
+  }
+
+  // Which copy of the case this desk works on (1 for the original).
+  get generation(): number {
+    const worker = this.findWorker();
+    return worker ? generationOf(worker) : 1;
+  }
+
+  // Restarts the demo case from the page, without deleting anything: a fresh
+  // copy of the case becomes current, and the previous copy is suspended in
+  // Speck with its full history. Only this case's own worker is touched; the
+  // evidence source (fixture file or Zetaris) is only ever read. A case still
+  // at its starting state is left as it is, so repeating a reset is harmless.
+  async restartCase(): Promise<{ restarted: boolean; generation: number; previousGeneration: number | null }> {
+    if (this.running) throw new RunInProgressError();
+    this.running = true;
+    try {
+      return await this.exclusive(async () => {
+        const previous = this.worker();
+        const generation = generationOf(previous);
+        if (this.atStart(previous)) return { restarted: false, generation, previousGeneration: null };
+        const fresh = await this.createCaseWorker(generation + 1);
+        if (this.findWorker()?.id !== fresh.id) throw new Error(`Restart did not take effect: the case's current copy is not generation ${generation + 1}`);
+        await this.runtime.transitionWorker(previous.id, "suspended", { kind: "user", source: "evidence-desk/reset" },
+          `Demo case restarted: replaced by a fresh copy (generation ${generation + 1})`);
+        return { restarted: true, generation: generation + 1, previousGeneration: generation };
+      });
+    } finally {
+      this.running = false;
+    }
+  }
+
+  // At its starting state: the first stage, and nothing in Speck but the
+  // proposed hypotheses (no evidence, judgments, runs or withdrawals).
+  private atStart(worker: Worker): boolean {
+    const objects = this.runtime.mentalObjects.listForWorker(worker.id);
+    return worker.worldState[STAGE_KEY]?.value === this.scenario.stages[0]!.id
+      && objects.length === this.scenario.hypotheses.length
+      && objects.every((object) => object.kind === "hypothesis");
   }
 
   // A case is a worker waiting on evidence, not a task in Speck's queue.
@@ -1041,9 +1087,12 @@ export class EvidenceDesk extends EventEmitter {
     return recorded;
   }
 
+  // The case's current copy: the latest generation of its workers.
   private findWorker(): Worker | undefined {
     const constraints = this.caseConstraints();
-    return this.runtime.listWorkers().find((worker) => constraints.every((constraint) => worker.objective.constraints.includes(constraint)));
+    return this.runtime.listWorkers()
+      .filter((worker) => constraints.every((constraint) => worker.objective.constraints.includes(constraint)))
+      .sort((left, right) => generationOf(right) - generationOf(left))[0];
   }
 
   private worker(): Worker {
@@ -1058,6 +1107,14 @@ export class EvidenceDesk extends EventEmitter {
 }
 
 interface AppliedRelation { recordId: string; direction: string }
+
+// Copies of a case after a restart carry "evidence-desk:generation=<n>".
+const GENERATION_TAG = "evidence-desk:generation=";
+function generationOf(worker: Worker): number {
+  const tag = worker.objective.constraints.find((constraint) => constraint.startsWith(GENERATION_TAG));
+  const value = tag ? Number(tag.slice(GENERATION_TAG.length)) : 1;
+  return Number.isInteger(value) && value > 0 ? value : 1;
+}
 
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
