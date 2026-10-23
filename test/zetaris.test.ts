@@ -87,6 +87,33 @@ test("Zetaris rows become evidence labelled as retrieved via Zetaris", async () 
   await assert.rejects(provider.fetchCaseEvidence("X' OR '1'='1"), /Invalid case id/);
 });
 
+test("a session that has expired is replaced by a new login, once, and the query retried", async () => {
+  // The platform rejects an expired session with HTTP 400, not 401.
+  let logins = 0;
+  let expired = false;
+  const provider = new ZetarisEvidenceProvider(liveConfig().zetaris, fakeFetch((url, init) => {
+    if (url.endsWith("/api/auth/login")) { logins += 1; return jsonResponse(200, { idToken: `session-${logins}`, orgId: 7 }); }
+    const current = (init.headers as Record<string, string>).authorization === `Bearer session-${logins}`;
+    if (expired && logins === 1) return jsonResponse(400, { msg: "Bad Request" });
+    return current ? jsonResponse(200, { records: [], totalCount: 0, queryToken: "q" }) : jsonResponse(400, { msg: "Bad Request" });
+  }));
+  await provider.fetchCaseEvidence("DISPUTE-1042");
+  assert.equal(logins, 1, "one login serves a run");
+  expired = true;
+  await provider.fetchCaseEvidence("DISPUTE-1042");
+  assert.equal(logins, 2, "the expired session was replaced once");
+
+  // A rejection on a fresh session is not retried: it is reported.
+  let attempts = 0;
+  const refusing = new ZetarisEvidenceProvider(liveConfig().zetaris, fakeFetch((url) => {
+    if (url.endsWith("/api/auth/login")) return loginOk();
+    attempts += 1;
+    return jsonResponse(400, { msg: "Bad Request" });
+  }));
+  await assert.rejects(refusing.select("SELECT 1", "probe"), /probe failed \(HTTP 400\)/);
+  assert.equal(attempts, 1);
+});
+
 test("a run over Zetaris is traced with every SELECT the adapter sent, including empty tables", async () => {
   // The development fixture's rows, served through a stand-in for the Zetaris
   // REST API so the real adapter's login, query and row mapping run. The

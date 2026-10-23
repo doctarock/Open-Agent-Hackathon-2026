@@ -70,18 +70,15 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
 
   // One SELECT through the platform. Exposed for the connectivity check.
   async select(sql: string, label = "query"): Promise<{ records: Array<Record<string, unknown>>; queryToken: string | null }> {
-    const session = await this.login();
-    const response = await this.request(`${this.config.baseUrl}/api/proxy/query/sql/start`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${session.token}`,
-        "x-org-id": session.orgId,
-        "x-request-id": randomUUID()
-      },
-      body: JSON.stringify({ select: sql, pageLimit: 1000 })
-    }, label);
-    const body = await readJson(response);
+    const reused = this.session !== null;
+    let { response, body } = await this.query(sql, label);
+    // The platform's sessions expire, and it rejects an expired one with
+    // HTTP 400, not 401. A rejection on a session kept from earlier is
+    // retried once on a new login; a fresh session's rejection stands.
+    if (reused && [400, 401, 403].includes(response.status) && !/TABLE_OR_VIEW_NOT_FOUND/.test(serverMessage(body) ?? "")) {
+      this.session = null;
+      ({ response, body } = await this.query(sql, label));
+    }
     if (response.status === 401 || response.status === 403) {
       this.session = null;
       throw new EvidenceProviderError(`Zetaris rejected the query on ${label} (HTTP ${response.status})`, this.mode,
@@ -104,6 +101,22 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
         "Paging beyond 1000 rows is not implemented in this slice. Narrow the query.");
     }
     return { records, queryToken: typeof body.queryToken === "string" ? body.queryToken : null };
+  }
+
+  // Sends one SELECT on the current session, logging in first if there is none.
+  private async query(sql: string, label: string): Promise<{ response: Response; body: any }> {
+    const session = await this.login();
+    const response = await this.request(`${this.config.baseUrl}/api/proxy/query/sql/start`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${session.token}`,
+        "x-org-id": session.orgId,
+        "x-request-id": randomUUID()
+      },
+      body: JSON.stringify({ select: sql, pageLimit: 1000 })
+    }, label);
+    return { response, body: await readJson(response) };
   }
 
   private async login(): Promise<Session> {
