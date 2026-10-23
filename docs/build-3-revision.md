@@ -464,3 +464,33 @@ removed for the Evidence Desk demonstration, together with the two Speck tests d
 - Nothing else in Speck imports them; Speck's benchmark prompts name their tools only as text.
 - Speck's suite then passes 226/226, which is 231 less the 5 removed tests.
 - Both patches apply cleanly to a fresh `29d5bb3` checkout.
+
+#### Speck's views and the person's own investigations
+
+The demo was made one journey inside Speck, ending in Speck's own views and a case of the
+viewer's own.
+- **Memory links.** Speck's memory map showed the case's memories unconnected. After each run
+  Evidence Desk now links them with Speck's `reinforceAssociation`: assessment `derived-from` each
+  judged record; record `supports` or `contradicts` that run's conclusion; a correction
+  `inhibitory` towards the record it replaced. Each link is made once (`test/memory-links.test.ts`).
+- **Case summary.** After each run and withdrawal a shared semantic memory states the case
+  (conclusion, evidence for and against with content, what no longer counts and why, run
+  history, open questions, unassessed records). The previous summary is archived.
+- **Speck's chat.** It recalled only its own mind's memories, so it could not see a case, and
+  with a small model it invented details. `patches/speck-chat-investigations.patch` adds a chat
+  component that supplies the matching summaries when a message names a case identifier or
+  mentions an investigation, dispute or evidence, and tells the model to answer only from them.
+  A first version also fired on unrelated questions; it is now gated on identifiers and those
+  words. Speck's suite with all three patches: 228/228, including the new
+  `investigations-component.test.ts`.
+- **The person's own investigations.** Written as ordinary scenarios under the plugin's data
+  folder (`src/investigation/user-cases.ts`), with evidence and corrections added from the page.
+  Free text is weighed only by the model.
+- **One guided demo** (`public/journey.js`, driven by the tab): both cases, then World, Memory
+  map, chat, and the person's own investigation.
+- **Verified:**
+  - Evidence Desk's suite: 104/104. Evaluations unchanged.
+  - In headless Chrome inside Speck, with the live model: the whole guided demo from fresh case
+    copies, every action step completing from real state, Speck's reply about the bank return
+    matching the case, and no console errors. The panels were checked at 1440, 1280, 1024, 768
+    and 390 px: on screen, clear of Speck's message bar, buttons visible.

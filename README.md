@@ -21,7 +21,7 @@ how and why each conclusion changed.
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
 - **The page is a tab** in Speck's interface, and it is the interface's home: Speck opens on it.
-- **Two project-local changes to Speck**, kept in this repository as patches in `patches/`. They
+- **Three project-local changes to Speck**, kept in this repository as patches in `patches/`. They
   are applied by `npm run setup` and never committed to Speck; the submodule stays pinned to
   upstream Speck.
   - `speck-home-view.patch`: a general `SPECK_HOME_VIEW` setting chooses the view Speck's
@@ -29,8 +29,11 @@ It runs inside Speck as a plugin:
   - `speck-remove-plugins.patch`: removes Speck's bundled demonstration plugins (Social Media
     Manager, AirChat, Information Agent) and their two dedicated tests, so Evidence Desk is the
     only plugin.
+  - `speck-chat-investigations.patch`: adds an *Evidence Desk investigations* component to
+    Speck's chat. When a message names an investigation, the chat is given the case summaries
+    Evidence Desk published to Speck and told to answer only from them (see *Inside Speck*).
 
-  Everything else Evidence Desk needs is Speck's existing plugin system.
+  Everything else Evidence Desk needs is Speck's existing plugin system and memory API.
 
 A standalone server serving the same page remains, for development and as a fallback.
 
@@ -91,6 +94,67 @@ The page explains itself; no walkthrough from a developer is needed.
 
 The tour's step definitions are in `public/tour.js` and are tested against real API payloads in
 `test/tour.test.ts`. Progress is kept in the browser's local storage, per case.
+
+### Inside Speck: the guided demo, Speck's views, and your own investigations
+
+Inside Speck the Evidence tab replaces the per-case introduction with one **guided demo**. It is
+offered at the top of the tab (*Start the guided demo* or *Explore on my own*), and the *Guided
+demo* link beside the case picker starts or resumes it.
+
+1. **Disputed delivery:** the case tour above, without its last overview step.
+2. **Bank return:** the explanations, a run, the prepared update (the bank's return of the
+   payment), a second run, and which record no longer counts.
+3. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
+   actions (Hypothesis Proposed, Memory Recorded, Belief Revised, Association Reinforced) are laid
+   out in time; right-drag travels back. The panel quotes Speck's own timeline status and each
+   case's run count and current conclusion, read from the plugin's API.
+4. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
+   (below); the panel quotes Speck's own count of memories and associations.
+5. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
+   completes when Speck replies (Speck's `speck:reply` event); it does not judge the reply, and
+   says to check it against the case page.
+6. **Your own investigation:** the new-investigation form opens; the step completes when it is
+   created, and the last step when it has been run.
+
+Each part that asks for an action waits for the real state; Back, Skip, Exit and resume work
+across Speck's views and after a reload (the place is kept in local storage). The definitions
+are in `public/journey.js` (tested in `test/journey.test.ts`); the tab
+(`plugin/ui/evidence-desk-ui.js`) drives Speck's interface through its rail and world-mode
+buttons. The standalone page keeps the per-case introduction and tour.
+
+**What Speck sees.** After each run (and each withdrawal) Evidence Desk:
+- **links the case's memories** with Speck's own `reinforceAssociation`: each run's assessment is
+  `derived-from` every record it judged; each record `supports` or `contradicts` the conclusion
+  of the run that weighed it; a correction is `inhibitory` towards the record it replaced. Each
+  link is made once. These are the memory map's lines.
+- **publishes a case summary** as a shared semantic memory (replacing its previous one, which is
+  archived): the question, the current conclusion and its confidence (not a probability), the
+  evidence for and against with its content, what was ruled out, what no longer counts and why,
+  the run history, what is still open, and which records are not yet assessed.
+
+**Speck's chat** (`speck-chat-investigations.patch`). Speck's chat recalls only its own mind's
+memories, so it could not see a case; and with a small model it invented details. The patch adds
+a chat component, after memory, that supplies the matching case summaries when a message names a
+case identifier (such as `ORD-1042`) or mentions an investigation, dispute or evidence, and tells
+the model to answer only from them. Other messages take Speck's ordinary path. Speck's own tests
+cover it (`src/tests/investigations-component.test.ts`).
+
+Speck's chat needs a model of its own. This setup uses the local Nemotron Nano 9B through Ollama,
+set in Speck's System view (or `POST /api/brains/config`) as a processor for Speck's roles. Speck
+saves that in `speck/data/genesis-runtime/model-processors.json`, which is runtime data and not
+committed; restart Speck after changing it. The 4B model used for assessments was tried first and
+invented details more often.
+
+**Your own investigations.** *+ New investigation* takes a title, the question, two to five
+competing explanations (equal priors) and optionally the first evidence.
+- It is written as an ordinary scenario under the installed plugin's
+  `data/user-cases/my-N/` and investigated by the same pipeline, as case `MY-N`.
+- *Add evidence* adds a record (source, text, optional date), or a correction of an earlier record,
+  which then supersedes it. Added records are assessed on the next run.
+- The evidence is free text, so only the Nemotron assessor can weigh it (capped at reliability
+  0.4 like all model-judged evidence). Under the rule assessor the records are assessed but weigh
+  nothing, and the page says so.
+- The code is `src/investigation/user-cases.ts`, tested in `test/user-cases.test.ts`.
 
 ## The scenario
 
@@ -232,10 +296,13 @@ recovery after an interrupted run, withdrawals and recomputations.
 ### Speck
 
 - **Repository:** `speck/`, a submodule pinned to upstream Speck `29d5bb3`. This project patches
-  its working tree in two ways: the `SPECK_HOME_VIEW` interface setting
-  (`patches/speck-home-view.patch`), and removing Speck's other bundled plugins
-  (`patches/speck-remove-plugins.patch`). Belief revision, memory and the event log are as
-  upstream.
+  its working tree in three ways: the `SPECK_HOME_VIEW` interface setting
+  (`patches/speck-home-view.patch`), removing Speck's other bundled plugins
+  (`patches/speck-remove-plugins.patch`), and the chat component that answers from published
+  case summaries (`patches/speck-chat-investigations.patch`). Belief revision, memory and the
+  event log are as upstream.
+- **Memory:** each case's memories are linked with Speck's association kinds, and a case summary
+  is published as a shared memory after each run (see *Inside Speck*).
 - **Role:** holds the case, beliefs and history.
 - **Shown in the trace, per chunk:** evidence recorded, every belief revision (marked when the
   belief has since been replaced), and recomputations.
@@ -842,6 +909,14 @@ What these runs show:
   - **Persistence:** the trace is identical after a reopen and through the API.
 
 ## Known limits of this slice
+
+- **Speck's chat answers are written by a local model.** The investigations component gives it
+  only the published case summaries and tells it to answer from them, which removed the invented
+  details seen without it, but the wording is still the model's: check it against the case page.
+  The guided demo's chat step completes on any reply.
+- **Live runs of a person's own investigation can stop early.** With the local model, about one
+  run in three of a correction errored in testing; its records stay pending and the next run
+  retries them, as the page says.
 
 - **Project-local Speck patch.**
   - `npm run speck:patch` applies the patches in `patches/` to `speck/`'s working tree, and is

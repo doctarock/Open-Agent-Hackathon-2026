@@ -42,8 +42,16 @@ npm run plugin:install
 $env:SPECK_DB_PATH="data/demo-speck.sqlite"; npm run speck
 ```
 
-To start over between judges, use **Reset demo case…** at the top right of the Evidence tab.
-- It starts a fresh copy of the case at its first stage, and shows the introduction again.
+For the *Talk to Speck* step, Speck's chat needs a model. In Speck's **System** view, add the
+local Nemotron Nano 9B on Ollama (`hf.co/bartowski/nvidia_NVIDIA-Nemotron-Nano-9B-v2-GGUF:Q4_K_M`
+at `http://127.0.0.1:11434`) as a processor and assign it to Speck's roles, then restart Speck.
+Speck keeps this in `speck/data/genesis-runtime/model-processors.json` (not committed). Without
+it, skip that step.
+
+To start over between judges, use **Reset demo case…** at the top right of the Evidence tab, on
+each prepared case.
+- It starts a fresh copy of the case at its first stage. Inside the guided demo, that part starts
+  again from its first step.
 - Nothing is deleted: the previous copy stays in Speck, suspended.
 - To clear the demo database completely instead, stop Speck, delete
   `speck/data/demo-speck.sqlite` and start it again.
@@ -52,13 +60,14 @@ Open http://127.0.0.1:4310. Speck opens on the **Evidence** tab, first in its ra
 other views (World, Queue and the rest) stay available, and the Speck logo returns to Evidence.
 
 **The page explains itself.**
-- On first open it shows a short introduction with *Start the guided investigation*. The tour
-  walks the Disputed delivery case with the real buttons, and describes whatever the live run
-  actually concludes.
-- A judge can follow it unaided. The **Guide** button reopens it and lists every feature, marking
-  which ones this case has demonstrated.
-- To show the introduction again on a browser that has dismissed it, use **Guide → Show the
-  introduction**.
+- On first open the Evidence tab offers *Start the guided demo*. It walks both cases with the
+  real buttons (the disputed delivery, then the bank return), then opens Speck's **World** view
+  and **Memory map**, puts a question in Speck's message bar, and ends with the judge creating
+  and running an investigation of their own. It describes whatever the live runs actually
+  conclude.
+- A judge can follow it unaided. The **Guided demo** link beside the case picker starts or
+  resumes it at any time. Each case's **Guide** button lists every feature, marking which ones
+  that case has demonstrated.
 
 ## The script
 
@@ -113,6 +122,22 @@ Say: "Each line here is read back from what was saved: Zetaris query tokens, the
 history file, the model name the endpoint reported, Speck's event log. Restart Speck and the
 trace is identical."
 
+**Extended demo: Speck's views and your own case (2 to 4 minutes, if there is time).** The guided
+demo continues here by itself; the steps are:
+1. **World:** each case is a Speck task with its runs' actions laid out in time (Hypothesis
+   Proposed, Memory Recorded, Belief Revised, Association Reinforced). Right-drag to travel back.
+2. **Memory map:** the lines are the case's reasoning as Speck associations. An assessment is
+   derived from the records it judged, a record supports or contradicts its run's conclusion,
+   and a correction inhibits the record it replaced. Select a memory to inspect it.
+3. **Talk to Speck:** send the prepared question about the bank return. Speck answers from the
+   case summary Evidence Desk published, through the project's chat patch. The local model
+   writes the wording, so check the answer against the case page; in rehearsal it gave the right
+   conclusion and records, and said why the conclusion changed. A live reply can take a minute.
+4. **Your own investigation:** *+ New investigation*, a question with two explanations and one
+   record, then **Run investigation**. Add a correction of that record and run again: the record
+   no longer counts. With the local model a run sometimes stops early and leaves records
+   pending; the page says so, and the next run retries them.
+
 **2:40 Honesty (20 s).** In the terminal, show `npm run sponsors:verify`:
 - It reports **OBSERVED** for each sponsor, checked against an independent source.
 - It reports **NOT OBSERVED** rather than simulating, when a service is off.
@@ -138,7 +163,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 
 | Question | Answer | Backed by |
 |---|---|---|
-| Did you modify Speck? | Only locally, for this project, through patches kept in this repository: a general `SPECK_HOME_VIEW` setting, so Speck opens on the Evidence tab (`patches/speck-home-view.patch`), and removing Speck's other bundled plugins, so Evidence Desk is the only one (`patches/speck-remove-plugins.patch`). Nothing is committed to Speck; the submodule is pinned to upstream. Evidence Desk itself is a plugin in `speck/plugins/evidence-desk/`, approved by hash in Speck's plugin allowlist. Speck's cognition is unmodified. | `npm run plugin:install`, `test/plugin.test.ts`, Speck's `src/tests/genesis-host.test.ts` |
+| Did you modify Speck? | Only locally, for this project, through patches kept in this repository: a general `SPECK_HOME_VIEW` setting, so Speck opens on the Evidence tab (`patches/speck-home-view.patch`); removing Speck's other bundled plugins, so Evidence Desk is the only one (`patches/speck-remove-plugins.patch`); and a chat component that answers questions about an investigation from the case summaries Evidence Desk publishes (`patches/speck-chat-investigations.patch`). Nothing is committed to Speck; the submodule is pinned to upstream. Evidence Desk itself is a plugin in `speck/plugins/evidence-desk/`, approved by hash in Speck's plugin allowlist. Speck's cognition is unmodified. | `npm run plugin:install`, `test/plugin.test.ts`, Speck's `src/tests/genesis-host.test.ts` |
 | Does it interfere with Speck's other work? | Each case is a worker left *waiting*, so it never holds up Speck's queue. Changes take Speck's foreground lease, so background cognition cannot overwrite a revision; we wrote a test that shows the overwrite happening without it. | `test/plugin.test.ts`, `test/speck-compat.test.ts` |
 | Is the Zetaris data real? | It is the scenario's records, seeded into a local Zetaris platform and read back through its REST API. Each record carries the platform's query token. | `npm run zetaris:check`, `npm run sponsors:verify`, `test/zetaris.test.ts` |
 | Which NVIDIA model, where? | `nemotron-3-nano:4b` on local Ollama. No hosted NVIDIA inference was used. | `npm run model:check` (served model), the trace |
@@ -148,6 +173,8 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 | What if the process crashes mid-run? | Judgments are saved per chunk before evidence enters Speck, and beliefs are reconciled on restart. A test kills the process at every write, and again during recovery, and checks the outcome is the same as an uninterrupted run. | `test/interruption.test.ts`, `test/recovery.test.ts` |
 | Is it better than a plain LLM? | On the 7 held-out cases, in two live samples, the stateless model baseline made 4 unsupported conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but abstained more often. These are few cases and single samples of a small model, not a general result. | README, *Evaluation*; `docs/build-3-revision.md` |
 | Did persistence help? | No measurable accuracy difference from recomputing from scratch. | README, *Evaluation* |
+| Can Speck's chat be trusted about a case? | It is given only the case summaries Evidence Desk published, and told to answer from them; without that, a small model invented details. The wording is still the model's, so the case page is the record. | Speck's `src/tests/investigations-component.test.ts`, `test/memory-links.test.ts` |
+| Where do the memory map's lines come from? | Evidence Desk links each case's memories with Speck's `reinforceAssociation`: derived-from, supports, contradicts, and inhibitory for a correction. | `test/memory-links.test.ts` |
 
 ## Do not claim
 
@@ -156,3 +183,6 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 - Hosted NVIDIA inference or any other NVIDIA infrastructure.
 - That Cursor is part of the running system. It is a development tool the team reports using.
 - That Speck's trust check covers the whole plugin. It hashes only the entry module.
+- That Speck's chat answers are verified. They are written by a local model from the published
+  summaries; the guided demo only waits for a reply.
+- That a judge's own investigation uses Zetaris. Its evidence is stored locally by the plugin.
