@@ -421,3 +421,17 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .add-evidence { margin: 8px 0 12px; padding: 10px 12px; border: 1px dashed var(--edk-border); border-radius: 6px; }
 .edk .new-case { max-width: 760px; }
 .edk .picker-label { align-self: center; margin: 0 2px 0 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }
+
+/* The guided demo's panel outside a case page (plugin/ui/evidence-desk-ui.js):
+   it floats over Speck's own views, placed by script around Speck's rail and
+   message bar, so it is not a size container. */
+.edk.edk-journey { container-type: normal; }
+.edk.edk-journey .coach { z-index: 60; }
+@media (max-width: 979px) {
+  .edk.edk-journey .coach { padding: 12px 14px; border-radius: 12px; }
+  .edk.edk-journey .coach-body { font-size: 0.88rem; }
+  .edk.edk-journey .coach-actions button { min-height: 40px; }
+}
+/* What the guided demo points at in Speck's own interface. */
+.edk-host-spotlight { outline: 3px solid #8fb4ff; outline-offset: 4px; border-radius: 10px; }
+.edk .demo-offer { margin-bottom: 14px; }

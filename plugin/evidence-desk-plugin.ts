@@ -27,6 +27,7 @@ const ASSETS: Record<string, { file: string; type: string }> = {
   "app.js": { file: path.join(PUBLIC_DIR, "app.js"), type: "text/javascript" },
   "tour.js": { file: path.join(PUBLIC_DIR, "tour.js"), type: "text/javascript" },
   "status.js": { file: path.join(PUBLIC_DIR, "status.js"), type: "text/javascript" },
+  "journey.js": { file: path.join(PUBLIC_DIR, "journey.js"), type: "text/javascript" },
   "style.css": { file: path.join(PUBLIC_DIR, "style.css"), type: "text/css" }
 };
 

@@ -152,13 +152,20 @@ const TEMPLATE = `
 // event stream for run progress, if the host has one.
 // userCase: an investigation the person created (the plugin's own cases), to
 // which they can add evidence from the page.
-export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false } = {}) {
+// intro: false hides the first-run introduction (the host offers its own).
+// guided: this page is one part of a longer guided demo the host runs
+// (public/journey.js): { label, steps: tour step ids, finishLabel, start:
+// "first" | "last" | "resume", onFinish, onBack, onExit }.
+// onView: called with the page's state after every refresh.
+export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null } = {}) {
   root.classList.add("edk");
   root.innerHTML = TEMPLATE;
   const $ = (id) => root.querySelector(`#edk-${id}`);
   let storage = null;
   try { storage = window.localStorage; } catch { storage = null; }
-  const progress = progressStore(storage, apiBase);
+  // A guided part has its own steps, so its place is kept apart from the case's own tour.
+  const progress = progressStore(storage, guided ? `${apiBase}#guided` : apiBase);
+  const steps = guided?.steps ? TOUR_STEPS.filter((step) => guided.steps.includes(step.id)) : TOUR_STEPS;
 
   $("evidence-help").replaceChildren(help("What do these labels mean?", ...HELP.evidence));
   $("timeline-help").replaceChildren(help("What is this?", ...HELP.timeline));
@@ -708,6 +715,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     }
     renderTour();
     renderGuide();
+    if (!destroyed) onView?.(view);
   }
 
   function setProgress(text) {
@@ -873,11 +881,12 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       tourStep = null;
       coachCollapsed = false;
       renderTour();
-      $("intro").hidden = false;
+      if (guided) goToStep(0);
+      else $("intro").hidden = !intro;
       showOutcome(result.restarted
         ? { tone: "ok", title: `Demo case reset: fresh copy ${result.generation} is at "${view.status.stage.label}".`, lines: [`Copy ${result.previousGeneration} is kept in Speck, suspended, with its history.`], next: "Start the guided investigation above, or run the investigation." }
         : { tone: "ok", title: "The demo case is already at its starting state.", lines: ["Nothing was changed."], next: "Start the guided investigation above, or run the investigation." });
-      $("intro-start").focus();
+      if (!guided && intro) $("intro-start").focus();
     } catch (error) {
       stop();
       await refresh();
@@ -911,6 +920,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   // The workspace's one-column layout (see style.css: the same 980px container width).
   const oneColumn = () => root.getBoundingClientRect().width < 980;
   let tourStep = progress.tourStep();
+  if (tourStep !== null && tourStep >= steps.length) tourStep = null;
   let coachCollapsed = progress.coachCollapsed();
   let spotlit = null;
   // The step last scrolled to: a refresh re-renders the step without moving the page.
@@ -936,7 +946,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     if (destroyed) return;
     const coach = $("coach");
     if (tourStep === null) { coach.hidden = true; spotlight(null); scrolledFor = null; return; }
-    const step = TOUR_STEPS[tourStep];
+    const step = steps[tourStep];
     const done = stepDone(step, view);
     const waiting = step.action && !done;
     const working = busy === step.action;
@@ -950,7 +960,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     // Through el(), which drops null; replaceChildren would print it.
     coach.replaceChildren(...el("div", {},
       el("div", { className: "coach-head" },
-        el("p", { className: "eyebrow" }, `Guided investigation · step ${tourStep + 1} of ${TOUR_STEPS.length}`),
+        el("p", { className: "eyebrow" }, `${guided?.label ?? "Guided investigation"} · step ${tourStep + 1} of ${steps.length}`),
         el("button", { type: "button", className: "link", "data-tour": "collapse", "aria-expanded": String(!coachCollapsed) }, coachCollapsed ? "Expand" : "Minimise")),
       el("h2", { id: "edk-coach-title", tabindex: "-1" }, step.title),
       coachCollapsed ? null : el("div", { className: "coach-body" }, paragraphs(done && step.after ? [...(step.action ? [] : step.body(view)), ...step.after(view)] : step.body(view))),
@@ -961,11 +971,11 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
             ? `Not done yet: ${view.listing.pending.length} record(s) are still pending after run ${view.investigation.latestRun.runNumber}. Click Run investigation again to retry them.`
             : `Waiting for you: click ${step.action === "run" ? "Run investigation" : "Introduce prepared update"} on the page.`) : null,
       coachCollapsed ? null : el("div", { className: "coach-actions" },
-        el("button", { type: "button", className: "secondary", "data-tour": "back", disabled: tourStep === 0 ? "" : null }, "Back"),
+        el("button", { type: "button", className: "secondary", "data-tour": "back", disabled: tourStep === 0 && !guided?.onBack ? "" : null }, "Back"),
         waiting ? el("button", { type: "button", className: "link", "data-tour": "skip" }, "Skip this step") : null,
         el("button", { type: "button", className: "primary", "data-tour": "next", disabled: waiting || working ? "" : null },
-          tourStep === TOUR_STEPS.length - 1 ? "Finish" : "Next"),
-        el("button", { type: "button", className: "link", "data-tour": "exit" }, "Exit tour"))).childNodes);
+          tourStep === steps.length - 1 ? guided?.finishLabel ?? "Finish" : "Next"),
+        el("button", { type: "button", className: "link", "data-tour": "exit" }, guided ? "Exit the demo" : "Exit tour"))).childNodes);
     fitCoachToHost();
     const key = `${tourStep}:${step.id === "record" ? recordToInspect(view)?.id : ""}`;
     spotlight(TARGETS[step.target]?.(), scrolledFor !== key);
@@ -1022,17 +1032,18 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const action = event.target.closest("[data-tour]")?.dataset.tour;
     if (!action) return;
     if (action === "back" && tourStep > 0) goToStep(tourStep - 1);
+    else if (action === "back" && guided?.onBack) { exitTour(); guided.onBack(); }
     if (action === "next" || action === "skip") {
-      if (tourStep >= TOUR_STEPS.length - 1) exitTour();
-      else goToStep(tourStep + 1);
+      if (tourStep < steps.length - 1) goToStep(tourStep + 1);
+      else { exitTour(); guided?.onFinish?.(); }
     }
-    if (action === "exit") exitTour();
+    if (action === "exit") { exitTour(); guided?.onExit?.(); }
     if (action === "collapse") { coachCollapsed = !coachCollapsed; progress.setCoachCollapsed(coachCollapsed); renderTour(); root.querySelector("[data-tour=collapse]")?.focus(); }
   });
 
   // ----- First-run introduction and the feature guide -----
 
-  $("intro").hidden = progress.introDismissed() || tourStep !== null;
+  $("intro").hidden = !intro || guided !== null || progress.introDismissed() || tourStep !== null;
   $("intro-start").addEventListener("click", () => startTour(0));
   $("intro-dismiss").addEventListener("click", () => { progress.dismissIntro(); $("intro").hidden = true; $("guide-button").focus(); });
 
@@ -1051,7 +1062,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         el("button", { type: "button", className: "link", "data-guide": "close" }, "Close")),
       el("p", {}, "Evidence Desk investigates a case whose records can conflict, change or be withdrawn, and keeps every conclusion tied to the evidence behind it."),
       el("div", { className: "guide-actions" },
-        el("button", { type: "button", className: "primary", "data-guide": "tour" }, saved !== null ? `Resume the tour (step ${saved + 1} of ${TOUR_STEPS.length})` : "Start the guided investigation"),
+        el("button", { type: "button", className: "primary", "data-guide": "tour" }, saved !== null ? `Resume the tour (step ${saved + 1} of ${steps.length})` : "Start the guided investigation"),
         saved !== null ? el("button", { type: "button", className: "secondary", "data-guide": "restart" }, "Restart from the beginning") : null,
         el("button", { type: "button", className: "link", "data-guide": "intro" }, "Show the introduction")),
       el("h3", {}, "Features"),
@@ -1102,6 +1113,13 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const state = JSON.parse(event.data);
     engineProgress = { ...state, at: new Date().toISOString() };
   });
+
+  // A guided part opens at its first step, its last (coming back from the
+  // next part), or where it was left.
+  if (guided) {
+    progress.dismissIntro();
+    goToStep(guided.start === "last" ? steps.length - 1 : guided.start === "resume" ? tourStep ?? 0 : 0);
+  }
 
   refresh();
   return { refresh, destroy: () => { destroyed = true; events?.close(); spotlight(null); } };

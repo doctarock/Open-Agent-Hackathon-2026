@@ -3,6 +3,12 @@
 // palette, for whichever case is selected, and the form for starting an
 // investigation of the person's own. Requests go through Speck's
 // admin-authorised fetch, as Speck requires for plugin routes.
+//
+// It also runs the guided demo (public/journey.js): both prepared cases, then
+// Speck's world view, memory map and chat, then an investigation of the
+// person's own. Speck mounts the tab afresh each time its view opens, and the
+// demo continues into Speck's own views, so the demo's state lives in this
+// module and in browser storage, not in one mount.
 
 const ASSET_BASE = "/plugins/evidence-desk";
 const API_BASE = "/api/plugins/evidence-desk";
@@ -32,16 +38,238 @@ function el(tag, attributes = {}, ...children) {
 
 const remember = (key, value) => { try { localStorage.setItem(`edk:tab:${key}`, value); } catch { /* not kept */ } };
 const recall = (key) => { try { return localStorage.getItem(`edk:tab:${key}`); } catch { return null; } };
+const storage = () => { try { return window.localStorage; } catch { return null; } };
+
+// ----- The guided demo, across mounts -----
+
+const demo = {
+  journey: null,     // public/journey.js, once loaded
+  store: null,
+  tab: null,         // the tab currently mounted (its show/openNewCase)
+  fetcher: fetch,
+  start: "resume",   // how the next case part opens
+  coach: null,
+  collapsed: false,
+  spotlit: null,
+  mounted: false,    // whether the tab has been mounted since the page loaded
+  facts: { cases: [], timeline: "", memory: "", replied: false, created: null, yoursRuns: 0 }
+};
+
+const currentPart = () => {
+  const index = demo.store?.part() ?? null;
+  return index === null ? null : demo.journey.JOURNEY[index];
+};
+
+// Speck's own furniture, found by what Speck's page renders.
+const host = {
+  evidenceButton: () => document.querySelector('.rail-button[data-view^="plugin:evidence-desk:"]'),
+  evidenceOpen: () => Boolean(host.evidenceButton()?.classList.contains("active")),
+  worldOpen: () => document.querySelector("#worldView")?.hidden === false,
+  openWorld(mode) {
+    if (!host.worldOpen()) document.querySelector('.rail-button[data-view="world"]')?.click();
+    document.querySelector(`[data-world-mode="${mode}"]`)?.click();
+  }
+};
+
+function hostSpotlight(target) {
+  demo.spotlit?.classList.remove("edk-host-spotlight");
+  demo.spotlit = target ?? null;
+  demo.spotlit?.classList.add("edk-host-spotlight");
+}
+
+// What the Speck-side parts describe, read from real state: each prepared
+// case's investigation through the plugin's API, and what Speck's world view
+// reports about itself.
+async function gatherFacts() {
+  const prepared = (demo.tab?.cases() ?? []).filter((item) => item.kind !== "yours");
+  demo.facts.cases = await Promise.all(prepared.map(async (item) => {
+    try {
+      const response = await demo.fetcher(`${API_BASE}/cases/${encodeURIComponent(item.id)}/investigation`);
+      const investigation = await response.json();
+      return { id: item.id, label: item.label, runs: investigation.runs?.length ?? 0, headline: investigation.current?.headline ?? "" };
+    } catch {
+      return { id: item.id, label: item.label, runs: 0, headline: "" };
+    }
+  }));
+  demo.facts.timeline = document.querySelector("#timelineStatus")?.textContent.trim() ?? "";
+  demo.facts.memory = document.querySelector(".world-stage.memory-mode") ? document.querySelector("#worldSummary")?.textContent.trim() ?? "" : "";
+}
+
+// Opens a part of the journey. start: how a case part opens ("first",
+// "last" coming back from the next part, or "resume").
+async function enterPart(index, start = "first") {
+  const { JOURNEY, SUGGESTED_QUESTION } = demo.journey;
+  demo.store.setPart(index);
+  demo.start = start;
+  const part = JOURNEY[index];
+  if (part.kind !== "speck") {
+    renderCoach();
+    // Opening the Evidence tab mounts it afresh, and the new mount opens the part.
+    if (!host.evidenceOpen()) { host.evidenceButton()?.click(); return; }
+    demo.tab?.openPart(index);
+    return;
+  }
+  host.openWorld(part.view);
+  if (part.id === "chat") {
+    demo.facts.replied = false;
+    const input = document.querySelector("#quickPrompt");
+    if (input && !input.value.trim()) {
+      input.value = SUGGESTED_QUESTION;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+  renderCoach();
+  await gatherFacts();
+  // The world view settles its own summary after switching mode.
+  window.setTimeout(async () => { await gatherFacts(); renderCoach(); }, 800);
+  renderCoach();
+}
+
+function endJourney() {
+  demo.store?.setPart(null);
+  hostSpotlight(null);
+  renderCoach();
+  demo.tab?.renderOffer();
+}
+
+function startJourney() {
+  demo.store.dismissOffer();
+  demo.store.setCreated(null);
+  demo.facts.created = null;
+  demo.facts.yoursRuns = 0;
+  demo.collapsed = false;
+  enterPart(0, "first");
+}
+
+function paragraphs(items) {
+  return items.filter((item) => item !== null && item !== undefined).map((item) => Array.isArray(item)
+    ? el("ul", {}, item.flat().map((line) => el("li", {}, line)))
+    : el("p", {}, item));
+}
+
+// The panel for the parts outside a case page. Case parts use the case
+// page's own panel.
+function renderCoach() {
+  const part = currentPart();
+  if (!part || part.kind === "case") {
+    demo.coach?.remove();
+    demo.coach = null;
+    if (!part) hostSpotlight(null);
+    return;
+  }
+  const { JOURNEY, partDone } = demo.journey;
+  const index = JOURNEY.indexOf(part);
+  demo.facts.created = demo.store.created();
+  const done = partDone(part, demo.facts);
+  const waiting = part.action && !done;
+  if (!demo.coach) {
+    demo.coach = el("div", { className: "edk edk-journey" }, el("aside", { className: "coach", "aria-labelledby": "edk-journey-title" }));
+    demo.coach.addEventListener("click", onCoachClick);
+    document.body.append(demo.coach);
+  }
+  const panel = demo.coach.firstElementChild;
+  panel.classList.toggle("collapsed", demo.collapsed);
+  const last = index === JOURNEY.length - 1;
+  panel.replaceChildren(...el("div", {},
+    el("div", { className: "coach-head" },
+      el("p", { className: "eyebrow" }, `Guided demo · ${part.label}`),
+      el("button", { type: "button", className: "link", "data-journey": "collapse", "aria-expanded": String(!demo.collapsed) }, demo.collapsed ? "Expand" : "Minimise")),
+    el("h2", { id: "edk-journey-title", tabindex: "-1" }, part.title),
+    demo.collapsed ? null : el("div", { className: "coach-body" }, paragraphs(done && part.after ? part.after(demo.facts) : part.body(demo.facts))),
+    part.action && !demo.collapsed ? el("p", { className: `coach-status ${done ? "done" : "waiting"}`, role: "status" },
+      done ? "Done." : part.action === "chat" ? "Waiting for you: send a message to Speck."
+        : part.action === "create" ? "Waiting for you: create the investigation."
+        : "Waiting for you: click Run investigation.") : null,
+    demo.collapsed ? null : el("div", { className: "coach-actions" },
+      el("button", { type: "button", className: "secondary", "data-journey": "back" }, "Back"),
+      waiting ? el("button", { type: "button", className: "link", "data-journey": "skip" }, "Skip this step") : null,
+      el("button", { type: "button", className: "primary", "data-journey": "next", disabled: waiting ? "" : null }, last ? "Finish" : "Next"),
+      el("button", { type: "button", className: "link", "data-journey": "exit" }, "Exit the demo"))).childNodes);
+  hostSpotlight(part.id === "world" ? document.querySelector("#timelineStatus")
+    : part.id === "memory" ? document.querySelector(".world-mode-switch")
+    : part.id === "chat" ? document.querySelector("#quickComposer")
+    : part.id === "create" && !done ? document.querySelector("form.new-case")
+    : part.id === "run-yours" ? document.querySelector(".case-picker + .edk #edk-run-button")
+    : null);
+  fitCoach();
+}
+
+function onCoachClick(event) {
+  const action = event.target.closest("[data-journey]")?.dataset.journey;
+  if (!action) return;
+  const index = demo.store.part();
+  const { JOURNEY } = demo.journey;
+  if (action === "collapse") { demo.collapsed = !demo.collapsed; renderCoach(); return; }
+  if (action === "exit") { endJourney(); return; }
+  if (action === "back") enterPart(index - 1, "last");
+  if (action === "next" || action === "skip") {
+    if (index >= JOURNEY.length - 1) endJourney();
+    else enterPart(index + 1, "first");
+  }
+  demo.coach?.querySelector("#edk-journey-title")?.focus({ preventScroll: true });
+}
+
+// Clear of Speck's message bar and rail, which Speck moves between layouts.
+// In the world view on a wide screen the panel sits top left, clear of the
+// pulse panel and of Speck's replies above the message bar.
+function fitCoach() {
+  const panel = demo.coach?.firstElementChild;
+  if (!panel) return;
+  panel.style.top = panel.style.bottom = panel.style.left = panel.style.right = panel.style.width = panel.style.maxHeight = "";
+  const bar = document.querySelector("#quickComposer")?.getBoundingClientRect();
+  const rail = document.querySelector(".rail")?.getBoundingClientRect();
+  const barTop = bar && bar.height && bar.top < innerHeight ? bar.top : innerHeight;
+  const verticalRail = rail && rail.height > rail.width && rail.right < innerWidth / 3;
+  if (innerWidth < 980) {
+    panel.style.left = verticalRail ? `${Math.ceil(rail.right + 8)}px` : "8px";
+    panel.style.right = "8px";
+    panel.style.width = "auto";
+    panel.style.bottom = `${Math.ceil(innerHeight - barTop + 8)}px`;
+    panel.style.maxHeight = `${Math.max(160, Math.floor(Math.min(innerHeight * 0.42, barTop - 8 - innerHeight * 0.3)))}px`;
+  } else if (host.worldOpen()) {
+    panel.style.left = `${Math.ceil((verticalRail ? rail.right : 0) + 16)}px`;
+    panel.style.top = "140px";
+    panel.style.bottom = "auto";
+    panel.style.maxHeight = `${Math.max(200, Math.floor(barTop - 140 - 16))}px`;
+  } else {
+    panel.style.bottom = `${Math.ceil(innerHeight - barTop + 8)}px`;
+    panel.style.maxHeight = `${Math.max(200, Math.floor(Math.min(560, barTop - 16 - innerHeight * 0.1)))}px`;
+  }
+}
+
+let listening = false;
+function listenOnce() {
+  if (listening) return;
+  listening = true;
+  window.addEventListener("resize", fitCoach);
+  // Speck announces every chat reply.
+  window.addEventListener("speck:reply", () => {
+    if (currentPart()?.id !== "chat") return;
+    demo.facts.replied = true;
+    renderCoach();
+  });
+  // Speck's views change without telling plugins; keep the panel placed.
+  document.addEventListener("click", (event) => {
+    if (event.target.closest?.(".rail-button, [data-world-mode]")) window.setTimeout(fitCoach, 50);
+  });
+}
+
+// ----- The tab -----
 
 export async function mountPluginTab({ root, pluginAdminFetch }) {
   ensureStylesheet();
   const fetcher = pluginAdminFetch || fetch;
-  const { mountEvidenceDesk } = await import(`${ASSET_BASE}/app.js`);
+  const [{ mountEvidenceDesk }, journey] = await Promise.all([import(`${ASSET_BASE}/app.js`), import(`${ASSET_BASE}/journey.js`)]);
+  demo.journey = journey;
+  demo.store ??= journey.journeyStore(storage());
+  demo.fetcher = fetcher;
+  listenOnce();
 
   const shell = el("div", { className: "edk edk-in-speck" });
+  const offer = el("section", { className: "intro demo-offer", "aria-labelledby": "edk-demo-offer-title", hidden: "" });
   const picker = el("div", { className: "case-picker", role: "tablist", "aria-label": "Investigations" });
   const page = el("div", { className: "edk-in-speck" });
-  shell.append(picker, page);
+  shell.append(offer, picker, page);
   root.replaceChildren(shell);
 
   let cases = [];
@@ -64,17 +292,65 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     picker.replaceChildren(...el("div", {},
       el("span", { className: "picker-label" }, "Prepared cases"), prepared.map(button),
       yours.length ? [el("span", { className: "picker-label" }, "Your investigations"), yours.map(button)] : null,
-      el("button", { type: "button", "data-new-case": "", className: current === "new" ? "primary" : "secondary", "aria-selected": String(current === "new") }, "+ New investigation")).childNodes);
+      el("button", { type: "button", "data-new-case": "", className: current === "new" ? "primary" : "secondary", "aria-selected": String(current === "new") }, "+ New investigation"),
+      el("button", { type: "button", "data-demo": "start", className: "link" }, demo.store.part() !== null ? "Resume the guided demo" : "Guided demo")).childNodes);
   }
 
-  function show(id) {
+  // The invitation to the guided demo, until it is taken or declined.
+  function renderOffer() {
+    renderPicker();
+    offer.hidden = demo.store.part() !== null || demo.store.offerDismissed();
+    if (offer.hidden) return;
+    offer.replaceChildren(
+      el("h2", { id: "edk-demo-offer-title" }, "Take the guided demo"),
+      el("p", {}, "Two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
+      el("p", { className: "meta" }, "Each step that asks you to act waits for the real result; nothing is scripted."),
+      el("div", { className: "intro-actions" },
+        el("button", { type: "button", className: "primary", "data-demo": "start" }, "Start the guided demo"),
+        el("button", { type: "button", className: "secondary", "data-demo": "dismiss" }, "Explore on my own")));
+  }
+
+  function show(id, { guided = null } = {}) {
     const item = cases.find((candidate) => candidate.id === id) ?? cases[0];
     if (!item) { page.textContent = "Evidence Desk could not list its cases."; return; }
     mounted?.destroy();
     current = item.id;
     remember("case", item.id);
     renderPicker();
-    mounted = mountEvidenceDesk(page, { apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours" });
+    mounted = mountEvidenceDesk(page, {
+      apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours",
+      intro: false, guided,
+      onView: (view) => {
+        if (currentPart()?.id !== "run-yours" || demo.store.created()?.id !== item.id) return;
+        demo.facts.yoursRuns = view.investigation?.runs?.length ?? 0;
+        renderCoach();
+      }
+    });
+  }
+
+  // Opens a part of the guided demo that happens on this tab.
+  function openPart(index) {
+    const { JOURNEY } = demo.journey;
+    const part = JOURNEY[index];
+    if (part.kind === "case") {
+      const start = demo.start;
+      // A later mount of the tab (after a visit to another view) resumes the part.
+      demo.start = "resume";
+      show(part.caseId, { guided: {
+        label: `Guided demo · ${part.label}`, steps: part.steps, finishLabel: part.finishLabel, start,
+        onFinish: () => enterPart(index + 1, "first"),
+        onBack: index > 0 ? () => enterPart(index - 1, "last") : null,
+        onExit: endJourney
+      } });
+    } else if (part.id === "create") {
+      openNewCase();
+    } else if (part.id === "run-yours") {
+      const created = demo.store.created();
+      if (created && cases.some((item) => item.id === created.id)) show(created.id);
+      else return enterPart(JOURNEY.findIndex((item) => item.id === "create"), "first");
+    }
+    renderOffer();
+    renderCoach();
   }
 
   // A new investigation of the person's own: the question, the competing
@@ -129,7 +405,8 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
         if (!response.ok) throw new Error(result.error ?? `HTTP ${response.status}`);
         await loadCases();
         show(result.id);
-        api.onCreated?.(result);
+        // In the guided demo, creating it completes the step.
+        if (currentPart()?.id === "create") { demo.store.setCreated({ id: result.id, label: result.label }); renderCoach(); }
       } catch (failure) {
         error.hidden = false;
         error.textContent = `The investigation was not created: ${failure.message}`;
@@ -140,23 +417,42 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     form.querySelector("#edk-new-case-title").focus();
   }
 
-  picker.addEventListener("click", (event) => {
+  shell.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
-    if (target.dataset.newCase !== undefined) openNewCase();
-    else if (target.dataset.case) show(target.dataset.case);
+    if (target.dataset.demo === "start") {
+      if (demo.store.part() !== null) enterPart(demo.store.part(), "resume");
+      else startJourney();
+    } else if (target.dataset.demo === "dismiss") {
+      demo.store.dismissOffer();
+      renderOffer();
+    } else if (target.closest(".case-picker")) {
+      if (target.dataset.newCase !== undefined) openNewCase();
+      else if (target.dataset.case) show(target.dataset.case);
+    }
   });
 
   await loadCases();
-  const remembered = recall("case");
-  show(cases.some((item) => item.id === remembered) ? remembered : cases[0]?.id);
-
   const api = {
     destroy: () => mounted?.destroy(),
-    show, openNewCase,
+    show, openNewCase, openPart, renderOffer,
     current: () => current,
-    cases: () => cases,
-    onCreated: null
+    cases: () => cases
   };
+  demo.tab = api;
+
+  const part = demo.store.part();
+  const firstMount = !demo.mounted;
+  demo.mounted = true;
+  if (part !== null && demo.journey.JOURNEY[part].kind !== "speck") openPart(part);
+  else {
+    const remembered = recall("case");
+    show(cases.some((item) => item.id === remembered) ? remembered : cases[0]?.id);
+    renderOffer();
+    // On a page load in the middle of a part in Speck's own views, that view
+    // opens again; a later visit to this tab leaves the person here.
+    if (part !== null && firstMount) enterPart(part, "resume");
+    else renderCoach();
+  }
   return api;
 }
