@@ -121,3 +121,16 @@ test("a leading explanation at or above the threshold says why it is not establi
     assert.match(reasons, /H-DELIVERED is at 0\.61, at or above Speck's supported threshold of 0\.6, but Speck holds it as weakening/);
   });
 });
+
+test("the guide offers the Zetaris USL only where live mode reads it, and marks it from the records' real source", async () => {
+  const feature = tour.FEATURES.find((item: any) => item.id === "usl");
+  const fixture = { status: { evidence: { mode: "fixture", label: "Local fixtures (not Zetaris)" } }, listing: { records: [{ retrieval: { mode: "fixture", location: "fixtures/x.json" } }] } };
+  const usl = { status: { evidence: { mode: "zetaris", label: "Zetaris Unified Semantic Layer lightning.metastore.evidence_desk.evidence_usl.case_evidence (live)" } },
+    listing: { records: [{ retrieval: { mode: "zetaris", location: "lightning.metastore.evidence_desk.evidence_usl.case_evidence" } }] } };
+  const tables = { status: { evidence: { mode: "zetaris", label: "Zetaris Lightning (live)" } }, listing: { records: [{ retrieval: { mode: "zetaris", location: "EVIDENCE_DESK.carrier_events" } }] } };
+  assert.deepEqual([tour.featureStatus(feature, fixture, new Set()).available, tour.featureStatus(feature, fixture, new Set()).state], [false, "not yet"]);
+  assert.match(tour.featureStatus(feature, tables, new Set()).note, /per-source tables/);
+  assert.deepEqual([tour.featureStatus(feature, usl, new Set()).available, tour.featureStatus(feature, usl, new Set()).state], [true, "demonstrated"]);
+  assert.equal(tour.uslTable(usl), "lightning.metastore.evidence_desk.evidence_usl.case_evidence");
+  assert.match(tour.TOUR_STEPS.find((item: any) => item.id === "run").body(usl).join(" "), /Unified Semantic Layer with one query to lightning\.metastore\.evidence_desk\.evidence_usl\.case_evidence/);
+});

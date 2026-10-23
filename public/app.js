@@ -37,7 +37,8 @@ const HELP = {
   evidence: [
     "Each record comes from a named source system. \"Stated by source\" lists the facts the record itself states: an observation, not an interpretation.",
     "How it was weighed: a deterministic rule is a fact rule written into the case; a model interpretation is a reasoning model's reading, which Speck caps at reliability 0.4. \"In effect\" means the judgment counts now; \"void\" means its record no longer counts; \"withheld\" means a decisive refutation overrides it.",
-    "Provenance names the system of record, the record's own reference and its author; \"retrieved\" says how this workspace read it: a local fixture file or a live Zetaris query, with its query token."
+    "Provenance names the system of record, the record's own reference and its author; \"retrieved\" says how this workspace read it: a local fixture file or a live Zetaris query, with its query token.",
+    "\"Zetaris USL\" means the record came through a Zetaris Unified Semantic Layer: one query over a semantic model that maps every source system into the same evidence shape. The layer resolved the record's case and derived its facts from the source's own fields; the reference shown is the source's own, so it can be traced back."
   ],
   states: [
     STATE_MEANING.supported, STATE_MEANING.leading, STATE_MEANING.unresolved,
@@ -190,7 +191,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const { evidence, reasoner, execution, speck } = status;
     // Through el(), which drops null; replaceChildren would print it.
     $("sources").replaceChildren(...el("span", {},
-      badge(evidence.mode === "zetaris" ? "Evidence: Zetaris live" : "Evidence: fixture file, not Zetaris", evidence.mode),
+      badge(evidence.mode === "zetaris" ? (/Unified Semantic Layer/.test(evidence.label) ? "Evidence: Zetaris USL (live)" : "Evidence: Zetaris live") : "Evidence: fixture file, not Zetaris", evidence.mode),
       badge(reasoner.kind === "nemotron" ? `Assessor: Nemotron (${reasoner.model})` : "Assessor: deterministic rules", reasoner.ready ? "ok" : "bad"),
       evidence.problem ? badge(evidence.problem, "bad long") : null,
       reasoner.problem ? badge(reasoner.problem, "bad long") : null).childNodes);
@@ -271,7 +272,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       el("div", { className: "record-badges" },
         statusBadge(record),
         countingBadge(record, byId),
-        badge(record.retrieval.mode === "zetaris" ? "Zetaris live" : "fixture file, not Zetaris", record.retrieval.mode)),
+        badge(record.retrieval.mode === "zetaris" ? (record.retrieval.location.startsWith("lightning.metastore.") ? "Zetaris USL" : "Zetaris live") : "fixture file, not Zetaris", record.retrieval.mode)),
       record.invalidation?.kind === "withdrawn" ? el("div", { className: "meta" }, `Withdrawn ${when(record.invalidation.at)}: ${record.invalidation.reason}`) : null,
       record.status === "failed" && record.lastAttempt?.error ? el("div", { className: "meta" }, `Last attempt ${when(record.lastAttempt.at)} failed: ${record.lastAttempt.error}`) : null,
       el("p", { className: "content" }, record.content),
