@@ -3,7 +3,10 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { loadConfig, loadDotEnv, ROOT_DIR } from "../config.js";
+import fs_ from "node:fs";
+import os from "node:os";
 import type { EvidenceRecord } from "../evidence/types.js";
+import { EvidenceDesk } from "../investigation/desk.js";
 import { ZetarisEvidenceProvider } from "../evidence/zetaris-provider.js";
 
 // npm run zetaris:usl
@@ -215,6 +218,35 @@ const equivalence = { uslRecords: viaUsl.length, tableRecords: viaTables.length,
   idMapping: viaTables.map((record) => [record.id, viaUsl.find((item) => item.provenance.recordRef === record.provenance.recordRef)?.id ?? null]) };
 console.log(`  evidence USL: ${viaUsl.length} record(s); per-source tables: ${viaTables.length}; identical record for record: ${equivalence.identical}${differences.length ? ` (differs: ${differences.join(", ")})` : ""}`);
 
+// The investigation itself, from each source, with the deterministic rule
+// assessor: run, introduce the update, run again; every belief compared, with
+// records matched by their source reference.
+async function journey(queryFile: string) {
+  const dir = fs_.mkdtempSync(path.join(os.tmpdir(), "evidence-desk-usl-"));
+  const desk = await EvidenceDesk.open(loadConfig({ ...process.env, EVIDENCE_MODE: "zetaris", REASONER: "rules", ZETARIS_QUERY_CONFIG: queryFile },
+    { databasePath: path.join(dir, "desk.sqlite"), historyDir: path.join(dir, "meterless") }));
+  try {
+    const states: unknown[] = [];
+    const snapshot = async () => {
+      const refs = new Map((await desk.listEvidence()).records.map((record) => [record.id, record.provenance.recordRef]));
+      const c = desk.conclusionFromSpeck();
+      states.push({ state: c.state, explanation: c.hypothesis?.key ?? c.direction?.pointsTo?.key ?? null,
+        beliefs: desk.hypotheses().map((h) => [h.key, h.status, h.confidence, h.supporting.map((ref) => refs.get(ref.recordId)).sort(), h.contradicting.map((ref) => refs.get(ref.recordId)).sort()]),
+        noLongerCounts: c.noLongerCounted.map((item) => refs.get(item.recordId)) });
+    };
+    await desk.run(); await snapshot();
+    await desk.introduceNextUpdate(); await desk.run(); await snapshot();
+    return states;
+  } finally {
+    desk.close();
+  }
+}
+console.log("Investigation from the USL versus the per-source tables (rule assessor)");
+const journeyFromUsl = await journey("config/zetaris-usl-queries.json");
+const journeyFromTables = await journey("config/zetaris-queries.json");
+const investigation = { identical: JSON.stringify(journeyFromUsl) === JSON.stringify(journeyFromTables), fromUsl: journeyFromUsl, fromTables: journeyFromTables };
+console.log(`  identical beliefs after run 1 and after the update: ${investigation.identical} (${(journeyFromUsl as Array<{ state: string; explanation: string | null }>).map((item) => `${item.state} ${item.explanation}`).join(" -> ")})`);
+
 // Before/after on one repeatable task: retrieving the shipment's evidence in
 // one consistent shape. Query latencies are measured here; the mapping work a
 // consumer avoids is described in the reflection, not timed.
@@ -234,7 +266,7 @@ const report = {
     support_contacts: { table: `${SOURCES_DB}.support_contacts`, format: "csv", records: Number(supportCount?.data[0]?.[0]) },
     dispute_register: { table: `${SOURCES_DB}.dispute_register`, format: "csv", records: Number(registerCount?.data[0]?.[0]) }
   },
-  evidenceUsl: { table: `${EVIDENCE_USL}.case_evidence`, headers: caseEvidence.headers, rows: caseEvidence.data, dataQuality: dqRow(dqEvidence), equivalence },
+  evidenceUsl: { table: `${EVIDENCE_USL}.case_evidence`, headers: caseEvidence.headers, rows: caseEvidence.data, dataQuality: dqRow(dqEvidence), equivalence, investigation },
   usl: { table: `${USL}.delivery_evidence`, headers: unified.headers, rows: unified.data },
   checks,
   dataQuality: { rule: RULE, expression: RULE_EXPRESSION, usl: dqRow(dq), isolatedSample: dqRow(dqSample), failingSampleRecords: failing.data },
@@ -251,7 +283,7 @@ console.log(`DQ on the evidence USL: ${report.evidenceUsl.dataQuality.total_reco
 console.log(`DQ on the isolated sample: ${report.dataQuality.isolatedSample.total_record} checked, ${report.dataQuality.isolatedSample.valid_record} passed, ${report.dataQuality.isolatedSample.invalid_record} failed`);
 console.log(`Timing (one run): two source queries ${timing.sourceQueriesMs} ms; one USL query ${timing.uslQueryMs} ms`);
 console.log(`Report: eval/results/zetaris-usl.md and .json`);
-const ok = checks.uslMatchesSources && checks.scenarioRecordsFound.length === checks.scenarioRecordsExpected.length && checks.correctionPreserved && integration.sameAsUslQuery && equivalence.identical;
+const ok = checks.uslMatchesSources && checks.scenarioRecordsFound.length === checks.scenarioRecordsExpected.length && checks.correctionPreserved && integration.sameAsUslQuery && equivalence.identical && investigation.identical;
 process.exit(ok ? 0 : 1);
 
 function renderSteps(items: Step[]): string {

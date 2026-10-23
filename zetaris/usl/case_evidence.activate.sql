@@ -1,5 +1,5 @@
 SELECT
-  COALESCE(concat('oms:', NULLIF(trim(o.order_ref), '')), '') AS id,
+  COALESCE(concat('OMS-', upper(substr(sha2(NULLIF(trim(o.order_ref), ''), 256), 1, 6))), '') AS id,
   COALESCE(d.case_id, '') AS case_id,
   'oms' AS source_system,
   'Shopfront order system' AS source_name,
@@ -16,7 +16,7 @@ FROM EVIDENCE_DESK_SOURCES.oms_orders o
 JOIN EVIDENCE_DESK_SOURCES.dispute_register d ON o.order_no = d.order_no
 UNION ALL
 SELECT
-  COALESCE(concat('wms:', NULLIF(trim(w.handover_id), '')), '') AS id,
+  COALESCE(concat('WMS-', upper(substr(sha2(NULLIF(trim(w.handover_id), ''), 256), 1, 6))), '') AS id,
   COALESCE(d.case_id, '') AS case_id,
   'wms' AS source_system,
   'Warehouse management system' AS source_name,
@@ -33,7 +33,7 @@ FROM EVIDENCE_DESK_SOURCES.wms_handover w
 JOIN EVIDENCE_DESK_SOURCES.dispute_register d ON w.parcel_no = d.parcel_no
 UNION ALL
 SELECT
-  COALESCE(concat('carrier:', NULLIF(trim(c.event_id), '')), '') AS id,
+  COALESCE(concat('CAR-', upper(substr(sha2(NULLIF(trim(c.event_id), ''), 256), 1, 6))), '') AS id,
   COALESCE(d.case_id, '') AS case_id,
   'carrier' AS source_system,
   'Carrier tracking API' AS source_name,
@@ -48,14 +48,14 @@ SELECT
   c.event_id AS record_ref,
   'Carrier tracking API' AS system_of_record,
   c.recorded_by AS author,
-  COALESCE(concat('carrier:', NULLIF(trim(c.amends_event_id), '')), '') AS supersedes,
+  COALESCE(concat('CAR-', upper(substr(sha2(NULLIF(trim(c.amends_event_id), ''), 256), 1, 6))), '') AS supersedes,
   'EVIDENCE_DESK_SOURCES.carrier_tracking' AS source_table,
   'id,case_id,source_system,source_name,facts_json,supersedes' AS inferred_fields
 FROM EVIDENCE_DESK_SOURCES.carrier_tracking c
 JOIN EVIDENCE_DESK_SOURCES.dispute_register d ON c.tracking_no = d.parcel_no
 UNION ALL
 SELECT
-  COALESCE(concat('support:', NULLIF(trim(s.contact_id), '')), '') AS id,
+  COALESCE(concat('SUP-', upper(substr(sha2(NULLIF(trim(s.contact_id), ''), 256), 1, 6))), '') AS id,
   COALESCE(d.case_id, '') AS case_id,
   'support' AS source_system,
   'Customer support inbox' AS source_name,
