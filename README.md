@@ -166,8 +166,8 @@ The page explains itself; no walkthrough from a developer is needed.
 - **A first-run introduction** says what Evidence Desk is for and offers one action, *Start the
   guided investigation*. It can be dismissed, and is not shown again to the same browser. Inside
   Speck it is on both prepared cases (not on your own investigations), and its button is *Start
-  the guided demo*: the whole demo across both cases and Speck's views, from its first part, not
-  this case's tour alone. It is hidden while the guided demo is running; *Reset demo case* shows
+  tour*: the whole tour across both cases and Speck's views, from its first part, not this case's
+  tour alone. It is hidden while the guided demo is running; *Reset demo case* shows
   it again.
 - **The guided investigation** works on the real case, using the page's own buttons:
   1. the competing explanations;
@@ -225,9 +225,12 @@ The tour's step definitions are in `public/tour.js` and are tested against real 
 
 ### Inside Speck: the guided demo, Speck's views, and your own investigations
 
-Inside Speck the Evidence tab replaces the per-case introduction with one **guided demo**. It is
-offered at the top of the tab (*Start the guided demo* or *Explore on my own*), and the *Guided
-demo* link beside the case picker starts or resumes it.
+Inside Speck the Evidence tab has one **tour**, across both cases and Speck's views. Every
+**Start tour** button starts it from the beginning:
+- in the row of cases, always shown, with **Resume tour** beside it while a tour is in progress;
+- in the invitation at the top of the tab (beside *Explore on my own*);
+- in each prepared case's introduction;
+- in each case's **Guide**.
 
 1. **Disputed delivery** (live when configured): the case tour above, without its comparison
    and last overview steps.

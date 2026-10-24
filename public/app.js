@@ -1364,8 +1364,10 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         el("button", { type: "button", className: "link", "data-guide": "close" }, "Close")),
       el("p", {}, "Evidence Desk investigates a case whose records can conflict, change or be withdrawn, and keeps every conclusion tied to the evidence behind it."),
       el("div", { className: "guide-actions" },
-        el("button", { type: "button", className: "primary", "data-guide": "tour" }, saved !== null ? `Resume the tour (step ${saved + 1} of ${steps.length})` : "Start the guided investigation"),
-        saved !== null ? el("button", { type: "button", className: "secondary", "data-guide": "restart" }, "Restart from the beginning") : null,
+        startGuided
+          ? el("button", { type: "button", className: "primary", "data-guide": "full-tour" }, startGuided.label)
+          : el("button", { type: "button", className: "primary", "data-guide": "tour" }, saved !== null ? `Resume the tour (step ${saved + 1} of ${steps.length})` : "Start the guided investigation"),
+        !startGuided && saved !== null ? el("button", { type: "button", className: "secondary", "data-guide": "restart" }, "Restart from the beginning") : null,
         el("button", { type: "button", className: "link", "data-guide": "intro" }, "Show the introduction")),
       el("h3", {}, "Features"),
       el("p", { className: "meta" }, "\"Demonstrated\" means this case's real state shows it happened. \"Viewed\" means it has been opened on this page, by you or by the tour."),
@@ -1390,6 +1392,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     if (!button) return;
     const action = button.dataset.guide;
     if (action === "close") { closeGuide(); $("guide-button").focus(); }
+    if (action === "full-tour") { closeGuide(); startGuided.start(); }
     if (action === "tour") startTour(progress.tourStep() ?? 0);
     if (action === "restart") startTour(0);
     if (action === "intro") { progress.showIntroAgain(); $("intro").hidden = false; closeGuide(); $("intro").scrollIntoView({ block: "start" }); $("intro-start").focus(); }
