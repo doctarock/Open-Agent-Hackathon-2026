@@ -1,6 +1,6 @@
 import type { CognitiveEvent, MentalObject } from "#speck";
 import type { Scenario } from "../scenario.js";
-import type { Recomputation, RunSnapshot } from "./desk.js";
+import type { Recomputation, RunSnapshot } from "./records.js";
 
 // The revision timeline is Speck's event log for the case, read back: each
 // hypothesis, each evidence update, each recorded piece of evidence, each

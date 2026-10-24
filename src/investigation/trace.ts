@@ -2,7 +2,7 @@ import fs from "node:fs";
 import type { CognitiveEvent, MentalObject } from "#speck";
 import type { FetchSummary } from "../evidence/types.js";
 import type { ModelCallTrace } from "../reasoning/types.js";
-import type { AssessmentAttempt, Exclusion, Recomputation, RunSnapshot } from "./desk.js";
+import type { AssessmentAttempt, Exclusion, Recomputation, RunSnapshot } from "./records.js";
 
 // The execution trace: for each run, what each component actually did, read
 // back from what was persisted. Nothing here is inferred or simulated:

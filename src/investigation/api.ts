@@ -86,24 +86,26 @@ export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: st
     // What each component did, per run and per action, from persisted state.
     trace: () => ({ engine: MARKOVIAN_ENGINE, entries: desk.trace() }),
     investigation: () => {
-      const runs = desk.runs();
+      // Every view below from one read of Speck's state, so they agree.
+      const state = desk.read();
+      const runs = state.runs();
       return {
         // What Speck believes now, read from its persisted state. The page
         // shows this, not the copy stored with the last run. Shown whenever
         // Speck's ledger holds evidence, including after a run that was
         // interrupted before saving its snapshot.
-        current: runs.length || desk.recordedCount() ? desk.conclusionFromSpeck() : null,
+        current: runs.length || state.recordedCount() ? state.conclusion() : null,
         latestRun: runs.at(-1) ?? null,
         runs: runs.map((run) => ({
           runNumber: run.runNumber, runId: run.runId, finishedAt: run.finishedAt, stage: run.stage,
           status: run.execution.status, conclusion: run.conclusion.state, hypothesis: run.conclusion.hypothesis?.key ?? null,
           evidenceMode: run.evidence.mode, reasoner: run.reasoner.kind, model: run.reasoner.model
         })),
-        hypotheses: desk.hypotheses(),
+        hypotheses: state.hypotheses(),
         // Beliefs no longer held because what they rested on was invalidated:
         // history, kept apart from the current state above.
-        history: { recomputations: desk.recomputations(), replaced: desk.replacedHypotheses() },
-        timeline: desk.timeline()
+        history: { recomputations: state.recomputations(), replaced: state.replacedHypotheses() },
+        timeline: desk.timeline(state)
       };
     },
     run: () => desk.run(),

@@ -92,7 +92,7 @@ Differences to keep in mind:
      and its rules say so ("in effect").
    - But the evidence list still badges that record "superseded by X" and strikes it through.
      `listEvidence` derives that badge from every visible record's `supersedes` list,
-     ignoring whether the correction itself still counts (`src/investigation/desk.ts:343-344`).
+     ignoring whether the correction itself still counts (then in `src/investigation/desk.ts`; the listing is now `CaseState.listing` in `src/investigation/case-state.ts`).
    - The same badge appears on a late original that, per finding 2, still counts.
    - The beliefs are correct; only the label is wrong.
 

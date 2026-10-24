@@ -370,6 +370,18 @@ With the deterministic rule assessor the outcome is:
   with its own Speck runtime on data/evidence-desk.sqlite).
 ```
 
+**Inside the desk** (`src/investigation/`), one job per module:
+
+| Module | Job |
+|---|---|
+| `desk.ts` | `EvidenceDesk`: opens or attaches to Speck, the case's worker and its copies, and every change to the case (run, update, withdrawal, reset), one at a time under Speck's foreground lease |
+| `records.ts` | What Evidence Desk keeps in Speck beside Speck's own objects (run snapshots, assessments, recomputations, exclusions), and the errors |
+| `case-state.ts` | `CaseState`: one read of the case in Speck, with the ledger, the basis, the conclusion and the evidence listing derived from it at most once. A page request reads one snapshot, so its views agree |
+| `reconcile.ts` | Brings Speck's current hypotheses in line with the evidence that still counts (see *Revision*) |
+| `run.ts` | One investigation run: the Meterless generator, the assessment per chunk, the explanation and its check |
+| `publish.ts` | What Speck's memory and chat see: links between the case's memories, and the shared case summary |
+| `basis.ts`, `conclusion.ts`, `timeline.ts`, `trace.ts` | Pure derivations: what counts, the conclusion, the revision timeline, the execution trace |
+
 **How it fits into Speck.** Speck discovers plugins in its `plugins/` folder and hands each one
 its runtime, with routes and a tab in its interface.
 
