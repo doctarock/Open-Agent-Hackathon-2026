@@ -372,6 +372,10 @@ recovery after an interrupted run, withdrawals and recomputations.
 
 ### Meterless
 
+Two parts of Meterless are used, and the trace and `npm run sponsors:verify` report them
+separately: the Markovian engine executes each run (below), and Nightshift, Meterless's HTTP
+API, is the default model provider (see *Model providers*).
+
 - **Engine:** the Markovian reference engine, `@meterless/markovian-reference@0.1.0`, vendored
   unmodified from upstream commit `1742dec` (`vendor/meterless-markovian/NOTICE.md`).
 - **Invocation:** one `Markovian.run` per investigation run.
@@ -800,8 +804,13 @@ The model client (`src/reasoning/nemotron.ts`) speaks the OpenAI chat API. `MODE
 chooses the endpoint:
 
 - **Meterless Runtime (`meterless`, the default).** Meterless Runtime 1.4, provider contract v4.
-  - **What it is.** A separate program, by default on port 8088, that routes each call to a
-    model. Start it before configuring.
+  - **What it is.** Nightshift, Meterless's HTTP API: a separate program, by default on port
+    8088, that routes each call to a model. Start it before configuring.
+  - **Model identity.** Every call sends the routing mode (`meterless/auto` and so on) as the
+    model, and the trace records the model each response names. `npm run sponsors:verify`
+    reports Nightshift as OBSERVED only when:
+    - every model call of the run went to it and was answered;
+    - each response named the model that served it, not just the routing mode echoed back.
   - **Code.**
     - The contract is implemented once, in Speck (`speck/src/models/meterless.ts`, from
       `speck-meterless-provider.patch`).

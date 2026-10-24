@@ -82,7 +82,35 @@ try {
     evidence.push(`run ${run.runNumber}: engine run ${engineRun.id} (engine timestamp ${engineRun.timestamp}), ${engineRun.status}, ${engineRun.chunks.length} chunk(s), found in ${path.join(config.historyDir, "history.json")}`);
   }
   evidence.push(`engine: ${MARKOVIAN_ENGINE.name} ${MARKOVIAN_ENGINE.package}, upstream commit ${MARKOVIAN_ENGINE.commit}`);
-  verdict("Meterless", evidence, problems);
+  verdict("Meterless Markovian (execution engine)", evidence, problems);
+}
+
+// Meterless Nightshift, the runtime's HTTP API: every model call of the run
+// must have gone to it and been answered, and each answer must name the model
+// that served it. A routing mode echoed back (meterless/auto) is not an identity.
+{
+  const evidence: string[] = [];
+  const problems: string[] = [];
+  const nightshift = config.reasoner === "nemotron" && config.nemotron.provider === "meterless";
+  if (config.reasoner !== "nemotron") problems.push("REASONER is not nemotron: no model was called, so nothing went through Nightshift");
+  else if (config.nemotron.provider !== "meterless") problems.push(`MODEL_PROVIDER is ${config.nemotron.provider}: model calls went to ${config.nemotron.baseUrl}, not through Nightshift`);
+  if (nightshift) {
+    const calls = runs.flatMap((run) => run.steps.flatMap((step) => ((step.kind === "chunk" || step.kind === "explanation") && step.model ? [step.model] : [])));
+    if (!calls.length) problems.push("no model call was recorded");
+    const elsewhere = calls.filter((call) => !call.endpoint.startsWith(config.nemotron.baseUrl));
+    if (elsewhere.length) problems.push(`${elsewhere.length} call(s) went to another endpoint: ${[...new Set(elsewhere.map((call) => call.endpoint))].join(", ")}`);
+    const unanswered = calls.flatMap((call) => call.httpCalls).filter((call) => !call.answered).length;
+    const requests = calls.reduce((sum, call) => sum + call.httpCalls.length, 0);
+    const served = [...new Set(calls.flatMap((call) => call.servedModels))];
+    const identities = served.filter((name) => !/^meterless\//.test(name));
+    if (calls.length && !served.length) problems.push("Nightshift never reported a model in its responses");
+    else if (calls.length && !identities.length) problems.push(`Nightshift only echoed the routing mode (${served.join(", ")}), not the model that served the call`);
+    const unnamed = calls.filter((call) => !call.servedModels.some((name) => !/^meterless\//.test(name)));
+    if (identities.length && unnamed.length) problems.push(`${unnamed.length} of ${calls.length} call(s) named no serving model`);
+    evidence.push(`${requests} HTTP request(s) in ${calls.length} model call(s) to ${config.nemotron.baseUrl}/chat/completions, routing mode ${config.nemotron.model}, sent as meterless-app evidence-desk; ${requests - unanswered} answered`);
+    evidence.push(`model identity returned by Nightshift: ${served.join(", ") || "none"}`);
+  }
+  verdict("Meterless Nightshift (HTTP API, model provider)", evidence, problems, nightshift);
 }
 
 // Nemotron: model calls the endpoint answered, naming a Nemotron model, whose
