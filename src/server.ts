@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import http from "node:http";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ConfigError, loadConfig, loadDotEnv, type AppConfig } from "./config.js";
@@ -50,6 +51,8 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
   return http.createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://localhost");
     const route = routes[`${request.method} ${url.pathname}`];
+    const refused = foreignRequest(request);
+    if (refused) return json(response, 403, { error: refused, kind: "request" });
     try {
       if (route) return await route(request, response);
       for (const { route: caseRoute, pattern } of caseRoutes) {
@@ -69,10 +72,33 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
 function routePattern(routePath: DeskRoute["path"]): (pathname: string) => Record<string, string> | null {
   const names: string[] = [];
   const regex = new RegExp(`^${routePath.replace(/:([A-Za-z]+)/g, (_match, name: string) => { names.push(name); return "([^/]+)"; })}$`);
+  const decode = (value: string) => {
+    try { return decodeURIComponent(value); } catch { throw new RequestError(`Malformed path parameter "${value}"`); }
+  };
   return (pathname) => {
     const match = regex.exec(pathname);
-    return match ? Object.fromEntries(names.map((name, index) => [name, decodeURIComponent(match[index + 1]!)])) : null;
+    return match ? Object.fromEntries(names.map((name, index) => [name, decode(match[index + 1]!)])) : null;
   };
+}
+
+// Why the result when a request did not come from this server's own page, or
+// null. The server has no login (it is a local, single-user tool), so another
+// site open in the same browser must not be able to drive it:
+// - Host must name this machine by localhost or an IP address. A page on a
+//   domain that re-resolves to 127.0.0.1 (DNS rebinding) sends its own domain
+//   as Host and could otherwise read the case. An IP address cannot be
+//   rebound, so a server deliberately opened to the network still answers.
+// - Origin, which browsers send on every cross-site POST, must be this
+//   server. Without it, any page could post to /api/run or /api/reset.
+// Tools such as curl send no Origin and are unaffected.
+function foreignRequest(request: http.IncomingMessage): string | null {
+  const host = request.headers.host ?? "";
+  let hostname: string;
+  try { hostname = new URL(`http://${host}`).hostname.replace(/^\[|\]$/g, ""); } catch { return `Unrecognised Host "${host}"`; }
+  if (hostname !== "localhost" && !net.isIP(hostname)) return `Host "${host}" is not this machine; open Evidence Desk by localhost or its IP address`;
+  const origin = request.headers.origin;
+  if (origin !== undefined && origin !== `http://${host}`) return `Requests from ${origin} are not accepted`;
+  return null;
 }
 
 function sendError(response: http.ServerResponse, error: unknown): void {
@@ -128,6 +154,11 @@ async function main(): Promise<void> {
     console.log(`  evidence: ${evidence.label} -> ${evidence.target}${evidence.problem ? ` [${evidence.problem}]` : ""}`);
     console.log(`  reasoner: ${reasoner.label}${reasoner.model ? ` (${reasoner.model} @ ${reasoner.endpoint})` : ""}${reasoner.problem ? ` [${reasoner.problem}]` : ""}`);
     console.log(`  speck db: ${relativeDataPath(config, config.databasePath)}`);
+    // The server has no login: on a non-loopback address anyone who can
+    // reach the port can run, change and read the case.
+    if (!["127.0.0.1", "::1", "localhost"].includes(config.host)) {
+      console.warn(`  warning: EVIDENCE_DESK_HOST=${config.host} opens this server, which has no login, to the network`);
+    }
   });
   const shutdown = () => { server.close(); desk.close(); process.exit(0); };
   process.on("SIGINT", shutdown);

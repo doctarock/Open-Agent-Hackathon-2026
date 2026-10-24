@@ -722,7 +722,11 @@ The tab offers two cases:
 - **Bank return** always runs on its fixture with the rule assessor.
 
 **Standalone fallback.** `npm start` serves the same page on http://127.0.0.1:4320, outside
-Speck, with its own database at `data/evidence-desk.sqlite`.
+Speck, with its own database at `data/evidence-desk.sqlite`. It has no login, so it answers only
+its own page and local tools: requests from another site open in the browser (by `Origin`) and from
+a domain name that resolves to this machine (DNS rebinding, by `Host`) are refused. Open it by
+`localhost` or an IP address. It warns at startup if `EVIDENCE_DESK_HOST` exposes it to the network.
+Inside Speck, Speck's admin token guards the same API.
 
 Use the Evidence tab in Speck for the demo. The standalone page is for when Speck will not start,
 or for development. It offers only these things the tab does not:
