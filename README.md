@@ -69,7 +69,8 @@ It runs inside Speck as a plugin:
 
   Everything else Evidence Desk needs is Speck's existing plugin system and memory API.
 
-A standalone server serving the same page remains, for development and as a fallback.
+A standalone server serving the same page remains, for development and as a fallback. See
+[Setup](#setup) for what it adds and what it lacks.
 
 ### Speck beside a stateless baseline
 
@@ -606,6 +607,27 @@ The tab offers two cases:
 
 **Standalone fallback.** `npm start` serves the same page on http://127.0.0.1:4320, outside
 Speck, with its own database at `data/evidence-desk.sqlite`.
+
+Use the Evidence tab in Speck for the demo. The standalone page is for when Speck will not start,
+or for development. It offers only these things the tab does not:
+- **Live run progress.** The server streams each run's phase and chunk to the page as it
+  happens. The tab instead checks for progress while a run is under way and refreshes when it
+  finishes.
+- **The per-case introduction and tour.** Inside Speck, the guided demo across Speck's views
+  replaces them.
+- **Any scenario, with no reinstall.** `EVIDENCE_DESK_SCENARIO` points the server at any
+  scenario folder. Run several at once with their own `EVIDENCE_DESK_PORT` and
+  `EVIDENCE_DESK_DB`. The cross-domain evaluation was run this way.
+- **No Speck needed.** It opens its own Speck runtime on its own database, so it leaves Speck's
+  data alone. A code change needs only `npm run build`, not `npm run plugin:install` and a Speck
+  restart.
+
+Everything else is only in the tab:
+- your own investigations (*+ New investigation*);
+- the guided demo;
+- the case's links in Speck's memory map;
+- the published case summary;
+- talking to Speck about the case.
 
 In the Evidence tab (or the standalone page), use the buttons in this order:
 1. **Run investigation**
@@ -1248,8 +1270,8 @@ What these runs show:
     gains an `evidence-desk` entry and `plugins/evidence-desk/` is untracked.
   - The installed plugin imports Speck by absolute file URL (so Speck's own tests, which copy
     `plugins/` elsewhere, still load it). Reinstall if the repository moves.
-  - The tab offers two fixed cases (disputed delivery and bank return). There is no way to open
-    a new case from Speck.
+  - The tab offers two fixed cases (disputed delivery and bank return) and the user's own
+    investigations. Other scenarios open only on the standalone page.
   - The Speck tab has no live progress stream; it refreshes when an action finishes. The
     standalone page (`npm start`) keeps its server-sent events.
 
