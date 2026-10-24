@@ -4,6 +4,11 @@ import path from "node:path";
 // A scenario is data: the case, its candidate hypotheses with the fact rules
 // that bear on them, the open questions, and the stages in which evidence
 // becomes available. The reasoning code reads it; it holds no scenario logic.
+//
+// Why it is data: the disputed delivery, the bank return, the evaluation's
+// held-out cases and a person's own investigation all run through the same
+// code. Nothing in the pipeline knows which case it is working on, so how it
+// behaves on one case comes from the system, not from code written for it.
 
 export interface RelationRule {
   fact: string;
@@ -66,6 +71,10 @@ function validateScenario(scenario: Scenario, file: string): void {
     if (!(hypothesis.prior >= 0 && hypothesis.prior <= 1)) fail(`${hypothesis.key}: prior must be between 0 and 1`);
     for (const rule of hypothesis.rules) {
       if (rule.direction !== "supports" && rule.direction !== "contradicts") fail(`${hypothesis.key}: unknown rule direction`);
+      // Why only a contradiction can be decisive: one record can disprove an
+      // explanation outright (a returned payment means it was not paid), but
+      // no single record proves one; support accumulates through Speck's
+      // revision instead.
       if (rule.decisive && rule.direction !== "contradicts") fail(`${hypothesis.key}: only a contradiction can be decisive`);
     }
   }

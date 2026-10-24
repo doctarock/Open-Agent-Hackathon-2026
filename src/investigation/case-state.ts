@@ -25,6 +25,20 @@ type AttemptEntry = { runId: string; at: string; item: AssessedEvidence | null; 
 // conclusion), each worked out at most once. A read is a snapshot: after
 // changing the case, take a new one. A request that shows several views of
 // the case reads them all from one snapshot, so they agree with each other.
+//
+// Why it is built this way:
+// - Derived, never stored. Current beliefs are a function of the evidence that
+//   still counts. Storing the ledger, the basis or the conclusion beside
+//   Speck's objects would let them drift apart; deriving them on every read
+//   means a correction or withdrawal shows everywhere at once.
+// - One snapshot per request. Deriving each view separately used to rebuild
+//   the ledger and conclusion about thirty times for one page refresh (30
+//   scans of the case's objects, measured on a two-run case). Apart from the
+//   cost, views computed moments apart could disagree if the case changed in
+//   between. A snapshot makes every view of one request describe one moment.
+// - Read-only. Nothing here writes to Speck. The modules that change a case
+//   (desk.ts, reconcile.ts, run.ts, publish.ts) take a fresh snapshot after
+//   each change, so a stale one is never used to decide a write.
 export class CaseState {
   private readonly memo = new Map<string, unknown>();
 
@@ -59,6 +73,8 @@ export class CaseState {
 
   // At its starting state: the first stage, and nothing in Speck but the
   // proposed hypotheses (no evidence, judgments, runs or withdrawals).
+  // Why it is checked: a reset of a case that is still at its start does
+  // nothing, so pressing reset twice never creates empty copies of the case.
   atStart(): boolean {
     return this.worker.worldState[STAGE_KEY]?.value === this.scenario.stages[0]!.id
       && this.objects.length === this.scenario.hypotheses.length
@@ -117,6 +133,10 @@ export class CaseState {
 
   // The current hypothesis for each key: the one no other hypothesis
   // replaces. Every view of current belief reads only these.
+  // Why the replacement link and not the "superseded" status: the link is
+  // written first, by an ordinary Speck proposal (data.replaces); the status
+  // on the old hypothesis is written afterwards (speck-compat.ts). Reading the
+  // link keeps current beliefs right even if a process stopped between the two.
   currentHypotheses(): Map<string, MentalObject> {
     return this.once("current", () => {
       const all = this.allHypotheses();
@@ -149,6 +169,9 @@ export class CaseState {
   // Record id -> every attempt to assess it, oldest first: the per-chunk
   // assessments saved in Speck, and the run snapshots of runs that predate
   // them.
+  // Why run snapshots count too: databases written before per-chunk
+  // assessments existed (Build 2) kept judgments only in the run snapshot, and
+  // they still open and read correctly.
   assessmentHistory(): Map<string, AttemptEntry[]> {
     return this.once("attempts", () => {
       const attempts = this.stored<AssessmentAttempt>(ASSESSMENT_SCHEMA);
@@ -221,6 +244,9 @@ export class CaseState {
 
   // Whether every current hypothesis carries exactly the relations its plan
   // calls for: false after an interrupted or failed reconciliation.
+  // Why it is checked rather than assumed: the conclusion shown on the page
+  // must never be built from beliefs that lag the evidence. When they do, the
+  // conclusion says so (reconciled: false) and the next open or run repairs it.
   beliefsReconciled(inFlight: readonly AssessedEvidence[] = []): boolean {
     const basis = this.basis(inFlight);
     const recordOf = new Map([...this.recordedEvidence()].map(([recordId, objectId]) => [objectId, recordId]));
@@ -231,7 +257,10 @@ export class CaseState {
     });
   }
 
-  // Speck's current belief state as a conclusion.
+  // Speck's current belief state as a conclusion (conclusion.ts). Why it is
+  // derived here, from Speck's ranked hypotheses: the conclusion is read from
+  // the belief state, never taken from a model's answer, so it can always be
+  // traced to the records and judgments behind it.
   conclusion(inFlight: readonly AssessedEvidence[] = []): Conclusion {
     const make = () => {
       const ledger = this.ledger(inFlight);
@@ -295,6 +324,10 @@ export class CaseState {
 
   // The visible evidence, each record with how it was assessed and whether it
   // still counts.
+  // Why each record carries its status: an investigator needs to tell apart a
+  // record that was judged, one whose assessment failed, one not yet tried and
+  // one withdrawn. A failed or pending record must never look like a record
+  // with "no bearing", because it has not been weighed at all.
   listing(visible: readonly EvidenceRecord[]): Pick<EvidenceListing, "records" | "pending"> {
     const recorded = this.recordedEvidence();
     const supersededBy = new Map<string, string>();

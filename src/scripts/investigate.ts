@@ -25,6 +25,11 @@ import { loadScenario } from "../scenario.js";
 // per step of that run (evidence fetch, each engine chunk with its model call,
 // validation and retries, the explanation), then "result". The same lines go
 // to logs/<time>-<case>.jsonl. --output also writes the result alone.
+//
+// Why it exists: the page shows the investigation; this shows the same
+// pipeline as a program would use it, from structured input to structured
+// output, with nothing to install beyond Node. A judge can run a case in one
+// command and read every step of its execution trace.
 
 export interface InvestigationResult {
   schema: "evidence-desk.investigation-result.v1";

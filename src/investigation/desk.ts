@@ -41,6 +41,21 @@ export interface DeskOptions {
 // assessed record is evidence in its ledger, the released evidence stage is
 // world state, and each run's outcome is an episodic memory. Reopening the
 // database resumes exactly where the last process left off.
+//
+// Why it is built this way:
+// - One Speck worker per case. Speck's own views (task queue, world view,
+//   memory map, event log, chat) then show the case with no special support,
+//   beside Speck's other work, and Speck's background cognition runs over it
+//   like any other worker.
+// - The same desk inside Speck and standalone. attach() works on the runtime
+//   Speck hands the plugin; open() makes its own for the standalone server,
+//   tests, the evaluation and the comparison. Every path runs the same code.
+// - Nothing is deleted. A reset makes a fresh copy of the case (a new
+//   generation) and suspends the old one with its full history; a person's
+//   own investigation, when deleted, is suspended and its files moved aside.
+//   An investigation's record is what an audit needs, so it is never erased.
+// - Changes never overlap. Every operation that changes the case goes through
+//   change(): one at a time, under Speck's foreground lease.
 export class EvidenceDesk extends EventEmitter {
   // The change to the case in progress, if any. Set synchronously on entry
   // (change()), so no two changes overlap: Speck's foreground lease only
@@ -48,6 +63,7 @@ export class EvidenceDesk extends EventEmitter {
   private busy: { kind: "run" | "change"; label: string } | null = null;
   // Whether this desk opened the Speck runtime (standalone) or was handed
   // one (the Speck plugin), and so whether it may close it.
+  // Why: inside Speck, closing the runtime would stop Speck itself.
   private ownsRuntime = false;
 
   private constructor(
@@ -82,6 +98,9 @@ export class EvidenceDesk extends EventEmitter {
       // A run interrupted after recording evidence may have left current
       // beliefs behind the ledger. Reconciling is idempotent: on consistent
       // state it changes nothing.
+      // Why on open: recovery should not depend on someone pressing Run. The
+      // first thing any process does with a case is make its beliefs match
+      // its evidence.
       await reconcile(desk, { correlationId: randomUUID(), trigger: "recovery on open", recovery: true });
     });
     return desk;
@@ -99,6 +118,9 @@ export class EvidenceDesk extends EventEmitter {
 
   // Every operation that changes the case: refused while another is in
   // progress, then run under the foreground lease.
+  // Why refuse rather than queue: a second click on Run, or an update pressed
+  // during a run, is usually a repeated click; refusing with HTTP 409 tells the
+  // person, where a queue would silently do the work twice.
   private async change<T>(kind: "run" | "change", label: string, work: () => Promise<T>): Promise<T> {
     if (this.busy) {
       throw new RunInProgressError(this.busy.kind === "run" ? undefined : `${this.busy.label} is in progress; wait for it to finish`);
@@ -153,7 +175,9 @@ export class EvidenceDesk extends EventEmitter {
 
   // Restarts the demo case from the page, without deleting anything: a fresh
   // copy of the case becomes current, and the previous copy is suspended in
-  // Speck with its full history. Only this case's own worker is touched; the
+  // Speck with its full history.
+  // Why a copy: a judge can replay the demo from the start as often as they
+  // like, and every earlier attempt is still in Speck to inspect. Only this case's own worker is touched; the
   // evidence source (fixture file or Zetaris) is only ever read. A case still
   // at its starting state is left as it is, so repeating a reset is harmless.
   async restartCase(): Promise<{ restarted: boolean; generation: number; previousGeneration: number | null }> {
@@ -195,6 +219,9 @@ export class EvidenceDesk extends EventEmitter {
 
   // Releases the next prepared evidence update. Persisted in Speck, so the
   // next run (in this process or a later one) sees it.
+  // Why updates are released by hand: the demo is about what happens when a
+  // correction arrives after a conclusion was reached. Releasing it as a
+  // separate step makes "before" and "after" two distinct runs to compare.
   async introduceNextUpdate(): Promise<StageSpec> {
     return this.change("change", "An evidence update", async () => {
       const next = this.nextStage();
@@ -226,6 +253,8 @@ export class EvidenceDesk extends EventEmitter {
   // Withdraws an assessed record from the case (for example, it belongs to a
   // different case). Speck archives it; current beliefs are then recomputed
   // without it, and what it contributed before stays in the history.
+  // Why a reason is required: a withdrawal changes what the case concludes,
+  // so the audit trail must say who removed what, and why.
   async withdrawRecord(recordId: string, reason: string): Promise<Recomputation | null> {
     const why = reason.trim();
     if (!why) throw new WithdrawalError("A reason is required to withdraw evidence");
@@ -276,6 +305,8 @@ export class EvidenceDesk extends EventEmitter {
 
   // Reads of the case as it is now. Each takes a fresh snapshot (read());
   // to show several views together, read once and use the snapshot.
+  // Why these remain on the desk: tests, the evaluation and the scripts ask
+  // one question at a time, and the desk is the one object they all hold.
 
   exclusions(): Map<string, Exclusion> { return this.read().exclusions(); }
 
@@ -315,6 +346,10 @@ export class EvidenceDesk extends EventEmitter {
   }
 
   // The evidence visible at a stage, with what the fetch did.
+  // Why it is fetched every time rather than cached: the evidence source is
+  // the system of record. A live Zetaris case shows what Zetaris returns now,
+  // and the fetch's own summary (each SELECT, its query token) goes with the
+  // records into the trace.
   async visibleEvidence(stage: StageSpec): Promise<EvidenceFetch> {
     const cutoff = Date.parse(stage.asOf);
     const { records, summary } = await this.provider.fetchCaseEvidence(this.scenario.caseId);
@@ -322,6 +357,9 @@ export class EvidenceDesk extends EventEmitter {
   }
 
   // The case's current copy: the latest generation of its workers.
+  // Why workers are found by their constraints: the case's identity is stored
+  // on the Speck worker itself, so any process that opens the database finds
+  // the case without a separate index.
   private findWorker(): Worker | undefined {
     const constraints = this.caseConstraints();
     return this.runtime.listWorkers()

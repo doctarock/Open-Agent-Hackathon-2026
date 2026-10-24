@@ -9,6 +9,13 @@ import { EvidenceDesk, relativeDataPath } from "./investigation/desk.js";
 
 // A small HTTP server: JSON API under /api, the static UI from public/, and
 // run progress (Meterless progress events) as server-sent events.
+//
+// Why a standalone server, when Evidence Desk is a Speck plugin: it runs the
+// same page and the same API (DESK_ROUTES) on its own Speck runtime, so the
+// page and the HTTP tests work without a Speck host. It also streams the
+// engine's progress as server-sent events, which the Speck tab (polling
+// Speck's plugin routes) does not have. It uses Node's http module alone, with
+// no framework dependency.
 
 const STATIC_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"

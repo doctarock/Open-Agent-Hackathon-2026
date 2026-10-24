@@ -16,6 +16,12 @@ import { writeReport } from "../eval/results.js";
 // history.json, the model names the endpoint reported, Speck's evidence
 // objects and its raw event log. A contribution that cannot be observed is
 // reported as NOT OBSERVED; nothing is simulated or substituted.
+//
+// Why it exists: a claim that a sponsor technology "is used" should be
+// checkable by someone who does not trust this project's own trace. Each
+// verdict therefore rests on evidence the sponsor's component produced itself
+// (a query token Zetaris issued, a run in the engine's own history file, a
+// model name the endpoint reported), and the saved report keeps it.
 
 type Verdict = { sponsor: string; status: "OBSERVED" | "NOT OBSERVED" | "NOT A RUNTIME COMPONENT"; evidence: string[]; problems: string[] };
 

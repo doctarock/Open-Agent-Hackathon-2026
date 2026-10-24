@@ -7,6 +7,9 @@ import { COMPARISON_SCHEMA, repositoryRoot, type ComparisonReport } from "./comp
 // evaluation commands wrote (eval/results/ in the repository); nothing here is
 // recomputed or re-scored, and a report that has not been generated is listed
 // as missing with the command that makes it.
+// Why read rather than recompute: the page shows exactly the numbers the
+// committed reports contain, so what a judge sees on the page and what is in
+// the repository cannot differ.
 
 interface MetricRow { id: string; label: string; meaning: string }
 

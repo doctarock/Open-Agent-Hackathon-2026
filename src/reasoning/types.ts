@@ -1,6 +1,21 @@
 import type { EvidenceRecord } from "../evidence/types.js";
 import type { HypothesisSpec } from "../scenario.js";
 
+// The reasoner interface: what an assessor (fact rules or a Nemotron model)
+// is asked to do, and what it reports about each call.
+//
+// Why a reasoner only proposes relations: belief is Speck's job. A reasoner
+// says how a record bears on each hypothesis (supports or contradicts, how
+// strongly, whether decisively), and Speck's belief revision turns that into
+// confidence and status. Swapping the deterministic rules for a model, or one
+// model for another, therefore changes the judgments but never the way beliefs
+// are formed, and every belief can be traced to the judgments behind it.
+//
+// Why so much is recorded per call (ModelCallTrace): a small local model is
+// inconsistent. Attempts, contract rejections, latency and the model name the
+// endpoint actually served are measured and shown in the trace, so a reader
+// can see how reliable each run's judgments were, not just what they were.
+
 // How a piece of evidence bears on one hypothesis. Speck does the belief
 // revision; a reasoner only proposes the relations.
 export interface RelationJudgment {

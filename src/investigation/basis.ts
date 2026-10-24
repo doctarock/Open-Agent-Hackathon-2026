@@ -1,16 +1,33 @@
 import { byObservation, type EvidenceRecord } from "../evidence/types.js";
 import type { RelationJudgment } from "../reasoning/types.js";
 
-// Which assessed evidence and which judgments currently count. This is
-// derived from the ledger every time, never stored, so withdrawing or
-// superseding a record changes the basis for every belief that rested on it.
-// The desk then makes Speck's current hypotheses equal a replay of this basis.
+// The basis of belief: which assessed evidence and which judgments currently
+// count. This is derived from the ledger every time, never stored, so
+// withdrawing or superseding a record changes the basis for every belief that
+// rested on it. The desk then makes Speck's current hypotheses equal a replay
+// of this basis (reconcile.ts).
 //
 // Two dependencies are tracked, both stated by the data:
 // - a record stops counting when a valid later record says it supersedes it,
 //   or when it is withdrawn;
 // - support for a hypothesis is withheld while a valid decisive contradiction
 //   refutes it (nothing short of invalidating the refutation revives it).
+//
+// Why it is built this way:
+// - Pure. No Speck, no model, no I/O: the same ledger always gives the same
+//   basis, and the rules can be tested exhaustively on their own.
+// - Supersession must be stated, never inferred. A record replaces another
+//   only when its source says so (provenance.supersedes). Inferring it, from
+//   similar content or a later time, would let a heuristic or a model decide
+//   which evidence counts, and that decision belongs to the source.
+// - A decisive refutation is final. In Speck only "superseded" is terminal:
+//   later support moves a "rejected" hypothesis back to active. That happened
+//   in a live run, where a model judgment revived "delivered" after the
+//   carrier's correction had refuted it. So support for a decisively refuted
+//   hypothesis is withheld here. It is kept, not deleted, and applies again if
+//   the refuting record is itself later invalidated.
+// - Canonical order. The plan is sorted by observation time, then record id,
+//   so the replay is identical whatever order records arrived in.
 
 export interface LedgerEntry {
   record: EvidenceRecord;
@@ -95,6 +112,8 @@ export function deriveBasis(entries: readonly LedgerEntry[], hypothesisKeys: rea
 
 // Whether the relations already applied to a hypothesis are the start of its
 // plan, so the rest can be appended instead of replaying from the prior.
+// Why it is safe: Speck's revision depends only on a hypothesis's own sequence
+// of relations, so applying a prefix and then the rest equals applying it all.
 export function isPrefix(applied: ReadonlyArray<{ recordId: string; direction: string }>, plan: readonly PlannedRelation[]): boolean {
   return applied.length <= plan.length
     && applied.every((item, index) => item.recordId === plan[index]!.recordId && item.direction === plan[index]!.direction);

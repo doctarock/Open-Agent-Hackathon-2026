@@ -6,6 +6,15 @@ import { METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, normaliseMeterlessUrl, us
 // Configuration comes from the environment (and a local, git-ignored .env).
 // Nothing here has a credential default: a missing credential is reported
 // where it is needed, never filled in.
+//
+// Why it is built this way:
+// - Every choice that changes what a run means is explicit: where evidence
+//   comes from (EVIDENCE_MODE), who assesses it (REASONER), which model and
+//   provider. Invalid values stop the program with the setting's name, rather
+//   than running on a silent default.
+// - One .env for every entry point. The standalone server, the Speck plugin,
+//   the scripts and npm run configure all read the same file, so the page
+//   inside Speck and the command line describe the same configuration.
 
 export type EvidenceMode = "fixture" | "zetaris";
 export type ReasonerKind = "rules" | "nemotron";

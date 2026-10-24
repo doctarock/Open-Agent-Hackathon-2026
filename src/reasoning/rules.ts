@@ -2,6 +2,17 @@ import type { EvidenceRecord } from "../evidence/types.js";
 import type { HypothesisSpec, RelationRule } from "../scenario.js";
 import type { BatchAssessment, Reasoner, ReasonerDescription, RelationJudgment } from "./types.js";
 
+// The deterministic assessor: the scenario's own fact rules, no model.
+//
+// Why it exists:
+// - Reproducibility. Tests, the fixture evaluation and the deterministic
+//   comparison need a run that gives the same result every time, with no
+//   model, network or credentials.
+// - Hard facts stay hard. Even when a model assesses the evidence, the
+//   decisive rules are applied first and win over the model (nemotron.ts). A
+//   returned payment or an amended delivery scan disproves an explanation;
+//   a model should not be able to argue around it.
+
 // The scenario's fact rules applied to one record. Where several rules for a
 // hypothesis match, a decisive contradiction wins, then the strongest rule.
 export function ruleJudgments(record: EvidenceRecord, hypotheses: readonly HypothesisSpec[], options: { decisiveOnly?: boolean } = {}): RelationJudgment[] {

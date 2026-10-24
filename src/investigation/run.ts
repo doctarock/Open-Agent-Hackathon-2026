@@ -28,6 +28,31 @@ export interface RunContext extends CaseHandle {
 // one batch of new evidence per chunk, saves the judgments in Speck, records
 // the evidence in Speck's ledger and reconciles beliefs; then the run's
 // snapshot, saved in Speck as episodic memory.
+//
+// Why it is built this way:
+// - Meterless's Markovian engine runs the loop. The reasoning model is a
+//   4-billion-parameter Nemotron working in a 4,096-token window. The engine
+//   splits the work into bounded chunks (at most 4,000 tokens, at most 512
+//   carried from one chunk to the next), and each chunk assesses one small
+//   batch of records not yet assessed. What is carried over is a short state
+//   block (assessed, remaining, current beliefs), never the history.
+// - Assessment prompts do not grow with the case. Beliefs and history are
+//   read from Speck, not replayed to the model, and a run assesses only new
+//   records, two per chunk. Measured on the disputed delivery (README, "Small
+//   model, small context"): about 950 prompt tokens per assessment in both
+//   stages; the one explanation call per run, which lists the case's records,
+//   was the largest prompt at 1,923 tokens.
+// - Judgments are saved before evidence is recorded. Each chunk's judgments go
+//   to Speck first, then its records enter the ledger, then beliefs are
+//   reconciled. If the process dies at any point, the next run recovers
+//   without asking the model again and without a record whose judgments are
+//   unknown.
+// - The model never decides the conclusion. It proposes relations (supports,
+//   contradicts, how strongly); Speck revises beliefs from them; the
+//   conclusion is read from Speck's state (conclusion.ts). The model's
+//   explanation of that conclusion is checked against it (checkAgreement).
+// - Failures are visible, never filled in. A failed chunk is saved as failed,
+//   the records it did not reach stay pending, and the run's notes say so.
 export async function executeRun(desk: RunContext): Promise<RunSnapshot> {
   const reasonerInfo = desk.reasoner.describe();
   if (!reasonerInfo.ready) throw new ReasonerNotReadyError(`${reasonerInfo.label} is not configured: ${reasonerInfo.problem}`);
@@ -44,6 +69,8 @@ export async function executeRun(desk: RunContext): Promise<RunSnapshot> {
 
   // Evidence access failures end the run here, visibly. Nothing is
   // substituted for the missing data.
+  // Why: a run that silently fell back to other data (fixtures, a cached copy)
+  // would present conclusions about evidence it never read.
   const { records: visible, summary } = await desk.visibleEvidence(stage);
   const retrieval = { ...summary, visible: visible.length };
   const recorded = before.recordedEvidence();
@@ -61,6 +88,11 @@ export async function executeRun(desk: RunContext): Promise<RunSnapshot> {
   }
   await reconcile(desk, { correlationId: runId, trigger: "start of run", recovery: true });
 
+  // Why these sizes: the local Nemotron runs in a 4,096-token window (Ollama's
+  // default, the same inside Speck and standalone). The engine's chunk budget
+  // and carryover limit keep every chunk inside it; in practice a two-record
+  // chunk is under 1,000 prompt tokens. maxChunks bounds how much one run may
+  // do; anything left over stays pending for the next run, and the notes say so.
   const markovian = new Markovian({
     chunkConfig: { maxChunks: desk.config.execution.maxChunks, chunkSize: 4000, carryoverTokens: 512 },
     historyDir: desk.config.historyDir
@@ -116,6 +148,10 @@ export async function executeRun(desk: RunContext): Promise<RunSnapshot> {
         failed.push({ record, error: "no judgment was returned" });
         continue;
       }
+      // Why the source's reliability comes from the scenario, not the model:
+      // how far a source is trusted is treated as a property of the source (a
+      // carrier's tracking system, a customer's message), stated up front,
+      // not something a model reassesses record by record.
       const reliability = desk.scenario.sources[record.source.system]?.reliability;
       if (reliability === undefined) notes.push(`Source "${record.source.system}" has no reliability in the scenario; ${record.id} was weighted 0.5.`);
       const recordedBy = judgments.some((judgment) => judgment.basis === "model") ? "model" as const : "rules" as const;
@@ -160,6 +196,8 @@ export async function executeRun(desk: RunContext): Promise<RunSnapshot> {
       goal: `Investigate case ${desk.scenario.caseId}: ${desk.scenario.question}`,
       mode: "RESEARCH",
       generator,
+      // Why only the previous headline: it orients the engine, while the
+      // evidence and beliefs themselves stay in Speck and are not replayed.
       memoryContext: previous ? `PRIOR CONCLUSION (Speck memory, run ${previous.runNumber}): ${previous.conclusion.headline}` : undefined,
       reflect: Boolean(desk.reasoner.explain)
     });
@@ -236,6 +274,9 @@ async function saveAssessment(desk: RunContext, worker: Worker, attempt: Assessm
 }
 
 // The carryover block Meterless passes from one chunk to the next.
+// Why so short: it is the engine's [STATE_CHECKPOINT], and Speck holds the
+// real state. Four lines are enough for the next chunk to know where the run
+// is, and they keep the carryover far under its 512-token limit.
 function stateBlock(state: CaseState, assessed: readonly AssessedEvidence[], remaining: readonly EvidenceRecord[], stage: StageSpec): string {
   const beliefs = state.rankedCurrent()
     .map((object) => `${String(object.data.key)} ${String(object.data.status)} ${object.confidence.toFixed(2)}`);
@@ -247,6 +288,13 @@ function stateBlock(state: CaseState, assessed: readonly AssessedEvidence[], rem
   ].join("\n");
 }
 
+// The model is asked to explain Speck's conclusion, not to reach one.
+// Why it is given Speck's state in full (conclusion, direction, justification,
+// every hypothesis with its support) and told not to change it: the
+// explanation must describe the conclusion Speck holds, so the model is shown
+// exactly what that is and what rests on it. Records that no longer count are
+// marked as such, so the explanation can say they were set aside without
+// relying on them.
 function explanationPrompt(reflectionPrompt: string, conclusion: Conclusion, records: readonly EvidenceRecord[], invalid: ReadonlyMap<string, Invalidation>): string {
   const line = (view: HypothesisView) => `- ${view.key} [${view.status}, Speck confidence ${view.confidence}]: ${view.statement}`
     + ` supported by ${view.supporting.map((item) => item.recordId).join(", ") || "nothing"};`
@@ -276,6 +324,11 @@ function explanationPrompt(reflectionPrompt: string, conclusion: Conclusion, rec
   ].join("\n");
 }
 
+// Checks the model's declared conclusion, firmness and citations against
+// Speck's state. Why declared fields rather than reading the prose: parsing
+// free text for a stance is itself a guess; the explanation contract makes the
+// model state its conclusion and firmness explicitly, and those can be checked
+// exactly.
 export function checkAgreement(explanation: Explanation, invalidCitations: readonly string[], conclusion: Conclusion): ExplanationAgreement {
   const problems: string[] = [];
   const keys = [conclusion.hypothesis, ...conclusion.alternatives, ...conclusion.rejected].flatMap((view) => (view ? [view.key] : []));

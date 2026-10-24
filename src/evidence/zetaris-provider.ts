@@ -8,6 +8,18 @@ import { byObservation, EvidenceProviderError, validateEvidenceRecord, type Evid
 // bearer token and organisation id, then POST /api/proxy/query/sql/start with
 // a SELECT. Each source system is a table; config/zetaris-queries.json says
 // which. A failure is raised with a hint, never replaced with fixture data.
+//
+// Why it is built this way:
+// - One SELECT per source system. A case's evidence comes from several
+//   systems (a carrier, a payment processor, customer support). Querying each
+//   table separately keeps them distinct, and every record carries the table
+//   and the platform's query token it came from, so the trace can show each
+//   query that produced evidence, including tables that returned nothing.
+// - The table mapping is configuration. Pointing config/zetaris-queries.json
+//   at other tables changes where evidence comes from without code changes.
+// - Every failure says what to do. Each error carries a hint (start the
+//   platform, seed the tables, check the credentials) and the server's own
+//   message, because a failed fetch stops the run and someone has to fix it.
 
 export interface ZetarisQueryConfig {
   database: string;
@@ -39,6 +51,9 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
 
   // The summary lists each SELECT, as sent through the platform.
   async fetchCaseEvidence(caseId: string): Promise<EvidenceFetch> {
+    // Why ids, table names and columns are checked before use: the platform's
+    // API takes the SELECT as text, so anything placed in it must be plain
+    // identifiers (CASE_ID, IDENTIFIER, COLUMN_LIST), never arbitrary input.
     if (!CASE_ID.test(caseId)) throw new EvidenceProviderError(`Invalid case id "${caseId}"`, this.mode, "Case ids may contain only letters, digits, '-' and '_'.");
     const queries = this.queryConfig();
     const records: EvidenceRecord[] = [];
@@ -90,6 +105,9 @@ export class ZetarisEvidenceProvider implements EvidenceProvider {
     const records = Array.isArray(body?.records) ? body.records as Array<Record<string, unknown>> : null;
     if (!records) throw new EvidenceProviderError(`Zetaris returned no records array for ${label}`, this.mode, "The API response format was not recognised.", truncate(JSON.stringify(body)));
     const total = Number(body.totalCount ?? records.length);
+    // Why fail rather than continue: using the first page alone would silently
+    // drop evidence, and a conclusion from part of the evidence is worse than
+    // no conclusion.
     if (total > records.length) {
       throw new EvidenceProviderError(`Zetaris returned ${records.length} of ${total} rows for ${label}`, this.mode,
         "Paging beyond 1000 rows is not implemented in this slice. Narrow the query.");

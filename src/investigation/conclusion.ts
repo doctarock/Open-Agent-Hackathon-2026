@@ -14,6 +14,21 @@ import { describeInvalidation, type Invalidation } from "./basis.js";
 // justification is how firmly Speck holds that explanation, and why it does
 // or does not reach a conclusion. Evidence can point clearly at an
 // explanation that it does not yet justify.
+//
+// Why it is built this way:
+// - Traceable by construction. Every statement in a conclusion names the
+//   records and the Speck confidence behind it, because it is computed from
+//   them; there is no free text to check.
+// - Abstaining is a valid answer. "Unresolved" is a first-class outcome, and
+//   it says what is missing: the gap to Speck's threshold, the cap on model-judged
+//   evidence, the questions no record answers yet.
+// - Direction and justification are separate because they really do differ.
+//   With a small local model, Speck caps model-judged evidence at reliability
+//   0.4, so a case can rule out every other explanation and still not reach
+//   Speck's supported threshold. Reporting only one of the two would either
+//   present a guess as a finding, or hide what the evidence plainly shows.
+// - Confidence is shown as Speck's belief-revision score, and called that: it
+//   is not a calibrated probability, and the notes say so every time.
 
 export interface EvidenceRef {
   recordId: string;
@@ -92,6 +107,11 @@ export interface Conclusion {
 // counting record restates, which of its judgments stopped applying, and what
 // that changed, so a fact the correction never addressed does not vanish
 // unexplained.
+// Why this matters: in the bank-return case the returned credit was also the
+// only refutation of "partial payment". When the return replaced it, that
+// explanation came back. Supersession is record-level by design (the source
+// replaces the whole record), so the consequence is explained rather than
+// hidden (README, "Known limits").
 export interface NoLongerCounted {
   recordId: string;
   invalidation: Invalidation;
@@ -114,6 +134,9 @@ export interface BeliefSettings {
 
 // A leading explanation must be at least this confident and this far ahead of
 // the next live one; below that the case is unresolved.
+// Why fixed constants: they are policy, the same for every case and stated on
+// the page and in the README, so any conclusion can be checked against them by
+// hand. They are not tuned per case.
 export const LEADING_MIN_CONFIDENCE = 0.5;
 export const LEADING_MIN_MARGIN = 0.1;
 
@@ -176,6 +199,9 @@ export function deriveConclusion(input: {
 
   // A hypothesis without supporting evidence never leads, however high its
   // prior: that would be a conclusion from assumptions alone.
+  // Why "supported" needs Speck's own status: Speck decides when a belief is
+  // established (its supported threshold, and whether the latest evidence
+  // weakened it); this code reports that decision rather than making its own.
   let state: ConclusionState = "unresolved";
   if (top?.supporting.length && ESTABLISHED.has(top.status)) state = "supported";
   else if (top?.supporting.length && top.confidence >= LEADING_MIN_CONFIDENCE && (margin ?? 0) >= LEADING_MIN_MARGIN) state = "leading";

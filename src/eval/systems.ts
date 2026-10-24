@@ -16,6 +16,20 @@ import type { EvalCase } from "./cases.js";
 
 // The systems the evaluation compares. Each takes a case and returns, for
 // every labelled checkpoint, what it concluded and what it cited.
+//
+// Why these systems:
+// - speck-desk is Evidence Desk as built: one Speck case carried across the
+//   checkpoints.
+// - speck-fresh is the same pipeline with nothing carried over: a new Speck
+//   database at every checkpoint, given everything visible at once. It
+//   separates what persistence contributes from what Speck's revision policy
+//   contributes. (They reach the same conclusions; what persistence adds is
+//   the record of how and why beliefs changed.)
+// - The stateless baselines (rules summed, or one model call) have no Speck at
+//   all. They are the "plain LLM" the project is compared with, given the same
+//   records, question and explanations.
+// Why the same scoring for all: every system returns the same outcome shape
+// (CheckpointOutcome), and metrics.ts scores them with one set of rules.
 
 export interface CheckpointOutcome {
   stage: string;

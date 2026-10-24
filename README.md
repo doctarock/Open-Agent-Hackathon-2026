@@ -17,6 +17,9 @@
 >   served every call, is
 >   [eval/results/sponsors/2026-10-24T02-14-08-828Z.json](eval/results/sponsors/2026-10-24T02-14-08-828Z.json).
 > - [Which agent uses which model](#which-agent-uses-which-model): one table.
+> - **Reading the code:** each source file in `src/` and `plugin/` opens with its role and a
+>   *Why it is built this way* list, and the decisions inside it are marked with `Why:` comments.
+>   [src/investigation/](src/investigation/) is the core; start with `desk.ts`.
 > - `npm run investigate -- examples/payment-correction-chain/input.json`: one case from
 >   structured input to structured output on the command line, with its execution trace. No
 >   credentials or network needed. See [Command line](#command-line) and [examples/](examples/).

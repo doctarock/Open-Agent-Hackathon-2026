@@ -2,6 +2,17 @@
 // came from twice over: its source system (provenance) and how this
 // application retrieved it (retrieval), so fixture data can never pass as a
 // live Zetaris result.
+//
+// Why it is built this way:
+// - Provenance is the source's, retrieval is ours. "Which system recorded
+//   this, and who wrote it" is a fact about the evidence; "did we read it from
+//   Zetaris or from a file" is a fact about this run. Keeping both on every
+//   record lets the page and the trace show each one without guessing.
+// - Corrections are stated by the source. provenance.supersedes is the only
+//   way one record replaces another (basis.ts); nothing infers it.
+// - Records are validated where they enter. Every provider passes everything
+//   it returns through validateEvidenceRecord, so a malformed fixture or table
+//   row fails loudly instead of being half-used by the reasoning.
 
 export type RetrievalMode = "fixture" | "zetaris";
 
@@ -105,6 +116,9 @@ export function validateEvidenceRecord(value: unknown, where: string): Unvalidat
   };
 }
 
+// Observation time, then record id. Why the tie-break: two records observed at
+// the same instant still have one fixed order, so every replay of the same
+// evidence applies it in the same sequence and reaches the same beliefs.
 export function byObservation(left: EvidenceRecord, right: EvidenceRecord): number {
   return left.observedAt.localeCompare(right.observedAt) || left.id.localeCompare(right.id);
 }

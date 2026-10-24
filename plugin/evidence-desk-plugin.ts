@@ -21,6 +21,21 @@ import { METERLESS_TOKEN_KEY } from "../src/reasoning/meterless.js";
 // (install.json), the same file the standalone server and npm run configure
 // use, read on each case's first use without touching Speck's environment; a
 // variable already set in Speck's environment wins.
+//
+// Why it is built this way:
+// - A plugin, not a fork. Speck's documented plugin mechanism is used as is:
+//   the plugin is copied into speck/plugins/ and approved in Speck's allowlist
+//   by the hash of its entry module (npm run plugin:install). Speck's
+//   cognition is not modified; the four project-local Speck patches are
+//   listed in the README.
+// - Speck's runtime, not a copy. Each case attaches to the runtime Speck hands
+//   the plugin, so the case is a worker in Speck's own database and appears in
+//   Speck's own views.
+// - Speck's admin session guards the API. Speck requires it for everything
+//   under /api/plugins, so the plugin adds no authentication of its own.
+// - Cases open lazily. A case is attached on its first request, so nothing is
+//   opened while Speck starts, and a case whose settings are wrong fails on
+//   its own without stopping Speck or the other cases.
 
 export const PLUGIN_ID = "evidence-desk";
 const API_BASE = `/api/plugins/${PLUGIN_ID}`;
@@ -40,6 +55,9 @@ const ASSETS: Record<string, { file: string; type: string }> = {
 // The cases the tab offers. The disputed delivery follows the plugin's
 // settings (live Zetaris and Nemotron, or fixtures); the bank return is the
 // held-out correction case and always runs on its fixture with the rules.
+// Why the bank return is fixed: its evidence exists only as a fixture, and
+// with the rules it gives the same result every time, so it always shows the
+// same correction, whatever model is configured.
 export interface CaseSpec {
   id: string;
   label: string;
@@ -184,6 +202,8 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
     }
   };
   // A new investigation of the person's own, and evidence added to one.
+// Why: a judge can try the pipeline on a case of their own, not only on the
+// prepared ones.
   app.post(`${API_BASE}/cases`, plain((req) => cases.create(req.body)));
   app.post(`${API_BASE}/cases/:caseId/evidence/add`, plain((req) => cases.addEvidence(String(req.params.caseId ?? ""), req.body)));
   app.post(`${API_BASE}/cases/:caseId/delete`, plain((req) => cases.remove(String(req.params.caseId ?? ""))));

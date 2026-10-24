@@ -17,6 +17,21 @@ import type { AssessmentAttempt, Exclusion, Recomputation, RunSnapshot } from ".
 //               hypotheses rebuilt
 // Evidence Desk's own steps (reconciliation, recovery, withdrawal) are
 // labelled as Evidence Desk's, not as any sponsor component's.
+//
+// Why it is built this way:
+// - Read back, not logged as it happens. The trace is built from what was
+//   persisted (Speck's objects and event log, the engine's history file), so
+//   it is the same after a restart, and it cannot claim anything the stored
+//   state does not show.
+// - Checked against independent sources. The Meterless run is matched in the
+//   engine's own history.json; the model names are the ones the endpoint
+//   reported serving; each Zetaris record carries the platform's query token.
+//   A component's contribution is shown only where it can be observed.
+// - Credit where it is due. Recovery, reconciliation and withdrawal are
+//   Evidence Desk's work; labelling them as a sponsor's would overstate what
+//   that technology did. A missing record (a run older than the trace, a run
+//   interrupted before the engine recorded it) is shown as "not recorded",
+//   never guessed.
 
 const RUN_SCHEMA = "evidence-desk.run.v1";
 const ASSESSMENT_SCHEMA = "evidence-desk.assessment.v1";

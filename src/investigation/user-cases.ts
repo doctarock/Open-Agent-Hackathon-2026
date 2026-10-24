@@ -12,6 +12,11 @@ import { loadScenario, type Scenario } from "../scenario.js";
 // structured facts and the scenario has no fact rules. Only a reasoning
 // model can weigh them (and Speck caps model-judged evidence at reliability
 // 0.4); the deterministic rule assessor finds nothing to apply.
+//
+// Why the same format as the prepared cases: there is no special path for a
+// person's own investigation, so trying one exercises exactly the code the
+// demo runs, including corrections ("corrects" becomes a stated supersession)
+// and the execution trace.
 
 export interface NewInvestigation {
   title: string;

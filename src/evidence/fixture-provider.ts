@@ -4,6 +4,10 @@ import { byObservation, validateEvidenceRecord, type EvidenceFetch, type Evidenc
 
 // Evidence from the scenario's fixture file, for tests and local development.
 // Every record is labelled as fixture data.
+// Why fixtures exist at all: the whole pipeline (Speck, the Meterless engine,
+// the reasoning, the trace) can then be run and tested with no credentials or
+// network. Why they are labelled so plainly: the page, every record and the
+// trace say FIXTURE, so a fixture run is never mistaken for a Zetaris one.
 export class FixtureEvidenceProvider implements EvidenceProvider {
   readonly mode = "fixture" as const;
 

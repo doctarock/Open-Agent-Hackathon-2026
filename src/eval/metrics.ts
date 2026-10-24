@@ -4,6 +4,8 @@ import type { CheckpointOutcome, ModelStats, SystemResult } from "./systems.js";
 // Scoring. Every number is a count over the labelled checkpoints of this
 // run, reported with its denominator; none is an estimate, and none is a
 // general accuracy figure. Latency is wall-clock time measured per HTTP call.
+// Why counts with denominators: the suites are small (a handful of cases).
+// A percentage alone would suggest a precision these samples cannot give.
 
 export interface Rate { count: number; of: number; rate: number | null }
 

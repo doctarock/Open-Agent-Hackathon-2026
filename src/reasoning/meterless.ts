@@ -2,6 +2,10 @@ import { autoDetectMeterless as speckAutoDetect, meterlessHeaders as speckHeader
 
 // Meterless Runtime (1.4, provider contract v4) as the model provider: an
 // OpenAI-compatible endpoint whose model ids are routing modes, not models.
+// Why the contract lives in Speck and is re-exported here: Speck's own chat
+// and Evidence Desk then reach the Runtime through the same code, so the two
+// cannot disagree about tokens, headers or routing modes. Evidence Desk adds
+// only its own app id, so the Runtime can tell its calls apart.
 // The contract is implemented once, in Speck (speck/src/models/meterless.ts,
 // added by patches/speck-meterless-provider.patch); this file gives Evidence
 // Desk's calls their own app id. The engine that executes each run is the

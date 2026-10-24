@@ -10,6 +10,11 @@ import type { Recomputation, RunSnapshot } from "./records.js";
 // Hypotheses are replaced when what they rested on is invalidated. Entries
 // about a replaced hypothesis stay, marked historical: they show what was
 // believed then, not what is believed now.
+//
+// Why it is Speck's event log and not a log of our own: the timeline answers
+// "how and why did the conclusion change?", and the only trustworthy answer is
+// the record the belief system itself kept. Keeping old entries, marked
+// historical, is the point: a stateless model call has no "before" to show.
 
 export interface TimelineEntry {
   sequence: number;

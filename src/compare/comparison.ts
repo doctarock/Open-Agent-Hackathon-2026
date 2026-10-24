@@ -30,6 +30,21 @@ import { loadScenario, type Scenario } from "../scenario.js";
 // It runs on throwaway storage (a temporary Speck database), so the case on
 // the page is never touched. Nothing is simulated: every value is what the
 // two approaches returned. Every check is defined the same way for both.
+//
+// Why it is built this way:
+// - A fair baseline, not a strawman. The stateless side is the evaluation's
+//   own baseline, the same code the scored evaluation runs, with the same
+//   model settings. The page cannot show a weaker baseline than the one the
+//   numbers come from.
+// - Same inputs. Both sides see the records the desk lists as visible at each
+//   stage, including the source's own "replaces ..." statement, so a
+//   difference cannot come from one side seeing more.
+// - Honest about what the difference means. The report's notes say that the
+//   gap comes from Speck's whole policy (thresholds, decisive refutation,
+//   supersession, the 0.4 cap), not from persistence alone, and that a live
+//   comparison is one sample, not a rate.
+// - Kept, never overwritten. Each comparison is its own file, including the
+//   ones that favour the baseline (docs/comparison.md lists them all).
 
 export const COMPARISON_SCHEMA = "evidence-desk.comparison.v1";
 
@@ -147,6 +162,8 @@ export interface ComparisonProgress {
 // configured now: the scenario, its fixture evidence, and the assessor's
 // settings. (Live Zetaris evidence is not hashed; the report keeps the
 // records it actually read.)
+// Why: a comparison made with another model or other evidence is still
+// listed, but never presented as the current result for this case.
 export function comparisonFingerprint(config: CaseConfig, evidence: ProviderDescription): string {
   const read = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n") : "");
   const hash = createHash("sha256");

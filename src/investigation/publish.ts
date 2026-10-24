@@ -6,6 +6,18 @@ import { ASSESSMENT_SCHEMA, RUN_SCHEMA, type AssessedEvidence } from "./records.
 // What a case gives Speck beyond its own worker's state: links between the
 // case's memories in Speck's association graph, and a shared summary that
 // Speck's conversation can recall.
+//
+// Why it is built this way:
+// - The case should be part of Speck's mind, not a separate app inside it.
+//   Linking the case's memories with Speck's own association kinds means
+//   Speck's activation and memory map show how the evidence, the assessments
+//   and the conclusions relate, without any special support in Speck.
+// - Speck's chat must answer from Speck's beliefs, not invent. The chat
+//   recalls shared memories only. So after every change the case publishes
+//   one plain-words summary read from Speck's state, and archives the previous
+//   one, so an outdated conclusion can never be recalled.
+// - Everything goes through Speck's public API (reinforceAssociation,
+//   recordSharedMemory, archiveSharedMemory).
 
 // Links the case's memories in Speck's own association graph (Speck's
 // public reinforceAssociation), so Speck's activation and memory map see how

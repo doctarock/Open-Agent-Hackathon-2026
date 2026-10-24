@@ -9,6 +9,16 @@ import { UserCaseError } from "./user-cases.js";
 // under /api) and the Speck plugin (plugin/evidence-desk-plugin.ts, under
 // /api/plugins/evidence-desk/cases/<case>). One set of operations, so the
 // page receives the same payloads wherever it runs.
+//
+// Why it is built this way:
+// - One page, two hosts. public/app.js is the same file inside Speck and
+//   standalone; only the base URL differs. Defining every operation and route
+//   once here means a payload or a route cannot differ between them.
+// - Read views come from one snapshot of the case (investigation()), so the
+//   conclusion, hypotheses, history and timeline on the page always agree.
+// - Long work does not block the page. A comparison runs in the background and
+//   the page polls its progress; a run reports the engine's own progress
+//   events, never an estimate.
 
 export class RequestError extends Error {}
 
@@ -16,6 +26,8 @@ export class NotFoundError extends Error {}
 
 // One side-by-side comparison at a time in a process: on a live
 // configuration both approaches call the same local model.
+// Why: two comparisons sharing one local GPU would slow each other down and
+// skew the latencies both of them report.
 export class ComparisonInProgressError extends Error {
   constructor(caseId: string) { super(`A comparison is already running (case ${caseId}); wait for it to finish`); this.name = "ComparisonInProgressError"; }
 }

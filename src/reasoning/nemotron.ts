@@ -6,9 +6,34 @@ import { isMeterlessModel, meterlessHeaders, METERLESS_NAME } from "./meterless.
 import { describeJudgments, ruleJudgments } from "./rules.js";
 import type { BatchAssessment, Explanation, ModelCallTrace, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "./types.js";
 
+// NVIDIA Nemotron as the reasoning model, called through Speck's model
+// registry: one processor for any OpenAI-compatible endpoint (a Meterless
+// Runtime, local Ollama, NVIDIA's hosted API), and the reasoner that uses it.
+//
+// Why it is built this way:
+// - Speck validates every reply. Each call carries a structured-output
+//   contract whose evidence ids and hypothesis keys are enumerated, and
+//   Speck's registry checks the reply against it and retries a malformed one.
+//   Any id that still does not belong to the batch is discarded here.
+// - Every pair is asked for explicitly. The prompt lists each (evidence,
+//   hypothesis) pair in order. An open-ended list let the 4B model repeat one
+//   pair until it ran out of tokens; a fixed list does not.
+// - A missing answer is not "no bearing". A record the model says nothing
+//   about is left unjudged and stays pending, rather than being recorded as
+//   irrelevant.
+// - Rules win on hard facts. Decisive rule judgments are filled in first, and
+//   a model judgment that disagrees with one is dropped and noted.
+// - Speck caps model-judged evidence at reliability 0.4 when it is recorded
+//   (run.ts records it as the model's). The cap is Speck's, not ours: model
+//   judgments can move belief, but no single one can settle a case.
+
 export const NEMOTRON_PROCESSOR_ID = "nemotron";
 // How every structured call is made: low temperature, and at most two
 // attempts through Speck's registry (a reply that fails its contract is retried once).
+// Why: a low temperature keeps judgments on the same evidence as stable as a
+// small model allows. One retry recovers the occasional malformed reply; more
+// would multiply the latency of a model that cannot follow the contract and
+// hide that it cannot.
 const TEMPERATURE = 0.1;
 const MAX_ATTEMPTS = 2;
 
