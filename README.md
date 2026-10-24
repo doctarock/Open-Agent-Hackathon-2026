@@ -857,7 +857,16 @@ chooses the endpoint:
     - a chat turn was answered through it;
     - Evidence Desk's assessor called it with the token from Speck's secret store.
 
-    No real Meterless Runtime was available while this was written.
+    A real runtime was then verified on 2026-10-24 (Meterless Runtime on port 8088,
+    `meterless/auto`): `npm run sponsors:verify` reported every sponsor OBSERVED. All 5 model
+    calls of the two-stage run went through Nightshift and were answered, each naming the model
+    that served it:
+    - the first stage's two chunks and its explanation went to `nvidia/nemotron-3-ultra-550b-a55b`;
+    - the second stage's chunk and explanation went to `nvidia/nemotron-3.5-lightning-30b-a3b`.
+
+    Calls took 10-52 s each, and none was rejected by the contract check. `auto` chose much
+    larger models than the 4B one *It is compact* describes; that description is of local
+    Ollama. Use `METERLESS_MODEL=meterless/local` to keep calls on the device.
   - The runtime chooses the model for each call. The trace records the model it reports serving.
     `npm run sponsors:verify` still requires that model to be Nemotron before it reports Nemotron
     as used.
