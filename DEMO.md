@@ -62,14 +62,13 @@ Open http://127.0.0.1:4310. Speck opens on the **Evidence** tab, first in its ra
 other views (World, Queue and the rest) stay available, and the Speck logo returns to Evidence.
 
 **The page explains itself.**
-- On first open the Evidence tab offers *Start tour*. It walks both cases with the
+- On first open the Evidence tab offers *Start the guided demo*. It walks both cases with the
   real buttons (the disputed delivery, then the bank return, which ends on the side-by-side comparison), then opens Speck's **World** view
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
   conclude.
-- A judge can follow it unaided. The **Start tour** button in the row of cases (always shown)
-  starts it from the beginning at any time, and **Resume tour** beside it continues one in
-  progress. Each case's introduction and **Guide** have the same *Start tour*. The larger invitation
+- A judge can follow it unaided. The **Start the guided demo** button (or **Resume the guided
+  demo**) at the end of the case picker starts or resumes it at any time. The larger invitation
   above the cases is shown until it is taken or declined, and comes back when a prepared case is
   reset for the next person. Each case's **Guide** button lists every feature, marking which ones
   that case has demonstrated.

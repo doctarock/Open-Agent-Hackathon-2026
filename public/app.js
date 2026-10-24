@@ -87,7 +87,7 @@ const TEMPLATE = `
     <li>Uncertainty is stated: a conclusion is supported, leading or unresolved, never more certain than its evidence.</li>
     <li>When a record is corrected or withdrawn, the beliefs that rested on it are recomputed, and the page says what changed and why.</li>
   </ul>
-  <p id="edk-intro-guided">The guided investigation takes about five minutes: run this case, see why its conclusion holds, bring in the next update, and watch what changes.</p>
+  <p>The guided investigation takes about five minutes: run this case, see why its conclusion holds, bring in the next update, and watch what changes.</p>
   <div class="intro-actions">
     <button id="edk-intro-start" class="primary" type="button">Start the guided investigation</button>
     <button id="edk-intro-dismiss" class="secondary" type="button">Explore on my own</button>
@@ -178,16 +178,13 @@ const TEMPLATE = `
 // deleted; the host takes the page away.
 // onReset: called after the case is reset outside a guided demo, so the host
 // can set its own guidance up for the next person too.
-// startGuided: { label, description, start } when the host runs a longer
-// guided demo: the introduction's start button begins that demo instead of
-// this case's own tour, so there is only one to start.
 // intro: false hides the first-run introduction (the host offers its own).
 // guided: this page is one part of a longer guided demo the host runs
 // (public/journey.js): { label, steps: tour step ids, finishLabel, start:
 // "first" | "last" | "resume", onFinish, onBack, onExit }.
 // onView: called with the page's state after every refresh.
 // evaluationUrl: where the evaluation summary is served (none: no panel).
-export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null, onDeleted = null, onReset = null, startGuided = null } = {}) {
+export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null, onDeleted = null, onReset = null, onIntroStart = null } = {}) {
   root.classList.add("edk");
   root.innerHTML = TEMPLATE;
   const $ = (id) => root.querySelector(`#edk-${id}`);
@@ -1342,11 +1339,8 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   // ----- First-run introduction and the feature guide -----
 
   $("intro").hidden = !intro || guided !== null || progress.introDismissed() || tourStep !== null;
-  if (startGuided) {
-    $("intro-start").textContent = startGuided.label;
-    $("intro-guided").textContent = startGuided.description;
-  }
-  $("intro-start").addEventListener("click", () => (startGuided ? startGuided.start() : startTour(0)));
+  // onIntroStart: the host's own tour (inside Speck, the full guided demo) instead of this case's.
+  $("intro-start").addEventListener("click", () => (onIntroStart ? onIntroStart() : startTour(0)));
   $("intro-dismiss").addEventListener("click", () => { progress.dismissIntro(); $("intro").hidden = true; $("guide-button").focus(); });
 
   let guideOpen = false;
@@ -1364,10 +1358,8 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         el("button", { type: "button", className: "link", "data-guide": "close" }, "Close")),
       el("p", {}, "Evidence Desk investigates a case whose records can conflict, change or be withdrawn, and keeps every conclusion tied to the evidence behind it."),
       el("div", { className: "guide-actions" },
-        startGuided
-          ? el("button", { type: "button", className: "primary", "data-guide": "full-tour" }, startGuided.label)
-          : el("button", { type: "button", className: "primary", "data-guide": "tour" }, saved !== null ? `Resume the tour (step ${saved + 1} of ${steps.length})` : "Start the guided investigation"),
-        !startGuided && saved !== null ? el("button", { type: "button", className: "secondary", "data-guide": "restart" }, "Restart from the beginning") : null,
+        el("button", { type: "button", className: "primary", "data-guide": "tour" }, saved !== null ? `Resume the tour (step ${saved + 1} of ${steps.length})` : "Start the guided investigation"),
+        saved !== null ? el("button", { type: "button", className: "secondary", "data-guide": "restart" }, "Restart from the beginning") : null,
         el("button", { type: "button", className: "link", "data-guide": "intro" }, "Show the introduction")),
       el("h3", {}, "Features"),
       el("p", { className: "meta" }, "\"Demonstrated\" means this case's real state shows it happened. \"Viewed\" means it has been opened on this page, by you or by the tour."),
@@ -1392,7 +1384,6 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     if (!button) return;
     const action = button.dataset.guide;
     if (action === "close") { closeGuide(); $("guide-button").focus(); }
-    if (action === "full-tour") { closeGuide(); startGuided.start(); }
     if (action === "tour") startTour(progress.tourStep() ?? 0);
     if (action === "restart") startTour(0);
     if (action === "intro") { progress.showIntroAgain(); $("intro").hidden = false; closeGuide(); $("intro").scrollIntoView({ block: "start" }); $("intro-start").focus(); }

@@ -309,8 +309,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       yours.length ? [el("span", { className: "picker-label" }, "Your investigations"), yours.map(button)] : null,
       el("button", { type: "button", "data-new-case": "", className: current === "new" ? "primary" : "secondary", "aria-selected": String(current === "new") }, "+ New investigation"),
       el("button", { type: "button", "data-evaluation": "", className: current === "evaluation" ? "primary" : "secondary", "aria-selected": String(current === "evaluation") }, "Evaluation results"),
-      el("button", { type: "button", "data-demo": "restart", className: "primary" }, "Start tour"),
-      demo.store.part() !== null ? el("button", { type: "button", "data-demo": "start", className: "secondary" }, "Resume tour") : null).childNodes);
+      el("button", { type: "button", "data-demo": "start", className: "secondary" }, demo.store.part() !== null ? "Resume the guided demo" : "Start the guided demo")).childNodes);
   }
 
   // The invitation to the guided demo, until it is taken or declined.
@@ -319,11 +318,11 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     offer.hidden = demo.store.part() !== null || demo.store.offerDismissed();
     if (offer.hidden) return;
     offer.replaceChildren(
-      el("h2", { id: "edk-demo-offer-title" }, "Take the tour"),
+      el("h2", { id: "edk-demo-offer-title" }, "Take the guided demo"),
       el("p", {}, "Two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
       el("p", { className: "meta" }, "Each step that asks you to act waits for the real result; nothing is scripted."),
       el("div", { className: "intro-actions" },
-        el("button", { type: "button", className: "primary", "data-demo": "restart" }, "Start tour"),
+        el("button", { type: "button", className: "primary", "data-demo": "start" }, "Start the guided demo"),
         el("button", { type: "button", className: "secondary", "data-demo": "dismiss" }, "Explore on my own")));
   }
 
@@ -342,12 +341,8 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       intro: item.kind !== "yours", guided, evaluationUrl: `${API_BASE}/evaluation`,
       // A prepared case reset for the next person brings the demo's invitation back.
       onReset: () => { demo.store.restoreOffer(); renderOffer(); },
-      // The case's introduction starts the whole guided demo, from its first part.
-      startGuided: {
-        label: "Start tour",
-        description: "The tour walks through both prepared cases, then Speck's world view, its memory map and its chat, and ends with an investigation of your own.",
-        start: () => startJourney()
-      },
+      // The introduction's Start the guided investigation starts the full tour.
+      onIntroStart: () => startJourney(),
       onDeleted: async (result) => {
         await loadCases();
         show(cases[0]?.id);
@@ -464,9 +459,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
   shell.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) return;
-    if (target.dataset.demo === "restart") {
-      startJourney();
-    } else if (target.dataset.demo === "start") {
+    if (target.dataset.demo === "start") {
       if (demo.store.part() !== null) enterPart(demo.store.part(), "resume");
       else startJourney();
     } else if (target.dataset.demo === "dismiss") {
