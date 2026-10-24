@@ -37,6 +37,11 @@ Evidence Desk adds is traceability: an auditable record of which evidence each c
 on, and how and why it changed.
 
 **It is compact.** The model that weighs the evidence is a 4-billion-parameter Nemotron.
+
+> **Note on model size.** By default, Meterless serves `nvidia/nemotron-3.5-lightning-30b-a3b`
+> through its Nightshift NVIDIA provider. Only the 4B model is required for the software to work
+> correctly. The larger models Meterless may route to are not needed.
+
 - The model runs on one consumer GPU: Nemotron 3 Nano 4B, 4-bit (Q4_K_M), 2.8 GB, all on the GPU.
 - It works in a 4,096-token window, the window Ollama gives it inside Speck and standalone alike.
   The model could take 262,144 tokens, but nothing here needs more.
@@ -867,6 +872,9 @@ chooses the endpoint:
     Calls took 10-52 s each, and none was rejected by the contract check. `auto` chose much
     larger models than the 4B one *It is compact* describes; that description is of local
     Ollama. Use `METERLESS_MODEL=meterless/local` to keep calls on the device.
+  - **Only the 4B is required.** By default, Meterless serves
+    `nvidia/nemotron-3.5-lightning-30b-a3b` through its Nightshift NVIDIA provider. Evidence
+    Desk works correctly with the 4B Nemotron alone; the larger models are not required.
   - The runtime chooses the model for each call. The trace records the model it reports serving.
     `npm run sponsors:verify` still requires that model to be Nemotron before it reports Nemotron
     as used.
