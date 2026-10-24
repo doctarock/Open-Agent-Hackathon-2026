@@ -787,7 +787,7 @@ showed this as one retry.
 |---|---|
 | `npm run setup` | Fetch `speck/`, install dependencies here and in it, build Speck, install the plugin, and on a first run ask the `configure` questions |
 | `npm run configure` | Choose the model (Meterless Runtime, local Ollama, NVIDIA's API, or rules) and the evidence source (fixtures, local Zetaris, another Zetaris address); checks each against the real service and writes `.env`. `--model`, `--evidence`, `--yes` skip the questions. |
-| `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. |
+| `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. A Speck already running on the same port is stopped first; anything else on the port is left alone and Speck does not start. |
 | `npm run investigate -- <case>` | One case from structured input to structured output, every stage, with the execution trace as JSON Lines on stdout and in `logs/`. Sample mode by default (no `.env`, credentials or network); `--live` uses `.env`; `--output <file>` writes the result. See *Command line*. |
 | `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
 | `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
@@ -1217,7 +1217,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 136 tests with no network access beyond localhost and no credentials:
+`npm test` runs 139 tests with no network access beyond localhost and no credentials:
 
 - **Side-by-side comparison** (`test/compare.test.ts`, and a route test in `test/plugin.test.ts`): both approaches see the same records at every stage, and each side equals the evaluation's own system on the same case; a stateless answer citing a replaced record is flagged (a stand-in model endpoint); the case on the page is untouched; saved comparisons are never overwritten, partial writes are ignored, and a comparison made with other settings is never shown as current; a failed comparison saves nothing; one runs at a time (409); the page's findings are built from the report; the evaluation summary reads the reports as written; rewriting a report archives the previous one.
 
@@ -1305,6 +1305,9 @@ What these runs show:
   - the bank-return case always runs on its fixture with the rules, whatever the settings;
   - the installer copies the plugin, points `#speck` at Speck's own build, makes the entry the
     only plugin module, approves exactly its hash, and keeps `.env` and case data on reinstall.
+- **Speck launcher** (`test/speck-launcher.test.ts`): `npm run speck` reads Speck's port and host
+  as Speck does; a Speck already on the port (a stand-in in its own process) is stopped and the
+  port freed; a server on the port that is not Speck is left running and nothing starts.
 - **Correction chains** (`test/correction-chains.test.ts`):
   - a replacement of a replacement, read both ways;
   - withdrawal of a replacement;
