@@ -1,0 +1,580 @@
+{
+  "generatedAt": "2026-10-24T02:14:08.828Z",
+  "evidenceMode": "zetaris",
+  "reasoner": "nemotron",
+  "model": "meterless/auto",
+  "verdicts": [
+    {
+      "sponsor": "Zetaris",
+      "status": "OBSERVED",
+      "evidence": [
+        "run 1: 4 SELECTs on http://localhost:3000 (EVIDENCE_DESK.order_events 1 row(s), 295 ms; EVIDENCE_DESK.warehouse_scans 1 row(s), 104 ms; EVIDENCE_DESK.carrier_events 2 row(s), 140 ms; EVIDENCE_DESK.support_messages 2 row(s), 162 ms); 4 newly assessed record(s), each carrying one of this run's query tokens",
+        "run 2: 4 SELECTs on http://localhost:3000 (EVIDENCE_DESK.order_events 1 row(s), 207 ms; EVIDENCE_DESK.warehouse_scans 1 row(s), 128 ms; EVIDENCE_DESK.carrier_events 2 row(s), 136 ms; EVIDENCE_DESK.support_messages 2 row(s), 134 ms); 2 newly assessed record(s), each carrying one of this run's query tokens"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Meterless Markovian (execution engine)",
+      "status": "OBSERVED",
+      "evidence": [
+        "run 1: engine run run-1 (engine timestamp 1792807910544), completed, 2 chunk(s), found in C:\\Users\\Derek\\AppData\\Local\\Temp\\evidence-desk-sponsors-NDdI8S\\meterless\\history.json",
+        "run 2: engine run run-2 (engine timestamp 1792807993244), completed, 1 chunk(s), found in C:\\Users\\Derek\\AppData\\Local\\Temp\\evidence-desk-sponsors-NDdI8S\\meterless\\history.json",
+        "engine: Meterless Markovian reference engine @meterless/markovian-reference@0.1.0, upstream commit 1742dec56a66e58eef9dda2d2b865823758ca8cd"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Meterless Nightshift (HTTP API, model provider)",
+      "status": "OBSERVED",
+      "evidence": [
+        "5 HTTP request(s) in 5 model call(s) to http://127.0.0.1:8088/v1/chat/completions, routing mode meterless/auto, sent as meterless-app evidence-desk; 5 answered",
+        "model identity returned by Nightshift: nvidia/nemotron-3-ultra-550b-a55b, nvidia/nemotron-3.5-lightning-30b-a3b"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "NVIDIA Nemotron (via Meterless Runtime)",
+      "status": "OBSERVED",
+      "evidence": [
+        "5 call(s) to Meterless Runtime at http://127.0.0.1:8088/v1 (routing mode meterless/auto); endpoint reported serving nvidia/nemotron-3-ultra-550b-a55b, nvidia/nemotron-3.5-lightning-30b-a3b",
+        "5 attempt(s): 0 rejected by Speck's contract check, 0 transport failure(s) (no usable answer), then retried; 5 of 5 call(s) ended with a valid reply",
+        "5 evidence object(s) in Speck with model provenance, all at reliability <= 0.4"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Speck",
+      "status": "OBSERVED",
+      "evidence": [
+        "run 1: 7 belief revision(s) in Speck's event log, all in the trace",
+        "run 2: 8 belief revision(s) in Speck's event log, all in the trace",
+        "current conclusion from Speck's state: Leading, not established: The carrier delivered the parcel to the wrong address."
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Cursor",
+      "status": "NOT A RUNTIME COMPONENT",
+      "evidence": [
+        "a development tool; nothing in a run can observe it"
+      ],
+      "problems": []
+    }
+  ],
+  "trace": [
+    {
+      "kind": "run",
+      "runId": "ce961e11-a2e5-49b1-bc2d-7e8e5de262e6",
+      "runNumber": 1,
+      "status": "completed",
+      "startedAt": "2026-10-24T02:11:49.841Z",
+      "finishedAt": "2026-10-24T02:13:12.623Z",
+      "evidence": {
+        "mode": "zetaris",
+        "label": "Zetaris Lightning (live)",
+        "target": "http://localhost:3000",
+        "visible": 4,
+        "sources": [
+          {
+            "location": "EVIDENCE_DESK.order_events",
+            "rows": 1,
+            "queryToken": "OGM1ZGU1NDYtNWNmMi00MjVmLTg2YjctYTFhYzMyMGY3MmFh",
+            "latencyMs": 295
+          },
+          {
+            "location": "EVIDENCE_DESK.warehouse_scans",
+            "rows": 1,
+            "queryToken": "ZGU0YWFmNmUtNmZiNS00NjQ3LTg2OWItOGRkY2MwOWI1ODhi",
+            "latencyMs": 104
+          },
+          {
+            "location": "EVIDENCE_DESK.carrier_events",
+            "rows": 2,
+            "queryToken": "MzFlNjAxOGUtZDYyNS00ODZlLWE1NTYtYWJmNmNiZDdiOTBm",
+            "latencyMs": 140
+          },
+          {
+            "location": "EVIDENCE_DESK.support_messages",
+            "rows": 2,
+            "queryToken": "YzIzMjI1MGQtYzdiZS00MjA0LWIwODgtMjdkMzJhYmYxZjEz",
+            "latencyMs": 162
+          }
+        ]
+      },
+      "meterless": {
+        "engine": "Meterless Markovian reference engine @meterless/markovian-reference@0.1.0, upstream commit 1742dec, vendor/meterless-markovian/ (unmodified)",
+        "runId": "run-1",
+        "status": "completed",
+        "chunks": 2,
+        "maxChunks": 8,
+        "reflection": true,
+        "durationMs": 82078,
+        "inHistory": true
+      },
+      "reasoner": {
+        "kind": "nemotron",
+        "model": "meterless/auto",
+        "endpoint": "http://127.0.0.1:8088/v1"
+      },
+      "steps": [
+        {
+          "kind": "chunk",
+          "chunk": 1,
+          "meterless": {
+            "tokens": 193,
+            "carryoverIn": false
+          },
+          "records": [
+            "EV-OMS-001",
+            "EV-WMS-002"
+          ],
+          "failed": [],
+          "model": {
+            "purpose": "relation-judgments",
+            "processor": "nemotron",
+            "requestedModel": "meterless/auto",
+            "endpoint": "http://127.0.0.1:8088/v1",
+            "servedModels": [
+              "nvidia/nemotron-3-ultra-550b-a55b"
+            ],
+            "constraints": {
+              "contract": "evidence_relations",
+              "requiredPairs": 6,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 19751,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null,
+            "judgments": {
+              "returned": 6,
+              "neutral": 3,
+              "kept": 2,
+              "discardedUnknown": 0,
+              "ruleKept": 0,
+              "repeated": 1,
+              "unanswered": []
+            }
+          },
+          "judgments": {
+            "rule": 1,
+            "model": 2,
+            "noBearing": [
+              "EV-OMS-001"
+            ]
+          },
+          "notes": [],
+          "speck": {
+            "recorded": [
+              "EV-OMS-001",
+              "EV-WMS-002"
+            ],
+            "revisions": [
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-WMS-002",
+                "from": "proposed 0.50",
+                "to": "active 0.53",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-WMS-002",
+                "from": "proposed 0.35",
+                "to": "active 0.38",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-WMS-002",
+                "from": "proposed 0.15",
+                "to": "rejected 0.05",
+                "historical": true
+              }
+            ],
+            "recomputations": []
+          }
+        },
+        {
+          "kind": "chunk",
+          "chunk": 2,
+          "meterless": {
+            "tokens": 225,
+            "carryoverIn": true
+          },
+          "records": [
+            "EV-CAR-003",
+            "EV-SUP-004"
+          ],
+          "failed": [],
+          "model": {
+            "purpose": "relation-judgments",
+            "processor": "nemotron",
+            "requestedModel": "meterless/auto",
+            "endpoint": "http://127.0.0.1:8088/v1",
+            "servedModels": [
+              "nvidia/nemotron-3-ultra-550b-a55b"
+            ],
+            "constraints": {
+              "contract": "evidence_relations",
+              "requiredPairs": 6,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 52124,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null,
+            "judgments": {
+              "returned": 6,
+              "neutral": 2,
+              "kept": 4,
+              "discardedUnknown": 0,
+              "ruleKept": 0,
+              "repeated": 0,
+              "unanswered": []
+            }
+          },
+          "judgments": {
+            "rule": 0,
+            "model": 4,
+            "noBearing": []
+          },
+          "notes": [],
+          "speck": {
+            "recorded": [
+              "EV-CAR-003",
+              "EV-SUP-004"
+            ],
+            "revisions": [
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-CAR-003",
+                "from": "active 0.53",
+                "to": "active 0.60",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-CAR-003",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-SUP-004",
+                "from": "active 0.60",
+                "to": "weakening 0.54",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-SUP-004",
+                "from": "active 0.38",
+                "to": "active 0.43",
+                "historical": false
+              }
+            ],
+            "recomputations": []
+          }
+        },
+        {
+          "kind": "explanation",
+          "model": {
+            "purpose": "explanation",
+            "processor": "nemotron",
+            "requestedModel": "meterless/auto",
+            "endpoint": "http://127.0.0.1:8088/v1",
+            "servedModels": [
+              "nvidia/nemotron-3-ultra-550b-a55b"
+            ],
+            "constraints": {
+              "contract": "investigation_explanation",
+              "requiredPairs": 0,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 10182,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null
+          },
+          "agrees": false,
+          "problems": [
+            "It concludes \"unresolved\"; Speck's conclusion is \"H-DELIVERED\"."
+          ],
+          "invalidCitations": []
+        }
+      ],
+      "flags": {
+        "pending": [],
+        "failed": [],
+        "modelCalls": 3,
+        "retries": 0,
+        "contractFailures": 0,
+        "invalidCitations": [],
+        "recovered": [],
+        "revisions": 7,
+        "recomputations": []
+      }
+    },
+    {
+      "kind": "run",
+      "runId": "3ced0699-a6e2-4e20-aaa0-24b1a15cbc89",
+      "runNumber": 2,
+      "status": "completed",
+      "startedAt": "2026-10-24T02:13:12.635Z",
+      "finishedAt": "2026-10-24T02:14:08.774Z",
+      "evidence": {
+        "mode": "zetaris",
+        "label": "Zetaris Lightning (live)",
+        "target": "http://localhost:3000",
+        "visible": 6,
+        "sources": [
+          {
+            "location": "EVIDENCE_DESK.order_events",
+            "rows": 1,
+            "queryToken": "ZGNiNTAxN2YtOTk4MS00MTJlLTljYmItNGFlNzc0M2JlOWZl",
+            "latencyMs": 207
+          },
+          {
+            "location": "EVIDENCE_DESK.warehouse_scans",
+            "rows": 1,
+            "queryToken": "MjlhZTRmZjQtNzFjMC00NzUwLWI5YmMtYzJiZWVjZjIxNjcw",
+            "latencyMs": 128
+          },
+          {
+            "location": "EVIDENCE_DESK.carrier_events",
+            "rows": 2,
+            "queryToken": "ODhiMDYyNmEtMDJkOC00YzNhLWE2NTUtMGNiZDlhMzBmNzMz",
+            "latencyMs": 136
+          },
+          {
+            "location": "EVIDENCE_DESK.support_messages",
+            "rows": 2,
+            "queryToken": "ZmE3NmM2NWEtNGIzNC00YTllLWI4YmMtODRmNWU4MTc1YWFl",
+            "latencyMs": 134
+          }
+        ]
+      },
+      "meterless": {
+        "engine": "Meterless Markovian reference engine @meterless/markovian-reference@0.1.0, upstream commit 1742dec, vendor/meterless-markovian/ (unmodified)",
+        "runId": "run-2",
+        "status": "completed",
+        "chunks": 1,
+        "maxChunks": 8,
+        "reflection": true,
+        "durationMs": 55529,
+        "inHistory": true
+      },
+      "reasoner": {
+        "kind": "nemotron",
+        "model": "meterless/auto",
+        "endpoint": "http://127.0.0.1:8088/v1"
+      },
+      "steps": [
+        {
+          "kind": "chunk",
+          "chunk": 1,
+          "meterless": {
+            "tokens": 306,
+            "carryoverIn": false
+          },
+          "records": [
+            "EV-CAR-005",
+            "EV-SUP-006"
+          ],
+          "failed": [],
+          "model": {
+            "purpose": "relation-judgments",
+            "processor": "nemotron",
+            "requestedModel": "meterless/auto",
+            "endpoint": "http://127.0.0.1:8088/v1",
+            "servedModels": [
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ],
+            "constraints": {
+              "contract": "evidence_relations",
+              "requiredPairs": 6,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 28837,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null,
+            "judgments": {
+              "returned": 5,
+              "neutral": 0,
+              "kept": 5,
+              "discardedUnknown": 0,
+              "ruleKept": 0,
+              "repeated": 0,
+              "unanswered": []
+            }
+          },
+          "judgments": {
+            "rule": 1,
+            "model": 5,
+            "noBearing": []
+          },
+          "notes": [],
+          "speck": {
+            "recorded": [
+              "EV-CAR-005",
+              "EV-SUP-006"
+            ],
+            "revisions": [
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-WMS-002",
+                "from": "proposed 0.15",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-SUP-004",
+                "from": "proposed 0.50",
+                "to": "weakening 0.44",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-CAR-005",
+                "from": "weakening 0.44",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-CAR-005",
+                "from": "active 0.43",
+                "to": "active 0.51",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-CAR-005",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-SUP-006",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-SUP-006",
+                "from": "active 0.51",
+                "to": "active 0.58",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-SUP-006",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              }
+            ],
+            "recomputations": [
+              1
+            ]
+          }
+        },
+        {
+          "kind": "explanation",
+          "model": {
+            "purpose": "explanation",
+            "processor": "nemotron",
+            "requestedModel": "meterless/auto",
+            "endpoint": "http://127.0.0.1:8088/v1",
+            "servedModels": [
+              "nvidia/nemotron-3.5-lightning-30b-a3b"
+            ],
+            "constraints": {
+              "contract": "investigation_explanation",
+              "requiredPairs": 0,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 26671,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null
+          },
+          "agrees": false,
+          "problems": [
+            "It concludes \"unresolved\"; Speck's conclusion is \"H-MISDELIVERED\"."
+          ],
+          "invalidCitations": []
+        }
+      ],
+      "flags": {
+        "pending": [],
+        "failed": [],
+        "modelCalls": 2,
+        "retries": 0,
+        "contractFailures": 0,
+        "invalidCitations": [],
+        "recovered": [],
+        "revisions": 8,
+        "recomputations": [
+          1
+        ]
+      }
+    }
+  ]
+}

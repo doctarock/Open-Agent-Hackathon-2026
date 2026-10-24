@@ -9,7 +9,9 @@
 >   and every saved result.
 > - [DEMO.md](DEMO.md): the 3-minute walkthrough and slide outline.
 > - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
->   could not observe.
+>   could not observe. It needs local Zetaris and a Meterless Runtime. For what it needs and how
+>   to read it, see [Verifying the sponsors yourself](docs/SUBMISSION.md#verifying-the-sponsors-yourself).
+>   The saved report of the 2026-10-24 run, with its trace, is in `eval/results/sponsors/`.
 > - `npm run investigate -- examples/payment-correction-chain/input.json`: one case from
 >   structured input to structured output on the command line, with its execution trace. No
 >   credentials or network needed. See [Command line](#command-line) and [examples/](examples/).
@@ -766,7 +768,7 @@ showed this as one retry.
 | `npm run zetaris:check` | Exercise the live Zetaris path: login, probe query, case evidence |
 | `npm run zetaris:usl` | Build and check the Zetaris Unified Semantic Layer over a warehouse and a carrier source, with a data-quality rule (separate from the live path). See `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md` |
 | `npm run model:check` | One plain-text call to the configured model provider (for a Meterless Runtime, after checking its status and routing modes); prints the model it reports serving |
-| `npm run sponsors:verify` | Runs a real two-stage investigation with the services in `.env`, on throwaway storage (`data/` is untouched). Checks each sponsor's contribution against an independent source and prints OBSERVED or NOT OBSERVED for each. Exits 1 if any configured sponsor was not observed. Saves the report and trace to `eval/results/sponsor-check.json`. |
+| `npm run sponsors:verify` | Runs a real two-stage investigation with the services in `.env`, on throwaway storage (`data/` is untouched). Checks each sponsor's contribution against an independent source and prints OBSERVED or NOT OBSERVED for each. Exits 1 if any configured sponsor was not observed. Saves the report and trace to `eval/results/sponsor-check.json`, and keeps a copy that is never overwritten in `eval/results/sponsors/<time>.json` (tracked in git). |
 
 The standalone server keeps its own database at `data/evidence-desk.sqlite`, separate from
 anything in `speck/data/`. `npm run db:reset` gives it a clean case.

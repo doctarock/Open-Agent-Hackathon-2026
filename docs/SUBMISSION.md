@@ -130,6 +130,40 @@ one. Its runs on 2026-10-22 (model on local Ollama) and 2026-10-24 (model throug
 - NVIDIA's hosted API: the client accepts it, but it was not used.
 - Any other NVIDIA infrastructure.
 
+### Verifying the sponsors yourself
+
+The saved report of the 2026-10-24 run, with its full trace, is
+[eval/results/sponsors/2026-10-24T02-14-08-828Z.json](../eval/results/sponsors/2026-10-24T02-14-08-828Z.json).
+To make your own:
+
+1. **Zetaris:** start the local Zetaris Docker Compose bundle, then run `npm run zetaris:seed`
+   (README, *Live Zetaris*).
+2. **Nightshift:** start a Meterless Runtime (port 8088 by default). Its token is in the
+   runtime's state folder, in `proxy-token`.
+3. **Configure:** run `npm run configure` and choose **Meterless Runtime** and **local Zetaris**.
+   It checks both against the running services, takes the token hidden, and writes `.env`.
+4. **Run:** `npm run sponsors:verify`. It takes a few minutes and uses throwaway storage; `data/`
+   is not touched.
+
+It prints one verdict per sponsor and saves the report to `eval/results/sponsor-check.json`. A
+copy is kept in `eval/results/sponsors/<time>.json` and never overwritten.
+
+| Verdict | OBSERVED only if | Checked against |
+|---|---|---|
+| Zetaris | Every assessed record came from a SELECT of that run. | Each record's Zetaris query token, compared with the tokens of the run's SELECTs. |
+| Meterless Markovian | Each run's id, status and chunk count match. | The engine's own `history.json`, matched by run id and the engine's timestamp. |
+| Meterless Nightshift | Every model call went to the Nightshift endpoint and was answered, and each response named the model that served it. | The endpoint and the `model` field of each response. A routing mode echoed back (`meterless/auto`) does not count as an identity. |
+| NVIDIA Nemotron | Model calls were made, the served model is a Nemotron, and Speck holds model-judged evidence at reliability 0.4 or below. | The served model names, and Speck's evidence objects. |
+| Speck | Every belief revision in Speck's event log appears in the trace, exactly once. | Speck's raw event log. |
+
+- **Exit status:** 0 when every configured sponsor is OBSERVED; 1 otherwise.
+- **Without the services:** it still runs. Each sponsor that was not set up is reported NOT
+  OBSERVED, with the reason (for example "EVIDENCE_MODE is not zetaris"), and it exits 1. That
+  is the check working, not failing: nothing is simulated in place of a missing service.
+- **The model:** `meterless/auto` lets the runtime choose. In the saved run it chose 30B and 550B
+  Nemotrons, but only the 4B is required. Set `METERLESS_MODEL=meterless/local` to keep calls
+  on the device.
+
 ## Results
 
 These are counts over these cases only, not general accuracy.
@@ -154,7 +188,7 @@ npm test                 # 135 tests, no credentials or network needed
 npm run investigate -- examples/payment-correction-chain/input.json   # one case, JSON in, JSON + trace out, offline
 npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups
-npm run sponsors:verify  # with Zetaris and Ollama running and configured in .env
+npm run sponsors:verify  # with Zetaris and a Meterless Runtime configured; see Verifying the sponsors yourself
 ```
 
 The 3-minute walkthrough is in [DEMO.md](../DEMO.md). The design, defect analysis and audit

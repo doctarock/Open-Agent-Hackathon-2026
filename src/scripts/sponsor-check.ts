@@ -163,7 +163,13 @@ for (const item of verdicts) {
   for (const line of item.problems) console.log(`    !! ${line}`);
 }
 const out = path.join(ROOT_DIR, "eval", "results", "sponsor-check.json");
+const generatedAt = new Date().toISOString();
+const report = `${JSON.stringify({ generatedAt, evidenceMode: config.evidenceMode, reasoner: config.reasoner, model: config.nemotron.model || null, verdicts, trace: runs }, null, 2)}\n`;
 fs.mkdirSync(path.dirname(out), { recursive: true });
-writeReport(out, `${JSON.stringify({ generatedAt: new Date().toISOString(), evidenceMode: config.evidenceMode, reasoner: config.reasoner, model: config.nemotron.model || null, verdicts, trace: runs }, null, 2)}\n`);
-console.log(`\nFull report with the trace: ${path.relative(ROOT_DIR, out)}`);
+writeReport(out, report);
+// Every run is also kept as its own file, never overwritten, for publishing (tracked in git).
+const kept = path.join(ROOT_DIR, "eval", "results", "sponsors", `${generatedAt.replace(/[:.]/g, "-")}.json`);
+fs.mkdirSync(path.dirname(kept), { recursive: true });
+fs.writeFileSync(kept, report, { flag: "wx" });
+console.log(`\nFull report with the trace: ${path.relative(ROOT_DIR, out)} (kept as ${path.relative(ROOT_DIR, kept)})`);
 process.exit(verdicts.some((item) => item.status === "NOT OBSERVED") ? 1 : 0);

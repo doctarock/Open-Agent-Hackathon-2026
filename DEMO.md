@@ -205,8 +205,10 @@ Set `EVIDENCE_MODE=fixture` and `REASONER=rules` in the repository's `.env`, del
 the demo database and restart Speck. The bank-return case is unaffected either way.
 
 The trace labels the evidence **FIXTURE FILE - NOT ZETARIS** and says "rule assessor (no
-model)". Say plainly that the live services are not running. Show the saved live report
-`eval/results/sponsor-check.json` from the last `npm run sponsors:verify`, with its date and
+model)". Say plainly that the live services are not running. Show the saved live report from
+`npm run sponsors:verify`: the published one is
+`eval/results/sponsors/2026-10-24T02-14-08-828Z.json` (every sponsor OBSERVED, models through
+Nightshift), or `eval/results/sponsor-check.json` for the last local run. Point at its date and
 model.
 
 If Speck itself will not start, the standalone page still works: `npm start`, then
