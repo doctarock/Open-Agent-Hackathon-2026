@@ -443,7 +443,8 @@ API, is the default model provider (see *Model providers*).
 
 ### Speck
 
-- **Repository:** `speck/`, a submodule pinned to upstream Speck `29d5bb3`. This project patches
+- **Repository:** `speck/`, a submodule pinned to upstream Speck `8821789`: `29d5bb3` plus
+  Speck's own lockfile update, which clears its `npm audit` advisories (0 vulnerabilities). This project patches
   its working tree in three ways: the `SPECK_HOME_VIEW` interface setting
   (`patches/speck-home-view.patch`), removing Speck's other bundled plugins
   (`patches/speck-remove-plugins.patch`), and the chat component that answers from published
@@ -1398,7 +1399,7 @@ What these runs show:
 - **A correction of a correction reinstates the original.** If a correction is itself superseded,
   the record it replaced counts again. A source that amends an amendment and still means to
   replace the original must list both.
-- **Retiring a hypothesis relies on Speck internals.** Speck (pinned at `29d5bb3`) has no public
+- **Retiring a hypothesis relies on Speck internals.** Speck (pinned at `8821789`) has no public
   API to retire a worker's hypothesis. Its only archive method, `archiveSharedMemory`, refuses
   worker objects.
   - Evidence Desk therefore marks replaced hypotheses `superseded` through Speck's mental-object

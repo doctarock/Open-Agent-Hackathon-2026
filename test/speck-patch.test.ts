@@ -13,7 +13,7 @@ const git = (...args: string[]) => execFileSync("git", ["-C", path.join(ROOT_DIR
 
 test("the project's Speck patch is applied to the working tree, on top of the pinned upstream commit", () => {
   git("apply", "--check", "--reverse", patch);
-  assert.match(execFileSync("git", ["-C", ROOT_DIR, "submodule", "status", "speck"]).toString(), /^.29d5bb3/, "the submodule stays pinned to upstream Speck");
+  assert.match(execFileSync("git", ["-C", ROOT_DIR, "submodule", "status", "speck"]).toString(), /^.8821789/, "the submodule stays pinned to upstream Speck");
 });
 
 test("the patch touches only the home-view change, never Speck's plugin trust or plugins", () => {

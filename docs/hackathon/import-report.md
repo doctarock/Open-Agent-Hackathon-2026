@@ -9,6 +9,7 @@
 | Subject | Memory machinery on the default path: the mind |
 | Initially imported | `7d6a222` (Speck: stable release of the gated default path), bumped to `29d5bb3` on 2026-10-22 |
 | Branch | `main` (`origin/main`) |
+| Moved on 2026-10-24 | to `8821789` (Update lockfile to resolve npm audit advisories), one commit on `29d5bb3` that changes only `package-lock.json`; `npm audit` in `speck/` then reports 0 vulnerabilities |
 | Tags | none |
 | Package | `speck@0.13.0` |
 

@@ -33,7 +33,7 @@ for (const name of fs.readdirSync(patchDir).filter((file) => file.endsWith(".pat
     git("apply", file);
     console.log(`${name}: applied to speck (${head})`);
   } else {
-    console.error(`${name} does not apply to speck at ${head}. It was written against upstream Speck 29d5bb3; if the pin moved, update the patch.`);
+    console.error(`${name} does not apply to speck at ${head}. The patches apply to upstream Speck 29d5bb3 and 8821789 (its lockfile update); if the pin moved, update the patch.`);
     process.exit(1);
   }
 }

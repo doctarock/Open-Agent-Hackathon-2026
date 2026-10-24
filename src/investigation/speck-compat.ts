@@ -1,7 +1,7 @@
 import type { MentalObject, MentalObjectId, SpeckRuntime } from "#speck";
 
 // The one place Evidence Desk writes to Speck's storage outside Speck's
-// public service methods. Speck (pinned at 29d5bb3) has no public operation
+// public service methods. Speck (pinned at 8821789) has no public operation
 // that retires a worker's hypothesis: archiveSharedMemory accepts only shared
 // memories, and the belief service sets hypothesis status only through
 // revision. Speck's own components use the same repository write (for
