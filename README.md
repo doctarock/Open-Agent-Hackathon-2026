@@ -10,6 +10,9 @@
 > - [DEMO.md](DEMO.md): the 3-minute walkthrough and slide outline.
 > - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
 >   could not observe.
+> - `npm run investigate -- examples/payment-correction-chain/input.json`: one case from
+>   structured input to structured output on the command line, with its execution trace. No
+>   credentials or network needed. See [Command line](#command-line) and [examples/](examples/).
 
 **The problem.** An ordinary stateless model call answers from whatever evidence it is handed.
 When a source later corrects a record (a bank returns a payment, a carrier amends a delivery
@@ -562,6 +565,49 @@ cannot escape the cap later.
     withdrawal. It then kills recovery again at several points, and checks that the case ends
     as if it had never been interrupted.
 
+## Command line
+
+`npm run investigate` runs one case end to end, without Speck's interface. It runs every stage
+in order, one Evidence Desk run per stage, on throwaway storage; `data/` is not touched.
+
+```bash
+npm run investigate -- examples/payment-correction-chain/input.json             # sample mode
+npm run investigate -- eval/scenarios/correction-supersedes --output result.json
+npm run investigate -- fixtures/scenarios/disputed-delivery --live              # .env settings
+```
+
+- **Input:** a folder holding `scenario.json` and `evidence.json` (the format of every case in
+  `fixtures/` and `eval/`), or one JSON file `{"scenario": …, "evidence": …}`.
+- **Sample mode** (the default) needs no credentials, network, Zetaris or model, and reads no
+  `.env`. The evidence is the case's own file and the deterministic rule assessor judges it. The
+  Meterless engine, Speck's belief revision and the validation all run as usual.
+- **`--live`** reads `.env` instead, so the evidence (fixtures or Zetaris) and the assessor (rules,
+  or Nemotron through the configured provider) are whatever it configures.
+- **Output:** the result, stage by stage: the records visible, those newly assessed, those no
+  longer counted and why, and the conclusion with its state, explanation, confidence, what is
+  eliminated and the records it rests on. The schema is in [examples/README.md](examples/README.md).
+  `--output <file>` writes it alone.
+- **Trace:** stdout is JSON Lines, and the same lines go to `logs/<time>-<case>.jsonl` (`--logs
+  <dir>` to change; git-ignored):
+  - `start`: the evidence source, the assessor (with the requested model, if any) and the engine;
+  - `stage`: each stage as it is released;
+  - `trace`, one line per step of the run, read from the persisted execution trace (see
+    *Sponsor integrations and the execution trace*):
+    - `run`: the evidence fetch (each Zetaris SELECT with its query token, or the fixture file),
+      the Meterless run (id, status, chunks), and flags (retries, contract failures, invalid
+      citations, revisions);
+    - `chunk`: each engine chunk's records, its token count and carryover, its judgments, Speck's
+      revisions, and its model call: requested and served model, endpoint, attempts, contract
+      and transport failures, outcome and latency;
+    - `explanation`: the model's explanation, checked against Speck's state and its citations;
+  - `result` (or `error`), last.
+
+  Exit status: 0 on success, 1 if the investigation failed, 2 for a usage error.
+
+[examples/](examples/) has three cases with their expected outputs. `test/examples.test.ts`
+checks that sample mode reproduces each one and that the CLI writes the same lines to stdout and
+`logs/` with no settings at all.
+
 ## Setup
 
 Requires Node.js 22+ and git. Clone the repository, then from its root:
@@ -696,6 +742,7 @@ showed this as one retry.
 | `npm run setup` | Fetch `speck/`, install dependencies here and in it, build Speck, install the plugin, and on a first run ask the `configure` questions |
 | `npm run configure` | Choose the model (Meterless Runtime, local Ollama, NVIDIA's API, or rules) and the evidence source (fixtures, local Zetaris, another Zetaris address); checks each against the real service and writes `.env`. `--model`, `--evidence`, `--yes` skip the questions. |
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. |
+| `npm run investigate -- <case>` | One case from structured input to structured output, every stage, with the execution trace as JSON Lines on stdout and in `logs/`. Sample mode by default (no `.env`, credentials or network); `--live` uses `.env`; `--output <file>` writes the result. See *Command line*. |
 | `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
 | `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
 | `npm run eval:reasoning` | The live evaluation on local Ollama with the model's reasoning off and on (three repeats each, alternated); writes each report and a `summary.md` to `eval/results/experiments/reasoning/<time>/`, never `live.json`. Needs the 16K model: `ollama create nemotron-3-nano-4b-ctx16k -f config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile`. `-- --summarize <dir>` re-summarises a folder. |
@@ -1107,11 +1154,12 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 120 tests with no network access beyond localhost and no credentials:
+`npm test` runs 135 tests with no network access beyond localhost and no credentials:
 
 - **Side-by-side comparison** (`test/compare.test.ts`, and a route test in `test/plugin.test.ts`): both approaches see the same records at every stage, and each side equals the evaluation's own system on the same case; a stateless answer citing a replaced record is flagged (a stand-in model endpoint); the case on the page is untouched; saved comparisons are never overwritten, partial writes are ignored, and a comparison made with other settings is never shown as current; a failed comparison saves nothing; one runs at a time (409); the page's findings are built from the report; the evaluation summary reads the reports as written; rewriting a report archives the previous one.
 
 - **Fixture mode:** runs with an empty environment.
+- **Command line and examples** (`test/examples.test.ts`): each of the three examples, run in sample mode, equals its expected output, and its trace shows the evidence fetch, the engine run and the assessor; the CLI, started with no settings at all, writes the same JSON Lines to stdout and `logs/`.
 - **Citations:** every cited record exists and keeps its source metadata.
 - **Persistence:** the corrective update survives a restart and is visible to the next run.
 - **Refutation:** refuted claims are not presented as current, according to Speck's own state

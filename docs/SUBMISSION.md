@@ -138,7 +138,7 @@ These are counts over these cases only, not general accuracy.
 | Held-out cases, deterministic (9 checkpoints) | 7/8 correct | 8/8 correct, 0 unsupported conclusions |
 | Correction regression cases, deterministic (8 checkpoints) | 4/8 | 8/8; withdrawn or superseded evidence never used as support (5/5) |
 | Held-out cases, live `nemotron-3-nano:4b` (single samples) | 5/8 | 5/8, identical per checkpoint |
-| Tests | 29 | 120 |
+| Tests | 29 | 135 |
 
 Across two live samples on the held-out cases, the stateless model baseline made 4 unsupported
 conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but it abstained when a
@@ -149,7 +149,8 @@ conclusion was due 3 times in 4, because of the 0.4 cap.
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 120 tests, no credentials or network needed
+npm test                 # 135 tests, no credentials or network needed
+npm run investigate -- examples/payment-correction-chain/input.json   # one case, JSON in, JSON + trace out, offline
 npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups
 npm run sponsors:verify  # with Zetaris and Ollama running and configured in .env

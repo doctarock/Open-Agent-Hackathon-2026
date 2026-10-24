@@ -1,0 +1,142 @@
+{
+  "schema": "evidence-desk.investigation-result.v1",
+  "case": {
+    "scenarioId": "xd-payment-amount-chain",
+    "caseId": "XD-PAY-01",
+    "title": "Is invoice INV-884 paid in full?",
+    "question": "Invoice INV-884 is for USD 1,200. The bank has corrected the received amount twice. Is it paid in full?"
+  },
+  "mode": {
+    "evidence": "fixture",
+    "reasoner": "rules",
+    "model": null
+  },
+  "stages": [
+    {
+      "stage": "credit",
+      "visibleRecords": [
+        "XP1-01"
+      ],
+      "newlyAssessed": [
+        "XP1-01"
+      ],
+      "noLongerCounted": [],
+      "conclusion": {
+        "state": "leading",
+        "hypothesis": "H-PAID-FULL",
+        "statement": "INV-884 has been paid in full.",
+        "confidence": 0.59,
+        "pointsTo": "H-PAID-FULL",
+        "eliminated": [
+          "H-PARTIAL",
+          "H-UNPAID"
+        ],
+        "supportedBy": [
+          "XP1-01"
+        ],
+        "contradictedBy": [],
+        "headline": "Leading, not established: INV-884 has been paid in full."
+      },
+      "changedFromPreviousStage": false
+    },
+    {
+      "stage": "first-correction",
+      "visibleRecords": [
+        "XP1-01",
+        "XP1-02",
+        "XP1-03"
+      ],
+      "newlyAssessed": [
+        "XP1-02",
+        "XP1-03"
+      ],
+      "noLongerCounted": [
+        {
+          "recordId": "XP1-01",
+          "reason": "XP1-01 superseded by XP1-02"
+        }
+      ],
+      "conclusion": {
+        "state": "leading",
+        "hypothesis": "H-PARTIAL",
+        "statement": "INV-884 has been paid in part, with a balance outstanding.",
+        "confidence": 0.56,
+        "pointsTo": "H-PARTIAL",
+        "eliminated": [
+          "H-PAID-FULL",
+          "H-UNPAID"
+        ],
+        "supportedBy": [
+          "XP1-02",
+          "XP1-03"
+        ],
+        "contradictedBy": [],
+        "headline": "Leading, not established: INV-884 has been paid in part, with a balance outstanding."
+      },
+      "changedFromPreviousStage": true
+    },
+    {
+      "stage": "second-correction",
+      "visibleRecords": [
+        "XP1-01",
+        "XP1-02",
+        "XP1-03",
+        "XP1-04",
+        "XP1-05"
+      ],
+      "newlyAssessed": [
+        "XP1-04",
+        "XP1-05"
+      ],
+      "noLongerCounted": [
+        {
+          "recordId": "XP1-01",
+          "reason": "XP1-01 superseded by XP1-04"
+        },
+        {
+          "recordId": "XP1-02",
+          "reason": "XP1-02 superseded by XP1-04"
+        },
+        {
+          "recordId": "XP1-03",
+          "reason": "XP1-03 superseded by XP1-05"
+        }
+      ],
+      "conclusion": {
+        "state": "supported",
+        "hypothesis": "H-PAID-FULL",
+        "statement": "INV-884 has been paid in full.",
+        "confidence": 0.76,
+        "pointsTo": "H-PAID-FULL",
+        "eliminated": [
+          "H-PARTIAL",
+          "H-UNPAID"
+        ],
+        "supportedBy": [
+          "XP1-04",
+          "XP1-05"
+        ],
+        "contradictedBy": [],
+        "headline": "INV-884 has been paid in full."
+      },
+      "changedFromPreviousStage": true
+    }
+  ],
+  "final": {
+    "state": "supported",
+    "hypothesis": "H-PAID-FULL",
+    "statement": "INV-884 has been paid in full.",
+    "confidence": 0.76,
+    "pointsTo": "H-PAID-FULL",
+    "eliminated": [
+      "H-PARTIAL",
+      "H-UNPAID"
+    ],
+    "supportedBy": [
+      "XP1-04",
+      "XP1-05"
+    ],
+    "contradictedBy": [],
+    "headline": "INV-884 has been paid in full."
+  }
+}

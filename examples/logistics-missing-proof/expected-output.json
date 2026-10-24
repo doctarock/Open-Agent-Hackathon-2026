@@ -1,0 +1,75 @@
+{
+  "schema": "evidence-desk.investigation-result.v1",
+  "case": {
+    "scenarioId": "xd-logistics-missing-proof",
+    "caseId": "XD-LOG-02",
+    "title": "Was parcel PX-7730 delivered?",
+    "question": "The carrier scanned PX-7730 as delivered; the customer says it never arrived. Was it delivered, and where?"
+  },
+  "mode": {
+    "evidence": "fixture",
+    "reasoner": "rules",
+    "model": null
+  },
+  "stages": [
+    {
+      "stage": "dispute",
+      "visibleRecords": [
+        "XL2-01",
+        "XL2-02"
+      ],
+      "newlyAssessed": [
+        "XL2-01",
+        "XL2-02"
+      ],
+      "noLongerCounted": [],
+      "conclusion": {
+        "state": "unresolved",
+        "hypothesis": null,
+        "statement": null,
+        "confidence": 0.46,
+        "pointsTo": "H-DELIVERED",
+        "eliminated": [],
+        "supportedBy": [],
+        "contradictedBy": [],
+        "headline": "Unresolved: the evidence points to \"PX-7730 was delivered to the customer's address.\" but does not yet justify it as a conclusion."
+      },
+      "changedFromPreviousStage": false
+    },
+    {
+      "stage": "proof-requested",
+      "visibleRecords": [
+        "XL2-01",
+        "XL2-02",
+        "XL2-03"
+      ],
+      "newlyAssessed": [
+        "XL2-03"
+      ],
+      "noLongerCounted": [],
+      "conclusion": {
+        "state": "unresolved",
+        "hypothesis": null,
+        "statement": null,
+        "confidence": 0.46,
+        "pointsTo": "H-DELIVERED",
+        "eliminated": [],
+        "supportedBy": [],
+        "contradictedBy": [],
+        "headline": "Unresolved: the evidence points to \"PX-7730 was delivered to the customer's address.\" but does not yet justify it as a conclusion."
+      },
+      "changedFromPreviousStage": false
+    }
+  ],
+  "final": {
+    "state": "unresolved",
+    "hypothesis": null,
+    "statement": null,
+    "confidence": 0.46,
+    "pointsTo": "H-DELIVERED",
+    "eliminated": [],
+    "supportedBy": [],
+    "contradictedBy": [],
+    "headline": "Unresolved: the evidence points to \"PX-7730 was delivered to the customer's address.\" but does not yet justify it as a conclusion."
+  }
+}

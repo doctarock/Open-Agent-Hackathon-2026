@@ -31,7 +31,8 @@
     "compare:live": "npm run build && node dist/src/scripts/compare.js --live",
     "sponsors:verify": "npm run build && node dist/src/scripts/sponsor-check.js",
     "plugin:install": "npm run build && node dist/src/scripts/plugin-install.js",
-    "speck": "node dist/src/scripts/speck.js"
+    "speck": "node dist/src/scripts/speck.js",
+    "investigate": "npm run build && node dist/src/scripts/investigate.js"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

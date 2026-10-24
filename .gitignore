@@ -12,3 +12,6 @@ data/
 eval/results/*
 !eval/results/comparisons/
 !eval/results/experiments/
+
+# Execution traces from npm run investigate
+logs/
