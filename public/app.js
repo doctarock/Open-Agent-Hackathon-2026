@@ -930,7 +930,11 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         onDeleted?.(result);
       } catch (failure) {
         error.hidden = false;
-        error.textContent = `The investigation was not deleted: ${failure.message}`;
+        // A 404 without the server's own message: this Speck was started before the
+        // plugin gained deleting (Speck loads plugin routes only at startup).
+        error.textContent = failure.message === "HTTP 404"
+          ? "The investigation was not deleted: this Speck was started before Evidence Desk was updated, so it does not offer deleting yet. Restart Speck (npm run speck) and try again."
+          : `The investigation was not deleted: ${failure.message}`;
         submit.disabled = false;
       }
     });
