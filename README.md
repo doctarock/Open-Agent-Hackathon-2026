@@ -1,7 +1,9 @@
 # Open-Agent-Hackathon-2026 — Speck Evidence Desk
 
 > **For judges:** Evidence Desk is a **Speck plugin**. Start Speck (`npm run speck`) and open the
-> **Evidence** tab in its rail and take the guided demo. It ends on **Speck beside a stateless
+> **Evidence** tab in its rail and take the guided demo. It opens on a one-minute **TL;DR**: a
+> stateless baseline reaches a conclusion, a correction arrives, and the two diverge. Speck makes
+> AI reasoning auditable, correctable and evidence-driven; a plain LLM cannot. It ends on **Speck beside a stateless
 > baseline**, a panel at the bottom of each case: one click runs the same case, with the same
 > evidence and the same correction, through both, and shows what each actually did.
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
@@ -186,15 +188,17 @@ The page explains itself; no walkthrough from a developer is needed.
   full guided demo; it is hidden while the guided demo is running, and *Reset demo case* shows it
   again.
 - **The guided investigation** works on the real case, using the page's own buttons:
-  1. the competing explanations;
-  2. a real run;
-  3. the conclusion and its confidence;
-  4. one record's source and provenance;
-  5. the prepared update;
-  6. a second run;
-  7. which record no longer counts and why;
-  8. the history;
-  9. the remaining capabilities.
+  1. the TL;DR: one side-by-side comparison read as three beats (the stateless baseline's
+     conclusion, the correction, how the two diverge) and the point it makes;
+  2. the competing explanations;
+  3. a real run;
+  4. the conclusion and its confidence;
+  5. one record's source and provenance;
+  6. the prepared update;
+  7. a second run;
+  8. which record no longer counts and why;
+  9. the history;
+  10. the remaining capabilities.
 
   An action step completes only when the case's real state shows the action happened. Every
   sentence about the case is read from that state, so a live run is described as it actually
@@ -245,7 +249,10 @@ Inside Speck the Evidence tab replaces the per-case introduction with one **guid
 offered at the top of the tab (*Start the guided demo* or *Explore on my own*), and the *Guided
 demo* link beside the case picker starts or resumes it.
 
-1. **Disputed delivery** (live when configured): the case tour above, without its comparison
+0. **TL;DR** (on the disputed delivery): the comparison on that case, read as three beats: what
+   the stateless baseline concludes, the correction, and how the two diverge. A saved comparison
+   made with the current settings is shown at once; otherwise one click runs it.
+1. **Disputed delivery** (live when configured): the case tour above, without its TL;DR, comparison
    and last overview steps.
 2. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
    bank's return of the payment), a second run, and which record no longer counts. It ends on

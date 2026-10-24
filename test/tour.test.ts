@@ -100,6 +100,26 @@ test("progress is kept per viewer when storage works, and the page still works w
   assert.equal(tour.progressStore(null, "/api").tourStep(), null);
 });
 
+test("the TL;DR reads a real comparison report as three beats and the point, and names the stateless side for what it was", () => {
+  const report = (name: string) => JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "eval", "results", "comparisons", "disputed-delivery", name), "utf8"));
+  const tldr = step("tldr");
+  assert.equal(tour.TOUR_STEPS[0].id, "tldr", "the tour opens on it");
+  assert.equal(tour.stepDone(tldr, { comparison: { current: null } }), false, "it waits for a comparison");
+
+  const live = text(tldr.after({ comparison: { current: report("2026-10-23T08-50-39-457Z-17885923.json") } }));
+  assert.match(live, /1\. Stateless model call, on the first evidence: concludes H-DELIVERED/);
+  assert.match(live, /2\. A correction arrives: EV-CAR-005 replaces EV-CAR-003/);
+  assert.match(live, /Stateless model call: concludes H-DELIVERED, still citing EV-CAR-003, the record that was replaced/);
+  assert.match(live, /Speck: EV-CAR-003 no longer counts/);
+  assert.match(live, /auditable, correctable and evidence-driven\. A plain LLM, answering from scratch, cannot do this/);
+  assert.match(live, /Live run/);
+
+  const rules = text(tldr.after({ comparison: { current: report("2026-10-23T08-49-07-237Z-6971a451.json") } }));
+  assert.match(rules, /Stateless rule scoring: concludes H-MISDELIVERED\. It keeps nothing/);
+  assert.match(rules, /here the stateless side is rule scoring/);
+  assert.doesNotMatch(rules, /still citing/);
+});
+
 test("every step renders on an empty view, and every target exists on the page", () => {
   const empty = { status: null, investigation: null, listing: null, trace: null };
   for (const item of tour.TOUR_STEPS) {

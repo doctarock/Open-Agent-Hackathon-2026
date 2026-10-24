@@ -6,7 +6,7 @@
 //
 // view = { status, investigation, listing, trace, comparison }, any of which may be null.
 
-import { findings } from "./compare.js";
+import { correctionIndex, findings, heldAt, provenanceLine, statelessName } from "./compare.js";
 
 const runs = (view) => view.investigation?.runs ?? [];
 const current = (view) => view.investigation?.current ?? null;
@@ -67,7 +67,50 @@ export function recordToInspect(view) {
     ?? records(view).find((record) => record.assessed && !record.invalidation) ?? null;
 }
 
+// The TL;DR: one comparison report read as three beats (the stateless
+// baseline concludes, a correction arrives, the two diverge), then the point.
+export function tldrLines(report) {
+  const c = correctionIndex(report);
+  if (c <= 0) return findings(report).map((finding) => [`${finding.title}.`, finding.lines]).flat();
+  const stage = report.stages[c];
+  const name = statelessName(report);
+  const live = report.kind === "live";
+  const before = heldAt(report, c - 1, "stateless");
+  const cited = report.stages[c - 1].checks.stateless.presentedSupport;
+  const stateless = heldAt(report, c, "stateless");
+  const speck = heldAt(report, c, "speck");
+  const leaned = stage.checks.stateless.supportFromReplaced;
+  const dropped = stage.speck.noLongerCounted.map((item) => item.recordId);
+  return [
+    `1. ${name}, on the first evidence: ${before.text}${cited.length ? `, citing ${cited.join(", ")}` : ""}.`,
+    `2. A correction arrives: ${stage.replaced.map((item) => `${item.by} replaces ${item.recordId}`).join(", ")}.`,
+    "3. They diverge:",
+    [
+      `${name}: ${stateless.text}${leaned.length ? `, still citing ${leaned.join(", ")}, the record that was replaced` : ""}. It keeps nothing between calls, so it cannot show that its answer changed, or why.`,
+      `Speck: ${dropped.length ? `${dropped.join(", ")} no longer counts; it ` : ""}${speck.text}. Every belief is traced to the records that still count, and the revision is kept.`
+    ],
+    live
+      ? "Speck makes AI reasoning auditable, correctable and evidence-driven. A plain LLM, answering from scratch, cannot do this."
+      : "Speck makes AI reasoning auditable, correctable and evidence-driven. No model is configured, so here the stateless side is rule scoring; with a model it is a plain LLM call, which cannot do this either.",
+    provenanceLine(report)
+  ];
+}
+
 export const TOUR_STEPS = [
+  {
+    id: "tldr",
+    title: "The point, in one minute",
+    target: "compare",
+    action: "compare",
+    actionLabel: "Run the side-by-side comparison",
+    goal: (view) => Boolean(view.comparison?.current) && !view.comparison?.running,
+    body: (view) => [
+      "The same records, twice: a stateless baseline that answers from scratch, and Speck, which keeps the evidence and its beliefs. Then a correction.",
+      view.comparison?.willRun?.kind === "live" ? "Both sides make real model calls (about 20-60 seconds)." : "Deterministic: it finishes in a second.",
+      "Click Run the side-by-side comparison."
+    ],
+    after: (view) => (view.comparison?.current ? tldrLines(view.comparison.current) : [])
+  },
   {
     id: "case",
     title: "The case and its competing explanations",

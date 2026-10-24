@@ -1,4 +1,5 @@
-// The guided demo inside Speck: one journey across both prepared cases (the
+// The guided demo inside Speck: a TL;DR (Speck beside a stateless baseline
+// through one correction), then one journey across both prepared cases (the
 // disputed delivery, then the bank return, which ends on Speck beside a
 // stateless baseline once both cases have been seen to revise), then
 // Speck's own views of the same work (the world timeline, the memory map and
@@ -17,6 +18,15 @@ const casesLine = (facts) => (facts.cases ?? []).map((item) => item.runs
 export const SUGGESTED_QUESTION = "What did the bank return investigation conclude, and why did it change?";
 
 export const JOURNEY = [
+  {
+    // The TL;DR first: one side-by-side comparison, read as the point of the submission.
+    id: "tldr",
+    kind: "case",
+    caseId: "disputed-delivery",
+    label: "TL;DR",
+    steps: ["tldr"],
+    finishLabel: "Next: the full walkthrough"
+  },
   {
     id: "delivery",
     kind: "case",
