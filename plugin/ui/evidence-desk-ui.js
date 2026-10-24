@@ -309,7 +309,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       yours.length ? [el("span", { className: "picker-label" }, "Your investigations"), yours.map(button)] : null,
       el("button", { type: "button", "data-new-case": "", className: current === "new" ? "primary" : "secondary", "aria-selected": String(current === "new") }, "+ New investigation"),
       el("button", { type: "button", "data-evaluation": "", className: current === "evaluation" ? "primary" : "secondary", "aria-selected": String(current === "evaluation") }, "Evaluation results"),
-      el("button", { type: "button", "data-demo": "start", className: "link" }, demo.store.part() !== null ? "Resume the guided demo" : "Guided demo")).childNodes);
+      el("button", { type: "button", "data-demo": "start", className: "secondary" }, demo.store.part() !== null ? "Resume the guided demo" : "Start the guided demo")).childNodes);
   }
 
   // The invitation to the guided demo, until it is taken or declined.
@@ -336,7 +336,11 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     renderPicker();
     mounted = mountEvidenceDesk(page, {
       apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours",
-      intro: false, guided, evaluationUrl: `${API_BASE}/evaluation`,
+      // A prepared case keeps its own introduction and its Start the guided
+      // investigation button (hidden during the guided demo, or once dismissed).
+      intro: item.kind !== "yours", guided, evaluationUrl: `${API_BASE}/evaluation`,
+      // A prepared case reset for the next person brings the demo's invitation back.
+      onReset: () => { demo.store.restoreOffer(); renderOffer(); },
       onDeleted: async (result) => {
         await loadCases();
         show(cases[0]?.id);

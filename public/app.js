@@ -176,13 +176,15 @@ const TEMPLATE = `
 // which they can add evidence from the page, and which they can delete.
 // onDeleted: called with the API's answer once such an investigation is
 // deleted; the host takes the page away.
+// onReset: called after the case is reset outside a guided demo, so the host
+// can set its own guidance up for the next person too.
 // intro: false hides the first-run introduction (the host offers its own).
 // guided: this page is one part of a longer guided demo the host runs
 // (public/journey.js): { label, steps: tour step ids, finishLabel, start:
 // "first" | "last" | "resume", onFinish, onBack, onExit }.
 // onView: called with the page's state after every refresh.
 // evaluationUrl: where the evaluation summary is served (none: no panel).
-export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null, onDeleted = null } = {}) {
+export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null, onDeleted = null, onReset = null } = {}) {
   root.classList.add("edk");
   root.innerHTML = TEMPLATE;
   const $ = (id) => root.querySelector(`#edk-${id}`);
@@ -962,7 +964,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       coachCollapsed = false;
       renderTour();
       if (guided) goToStep(0);
-      else $("intro").hidden = !intro;
+      else { $("intro").hidden = !intro; onReset?.(); }
       showOutcome(result.restarted
         ? { tone: "ok", title: `Demo case reset: fresh copy ${result.generation} is at "${view.status.stage.label}".`, lines: [`Copy ${result.previousGeneration} is kept in Speck, suspended, with its history.`], next: "Start the guided investigation above, or run the investigation." }
         : { tone: "ok", title: "The demo case is already at its starting state.", lines: ["Nothing was changed."], next: "Start the guided investigation above, or run the investigation." });

@@ -110,6 +110,8 @@ export function journeyStore(storage) {
     part: () => { const part = read("part", null); return Number.isInteger(part) && part >= 0 && part < JOURNEY.length ? part : null; },
     setPart: (part) => write("part", part),
     offerDismissed: () => read("offer-dismissed", false) === true,
-    dismissOffer: () => write("offer-dismissed", true)
+    dismissOffer: () => write("offer-dismissed", true),
+    // For the next person: the invitation shows again and no part is in progress.
+    restoreOffer: () => { write("offer-dismissed", false); write("part", null); }
   };
 }

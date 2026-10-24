@@ -164,7 +164,9 @@ browser, and never changes Speck's belief state, the evidence or the history.
 The page explains itself; no walkthrough from a developer is needed.
 
 - **A first-run introduction** says what Evidence Desk is for and offers one action, *Start the
-  guided investigation*. It can be dismissed, and is not shown again to the same browser.
+  guided investigation*. It can be dismissed, and is not shown again to the same browser. Inside
+  Speck it is on both prepared cases (not on your own investigations), and is hidden while the
+  guided demo is running; *Reset demo case* shows it again.
 - **The guided investigation** works on the real case, using the page's own buttons:
   1. the competing explanations;
   2. a real run;
@@ -196,6 +198,8 @@ The page explains itself; no walkthrough from a developer is needed.
     work and the evidence source are not touched.
   - A case still at its starting state is left alone, so a repeated reset is harmless. A reset is
     refused while a run is in progress.
+  - Inside Speck, a reset made outside the guided demo also brings back the invitation to take
+    the guided demo, and clears any demo still in progress in that browser.
   - Because nothing is deleted, it is safe inside Speck's shared database as well as standalone.
   - `npm run db:reset` remains the way to wipe a standalone database entirely.
 - **Run status** shows the elapsed time while a run is in progress, and the execution engine's

@@ -67,8 +67,10 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
   conclude.
-- A judge can follow it unaided. The **Guided demo** link beside the case picker starts or
-  resumes it at any time. Each case's **Guide** button lists every feature, marking which ones
+- A judge can follow it unaided. The **Start the guided demo** button (or **Resume the guided
+  demo**) at the end of the case picker starts or resumes it at any time. The larger invitation
+  above the cases is shown until it is taken or declined, and comes back when a prepared case is
+  reset for the next person. Each case's **Guide** button lists every feature, marking which ones
   that case has demonstrated.
 
 Optionally, before the judges arrive, run `npm run compare:live` once more: the disputed
