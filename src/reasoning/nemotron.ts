@@ -74,8 +74,12 @@ export async function plainTextCheck(config: NemotronConfig): Promise<{ url: str
   }
   const body = await response.json().catch(() => ({})) as any;
   if (!response.ok) {
-    const hint = response.status === 401 || response.status === 403 ? ` Is ${config.apiKeyEnv} set to a valid key?` : "";
-    throw new Error(`HTTP ${response.status} from ${url}: ${JSON.stringify(body).slice(0, 400)}.${hint}`);
+    // The endpoint's own words when it gives them (OpenAI-style error.message), and what to do.
+    const said = typeof body.error?.message === "string" ? body.error.message : JSON.stringify(body).slice(0, 400);
+    const hint = response.status === 401 || response.status === 403 ? ` Is ${config.apiKeyEnv} set to a valid key?`
+      : body.error?.code === "no_provider_configured" ? " The Meterless Runtime is running but has no model to route to: open its Setup and start a local model (or add a cloud key), then try again."
+        : "";
+    throw new Error(`HTTP ${response.status} from ${url}: ${said}${hint}`);
   }
   const content = body.choices?.[0]?.message?.content;
   if (typeof content !== "string") throw new Error(`the reply's content is ${content === undefined ? "missing" : typeof content}, not a string`);
