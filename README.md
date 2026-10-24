@@ -1379,6 +1379,55 @@ What these runs show:
     actions, and an interrupted run appears as interrupted.
   - **Persistence:** the trace is identical after a reopen and through the API.
 
+## Security
+
+Evidence Desk is a local, single-user tool. These are the decisions behind how it is protected,
+from a security review of this repository's code (Speck is reviewed separately).
+
+**Who can reach the API.**
+- **Inside Speck**, everything under `/api/plugins` requires Speck's admin token. The plugin adds
+  no login of its own and relies on that.
+- **Standalone** (`npm start`), the server has no login. It listens on `127.0.0.1` by default and
+  answers only its own page and local tools (`src/server.ts`, `foreignRequest`):
+  - A request whose `Origin` is not the server itself is refused (403). Browsers send `Origin` on
+    every cross-site POST, so another site open in the same browser cannot run, reset or change
+    a case.
+  - A request whose `Host` is not `localhost` or an IP address is refused (403). This stops DNS
+    rebinding, where a page on a domain that re-resolves to 127.0.0.1 could otherwise read the
+    case. An IP address cannot be rebound, so a server opened to the network on purpose still
+    answers by its IP.
+  - Setting `EVIDENCE_DESK_HOST` to a non-loopback address prints a warning at startup, because
+    anyone who can reach the port can then use the case. It is not refused.
+  - Tools such as curl send no `Origin` and are unaffected. `test/server.test.ts` covers each case.
+
+**Input.**
+- Request bodies are capped at 16 KB. A malformed path parameter is a 400, not a server error.
+- Comparison, case and record ids are looked up among known ones, never used as file paths.
+  Static files are confined to `public/`.
+- The Zetaris case id is checked against `^[A-Za-z0-9_-]+$` before it goes into a SELECT; table
+  and column names come from `config/zetaris-queries.json`, not from requests.
+- The page builds dynamic content as text nodes; its only `innerHTML` is the static template.
+- A person's own investigation has length limits on every field, dated records, and corrections
+  that must name an earlier record of the same investigation.
+- API keys and tokens are never returned by the API, written to reports or logged; only the
+  endpoint and model name are shown.
+
+**Accepted for now, deliberately.**
+- **Error messages reach the page.** An unexpected error's message (which can include a local
+  path) is shown on the page. It is kept because it is the most useful clue when something fails
+  during a demo. Another site cannot read it (the `Host` check), and inside Speck only the admin
+  sees it.
+- **Evidence text is not delimited in the model prompt.** Record content is placed in the
+  assessment prompt as plain text (`src/reasoning/nemotron.ts`, `assessmentPrompt`), so a record
+  written to look like instructions or like another record could sway the model's judgments of
+  its batch. The effect is bounded: judgments naming an unknown record or hypothesis are
+  discarded, and Speck caps model-judged reliability at 0.4. It matters only when evidence comes
+  from someone other than the person running the desk. Delimiting it changes the prompt the
+  reasoning results in *Reasoning on or off* were measured with, so it waits until those can be
+  re-measured (`npm run eval:reasoning`).
+- **No limit on how many investigations can be created.** Inside Speck only the admin can create
+  them.
+
 ## Known limits of this slice
 
 - **The side-by-side comparison is two cases.** Six live samples each of a small local model show

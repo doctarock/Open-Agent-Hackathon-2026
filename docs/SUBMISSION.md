@@ -210,6 +210,10 @@ history are in [build-3-revision.md](build-3-revision.md).
 - **Plugin trust covers the entry module only.** Speck's allowlist hashes the plugin's entry
   file. After a code change, `npm run plugin:install` re-approves it and Speck must be
   restarted. Inside Speck, run progress is polled, not streamed.
+- **A local, single-user tool.** Inside Speck the API needs Speck's admin token; the standalone
+  server has no login and refuses requests from other sites and rebound domains. Error messages
+  are shown on the page, and evidence text is not yet delimited in the model prompt; both are
+  deliberate for now (README, *Security*).
 - **Speck's chat is a small local model.** It answers from the published summary, but its
   wording is the model's; the case page is the record. A person's own investigation can only be
   weighed by the model, and a live run of it sometimes stops early, leaving records pending to
