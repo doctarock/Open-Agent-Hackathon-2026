@@ -4,9 +4,10 @@ import { parseEnv } from "node:util";
 import type { SpeckRuntime } from "#speck";
 import { loadConfig, repositoryRoot, ROOT_DIR, type AppConfig } from "../src/config.js";
 import { deskApi, errorResponse, type DeskApi } from "../src/investigation/api.js";
-import { EvidenceDesk } from "../src/investigation/desk.js";
+import { EvidenceDesk, retireCase } from "../src/investigation/desk.js";
 import { FixtureEvidenceProvider } from "../src/evidence/fixture-provider.js";
 import { addUserEvidence, createUserCase, listUserCases, UserCaseError } from "../src/investigation/user-cases.js";
+import { loadScenario } from "../src/scenario.js";
 import { evaluationSummary } from "../src/compare/evaluation.js";
 import { METERLESS_TOKEN_KEY } from "../src/reasoning/meterless.js";
 
@@ -58,10 +59,12 @@ export function pluginSettings(rootDir = ROOT_DIR): NodeJS.ProcessEnv {
   return { ...fromFile, ...process.env };
 }
 
-export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR): AppConfig {
+// dataRoot: where the case's own data folder goes (a person's investigations
+// keep it beside their cases folder, which by default is the same data/).
+export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR, dataRoot = path.join(rootDir, "data")): AppConfig {
   const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir,
     ...(spec.fixed ? { EVIDENCE_MODE: spec.fixed.evidenceMode, ...(spec.fixed.reasoner ? { REASONER: spec.fixed.reasoner } : {}) } : {}) };
-  const dataDir = path.join(rootDir, "data", spec.id);
+  const dataDir = path.join(dataRoot, spec.id);
   // databasePath is unused here: the case lives in Speck's own database.
   return loadConfig(env, { rootDir, databasePath: path.join(dataDir, "unused.sqlite"), historyDir: path.join(dataDir, "meterless") });
 }
@@ -108,6 +111,27 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
         throw error instanceof UserCaseError ? Object.assign(error, { status: 400 }) : error;
       }
     },
+    // Deletes an investigation the person created. Its Speck workers are
+    // suspended and its summary archived (retireCase); its folder and engine
+    // history move to data/deleted-cases/<time>-<id>/, from which it can be
+    // restored. The prepared cases cannot be deleted, only reset.
+    async remove(id: string) {
+      const spec = find(id);
+      if (!spec.yours) throw Object.assign(new Error("Only an investigation you created can be deleted; the prepared cases can be reset instead"), { status: 400 });
+      const entry = opened.get(id);
+      const desk = entry ? (await entry.catch(() => null))?.desk ?? null : null;
+      if (desk?.isRunning) throw Object.assign(new Error("A run of this investigation is in progress; wait for it to finish"), { status: 409 });
+      const scenario = loadScenario(spec.scenarioDir);
+      const { suspended } = await retireCase(runtime(), scenario, `Investigation ${scenario.caseId} deleted from the Evidence tab`);
+      opened.delete(id);
+      desk?.close();
+      const kept = path.join(path.dirname(ownDir), "deleted-cases", `${new Date().toISOString().replace(/[:.]/g, "-")}-${id}`);
+      fs.mkdirSync(kept, { recursive: true });
+      fs.renameSync(spec.scenarioDir, path.join(kept, "case"));
+      const history = path.join(path.dirname(ownDir), id);
+      if (fs.existsSync(history)) fs.renameSync(history, path.join(kept, "data"));
+      return { deleted: id, label: spec.label, suspendedWorkers: suspended.length, keptIn: path.relative(rootDir, kept) };
+    },
     async get(id: string): Promise<{ desk: EvidenceDesk; api: DeskApi }> {
       const spec = find(id);
       let entry = opened.get(id);
@@ -115,7 +139,7 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
         entry = (async () => {
           const settings = options.settings ?? pluginSettings(rootDir);
           const token = await options.secret?.(METERLESS_TOKEN_KEY).catch(() => null);
-          const config = caseConfig(spec, token ? { ...settings, [METERLESS_TOKEN_KEY]: token } : settings, rootDir);
+          const config = caseConfig(spec, token ? { ...settings, [METERLESS_TOKEN_KEY]: token } : settings, rootDir, spec.yours ? path.dirname(ownDir) : undefined);
           const provider = spec.yours ? new FixtureEvidenceProvider(path.join(spec.scenarioDir, "evidence.json"), config.rootDir, "Evidence you entered (stored locally, not Zetaris)") : null;
           const desk = await EvidenceDesk.attach(runtime(), config, { ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}), ...(provider ? { provider } : {}) });
           return { desk, api: deskApi(desk, config, "Speck's own database (this case is a Speck worker)") };
@@ -168,6 +192,7 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
   // A new investigation of the person's own, and evidence added to one.
   app.post(`${API_BASE}/cases`, plain((req) => cases.create(req.body)));
   app.post(`${API_BASE}/cases/:caseId/evidence/add`, plain((req) => cases.addEvidence(String(req.params.caseId ?? ""), req.body)));
+  app.post(`${API_BASE}/cases/:caseId/delete`, plain((req) => cases.remove(String(req.params.caseId ?? ""))));
   const route = (operation: (api: DeskApi, body: unknown) => unknown): Handler => async (req, res) => {
     try {
       const { api } = await cases.get(String(req.params.caseId ?? ""));

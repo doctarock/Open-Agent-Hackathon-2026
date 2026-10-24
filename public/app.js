@@ -74,6 +74,7 @@ const TEMPLATE = `
   </div>
   <div class="header-actions">
     <button id="edk-reset-button" class="link" type="button" aria-haspopup="dialog">Reset demo case…</button>
+    <button id="edk-delete-button" class="link danger" type="button" aria-haspopup="dialog" hidden>Delete investigation…</button>
     <button id="edk-guide-button" class="secondary" type="button" aria-controls="edk-guide" aria-expanded="false">Guide</button>
   </div>
 </header>
@@ -164,6 +165,7 @@ const TEMPLATE = `
 <section id="edk-guide" class="guide" aria-labelledby="edk-guide-title" hidden></section>
 <dialog id="edk-withdraw" class="withdraw-dialog" aria-labelledby="edk-withdraw-title"></dialog>
 <dialog id="edk-reset" class="withdraw-dialog reset-dialog" aria-labelledby="edk-reset-title"></dialog>
+<dialog id="edk-delete" class="withdraw-dialog" aria-labelledby="edk-delete-title"></dialog>
 `;
 
 // Mounts the page into root. apiBase: where the JSON API lives (/api
@@ -171,14 +173,16 @@ const TEMPLATE = `
 // it (Speck passes its admin-authorised fetch). eventsUrl: a server-sent
 // event stream for run progress, if the host has one.
 // userCase: an investigation the person created (the plugin's own cases), to
-// which they can add evidence from the page.
+// which they can add evidence from the page, and which they can delete.
+// onDeleted: called with the API's answer once such an investigation is
+// deleted; the host takes the page away.
 // intro: false hides the first-run introduction (the host offers its own).
 // guided: this page is one part of a longer guided demo the host runs
 // (public/journey.js): { label, steps: tour step ids, finishLabel, start:
 // "first" | "last" | "resume", onFinish, onBack, onExit }.
 // onView: called with the page's state after every refresh.
 // evaluationUrl: where the evaluation summary is served (none: no panel).
-export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null } = {}) {
+export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, eventsUrl = null, userCase = false, intro = true, guided = null, onView = null, evaluationUrl = null, onDeleted = null } = {}) {
   root.classList.add("edk");
   root.innerHTML = TEMPLATE;
   const $ = (id) => root.querySelector(`#edk-${id}`);
@@ -266,6 +270,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     $("run-button").disabled = working;
     $("update-button").disabled = working || !status.nextStage;
     $("reset-button").disabled = working;
+    $("delete-button").disabled = working;
     $("run-button").textContent = busy === "run" || status.running ? "Running…" : "Run investigation";
     $("update-button").textContent = busy === "update" ? "Introducing…" : status.nextStage ? "Introduce prepared update" : "No further updates";
     $("run-hint").textContent = pending.length
@@ -826,6 +831,8 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
 
   $("run-button").addEventListener("click", () => act("run", "/api/run"));
   $("reset-button").addEventListener("click", () => openReset());
+  $("delete-button").hidden = !userCase;
+  $("delete-button").addEventListener("click", () => openDelete());
   $("update-button").addEventListener("click", () => act("update", "/api/update"));
   $("timeline-all").addEventListener("change", renderTimeline);
 
@@ -893,6 +900,42 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     form.addEventListener("submit", (event) => { event.preventDefault(); dialog.close(); resetCase(); });
     dialog.showModal();
     form.querySelector("[type=submit]").focus();
+  }
+
+  // Deleting an investigation the person created. What goes and what is kept
+  // is said before anything happens.
+  function openDelete() {
+    const dialog = $("delete");
+    const title = view.status?.case.title ?? "this investigation";
+    const error = el("p", { className: "dialog-error", role: "alert", hidden: "" });
+    const form = el("form", { method: "dialog" },
+      el("h2", { id: "edk-delete-title" }, `Delete "${title}"?`),
+      el("p", {}, "It leaves the Evidence tab, with its evidence, runs and history. Speck stops offering it: its task is suspended and its chat summary archived."),
+      el("p", {}, el("strong", {}, "It can be restored. "),
+        "Its files are moved to the plugin's data/deleted-cases/ folder, and Speck keeps the suspended task with its full history. The prepared cases and Speck's other work are not touched."),
+      error,
+      el("div", { className: "dialog-actions" },
+        el("button", { type: "button", className: "secondary", "data-cancel": "" }, "Cancel"),
+        el("button", { type: "submit", className: "primary danger" }, "Delete investigation")));
+    dialog.replaceChildren(form);
+    form.querySelector("[data-cancel]").addEventListener("click", () => dialog.close());
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector("[type=submit]");
+      submit.disabled = true;
+      error.hidden = true;
+      try {
+        const result = await api("/api/delete", { method: "POST" });
+        dialog.close();
+        onDeleted?.(result);
+      } catch (failure) {
+        error.hidden = false;
+        error.textContent = `The investigation was not deleted: ${failure.message}`;
+        submit.disabled = false;
+      }
+    });
+    dialog.showModal();
+    form.querySelector("[data-cancel]").focus();
   }
 
   async function resetCase() {

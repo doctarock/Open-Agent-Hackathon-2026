@@ -282,7 +282,18 @@ competing explanations (equal priors) and optionally the first evidence.
 - The evidence is free text, so only the Nemotron assessor can weigh it (capped at reliability
   0.4 like all model-judged evidence). Under the rule assessor the records are assessed but weigh
   nothing, and the page says so.
-- The code is `src/investigation/user-cases.ts`, tested in `test/user-cases.test.ts`.
+- *Delete investigation…* (top right of the case, for your own investigations only) asks
+  first, then:
+  - takes the case off the tab;
+  - suspends its Speck worker, every copy of it, with its history, so Speck's task queue stops
+    offering it;
+  - archives its chat summary;
+  - moves its files to `data/deleted-cases/<time>-my-N/`, from which they can be restored.
+
+  The prepared cases cannot be deleted, only reset. A later investigation may reuse the free name
+  `my-N`, but each has its own scenario id, so it never attaches to a deleted case's worker.
+- The code is `src/investigation/user-cases.ts` and `retireCase` in `src/investigation/desk.ts`,
+  tested in `test/user-cases.test.ts` and `test/plugin.test.ts`.
 
 ## The scenario
 
@@ -1182,7 +1193,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 135 tests with no network access beyond localhost and no credentials:
+`npm test` runs 136 tests with no network access beyond localhost and no credentials:
 
 - **Side-by-side comparison** (`test/compare.test.ts`, and a route test in `test/plugin.test.ts`): both approaches see the same records at every stage, and each side equals the evaluation's own system on the same case; a stateless answer citing a replaced record is flagged (a stand-in model endpoint); the case on the page is untouched; saved comparisons are never overwritten, partial writes are ignored, and a comparison made with other settings is never shown as current; a failed comparison saves nothing; one runs at a time (409); the page's findings are built from the report; the evaluation summary reads the reports as written; rewriting a report archives the previous one.
 

@@ -245,3 +245,48 @@ test("a person creates an investigation through the plugin and adds evidence to 
     runtime.close();
   }
 });
+
+test("a person deletes their investigation: it leaves the tab, Speck stops offering it, and a new one never inherits it", async () => {
+  const runtime = new SpeckRuntime({ databasePath: path.join(tempDir(), "speck.sqlite") });
+  await runtime.initialize();
+  const app = express();
+  app.use(express.json());
+  const own = path.join(tempDir(), "user-cases");
+  registerEvidenceDeskRoutes(app, createCaseRegistry(() => runtime, { rootDir: ROOT_DIR, settings: {}, userCasesDir: own }));
+  const server = http.createServer(app).listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const caseOf = (id: string) => runtime.listWorkers().filter((worker) => worker.objective.constraints.includes("evidence-desk:case=MY-1") && worker.objective.description.includes(id));
+  try {
+    await call(base, "/api/plugins/evidence-desk/cases", "POST", {
+      title: "Missing laptop return", question: "Was laptop SN-4471 returned?", explanations: ["Returned.", "Never sent back."],
+      evidence: [{ source: "Courier", content: "Pickup from the customer on 3 Oct.", observedAt: "2026-10-03T09:00:00Z" }]
+    });
+    // Opened, so its Speck worker exists.
+    assert.equal((await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).status, 200);
+    await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence/add", "POST", { source: "Warehouse", content: "No inbound scan." });
+    assert.equal(caseOf("SN-4471").length, 1);
+
+    assert.equal((await call(base, "/api/plugins/evidence-desk/cases/bank-return/delete", "POST")).status, 400, "a prepared case cannot be deleted");
+    const deleted = await call(base, "/api/plugins/evidence-desk/cases/my-1/delete", "POST");
+    assert.equal(deleted.status, 200);
+    assert.deepEqual([deleted.body.deleted, deleted.body.label, deleted.body.suspendedWorkers], ["my-1", "Missing laptop return", 1]);
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.map((item: any) => item.id), ["disputed-delivery", "bank-return"]);
+    assert.equal((await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).status, 404);
+    // Kept, not erased: the files in deleted-cases/, the worker suspended in Speck.
+    const [kept] = fs.readdirSync(path.join(path.dirname(own), "deleted-cases"));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(path.dirname(own), "deleted-cases", kept!, "case", "evidence.json"), "utf8")).records.length, 2);
+    assert.deepEqual(caseOf("SN-4471").map((worker) => worker.status), ["suspended"]);
+
+    // A new investigation takes the free folder name my-1, but gets its own worker and no old evidence.
+    await call(base, "/api/plugins/evidence-desk/cases", "POST", { title: "Second", question: "Was crate C-9 delivered?", explanations: ["Yes.", "No."] });
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.map((item: any) => item.id), ["disputed-delivery", "bank-return", "my-1"]);
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence")).body.records, []);
+    assert.equal((await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).body.case.question, "Was crate C-9 delivered?");
+    assert.deepEqual(caseOf("C-9").map((worker) => worker.status), ["waiting"]);
+    assert.deepEqual(caseOf("SN-4471").map((worker) => worker.status), ["suspended"]);
+  } finally {
+    server.close();
+    runtime.close();
+  }
+});

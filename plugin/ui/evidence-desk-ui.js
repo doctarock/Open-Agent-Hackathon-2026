@@ -282,7 +282,9 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
   const offer = el("section", { className: "intro demo-offer", "aria-labelledby": "edk-demo-offer-title", hidden: "" });
   const picker = el("div", { className: "case-picker", role: "tablist", "aria-label": "Investigations" });
   const page = el("div", { className: "edk-in-speck" });
-  shell.append(offer, picker, page);
+  // Says what happened after an investigation is deleted, until the next case is opened.
+  const notice = el("p", { className: "meta case-notice", role: "status", hidden: "" });
+  shell.append(offer, picker, notice, page);
   root.replaceChildren(shell);
 
   let cases = [];
@@ -328,12 +330,19 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     const item = cases.find((candidate) => candidate.id === id) ?? cases[0];
     if (!item) { page.textContent = "Evidence Desk could not list its cases."; return; }
     mounted?.destroy();
+    notice.hidden = true;
     current = item.id;
     remember("case", item.id);
     renderPicker();
     mounted = mountEvidenceDesk(page, {
       apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours",
-      intro: false, guided, evaluationUrl: `${API_BASE}/evaluation`
+      intro: false, guided, evaluationUrl: `${API_BASE}/evaluation`,
+      onDeleted: async (result) => {
+        await loadCases();
+        show(cases[0]?.id);
+        notice.hidden = false;
+        notice.textContent = `"${result.label}" was deleted. Its files are kept in ${result.keptIn}.`;
+      }
     });
   }
 

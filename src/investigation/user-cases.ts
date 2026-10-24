@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { loadScenario, type Scenario } from "../scenario.js";
@@ -69,7 +70,9 @@ export function createUserCase(dir: string, input: unknown, now = new Date()): {
   const id = `my-${number}`;
   const caseId = `MY-${number}`;
   const scenario: Scenario = {
-    id: `user-${id}`, caseId, title, question,
+    // Unique, not just the folder name: a deleted investigation's folder name
+    // is reused, and Speck finds a case's worker by its scenario id.
+    id: `user-${id}-${randomUUID().slice(0, 8)}`, caseId, title, question,
     sources: { [USER_SOURCE_SYSTEM]: { name: "Entered in the Evidence tab", reliability: ENTERED_RELIABILITY } },
     // Equal priors: the person states no preference between them.
     hypotheses: explanations.map((statement, index) => ({ key: `H${index + 1}`, statement, prior: Math.round((1 / explanations.length) * 100) / 100, rules: [] })),

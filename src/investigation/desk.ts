@@ -1208,6 +1208,39 @@ interface AppliedRelation { recordId: string; direction: string }
 
 // Copies of a case after a restart carry "evidence-desk:generation=<n>".
 const GENERATION_TAG = "evidence-desk:generation=";
+
+// Takes a deleted case out of Speck's work without erasing it: every copy of
+// its worker is suspended with its full history (as a reset does to the copy
+// it replaces), and its published summary is archived, so Speck's queue and
+// chat stop offering it. Works whether or not the case was ever opened.
+export async function retireCase(runtime: SpeckRuntime, scenario: Pick<Scenario, "id" | "caseId">, reason: string): Promise<{ suspended: string[] }> {
+  const actor: ActorInput = { kind: "user", source: "evidence-desk/delete" };
+  const constraints = [`evidence-desk:case=${scenario.caseId}`, `evidence-desk:scenario=${scenario.id}`];
+  const release = runtime.beginForegroundWork();
+  try {
+    while (runtime.backgroundScheduler.backgroundActive) await new Promise((resolve) => setImmediate(resolve));
+    const workers = runtime.listWorkers().filter((worker) => constraints.every((constraint) => worker.objective.constraints.includes(constraint)));
+    const suspended: string[] = [];
+    for (const worker of workers) {
+      if (worker.status === "suspended") continue;
+      // A completed worker can only reopen; it is reopened, then suspended.
+      if (worker.status === "completed") await runtime.transitionWorker(worker.id, "ready", actor, reason);
+      await runtime.transitionWorker(worker.id, "suspended", actor, reason);
+      suspended.push(worker.id);
+    }
+    const ids = new Set(workers.map((worker) => worker.id as string));
+    for (const object of runtime.mentalObjects.listAll()) {
+      const tag = object.data.evidenceDeskSummary as { caseId?: unknown } | undefined;
+      const source = (object.data.sharedMemory as { sourceWorkerId?: string | null } | undefined)?.sourceWorkerId;
+      if (object.workerId === null && object.status !== "archived" && tag?.caseId === scenario.caseId && (!source || ids.has(source))) {
+        await runtime.archiveSharedMemory(object.id, actor);
+      }
+    }
+    return { suspended };
+  } finally {
+    release();
+  }
+}
 function generationOf(worker: Worker): number {
   const tag = worker.objective.constraints.find((constraint) => constraint.startsWith(GENERATION_TAG));
   const value = tag ? Number(tag.slice(GENERATION_TAG.length)) : 1;
