@@ -11,7 +11,10 @@
 > - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
 >   could not observe. It needs local Zetaris and a Meterless Runtime. For what it needs and how
 >   to read it, see [Verifying the sponsors yourself](docs/SUBMISSION.md#verifying-the-sponsors-yourself).
->   The saved report of the 2026-10-24 run, with its trace, is in `eval/results/sponsors/`.
+>   **Receipt log:** the saved report of the 2026-10-24 run, with its trace and the model that
+>   served every call, is
+>   [eval/results/sponsors/2026-10-24T02-14-08-828Z.json](eval/results/sponsors/2026-10-24T02-14-08-828Z.json).
+> - [Which agent uses which model](#which-agent-uses-which-model): one table.
 > - `npm run investigate -- examples/payment-correction-chain/input.json`: one case from
 >   structured input to structured output on the command line, with its execution trace. No
 >   credentials or network needed. See [Command line](#command-line) and [examples/](examples/).
@@ -56,6 +59,20 @@ on, and how and why it changed.
 
   So a prompt does not grow as the case does. See *Small model, small context* for the
   measurements.
+
+### Which agent uses which model
+
+| Agent (role) | Code | Model | Receipt |
+|---|---|---|---|
+| Evidence assessor: judges how each record bears on each explanation, one Meterless chunk at a time | `src/reasoning/nemotron.ts` | Nemotron. Local Ollama: `nemotron-3-nano:4b` (reasoning off). Through Meterless Nightshift (`meterless/auto`, the default), the runtime picks: in the receipt run, `nvidia/nemotron-3-ultra-550b-a55b` (stage 1) and `nvidia/nemotron-3.5-lightning-30b-a3b` (stage 2). | [Sponsor run, 2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json) (`servedModels` per call) |
+| Explanation writer: the Meterless engine's reflection pass | `src/reasoning/nemotron.ts` | The same model as the assessor | Same report |
+| Stateless baseline: the comparison's fresh call per stage, with no memory | `src/eval/systems.ts` | The same model, endpoint and temperature as the assessor | [Saved live comparisons](eval/results/comparisons/) (`nemotron-3-nano:4b`) |
+| Decisive reading (experimental, off by default) | `public/decisive.js` | The same model, with reasoning on (`NEMOTRON_DECISIVE_REASONING_EFFORT`) | [docs/comparison.md](docs/comparison.md#decisive-mode-experimental) |
+| Speck's chat (*Talk to Speck*) | `patches/speck-chat-investigations.patch` | Set in Speck's System view. Used here: Nemotron Nano 9B v2 on Ollama (`hf.co/bartowski/nvidia_NVIDIA-Nemotron-Nano-9B-v2-GGUF:Q4_K_M`), or a Meterless Runtime | One rehearsal, not saved |
+| Rule assessor (sample mode, the bank return) | `src/reasoning/rules.ts` | None: deterministic rules | [eval/results/](eval/results/) |
+
+Every live run records the model name the endpoint reported serving, so the trace, not this
+table, is the record of what was used.
 
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
