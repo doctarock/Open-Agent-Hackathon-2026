@@ -341,6 +341,12 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       intro: item.kind !== "yours", guided, evaluationUrl: `${API_BASE}/evaluation`,
       // A prepared case reset for the next person brings the demo's invitation back.
       onReset: () => { demo.store.restoreOffer(); renderOffer(); },
+      // The case's introduction starts the whole guided demo, from its first part.
+      startGuided: {
+        label: "Start the guided demo",
+        description: "The guided demo walks through both prepared cases, then Speck's world view, its memory map and its chat, and ends with an investigation of your own.",
+        start: () => startJourney()
+      },
       onDeleted: async (result) => {
         await loadCases();
         show(cases[0]?.id);
