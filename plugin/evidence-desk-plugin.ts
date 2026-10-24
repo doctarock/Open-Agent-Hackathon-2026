@@ -117,7 +117,8 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
     // restored. The prepared cases cannot be deleted, only reset.
     async remove(id: string) {
       const spec = find(id);
-      if (!spec.yours) throw Object.assign(new Error("Only an investigation you created can be deleted; the prepared cases can be reset instead"), { status: 400 });
+      // The prepared demo cases are refused by name as well, whatever else is true.
+      if (!spec.yours || CASES.some((prepared) => prepared.id === id)) throw Object.assign(new Error("Only an investigation you created can be deleted; the prepared cases can be reset instead"), { status: 400 });
       const entry = opened.get(id);
       const desk = entry ? (await entry.catch(() => null))?.desk ?? null : null;
       if (desk?.isRunning) throw Object.assign(new Error("A run of this investigation is in progress; wait for it to finish"), { status: 409 });

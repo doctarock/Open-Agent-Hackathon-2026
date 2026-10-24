@@ -290,7 +290,8 @@ competing explanations (equal priors) and optionally the first evidence.
   - archives its chat summary;
   - moves its files to `data/deleted-cases/<time>-my-N/`, from which they can be restored.
 
-  The prepared cases cannot be deleted, only reset. A later investigation may reuse the free name
+  The two prepared demo cases cannot be deleted, only reset: the button is not shown on them,
+  and the server refuses them by name (HTTP 400), which a test checks for both. A later investigation may reuse the free name
   `my-N`, but each has its own scenario id, so it never attaches to a deleted case's worker.
 - The code is `src/investigation/user-cases.ts` and `retireCase` in `src/investigation/desk.ts`,
   tested in `test/user-cases.test.ts` and `test/plugin.test.ts`.

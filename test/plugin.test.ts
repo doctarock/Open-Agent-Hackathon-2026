@@ -267,7 +267,15 @@ test("a person deletes their investigation: it leaves the tab, Speck stops offer
     await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence/add", "POST", { source: "Warehouse", content: "No inbound scan." });
     assert.equal(caseOf("SN-4471").length, 1);
 
-    assert.equal((await call(base, "/api/plugins/evidence-desk/cases/bank-return/delete", "POST")).status, 400, "a prepared case cannot be deleted");
+    // The prepared demo cases cannot be deleted, and refusing touches nothing of theirs.
+    for (const prepared of ["disputed-delivery", "bank-return"]) {
+      assert.equal((await call(base, `/api/plugins/evidence-desk/cases/${prepared}/status`)).status, 200);
+      const refused = await call(base, `/api/plugins/evidence-desk/cases/${prepared}/delete`, "POST");
+      assert.deepEqual([refused.status, refused.body.error], [400, "Only an investigation you created can be deleted; the prepared cases can be reset instead"]);
+      assert.equal((await call(base, `/api/plugins/evidence-desk/cases/${prepared}/status`)).status, 200);
+      const workers = runtime.listWorkers().filter((worker) => worker.objective.constraints.some((constraint) => constraint.startsWith("evidence-desk:scenario=")) && !worker.objective.constraints.includes("evidence-desk:case=MY-1"));
+      assert.ok(workers.every((worker) => worker.status !== "suspended"), `${prepared}'s Speck worker is untouched`);
+    }
     const deleted = await call(base, "/api/plugins/evidence-desk/cases/my-1/delete", "POST");
     assert.equal(deleted.status, 200);
     assert.deepEqual([deleted.body.deleted, deleted.body.label, deleted.body.suspendedWorkers], ["my-1", "Missing laptop return", 1]);
