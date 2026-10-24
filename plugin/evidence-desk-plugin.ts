@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import type { SpeckRuntime } from "#speck";
-import { loadConfig, repositoryRoot, ROOT_DIR, type AppConfig } from "../src/config.js";
-import { deskApi, errorResponse, type DeskApi } from "../src/investigation/api.js";
-import { EvidenceDesk, retireCase } from "../src/investigation/desk.js";
+import { loadConfig, repositoryRoot, ROOT_DIR, type CaseConfig } from "../src/config.js";
+import { DESK_ROUTES, deskApi, errorResponse, NotFoundError, RequestError, type DeskApi } from "../src/investigation/api.js";
+import { EvidenceDesk, retireCase, RunInProgressError } from "../src/investigation/desk.js";
 import { FixtureEvidenceProvider } from "../src/evidence/fixture-provider.js";
-import { addUserEvidence, createUserCase, listUserCases, UserCaseError } from "../src/investigation/user-cases.js";
+import { addUserEvidence, createUserCase, listUserCases } from "../src/investigation/user-cases.js";
 import { loadScenario } from "../src/scenario.js";
 import { evaluationSummary } from "../src/compare/evaluation.js";
 import { METERLESS_TOKEN_KEY } from "../src/reasoning/meterless.js";
@@ -61,12 +61,14 @@ export function pluginSettings(rootDir = ROOT_DIR): NodeJS.ProcessEnv {
 
 // dataRoot: where the case's own data folder goes (a person's investigations
 // keep it beside their cases folder, which by default is the same data/).
-export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR, dataRoot = path.join(rootDir, "data")): AppConfig {
+export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR, dataRoot = path.join(rootDir, "data")): CaseConfig {
   const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir,
     ...(spec.fixed ? { EVIDENCE_MODE: spec.fixed.evidenceMode, ...(spec.fixed.reasoner ? { REASONER: spec.fixed.reasoner } : {}) } : {}) };
   const dataDir = path.join(dataRoot, spec.id);
-  // databasePath is unused here: the case lives in Speck's own database.
-  return loadConfig(env, { rootDir, databasePath: path.join(dataDir, "unused.sqlite"), historyDir: path.join(dataDir, "meterless") });
+  // The case lives in Speck's own database, and Speck serves it: the
+  // standalone database and server settings do not apply.
+  const { databasePath: _database, host: _host, port: _port, ...config } = loadConfig(env, { rootDir, historyDir: path.join(dataDir, "meterless") });
+  return config;
 }
 
 // Where the investigations a person creates are kept.
@@ -87,7 +89,7 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
   const specs = (): CaseSpec[] => [...CASES, ...listUserCases(ownDir).map((item) => ({ ...item, fixed: { evidenceMode: "fixture" as const }, yours: true }))];
   const find = (id: string) => {
     const spec = specs().find((candidate) => candidate.id === id);
-    if (!spec) throw Object.assign(new Error(`Unknown case "${id}"`), { status: 404 });
+    if (!spec) throw new NotFoundError(`Unknown case "${id}"`);
     return spec;
   };
   return {
@@ -95,21 +97,13 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
     // The evaluation reports and saved comparisons, read from the repository.
     evaluation: () => evaluationSummary(rootDir),
     create(input: unknown) {
-      try {
-        const created = createUserCase(ownDir, input);
-        return { id: created.id, label: created.label, kind: "yours" };
-      } catch (error) {
-        throw error instanceof UserCaseError ? Object.assign(error, { status: 400 }) : error;
-      }
+      const created = createUserCase(ownDir, input);
+      return { id: created.id, label: created.label, kind: "yours" };
     },
     addEvidence(id: string, input: unknown) {
       const spec = find(id);
-      if (!spec.yours) throw Object.assign(new Error("Evidence can only be added to an investigation you created; the prepared cases' evidence is fixed"), { status: 400 });
-      try {
-        return addUserEvidence(spec.scenarioDir, input);
-      } catch (error) {
-        throw error instanceof UserCaseError ? Object.assign(error, { status: 400 }) : error;
-      }
+      if (!spec.yours) throw new RequestError("Evidence can only be added to an investigation you created; the prepared cases' evidence is fixed");
+      return addUserEvidence(spec.scenarioDir, input);
     },
     // Deletes an investigation the person created. Its Speck workers are
     // suspended and its summary archived (retireCase); its folder and engine
@@ -118,10 +112,10 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
     async remove(id: string) {
       const spec = find(id);
       // The prepared demo cases are refused by name as well, whatever else is true.
-      if (!spec.yours || CASES.some((prepared) => prepared.id === id)) throw Object.assign(new Error("Only an investigation you created can be deleted; the prepared cases can be reset instead"), { status: 400 });
+      if (!spec.yours || CASES.some((prepared) => prepared.id === id)) throw new RequestError("Only an investigation you created can be deleted; the prepared cases can be reset instead");
       const entry = opened.get(id);
       const desk = entry ? (await entry.catch(() => null))?.desk ?? null : null;
-      if (desk?.isRunning) throw Object.assign(new Error("A run of this investigation is in progress; wait for it to finish"), { status: 409 });
+      if (desk?.isRunning) throw new RunInProgressError("A run of this investigation is in progress; wait for it to finish");
       const scenario = loadScenario(spec.scenarioDir);
       const { suspended } = await retireCase(runtime(), scenario, `Investigation ${scenario.caseId} deleted from the Evidence tab`);
       opened.delete(id);
@@ -185,8 +179,7 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
     try {
       res.json(await operation(req));
     } catch (error) {
-      const known = (error as { status?: number }).status;
-      const { status, body } = known ? { status: known, body: { error: (error as Error).message, kind: "request" } } : errorResponse(error);
+      const { status, body } = errorResponse(error);
       res.status(status).json(body);
     }
   };
@@ -194,33 +187,12 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
   app.post(`${API_BASE}/cases`, plain((req) => cases.create(req.body)));
   app.post(`${API_BASE}/cases/:caseId/evidence/add`, plain((req) => cases.addEvidence(String(req.params.caseId ?? ""), req.body)));
   app.post(`${API_BASE}/cases/:caseId/delete`, plain((req) => cases.remove(String(req.params.caseId ?? ""))));
-  const route = (operation: (api: DeskApi, body: unknown) => unknown): Handler => async (req, res) => {
-    try {
-      const { api } = await cases.get(String(req.params.caseId ?? ""));
-      res.json(await operation(api, req.body));
-    } catch (error) {
-      const known = (error as { status?: number }).status;
-      const { status, body } = known ? { status: known, body: { error: (error as Error).message, kind: "request" } } : errorResponse(error);
-      res.status(status).json(body);
-    }
-  };
-  const base = `${API_BASE}/cases/:caseId`;
-  app.get(`${base}/status`, route((api) => api.status()));
-  app.get(`${base}/evidence`, route((api) => api.evidence()));
-  app.get(`${base}/trace`, route((api) => api.trace()));
-  app.get(`${base}/investigation`, route((api) => api.investigation()));
-  app.post(`${base}/run`, route((api) => api.run()));
-  app.post(`${base}/update`, route((api) => api.update()));
-  app.post(`${base}/evidence/withdraw`, route((api, body) => api.withdraw(body)));
-  app.post(`${base}/reset`, route((api) => api.reset()));
-  app.get(`${base}/progress`, route((api) => api.progress()));
-  // Speck beside the stateless baseline on this case (src/compare/comparison.ts).
-  app.get(`${base}/comparison`, route((api) => api.comparison()));
-  app.post(`${base}/comparison`, route((api) => api.compare()));
-  // Decisive mode: the stateless baseline on the case as it stands (public/decisive.js).
-  app.get(`${base}/opinion`, route((api) => api.opinion()));
-  app.post(`${base}/opinion`, route((api) => api.requestOpinion()));
-  app.get(`${base}/comparison/:reportId`, (req, res) => route((api) => api.comparisonReport(String(req.params.reportId ?? "")))(req, res));
+  // Each case's API (DESK_ROUTES): the operations the standalone server serves under /api.
+  for (const route of DESK_ROUTES) {
+    const handler = plain(async (req) => route.handle((await cases.get(String(req.params.caseId ?? ""))).api, { body: req.body, params: req.params }));
+    if (route.method === "GET") app.get(`${API_BASE}/cases/:caseId${route.path}`, handler);
+    else app.post(`${API_BASE}/cases/:caseId${route.path}`, handler);
+  }
 }
 
 export default function createEvidenceDeskPlugin() {

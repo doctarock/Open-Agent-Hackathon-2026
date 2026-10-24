@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { SpeckRuntime, type ActorInput, type MentalObject, type MentalObjectId, type Worker, type WorkerId } from "#speck";
-import type { AppConfig } from "../config.js";
+import type { AppConfig, CaseConfig } from "../config.js";
 import { createEvidenceProvider } from "../evidence/provider.js";
 import { byObservation, type EvidenceFetch, type EvidenceProvider } from "../evidence/types.js";
 import { NemotronReasoner } from "../reasoning/nemotron.js";
@@ -51,7 +51,7 @@ export class EvidenceDesk extends EventEmitter {
   private ownsRuntime = false;
 
   private constructor(
-    readonly config: AppConfig,
+    readonly config: CaseConfig,
     readonly runtime: SpeckRuntime,
     readonly scenario: Scenario,
     readonly provider: EvidenceProvider,
@@ -61,7 +61,7 @@ export class EvidenceDesk extends EventEmitter {
   }
 
   // Standalone: opens its own Speck runtime on config.databasePath.
-  static async open(config: AppConfig, options: DeskOptions = {}): Promise<EvidenceDesk> {
+  static async open(config: CaseConfig & Pick<AppConfig, "databasePath">, options: DeskOptions = {}): Promise<EvidenceDesk> {
     const runtime = new SpeckRuntime({ databasePath: config.databasePath });
     await runtime.initialize();
     const desk = await EvidenceDesk.attach(runtime, config, options);
@@ -71,7 +71,7 @@ export class EvidenceDesk extends EventEmitter {
 
   // Inside Speck: works on a runtime Speck already runs (the plugin is handed
   // Speck's own), alongside Speck's other workers. The case is one worker.
-  static async attach(runtime: SpeckRuntime, config: AppConfig, options: DeskOptions = {}): Promise<EvidenceDesk> {
+  static async attach(runtime: SpeckRuntime, config: CaseConfig, options: DeskOptions = {}): Promise<EvidenceDesk> {
     const scenario = loadScenario(config.scenarioDir);
     const provider = options.provider ?? createEvidenceProvider(config, options.fetchImpl);
     const reasoner = typeof options.reasoner === "function" ? options.reasoner(runtime)
@@ -388,6 +388,6 @@ async function withForegroundLease<T>(runtime: SpeckRuntime, work: () => Promise
   }
 }
 
-export function relativeDataPath(config: AppConfig, file: string): string {
+export function relativeDataPath(config: CaseConfig, file: string): string {
   return path.relative(config.rootDir, file).split(path.sep).join("/");
 }

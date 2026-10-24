@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { repositoryRoot, type AppConfig } from "../config.js";
+import { repositoryRoot, type CaseConfig, type AppConfig } from "../config.js";
 
 export { repositoryRoot };
 import type { Checkpoint } from "../eval/cases.js";
@@ -147,7 +147,7 @@ export interface ComparisonProgress {
 // configured now: the scenario, its fixture evidence, and the assessor's
 // settings. (Live Zetaris evidence is not hashed; the report keeps the
 // records it actually read.)
-export function comparisonFingerprint(config: AppConfig, evidence: ProviderDescription): string {
+export function comparisonFingerprint(config: CaseConfig, evidence: ProviderDescription): string {
   const read = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n") : "");
   const hash = createHash("sha256");
   hash.update(COMPARISON_SCHEMA);
@@ -185,7 +185,7 @@ export async function visibleRecords(desk: EvidenceDesk): Promise<{ records: Evi
 
 // The evaluation's stateless baseline on those records: one model call with
 // the case's Nemotron settings, or the fact rules summed.
-export async function statelessAnswer(config: AppConfig, scenario: Scenario, records: readonly EvidenceRecord[], processor: NemotronProcessor | null): Promise<StatelessSide> {
+export async function statelessAnswer(config: CaseConfig, scenario: Scenario, records: readonly EvidenceRecord[], processor: NemotronProcessor | null): Promise<StatelessSide> {
   if (processor) {
     const callsBefore = processor.calls.length;
     try {
@@ -272,7 +272,7 @@ function labelScore(label: Checkpoint, concluded: string | null, presented: stri
   };
 }
 
-export async function runComparison(config: AppConfig, options: {
+export async function runComparison(config: CaseConfig, options: {
   provider: EvidenceProvider;
   onProgress?: (progress: ComparisonProgress) => void;
 }): Promise<ComparisonReport> {
@@ -280,7 +280,7 @@ export async function runComparison(config: AppConfig, options: {
   const scenario: Scenario = loadScenario(config.scenarioDir);
   const labels = loadLabels(config.scenarioDir);
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "evidence-desk-compare-"));
-  const deskConfig: AppConfig = { ...config, databasePath: path.join(scratch, "speck.sqlite"), historyDir: path.join(scratch, "meterless") };
+  const deskConfig: CaseConfig & Pick<AppConfig, "databasePath"> = { ...config, databasePath: path.join(scratch, "speck.sqlite"), historyDir: path.join(scratch, "meterless") };
   const evidence = options.provider.describe();
   const processor = config.reasoner === "nemotron" ? new NemotronProcessor(config.nemotron) : null;
   const desk = await EvidenceDesk.open(deskConfig, { provider: options.provider });
@@ -401,7 +401,7 @@ export async function runComparison(config: AppConfig, options: {
 export const publishedComparisonsDir = (rootDir: string, scenarioId: string) =>
   path.join(repositoryRoot(rootDir), "eval", "results", "comparisons", scenarioId);
 
-export const pageComparisonsDir = (config: AppConfig, scenarioId: string) =>
+export const pageComparisonsDir = (config: CaseConfig, scenarioId: string) =>
   path.join(path.dirname(config.historyDir), "comparisons", scenarioId);
 
 export function saveComparison(dir: string, report: ComparisonReport): string {

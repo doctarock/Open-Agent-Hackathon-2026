@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ConfigError, loadConfig, loadDotEnv, type AppConfig } from "./config.js";
 import { evaluationSummary } from "./compare/evaluation.js";
-import { deskApi, errorResponse, RequestError } from "./investigation/api.js";
+import { DESK_ROUTES, deskApi, errorResponse, RequestError, type DeskRoute } from "./investigation/api.js";
 import { EvidenceDesk, relativeDataPath } from "./investigation/desk.js";
 
 // A small HTTP server: JSON API under /api, the static UI from public/, and
@@ -28,20 +28,9 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
   desk.on("revision", (summary) => broadcast("revision", summary));
 
   const api = deskApi(desk, config, relativeDataPath(config, config.databasePath));
+  // The case's API (DESK_ROUTES) under /api, and what only this server serves.
+  const caseRoutes = DESK_ROUTES.map((route) => ({ route, pattern: routePattern(`/api${route.path}`) }));
   const routes: Record<string, (request: http.IncomingMessage, response: http.ServerResponse) => Promise<void>> = {
-    "GET /api/status": async (_request, response) => json(response, 200, api.status()),
-    "GET /api/evidence": async (_request, response) => json(response, 200, await api.evidence()),
-    "GET /api/trace": async (_request, response) => json(response, 200, api.trace()),
-    "GET /api/investigation": async (_request, response) => json(response, 200, api.investigation()),
-    "POST /api/run": async (_request, response) => json(response, 200, await api.run()),
-    "POST /api/evidence/withdraw": async (request, response) => json(response, 200, await api.withdraw(await readJson(request))),
-    "POST /api/update": async (_request, response) => json(response, 200, await api.update()),
-    "POST /api/reset": async (_request, response) => json(response, 200, await api.reset()),
-    "GET /api/progress": async (_request, response) => json(response, 200, api.progress()),
-    "GET /api/comparison": async (_request, response) => json(response, 200, api.comparison()),
-    "POST /api/comparison": async (_request, response) => json(response, 200, api.compare()),
-    "GET /api/opinion": async (_request, response) => json(response, 200, api.opinion()),
-    "POST /api/opinion": async (_request, response) => json(response, 200, await api.requestOpinion()),
     "GET /api/evaluation": async (_request, response) => json(response, 200, evaluationSummary(config.rootDir)),
     "GET /api/events": async (request, response) => {
       response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
@@ -56,14 +45,27 @@ export function createServer(desk: EvidenceDesk, config: AppConfig): http.Server
     const route = routes[`${request.method} ${url.pathname}`];
     try {
       if (route) return await route(request, response);
-      const report = request.method === "GET" ? /^\/api\/comparison\/([^/]+)$/.exec(url.pathname) : null;
-      if (report) return json(response, 200, api.comparisonReport(decodeURIComponent(report[1]!)));
+      for (const { route: caseRoute, pattern } of caseRoutes) {
+        const params = caseRoute.method === request.method ? pattern(url.pathname) : null;
+        if (params) return json(response, 200, await caseRoute.handle(api, { body: request.method === "POST" ? await readJson(request) : undefined, params }));
+      }
       if (request.method === "GET" && !url.pathname.startsWith("/api/")) return serveStatic(publicDir, url.pathname, response);
       json(response, 404, { error: `No route for ${request.method} ${url.pathname}` });
     } catch (error) {
       sendError(response, error);
     }
   });
+}
+
+// A route path ("/api/comparison/:reportId") as a matcher returning its
+// decoded parameters, or null when the path does not match.
+function routePattern(routePath: DeskRoute["path"]): (pathname: string) => Record<string, string> | null {
+  const names: string[] = [];
+  const regex = new RegExp(`^${routePath.replace(/:([A-Za-z]+)/g, (_match, name: string) => { names.push(name); return "([^/]+)"; })}$`);
+  return (pathname) => {
+    const match = regex.exec(pathname);
+    return match ? Object.fromEntries(names.map((name, index) => [name, decodeURIComponent(match[index + 1]!)])) : null;
+  };
 }
 
 function sendError(response: http.ServerResponse, error: unknown): void {

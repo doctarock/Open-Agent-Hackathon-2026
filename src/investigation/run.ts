@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Worker } from "#speck";
 import { Markovian, type Generator, type MarkovianRun, type ProgressState } from "../../vendor/meterless-markovian/src/index.js";
-import type { AppConfig } from "../config.js";
+import type { CaseConfig } from "../config.js";
 import { byObservation, type EvidenceFetch, type EvidenceProvider, type EvidenceRecord } from "../evidence/types.js";
 import type { Explanation, ModelCallTrace, Reasoner } from "../reasoning/types.js";
 import type { StageSpec } from "../scenario.js";
@@ -16,7 +16,7 @@ import {
 
 // What a run needs from the case (EvidenceDesk).
 export interface RunContext extends CaseHandle {
-  readonly config: AppConfig;
+  readonly config: CaseConfig;
   readonly provider: EvidenceProvider;
   readonly reasoner: Reasoner;
   ensureCase(): Promise<Worker>;

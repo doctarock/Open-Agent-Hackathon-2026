@@ -52,9 +52,10 @@ export interface NemotronConfig {
   decisiveReasoningEffort: string;
 }
 
-export interface AppConfig {
+// What one case needs, wherever it runs: inside Speck (the plugin, on
+// Speck's own runtime) or standalone.
+export interface CaseConfig {
   rootDir: string;
-  databasePath: string;
   historyDir: string;
   scenarioDir: string;
   evidenceMode: EvidenceMode;
@@ -62,6 +63,12 @@ export interface AppConfig {
   reasoner: ReasonerKind;
   nemotron: NemotronConfig;
   execution: { maxChunks: number; batchSize: number };
+}
+
+// A standalone desk also opens its own Speck database, and the standalone
+// server listens on host:port.
+export interface AppConfig extends CaseConfig {
+  databasePath: string;
   host: string;
   port: number;
 }

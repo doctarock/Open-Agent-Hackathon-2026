@@ -1,8 +1,9 @@
 import { comparisonFingerprint, loadComparisons, pageComparisonsDir, publishedComparisonsDir, runComparison, saveComparison, statelessAnswer, visibleRecords, type ComparisonProgress } from "../compare/comparison.js";
 import { NemotronProcessor } from "../reasoning/nemotron.js";
-import type { AppConfig } from "../config.js";
+import type { CaseConfig } from "../config.js";
 import { EvidenceProviderError } from "../evidence/types.js";
 import { EvidenceDesk, MARKOVIAN_ENGINE, MARKOVIAN_SOURCE, ReasonerNotReadyError, RunInProgressError, WithdrawalError } from "./desk.js";
+import { UserCaseError } from "./user-cases.js";
 
 // The JSON API both front ends serve: the standalone server (src/server.ts,
 // under /api) and the Speck plugin (plugin/evidence-desk-plugin.ts, under
@@ -44,9 +45,36 @@ export interface DeskApi {
   requestOpinion(): Promise<unknown>;
 }
 
+// Every operation of one case's API, by method and path: under /api in the
+// standalone server, under /api/plugins/evidence-desk/cases/<case> in Speck.
+// Both hosts register exactly these, so they cannot drift apart.
+export interface DeskRoute {
+  method: "GET" | "POST";
+  path: string;
+  handle(api: DeskApi, request: { body: unknown; params: Record<string, string> }): unknown;
+}
+export const DESK_ROUTES: readonly DeskRoute[] = [
+  { method: "GET", path: "/status", handle: (api) => api.status() },
+  { method: "GET", path: "/evidence", handle: (api) => api.evidence() },
+  { method: "GET", path: "/trace", handle: (api) => api.trace() },
+  { method: "GET", path: "/investigation", handle: (api) => api.investigation() },
+  { method: "POST", path: "/run", handle: (api) => api.run() },
+  { method: "POST", path: "/update", handle: (api) => api.update() },
+  { method: "POST", path: "/evidence/withdraw", handle: (api, { body }) => api.withdraw(body) },
+  { method: "POST", path: "/reset", handle: (api) => api.reset() },
+  { method: "GET", path: "/progress", handle: (api) => api.progress() },
+  // Speck beside the stateless baseline on this case (src/compare/comparison.ts).
+  { method: "GET", path: "/comparison", handle: (api) => api.comparison() },
+  { method: "POST", path: "/comparison", handle: (api) => api.compare() },
+  { method: "GET", path: "/comparison/:reportId", handle: (api, { params }) => api.comparisonReport(params.reportId ?? "") },
+  // Decisive mode: the stateless baseline on the case as it stands (public/decisive.js).
+  { method: "GET", path: "/opinion", handle: (api) => api.opinion() },
+  { method: "POST", path: "/opinion", handle: (api) => api.requestOpinion() }
+];
+
 // speckDatabase: how to describe where the case is stored (a file path for
 // the standalone desk; Speck's own database inside Speck).
-export function deskApi(desk: EvidenceDesk, config: AppConfig, speckDatabase: string): DeskApi {
+export function deskApi(desk: EvidenceDesk, config: CaseConfig, speckDatabase: string): DeskApi {
   // The execution engine's latest progress report for the current or last
   // run, as Meterless emitted it. Nothing is estimated.
   let latest: { runId: string; phase: string; phaseDetail: string; currentChunk: number; maxChunks: number; at: string } | null = null;
@@ -204,6 +232,6 @@ export function errorResponse(error: unknown): { status: number; body: Record<st
   if (error instanceof RunInProgressError || error instanceof ComparisonInProgressError) return { status: 409, body: { error: error.message, kind: "busy" } };
   if (error instanceof NotFoundError) return { status: 404, body: { error: error.message, kind: "request" } };
   if (error instanceof ReasonerNotReadyError) return { status: 503, body: { error: error.message, hint: error.hint, kind: "reasoner" } };
-  if (error instanceof RequestError || error instanceof WithdrawalError) return { status: 400, body: { error: error.message, kind: "request" } };
+  if (error instanceof RequestError || error instanceof WithdrawalError || error instanceof UserCaseError) return { status: 400, body: { error: error.message, kind: "request" } };
   return { status: 500, body: { error: error instanceof Error ? error.message : String(error), kind: "internal" } };
 }

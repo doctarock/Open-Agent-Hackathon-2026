@@ -374,6 +374,7 @@ With the deterministic rule assessor the outcome is:
 
 | Module | Job |
 |---|---|
+| `api.ts` | The case's JSON API as one route table (`DESK_ROUTES`), registered by both hosts: under `/api` by `src/server.ts`, and per case by the plugin |
 | `desk.ts` | `EvidenceDesk`: opens or attaches to Speck, the case's worker and its copies, and every change to the case (run, update, withdrawal, reset), one at a time under Speck's foreground lease |
 | `records.ts` | What Evidence Desk keeps in Speck beside Speck's own objects (run snapshots, assessments, recomputations, exclusions), and the errors |
 | `case-state.ts` | `CaseState`: one read of the case in Speck, with the ledger, the basis, the conclusion and the evidence listing derived from it at most once. A page request reads one snapshot, so its views agree |
