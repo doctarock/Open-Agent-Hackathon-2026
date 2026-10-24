@@ -278,7 +278,7 @@ async function configureZetaris(local: boolean): Promise<boolean> {
 async function caseEvidence(config: AppConfig, provider: ZetarisEvidenceProvider): Promise<boolean> {
   const caseId = loadScenario(config.scenarioDir).caseId;
   try {
-    const records = await provider.fetchCaseEvidence(caseId);
+    const { records } = await provider.fetchCaseEvidence(caseId);
     if (!records.length) return false;
     ok(`${records.length} record(s) for ${caseId} through Zetaris`);
     return true;

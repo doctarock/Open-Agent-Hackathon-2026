@@ -6,7 +6,7 @@ import { SpeckRuntime, type ActorInput, type CognitiveEvent, type EvidenceRelati
 import { Markovian, type Generator, type MarkovianRun, type ProgressState } from "../../vendor/meterless-markovian/src/index.js";
 import type { AppConfig } from "../config.js";
 import { createEvidenceProvider } from "../evidence/provider.js";
-import { byObservation, type EvidenceProvider, type EvidenceRecord, type FetchSummary, type ProviderDescription } from "../evidence/types.js";
+import { byObservation, type EvidenceFetch, type EvidenceProvider, type EvidenceRecord, type FetchSummary, type ProviderDescription } from "../evidence/types.js";
 import { NemotronReasoner } from "../reasoning/nemotron.js";
 import { RuleReasoner } from "../reasoning/rules.js";
 import type { Explanation, ModelCallTrace, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "../reasoning/types.js";
@@ -200,7 +200,7 @@ export interface DeskOptions {
 }
 
 export class RunInProgressError extends Error {
-  constructor() { super("An investigation run is already in progress"); this.name = "RunInProgressError"; }
+  constructor(message = "An investigation run is already in progress") { super(message); this.name = "RunInProgressError"; }
 }
 
 export class WithdrawalError extends Error {
@@ -218,7 +218,10 @@ export class ReasonerNotReadyError extends Error {
 // world state, and each run's outcome is an episodic memory. Reopening the
 // database resumes exactly where the last process left off.
 export class EvidenceDesk extends EventEmitter {
-  private running = false;
+  // The change to the case in progress, if any. Set synchronously on entry
+  // (change()), so no two changes overlap: Speck's foreground lease only
+  // keeps background jobs out, it does not order foreground work.
+  private busy: { kind: "run" | "change"; label: string } | null = null;
   // Whether this desk opened the Speck runtime (standalone) or was handed
   // one (the Speck plugin), and so whether it may close it.
   private ownsRuntime = false;
@@ -264,23 +267,28 @@ export class EvidenceDesk extends EventEmitter {
     if (this.ownsRuntime) this.runtime.close();
   }
 
-  // Every change to the case runs here. Speck's background cognition reads
-  // a worker's objects, may await (embeddings), then writes whole objects
-  // back; a belief revised in between would be overwritten with the stale
-  // copy. The foreground lease stops new background jobs, and waiting for a
-  // job already running to finish closes the remaining window. Both are
-  // Speck's public runtime API.
-  private async exclusive<T>(work: () => Promise<T>): Promise<T> {
-    const release = this.runtime.beginForegroundWork();
+  // Every change to the case runs under Speck's foreground lease
+  // (withForegroundLease).
+  private exclusive<T>(work: () => Promise<T>): Promise<T> {
+    return withForegroundLease(this.runtime, work);
+  }
+
+  // Every operation that changes the case: refused while another is in
+  // progress, then run under the foreground lease.
+  private async change<T>(kind: "run" | "change", label: string, work: () => Promise<T>): Promise<T> {
+    if (this.busy) {
+      throw new RunInProgressError(this.busy.kind === "run" ? undefined : `${this.busy.label} is in progress; wait for it to finish`);
+    }
+    this.busy = { kind, label };
     try {
-      while (this.runtime.backgroundScheduler.backgroundActive) await new Promise((resolve) => setImmediate(resolve));
-      return await work();
+      return await this.exclusive(work);
     } finally {
-      release();
+      this.busy = null;
     }
   }
 
-  get isRunning(): boolean { return this.running; }
+  // Whether an investigation run is in progress.
+  get isRunning(): boolean { return this.busy?.kind === "run"; }
 
   // The case's Speck worker, created with its hypotheses on first use.
   async ensureCase(): Promise<Worker> {
@@ -319,10 +327,7 @@ export class EvidenceDesk extends EventEmitter {
   // evidence source (fixture file or Zetaris) is only ever read. A case still
   // at its starting state is left as it is, so repeating a reset is harmless.
   async restartCase(): Promise<{ restarted: boolean; generation: number; previousGeneration: number | null }> {
-    if (this.running) throw new RunInProgressError();
-    this.running = true;
-    try {
-      return await this.exclusive(async () => {
+    return this.change("change", "A restart of the case", async () => {
         const previous = this.worker();
         const generation = generationOf(previous);
         if (this.atStart(previous)) return { restarted: false, generation, previousGeneration: null };
@@ -333,10 +338,7 @@ export class EvidenceDesk extends EventEmitter {
         // The fresh copy has no conclusion: Speck's conversation stops recalling the old one.
         await this.publishToSpeck();
         return { restarted: true, generation: generation + 1, previousGeneration: generation };
-      });
-    } finally {
-      this.running = false;
-    }
+    });
   }
 
   // Links the case's memories in Speck's own association graph (Speck's
@@ -462,19 +464,20 @@ export class EvidenceDesk extends EventEmitter {
   // Releases the next prepared evidence update. Persisted in Speck, so the
   // next run (in this process or a later one) sees it.
   async introduceNextUpdate(): Promise<StageSpec> {
-    if (this.running) throw new RunInProgressError();
-    const next = this.nextStage();
-    if (!next) throw new Error("There is no further prepared evidence update for this case");
-    await this.exclusive(() => this.runtime.setWorldState({
-      workerId: this.worker().id, key: STAGE_KEY, value: next.id, epistemicStatus: "observed",
-      actor: { kind: "user", source: "evidence-desk/update" }
-    }));
-    return next;
+    return this.change("change", "An evidence update", async () => {
+      const next = this.nextStage();
+      if (!next) throw new Error("There is no further prepared evidence update for this case");
+      await this.runtime.setWorldState({
+        workerId: this.worker().id, key: STAGE_KEY, value: next.id, epistemicStatus: "observed",
+        actor: { kind: "user", source: "evidence-desk/update" }
+      });
+      return next;
+    });
   }
 
   async listEvidence(): Promise<EvidenceListing> {
     const stage = this.currentStage();
-    const visible = await this.visibleEvidence(stage);
+    const { records: visible } = await this.visibleEvidence(stage);
     const recorded = this.recordedEvidence();
     const supersededBy = new Map<string, string>();
     for (const record of visible) for (const id of record.provenance.supersedes) supersededBy.set(id, record.id);
@@ -517,49 +520,36 @@ export class EvidenceDesk extends EventEmitter {
   }
 
   async run(): Promise<RunSnapshot> {
-    if (this.running) throw new RunInProgressError();
-    this.running = true;
-    try {
-      return await this.exclusive(async () => {
-        const snapshot = await this.execute();
-        await this.linkCaseMemories();
-        await this.publishToSpeck();
-        return snapshot;
-      });
-    } finally {
-      this.running = false;
-    }
+    return this.change("run", "An investigation run", async () => {
+      const snapshot = await this.execute();
+      await this.linkCaseMemories();
+      await this.publishToSpeck();
+      return snapshot;
+    });
   }
 
   // Withdraws an assessed record from the case (for example, it belongs to a
   // different case). Speck archives it; current beliefs are then recomputed
   // without it, and what it contributed before stays in the history.
   async withdrawRecord(recordId: string, reason: string): Promise<Recomputation | null> {
-    if (this.running) throw new RunInProgressError();
     const why = reason.trim();
     if (!why) throw new WithdrawalError("A reason is required to withdraw evidence");
-    const evidenceId = this.recordedEvidence().get(recordId);
-    if (!evidenceId) return this.excludeRecord(recordId, why);
-    // Withdrawing again is a no-op: the first reason stands and nothing is recomputed.
-    if (this.runtime.mentalObjects.get(evidenceId as MentalObjectId)?.data.withdrawn) return null;
-    this.running = true;
-    try {
+    return this.change("change", "A withdrawal", async () => {
+      const evidenceId = this.recordedEvidence().get(recordId);
+      if (!evidenceId) return this.excludeRecord(recordId, why);
+      // Withdrawing again is a no-op: the first reason stands and nothing is recomputed.
+      if (this.runtime.mentalObjects.get(evidenceId as MentalObjectId)?.data.withdrawn) return null;
       const correlationId = randomUUID();
-      const { recomputation } = await this.exclusive(async () => {
-        await this.runtime.withdrawEvidence({
-          workerId: this.worker().id, evidenceId: evidenceId as MentalObjectId, reason: why,
-          actor: { kind: "user", source: "evidence-desk/withdraw", correlationId }
-        });
-        const result = await this.reconcile({ correlationId, trigger: `${recordId} withdrawn: ${why}` });
-        await this.linkCaseMemories();
-        await this.publishToSpeck();
-        return result;
+      await this.runtime.withdrawEvidence({
+        workerId: this.worker().id, evidenceId: evidenceId as MentalObjectId, reason: why,
+        actor: { kind: "user", source: "evidence-desk/withdraw", correlationId }
       });
+      const { recomputation } = await this.reconcile({ correlationId, trigger: `${recordId} withdrawn: ${why}` });
+      await this.linkCaseMemories();
+      await this.publishToSpeck();
       this.emit("revision", { recordId, recomputation: recomputation?.version ?? null });
       return recomputation;
-    } finally {
-      this.running = false;
-    }
+    });
   }
 
   // Withdrawal of a record that is not in Speck's ledger: pending, or failed.
@@ -567,29 +557,24 @@ export class EvidenceDesk extends EventEmitter {
   // it. Beliefs cannot change, so nothing is recomputed.
   private async excludeRecord(recordId: string, reason: string): Promise<null> {
     if (this.exclusions().has(recordId)) return null;
-    const visible = await this.visibleEvidence(this.currentStage());
+    const { records: visible } = await this.visibleEvidence(this.currentStage());
     if (!visible.some((record) => record.id === recordId)) {
       throw new WithdrawalError(`${recordId} is not evidence available in this case at stage "${this.currentStage().label}", so there is nothing to withdraw`);
     }
-    this.running = true;
-    try {
-      const exclusion: Exclusion = {
-        schema: EXCLUSION_SCHEMA, recordId, reason, at: new Date().toISOString(),
-        lastError: this.assessmentHistory().get(recordId)?.at(-1)?.error ?? null
-      };
-      await this.exclusive(() => this.runtime.recordMemory({
-        workerId: this.worker().id, type: "episodic",
-        content: `${recordId} withdrawn before assessment: ${reason}`,
-        data: exclusion as unknown as Record<string, unknown>,
-        // Its own correlation id: Speck otherwise carries the previous
-        // event's forward, which would attribute this to the last run.
-        actor: { kind: "user", source: "evidence-desk/withdraw", correlationId: randomUUID() }
-      }));
-      this.emit("revision", { recordId, recomputation: null });
-      return null;
-    } finally {
-      this.running = false;
-    }
+    const exclusion: Exclusion = {
+      schema: EXCLUSION_SCHEMA, recordId, reason, at: new Date().toISOString(),
+      lastError: this.assessmentHistory().get(recordId)?.at(-1)?.error ?? null
+    };
+    await this.runtime.recordMemory({
+      workerId: this.worker().id, type: "episodic",
+      content: `${recordId} withdrawn before assessment: ${reason}`,
+      data: exclusion as unknown as Record<string, unknown>,
+      // Its own correlation id: Speck otherwise carries the previous
+      // event's forward, which would attribute this to the last run.
+      actor: { kind: "user", source: "evidence-desk/withdraw", correlationId: randomUUID() }
+    });
+    this.emit("revision", { recordId, recomputation: null });
+    return null;
   }
 
   // Records withdrawn before assessment, by record id.
@@ -715,9 +700,8 @@ export class EvidenceDesk extends EventEmitter {
 
     // Evidence access failures end the run here, visibly. Nothing is
     // substituted for the missing data.
-    const visible = await this.visibleEvidence(stage);
-    const fetched = this.provider.lastFetch?.() ?? null;
-    const retrieval = fetched ? { ...fetched, visible: visible.length } : null;
+    const { records: visible, summary } = await this.visibleEvidence(stage);
+    const retrieval = { ...summary, visible: visible.length };
     const recorded = this.recordedEvidence();
     const excluded = this.exclusions();
     const pending = visible.filter((record) => !recorded.has(record.id) && !excluded.has(record.id));
@@ -1169,11 +1153,10 @@ export class EvidenceDesk extends EventEmitter {
     ].join("\n");
   }
 
-  private async visibleEvidence(stage: StageSpec): Promise<EvidenceRecord[]> {
+  private async visibleEvidence(stage: StageSpec): Promise<EvidenceFetch> {
     const cutoff = Date.parse(stage.asOf);
-    return (await this.provider.fetchCaseEvidence(this.scenario.caseId))
-      .filter((record) => Date.parse(record.observedAt) <= cutoff)
-      .sort(byObservation);
+    const { records, summary } = await this.provider.fetchCaseEvidence(this.scenario.caseId);
+    return { records: records.filter((record) => Date.parse(record.observedAt) <= cutoff).sort(byObservation), summary };
   }
 
   // Record id -> Speck evidence object id, for evidence already in the ledger.
@@ -1216,9 +1199,7 @@ const GENERATION_TAG = "evidence-desk:generation=";
 export async function retireCase(runtime: SpeckRuntime, scenario: Pick<Scenario, "id" | "caseId">, reason: string): Promise<{ suspended: string[] }> {
   const actor: ActorInput = { kind: "user", source: "evidence-desk/delete" };
   const constraints = [`evidence-desk:case=${scenario.caseId}`, `evidence-desk:scenario=${scenario.id}`];
-  const release = runtime.beginForegroundWork();
-  try {
-    while (runtime.backgroundScheduler.backgroundActive) await new Promise((resolve) => setImmediate(resolve));
+  return withForegroundLease(runtime, async () => {
     const workers = runtime.listWorkers().filter((worker) => constraints.every((constraint) => worker.objective.constraints.includes(constraint)));
     const suspended: string[] = [];
     for (const worker of workers) {
@@ -1237,6 +1218,19 @@ export async function retireCase(runtime: SpeckRuntime, scenario: Pick<Scenario,
       }
     }
     return { suspended };
+  });
+}
+
+// Speck's background cognition reads a worker's objects, may await
+// (embeddings), then writes whole objects back; a belief revised in between
+// would be overwritten with the stale copy. The foreground lease stops new
+// background jobs, and waiting for a job already running to finish closes the
+// remaining window. Both are Speck's public runtime API.
+async function withForegroundLease<T>(runtime: SpeckRuntime, work: () => Promise<T>): Promise<T> {
+  const release = runtime.beginForegroundWork();
+  try {
+    while (runtime.backgroundScheduler.backgroundActive) await new Promise((resolve) => setImmediate(resolve));
+    return await work();
   } finally {
     release();
   }

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 import { FixtureEvidenceProvider } from "../src/evidence/fixture-provider.js";
-import type { EvidenceProvider, EvidenceRecord } from "../src/evidence/types.js";
+import type { EvidenceFetch, EvidenceProvider, EvidenceRecord } from "../src/evidence/types.js";
 import { deriveBasis } from "../src/investigation/basis.js";
 import type { EvidenceDesk } from "../src/investigation/desk.js";
 import { ruleJudgments } from "../src/reasoning/rules.js";
@@ -79,8 +79,9 @@ class GatedProvider implements EvidenceProvider {
   readonly allowed = new Set<string>();
   constructor(private readonly inner: EvidenceProvider) {}
   describe() { return this.inner.describe(); }
-  async fetchCaseEvidence(caseId: string): Promise<EvidenceRecord[]> {
-    return (await this.inner.fetchCaseEvidence(caseId)).filter((item) => this.allowed.has(item.id));
+  async fetchCaseEvidence(caseId: string): Promise<EvidenceFetch> {
+    const fetched = await this.inner.fetchCaseEvidence(caseId);
+    return { ...fetched, records: fetched.records.filter((item) => this.allowed.has(item.id)) };
   }
 }
 

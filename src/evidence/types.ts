@@ -40,7 +40,7 @@ export interface ProviderDescription {
   problem: string | null;
 }
 
-// What the last successful fetch actually did: for Zetaris, each SELECT sent
+// What a fetch actually did: for Zetaris, each SELECT sent
 // through the platform with its row count and query token (including tables
 // that returned nothing); for fixtures, the file read.
 export interface FetchSummary {
@@ -49,11 +49,17 @@ export interface FetchSummary {
   sources: Array<{ location: string; rows: number; queryToken: string | null; latencyMs: number | null }>;
 }
 
+// A fetch's records, with what the fetch did. Returned together, so a
+// caller's summary is always its own fetch's, whatever else fetched meanwhile.
+export interface EvidenceFetch {
+  records: EvidenceRecord[];
+  summary: FetchSummary;
+}
+
 export interface EvidenceProvider {
   readonly mode: RetrievalMode;
   describe(): ProviderDescription;
-  fetchCaseEvidence(caseId: string): Promise<EvidenceRecord[]>;
-  lastFetch?(): FetchSummary | null;
+  fetchCaseEvidence(caseId: string): Promise<EvidenceFetch>;
 }
 
 export class EvidenceProviderError extends Error {

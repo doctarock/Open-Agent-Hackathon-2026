@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { byObservation, validateEvidenceRecord, type EvidenceProvider, type EvidenceRecord, type FetchSummary, type ProviderDescription } from "./types.js";
+import { byObservation, validateEvidenceRecord, type EvidenceFetch, type EvidenceProvider, type ProviderDescription } from "./types.js";
 
 // Evidence from the scenario's fixture file, for tests and local development.
 // Every record is labelled as fixture data.
 export class FixtureEvidenceProvider implements EvidenceProvider {
   readonly mode = "fixture" as const;
-  private fetched: FetchSummary | null = null;
 
   // label: how the page names this source (evidence a person entered, say).
   constructor(private readonly file: string, private readonly rootDir: string, private readonly label = "Local fixtures (not Zetaris)") {}
@@ -22,7 +21,8 @@ export class FixtureEvidenceProvider implements EvidenceProvider {
     };
   }
 
-  async fetchCaseEvidence(caseId: string): Promise<EvidenceRecord[]> {
+  // The summary names the file read. No Zetaris query is involved.
+  async fetchCaseEvidence(caseId: string): Promise<EvidenceFetch> {
     const document = JSON.parse(fs.readFileSync(this.file, "utf8")) as { records?: unknown[] };
     const retrievedAt = new Date().toISOString();
     const records = (document.records ?? [])
@@ -30,13 +30,7 @@ export class FixtureEvidenceProvider implements EvidenceProvider {
       .filter((record) => record.caseId === caseId)
       .map((record) => ({ ...record, retrieval: { mode: this.mode, location: this.relative(), retrievedAt } }))
       .sort(byObservation);
-    this.fetched = { mode: this.mode, at: retrievedAt, sources: [{ location: this.relative(), rows: records.length, queryToken: null, latencyMs: null }] };
-    return records;
-  }
-
-  // The file read by the last fetch. No Zetaris query is involved.
-  lastFetch(): FetchSummary | null {
-    return this.fetched;
+    return { records, summary: { mode: this.mode, at: retrievedAt, sources: [{ location: this.relative(), rows: records.length, queryToken: null, latencyMs: null }] } };
   }
 
   private relative(): string {

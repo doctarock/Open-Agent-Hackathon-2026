@@ -74,7 +74,7 @@ test("Zetaris rows become evidence labelled as retrieved via Zetaris", async () 
     }] : [];
     return jsonResponse(200, { records: rows, totalCount: rows.length, queryToken: "q-123" });
   }));
-  const records = await provider.fetchCaseEvidence("DISPUTE-1042");
+  const { records } = await provider.fetchCaseEvidence("DISPUTE-1042");
   assert.equal(records.length, 1);
   assert.deepEqual(records[0]!.retrieval.mode, "zetaris");
   assert.equal(records[0]!.retrieval.location, "EVIDENCE_DESK.carrier_events");

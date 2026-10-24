@@ -14,7 +14,7 @@ try {
   console.log(`Zetaris at ${config.zetaris.baseUrl} as ${config.zetaris.username || "(no user set)"}`);
   const probe = await provider.select("SELECT 1 AS ok", "connectivity probe");
   console.log(`  connectivity probe: ${JSON.stringify(probe.records)}`);
-  const records = await provider.fetchCaseEvidence(caseId);
+  const { records } = await provider.fetchCaseEvidence(caseId);
   const byTable = new Map<string, number>();
   for (const record of records) byTable.set(record.retrieval.location, (byTable.get(record.retrieval.location) ?? 0) + 1);
   for (const [table, count] of byTable) console.log(`  ${table}: ${count} record(s) for ${caseId}`);

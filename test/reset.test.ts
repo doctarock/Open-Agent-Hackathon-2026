@@ -89,6 +89,31 @@ test("a reset during a run is refused and changes nothing; a failed reset is an 
   });
 });
 
+test("changes to a case never overlap: while one is in progress, another is refused", async () => {
+  const config = testConfig();
+  await withDesk(config, async (desk) => {
+    // An update during a run is refused; the stage stays where the run found it.
+    const running = desk.run();
+    await assert.rejects(desk.introduceNextUpdate(), RunInProgressError);
+    await running;
+    assert.equal(desk.currentStage().id, desk.scenario.stages[0]!.id);
+
+    // A run during an update is refused, and the update is not reported as a run.
+    const updating = desk.introduceNextUpdate();
+    assert.equal(desk.isRunning, false);
+    await assert.rejects(desk.run(), /An evidence update is in progress/);
+    await updating;
+    assert.equal(desk.currentStage().id, desk.scenario.stages[1]!.id);
+
+    // Two withdrawals of the same pending record at once: one is recorded.
+    const pending = (await desk.listEvidence()).pending[0]!;
+    const [first, second] = await Promise.allSettled([desk.withdrawRecord(pending, "not this case"), desk.withdrawRecord(pending, "not this case")]);
+    assert.equal(first.status, "fulfilled");
+    assert.equal(second.status, "rejected");
+    assert.equal(desk.runtime.mentalObjects.listAll().filter((object) => object.data.schema === "evidence-desk.exclusion.v1" && object.data.recordId === pending).length, 1);
+  });
+});
+
 test("the progress endpoint reports the execution engine's own progress, and nothing when no run has happened", async () => {
   const config = testConfig();
   await withDesk(config, async (desk) => {

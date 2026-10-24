@@ -377,9 +377,9 @@ its runtime, with routes and a tab in its interface.
 |---|---|
 | Plugins load only from `speck/plugins/`, if their entry module's hash is in Speck's allowlist (`speck/plugins/.runtime/plugin-trust.json`) | `npm run plugin:install` copies the compiled plugin and its data there. It adds the entry module's hash to the allowlist, which is Speck's documented approval step. That allowlist file is the only tracked Speck file it changes. |
 | Speck counts workers in `created` or `ready` as queued tasks, and pauses background cognition for all workers while any is queued | Each case worker moves `created → ready → waiting` through Speck's own transitions. In Speck's Task queue the cases show under **Waiting**. |
-| Speck's background embedding job can write a stale copy of an object over a concurrent revision (demonstrated in `test/speck-compat.test.ts`) | Every change to a case takes Speck's foreground lease and waits for any background job already running. Background cognition then runs over the cases like any other worker. |
+| Speck's background embedding job can write a stale copy of an object over a concurrent revision (demonstrated in `test/speck-compat.test.ts`) | Every change to a case takes Speck's foreground lease and waits for any background job already running. The lease does not order foreground work, so a change (a run, an update, a withdrawal, a reset) is refused with HTTP 409 while another change to the same case is in progress. Background cognition then runs over the cases like any other worker. |
 | Speck's chat could select any model in its runtime registry | Nemotron goes through a private instance of Speck's `ModelRegistry` class: the same contract validation and retries, but no model is added to Speck. |
-| Speck's interface always opened on its World view, with plugin tabs after Speck's own | The one change to Speck's code, kept in this project as `patches/speck-home-view.patch` (applied by `npm run speck:patch`, part of `npm run setup`; never committed to Speck): `SPECK_HOME_VIEW` (default `world`) names the view the interface opens on and returns to (brand button, panel close). A plugin tab named there is placed first in the rail. `npm run speck` sets it to the Evidence tab; `SPECK_HOME_VIEW=world npm run speck` restores Speck's default. Speck's own tests cover the setting (`src/tests/genesis-host.test.ts`). |
+| Speck's interface always opened on its World view, with plugin tabs after Speck's own | One of four project-local changes to Speck (see above), kept in this project as `patches/speck-home-view.patch` (applied by `npm run speck:patch`, part of `npm run setup`; never committed to Speck): `SPECK_HOME_VIEW` (default `world`) names the view the interface opens on and returns to (brand button, panel close). A plugin tab named there is placed first in the rail. `npm run speck` sets it to the Evidence tab; `SPECK_HOME_VIEW=world npm run speck` restores Speck's default. Speck's own tests cover the setting (`src/tests/genesis-host.test.ts`). |
 
 | Concern | Owner | How it is used |
 |---|---|---|
@@ -470,10 +470,11 @@ API, is the default model provider (see *Model providers*).
 
 - **Repository:** `speck/`, a submodule pinned to upstream Speck `8821789`: `29d5bb3` plus
   Speck's own lockfile update, which clears its `npm audit` advisories (0 vulnerabilities). This project patches
-  its working tree in three ways: the `SPECK_HOME_VIEW` interface setting
+  its working tree in four ways: the `SPECK_HOME_VIEW` interface setting
   (`patches/speck-home-view.patch`), removing Speck's other bundled plugins
-  (`patches/speck-remove-plugins.patch`), and the chat component that answers from published
-  case summaries (`patches/speck-chat-investigations.patch`). Belief revision, memory and the
+  (`patches/speck-remove-plugins.patch`), the chat component that answers from published
+  case summaries (`patches/speck-chat-investigations.patch`), and the Meterless Runtime as a
+  model provider (`patches/speck-meterless-provider.patch`). Belief revision, memory and the
   event log are as upstream.
 - **Memory:** each case's memories are linked with Speck's association kinds, and a case summary
   is published as a shared memory after each run (see *Inside Speck*).
@@ -1375,11 +1376,11 @@ What these runs show:
   run in three of a correction errored in testing; its records stay pending and the next run
   retries them, as the page says.
 
-- **Project-local Speck patch.**
+- **Project-local Speck patches.**
   - `npm run speck:patch` applies the patches in `patches/` to `speck/`'s working tree, and is
-    safe to run again. The submodule therefore always shows as modified, and the patch is
+    safe to run again. The submodule therefore always shows as modified, and the patches are
     never committed there.
-  - If the Speck pin moves, the patch may need updating; the command says so rather than
+  - If the Speck pin moves, a patch may need updating; the command says so rather than
     applying it partly.
 - **Plugin installation.**
   - Speck's allowlist hashes only the plugin's entry module. Changes elsewhere in the installed

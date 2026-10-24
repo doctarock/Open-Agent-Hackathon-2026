@@ -239,7 +239,7 @@ function assessable(item: EvalCase, records: readonly EvidenceRecord[]): void {
 async function visibleAt(item: EvalCase, provider: EvidenceProvider, index: number): Promise<EvidenceRecord[]> {
   const stage = item.scenario.stages.find((candidate) => candidate.id === item.checkpoints[index]!.afterStage)!;
   const withdrawn = new Set(withdrawnBy(item, index).map((withdrawal) => withdrawal.recordId));
-  return (await provider.fetchCaseEvidence(item.scenario.caseId))
+  return (await provider.fetchCaseEvidence(item.scenario.caseId)).records
     .filter((record) => Date.parse(record.observedAt) <= Date.parse(stage.asOf) && !withdrawn.has(record.id)).sort(byObservation);
 }
 
