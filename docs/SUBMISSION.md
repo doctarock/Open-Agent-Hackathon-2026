@@ -24,13 +24,39 @@ confidence beside it). Build 5 tested a successor, `corroborated-2` (opt-in), th
 records the model judges as establishing the explanation. Otherwise the page says what the evidence points to and why that is not
 yet enough.
 
-## Demonstration
+## Four layers, and what each one solves
 
-A panel on each case (below the case itself, opened on request and at the end of the guided
-demo) runs the case twice, stage by stage, on the same records with the same assessor: once as the evaluation's stateless baseline (a fresh model call per stage, or the
-fact rules summed from scratch), once through Speck. It shows what each concluded, what it cited,
-what the correction replaced, whether either still leans on the replaced record, and the revision
-Speck recorded. Then the judge does it by hand on the case: run, introduce the correction, run
+| Layer | Solves | Does not solve |
+|---|---|---|
+| **Language model** (Nemotron, `src/reasoning/nemotron.ts`) | Interpreting each record: does it support or contradict each explanation | Whether that reading is sound. Speck caps model-judged evidence at 0.4; deterministic decisive rules override it |
+| **Speck** (persistent state, `speck/`, cognition unmodified) | Keeping the evidence, the beliefs, every revision and the earlier beliefs as history, and revising beliefs by its own rule | What a record means |
+| **Evidence Desk** (validity and conclusion policy, `src/investigation/`) | Which records still count after a replacement, restatement or withdrawal; rebuilding the beliefs that rested on them; concluding by Speck's threshold or `corroborated-1`, or abstaining and saying why | Turning a weak model judgment into a strong one |
+| **Stateless baseline** (`src/eval/systems.ts`) | A fresh answer from the same model on the same records, with no memory | Saying what changed since its last answer, or why |
+
+Persistent state preserves corrections and exposes stale evidence; it cannot guarantee that the
+model's interpretation is sound, and persistence alone shows no measurable accuracy benefit.
+`corroborated-2` is an experimental alternative to `corroborated-1`, off by default
+(`CONCLUSION_RULE=corroborated-2`), and not validated: on new cases its own check changed no
+outcome.
+
+## Demonstration: a correction to evidence
+
+The disputed delivery, in the case's **Speck vs. baseline** tab:
+1. The carrier's scan `EV-CAR-003` says "delivered", supporting *delivered*.
+2. The carrier's proof-of-delivery review `EV-CAR-005` replaces it: the parcel went to No. 41
+   *North*, where the resident is holding it.
+3. The stateless baseline keeps "delivered" and cites `EV-CAR-003`: 12/12 live comparisons on
+   2026-10-25.
+4. Speck stops counting `EV-CAR-003`, rebuilds the beliefs that rested on it and keeps the old
+   belief as history: in all 9 of those 12 samples that completed (3 errored; see Proof).
+5. The panel shows each stage's records with the replaced one struck through, both answers and
+   citations, a *relies on replaced record* badge, and Speck's *no longer counts* and rebuilt
+   beliefs with what they were before.
+
+The panel runs the case twice, stage by stage, on the same records with the same assessor: once
+as the evaluation's stateless baseline (a fresh model call per stage, or the fact rules summed from
+scratch), once through Speck. Saved live comparisons open from the panel without a model or
+Zetaris. Then the judge does it by hand on the bank return: run, introduce the correction, run
 again, and read "why this changed".
 
 ## Proof
@@ -60,34 +86,47 @@ before-and-after evaluation.
 | ... concluded where abstaining was right | 15/18, 15/18 | 8/18 | 6/18 |
 | ... correct where a conclusion was due | 27/27, 27/27 | 27/27 | 27/27 |
 
-What this shows, and does not:
-- **The bank-return failure is fixed as diagnosed**: it was arithmetic (two capped records could
-  never reach the threshold) plus an obsolete ledger status still counting against the answer.
-  But the change was designed on that case, so it is not a test of it.
-- **On cases it was not designed on, Build 4 is no better than Build 3** (18/30 both). Its
-  corroboration rule concluded from agreement a careful investigator would not accept, in 6
-  checkpoint-samples (`missing-evidence`, the claim case).
-- **Build 5's candidate met its pre-registered criteria on eight new locked cases, narrowly**
-  (8 → 6 wrong conclusions where abstaining was right, 27/27 correct where due, the bank return
-  still fixed). The old rule scored on the candidate's own judgments did as well, so the gain came
-  with the changed prompt, not the rule's check; most remaining errors come from Speck's own
-  threshold ([build-5-corroboration.md](build-5-corroboration.md)). On that set Speck matched the
-  label more often than the stateless call (37/45 and 39/45 against 27/45), mostly because the
-  stateless call never abstained; the set was written by the rule's author, and on the Build 4
-  cases the two were level.
-- **The consistent difference is evidence handling, not accuracy**: Speck did not rely on a
-  replaced or out-of-date record in any live sample; the stateless call cited the replaced
-  delivery scan every time. The stateless call is better where one authoritative record settles
-  the case, and never abstains.
-- Persistence alone shows no measurable accuracy benefit.
+In the first table, "0/4 (2 errors)" and "0/5 (1 error)" count the samples that completed. In
+the 3 errored samples the model's reply for the correction failed Speck's contract twice, the
+correction stayed unassessed, and Speck's state still presented "delivered" on the replaced scan;
+a guard added after these runs now withholds the conclusion while a record waits
+([build-4-bank-return.md](build-4-bank-return.md), section 6).
+
+What this shows, and does not, as three separate claims:
+
+**A. Correction and revision behaviour.** The stateless call kept citing the replaced delivery
+scan in 12/12 live comparisons on 2026-10-25 (and 6/6 on 2026-10-23); Speck cited it in none of
+the 9 of those 12 that completed, and recorded why in all 9. Speck mostly did this by withdrawing
+its conclusion (7 concluded nothing, 2 concluded "misdelivered"), not by reaching a new one. Two
+prepared cases and six samples per build: an illustration, not a rate. The bank-return failure
+is fixed as diagnosed (arithmetic: two capped records could never reach the threshold, plus an
+obsolete ledger status still counting), but the change was designed on that case, so it is not a
+test of it.
+
+**B. General conclusion accuracy: no advantage is claimed.** On five challenge cases locked before
+any run, Speck and the stateless call both scored 18/30. On set 5, `corroborated-2` scored 39/45,
+but `corroborated-1` applied to the candidate's own judgments also scored 39/45, so the gain over
+Build 4's runs (37/45) cannot be attributed to the successor rule alone: it came with the changed
+prompt, or sampling ([build-5-corroboration.md](build-5-corroboration.md)). The stateless call's
+27/45 there is mostly because it never abstained, and the set was written by the rule's author.
+Persistence alone shows no measurable accuracy benefit.
+
+**C. Abstention and unsupported conclusions.** Where waiting was right, the stateless call
+concluded anyway (12/12 on the Build 4 challenge cases, 15/18 on set 5) and Speck less often (3/12;
+8/18 and 6/18). But abstaining is not inherently correct: Speck also abstained in 8/18
+checkpoint-samples where a conclusion was due (the stateless call 0/18), and the stateless call is
+better where one authoritative record settles the case. Speck also over-concludes from weak or
+correlated evidence: `corroborated-1` concluded from weak agreement in 6 checkpoint-samples
+(`missing-evidence`, the claim case), and on set 5 Speck's own threshold concluded from one
+source's two records in all 6 of `corroborated-2`'s remaining false conclusions.
 
 ## Impact
 
 Investigations whose evidence changes, such as disputed deliveries, payment reversals and
 procurement amendments, need decisions that can be defended later: which records the decision
 rested on, which were corrected, and what was believed before. Evidence Desk makes that the
-system's state rather than something reconstructed afterwards, and it says "not established"
-instead of over-committing.
+system's state rather than something reconstructed afterwards. It says "not established" more
+often than a stateless call, which is right in some cases and wrong in others (claim C above).
 
 ## What it is
 
@@ -100,12 +139,14 @@ system believed before.
 It runs inside Speck as a plugin and is Speck's main interface here: Speck opens on its
 **Evidence** tab, with Speck's other views beside it. Each case is a Speck worker, and its
 evidence, beliefs and revisions live in Speck's database. The plugin is approved by hash in
-Speck's plugin allowlist. Speck is changed in three small ways, all kept in this repository as
+Speck's plugin allowlist. Speck is changed in five small ways, all kept in this repository as
 patches that setup applies, never committed to Speck:
 - a general `SPECK_HOME_VIEW` setting for the view its interface opens on;
 - removing Speck's other bundled plugins, so Evidence Desk is the only one;
 - a chat component that answers questions about an investigation from the case summaries
-  Evidence Desk publishes to Speck's memory.
+  Evidence Desk publishes to Speck's memory;
+- the Meterless Runtime as a Speck model provider;
+- a *Minimise* / *Expand* button on Speck's chat reply box.
 
 The submodule is pinned to upstream Speck.
 
@@ -133,7 +174,8 @@ The submodule is pinned to upstream Speck.
      conclusion reached by corroboration is marked as such, with Speck's own lower confidence
      beside it, and the evaluation reports where that rule was wrong.
    - The deterministic baseline over-commits, and so does the live stateless-model baseline;
-     Evidence Desk abstains instead.
+     Evidence Desk abstains more often, which is sometimes wrong, and still over-concludes from
+     weak or same-source agreement (claim C above).
    - Persistence shows no measurable accuracy benefit, and we say so.
 4. **It survives failure.**
    - An exhaustive test kills the process at each of the 39 Speck write points of a run and a
@@ -224,7 +266,7 @@ These are counts over these cases only, not general accuracy.
 | Correction regression cases (8) | 4/8 | 8/8; replaced or withdrawn evidence never used as support (5/5) | 8/8 (5/5) |
 | Cross-domain suite (27) | | 15/27; same records in another order, identical: 0/2 | 19/27, 0 unsupported; 2/2 |
 | Challenge cases, locked before any run (10) | | 6/10 | 7/10 (stateless rule baseline 5/10) |
-| Tests | 29 | 147 | 157 |
+| Tests | 29 | 147 | 157 (174 with Build 5) |
 
 The live results (3 repeats per suite) are in the proof tables above and, per checkpoint, in
 [build-4-bank-return.md](build-4-bank-return.md).
@@ -234,7 +276,7 @@ The live results (3 repeats per suite) are in the proof tables above and, per ch
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 157 tests, no credentials or network needed
+npm test                 # 174 tests, no credentials or network needed
 npm run investigate -- examples/payment-correction-chain/input.json   # one case, JSON in, JSON + trace out, offline
 npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups

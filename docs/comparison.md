@@ -1,7 +1,7 @@
 # Speck beside a stateless baseline
 
 The same case, the same evidence, the same correction, processed two ways, with what each
-actually did. This is what the comparison panel at the bottom of every case page runs, and what
+actually did. This is what the **Speck vs. baseline** tab of every case page runs, and what
 `npm run compare` / `npm run compare:live` save. Every report behind the numbers below is in
 `eval/results/comparisons/<scenario>/` (tracked in git; each run is its own file and none is
 ever overwritten).
@@ -97,7 +97,8 @@ as errors. Since Build 4 such a conclusion is withheld until
 the waiting records are assessed (build-4-bank-return.md, section 6).
 
 **What these support.** The correction is still where the approaches part: the stateless call
-kept citing the replaced scan in every delivery sample. On the bank return Build 4 now reaches the
+kept citing the replaced scan in every delivery sample (12/12); Speck cited it in none of the 9
+that completed, and in the 3 errored samples its unassessed state still rested on it. On the bank return Build 4 now reaches the
 labelled answer, but the case it was designed on is not a test of it. On five new cases written
 and locked beforehand, Build 4 scored the same as Build 3 live (18/30, the baseline also 18/30),
 and its corroboration rule concluded twice from agreement a careful investigator would not accept

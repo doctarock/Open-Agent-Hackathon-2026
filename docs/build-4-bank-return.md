@@ -352,7 +352,8 @@ with the models the endpoint reported serving.
   decision (one source is never corroboration), a hold lifted by the agency that requested it (the
   terminal's hold notice still counts against release), and the payroll return live.
 - **Where Speck is consistently better:** it did not rely on a replaced or out-of-date record in
-  any live sample in this report; the stateless call cited the replaced delivery scan in 6/6 live
+  any live sample in this report that completed (the errored samples of section 6 are the
+  exception: there the unassessed correction left "delivered" on the replaced scan); the stateless call cited the replaced delivery scan in 6/6 live
   comparisons, and kept replaced or withdrawn evidence in support at 6/15 and 5/15
   regression checkpoint-samples. It also abstained on conflicting or withdrawn evidence where the
   baseline committed (9 of 12 such challenge checkpoint-samples under Build 4, 12 of 12 under
