@@ -471,7 +471,6 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 }
 /* What the guided demo points at in Speck's own interface. */
 .edk-host-spotlight { outline: 3px solid #8fb4ff; outline-offset: 4px; border-radius: 10px; }
-.edk .demo-offer { margin-bottom: 14px; }
 
 /* Speck beside a stateless model call (public/compare.js). */
 .edk #edk-compare { margin-top: 10px; }

@@ -249,8 +249,8 @@ The page explains itself; no walkthrough from a developer is needed.
     work and the evidence source are not touched.
   - A case still at its starting state is left alone, so a repeated reset is harmless. A reset is
     refused while a run is in progress.
-  - Inside Speck, a reset made outside the guided demo also brings back the invitation to take
-    the guided demo, and clears any demo still in progress in that browser.
+  - Inside Speck, a reset made outside the guided demo also clears any demo still in progress in
+    that browser.
   - Because nothing is deleted, it is safe inside Speck's shared database as well as standalone.
   - `npm run db:reset` remains the way to wipe a standalone database entirely.
 - **Run status** shows the elapsed time while a run is in progress, and the execution engine's
@@ -274,9 +274,9 @@ The tour's step definitions are in `public/tour.js` and are tested against real 
 
 ### Inside Speck: the guided demo, Speck's views, and your own investigations
 
-Inside Speck the Evidence tab replaces the per-case introduction with one **guided demo**. It is
-offered at the top of the tab (*Start the guided demo* or *Explore on my own*), and the *Guided
-demo* link beside the case picker starts or resumes it.
+Inside Speck the Evidence tab runs one **guided demo** across both cases and Speck's views. A
+prepared case's introduction offers it (*Start the guided investigation* or *Explore on my own*),
+and the *Start the guided demo* button at the end of the case picker starts or resumes it.
 
 1. **Disputed delivery** (live when configured): the case tour above, without its comparison
    and last overview steps.

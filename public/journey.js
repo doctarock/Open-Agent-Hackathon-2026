@@ -111,7 +111,7 @@ export function journeyStore(storage) {
     setPart: (part) => write("part", part),
     offerDismissed: () => read("offer-dismissed", false) === true,
     dismissOffer: () => write("offer-dismissed", true),
-    // For the next person: the invitation shows again and no part is in progress.
+    // For the next person: no part is in progress.
     restoreOffer: () => { write("offer-dismissed", false); write("part", null); }
   };
 }

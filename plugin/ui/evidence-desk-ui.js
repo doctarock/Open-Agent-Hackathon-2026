@@ -286,12 +286,11 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
   listenOnce();
 
   const shell = el("div", { className: "edk edk-in-speck" });
-  const offer = el("section", { className: "intro demo-offer", "aria-labelledby": "edk-demo-offer-title", hidden: "" });
   const picker = el("div", { className: "case-picker", role: "tablist", "aria-label": "Investigations" });
   const page = el("div", { className: "edk-in-speck" });
   // Says what happened after an investigation is deleted, until the next case is opened.
   const notice = el("p", { className: "meta case-notice", role: "status", hidden: "" });
-  shell.append(offer, picker, notice, page);
+  shell.append(picker, notice, page);
   root.replaceChildren(shell);
 
   let cases = [];
@@ -319,18 +318,11 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       el("button", { type: "button", "data-demo": "start", className: "secondary" }, demo.store.part() !== null ? "Resume the guided demo" : "Start the guided demo")).childNodes);
   }
 
-  // The invitation to the guided demo, until it is taken or declined.
+  // The case picker's demo button follows the demo's state. (The separate
+  // invitation above the picker was removed: the case's own introduction
+  // already offers the guided demo.)
   function renderOffer() {
     renderPicker();
-    offer.hidden = demo.store.part() !== null || demo.store.offerDismissed();
-    if (offer.hidden) return;
-    offer.replaceChildren(
-      el("h2", { id: "edk-demo-offer-title" }, "Take the guided demo"),
-      el("p", {}, "Two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
-      el("p", { className: "meta" }, "Each step that asks you to act waits for the real result; nothing is scripted."),
-      el("div", { className: "intro-actions" },
-        el("button", { type: "button", className: "primary", "data-demo": "start" }, "Start the guided demo"),
-        el("button", { type: "button", className: "secondary", "data-demo": "dismiss" }, "Explore on my own")));
   }
 
   function show(id, { guided = null } = {}) {
