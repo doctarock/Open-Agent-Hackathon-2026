@@ -1,0 +1,2154 @@
+{
+ "generatedAt": "2026-10-25T13:52:57.020Z",
+ "model": {
+  "provider": "ollama",
+  "model": "nemotron-3-nano:4b",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "reasoningEffort": "none",
+  "maxTokens": 4096
+ },
+ "repeat": 3,
+ "checkpoints": [
+  {
+   "suite": "held-out",
+   "caseId": "conflicting-sources",
+   "stage": "day",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "EV-CON-602"
+    ],
+    "systems": [
+     "concierge"
+    ],
+    "missing": [
+     "its support comes from one source system (concierge); corroboration needs 2 different ones",
+     "EV-TRK-601 is recorded against it",
+     "H-DELIVERED still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-NOT-DELIVERED",
+     "status": "active",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "EV-CON-602",
+       "system": "concierge",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Concierge log confirms no delivery for unit 5B on 30 Sep."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-TRK-601",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier API confirms delivery, contradicting non-delivery."
+      }
+     ]
+    },
+    {
+     "key": "H-DELIVERED",
+     "status": "weakening",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "EV-TRK-601",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier API confirms delivery to building lobby on 30 Sep."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-CON-602",
+       "system": "concierge",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Concierge log shows no delivery for unit 5B on 30 Sep."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "correction-supersedes",
+   "stage": "before-return",
+   "label": "H-PAID",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-PAID",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-PAID",
+     "status": "supported",
+     "confidence": 0.66,
+     "supporting": [
+      {
+       "id": "EV-BNK-101",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payment received matches invoice amount."
+      },
+      {
+       "id": "EV-LDG-102",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger status is paid."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-UNPAID",
+     "status": "rejected",
+     "confidence": 0.14,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-BNK-101",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payment received means invoice is paid."
+      },
+      {
+       "id": "EV-LDG-102",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger status is paid, not unpaid."
+      }
+     ]
+    },
+    {
+     "key": "H-PARTIAL",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-BNK-101",
+       "system": "bank",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact payment.amount_matches = true (decisive counter-example)"
+      },
+      {
+       "id": "EV-LDG-102",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger status is paid, not partial."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "correction-supersedes",
+   "stage": "after-return",
+   "label": "H-UNPAID",
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-UNPAID",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "EV-BNK-103",
+     "EV-LDG-104"
+    ],
+    "systems": [
+     "bank",
+     "ledger"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-UNPAID",
+     "status": "active",
+     "confidence": 0.452,
+     "supporting": [
+      {
+       "id": "EV-BNK-103",
+       "system": "bank",
+       "basis": "model",
+       "strength": 0.95,
+       "counts": true,
+       "rationale": "Payment reference INV-77 returned unpaid, dishonoured."
+      },
+      {
+       "id": "EV-LDG-104",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 0.95,
+       "counts": true,
+       "rationale": "Invoice INV-77 reopened after payment was reversed."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-PARTIAL",
+     "status": "rejected",
+     "confidence": 0.068,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-BNK-103",
+       "system": "bank",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Payment reference INV-77 returned unpaid, dishonoured."
+      },
+      {
+       "id": "EV-LDG-104",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 0.85,
+       "counts": true,
+       "rationale": "Invoice INV-77 reopened after payment was reversed."
+      }
+     ]
+    },
+    {
+     "key": "H-PAID",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-BNK-103",
+       "system": "bank",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact payment.reversed = true (decisive counter-example)"
+      },
+      {
+       "id": "EV-LDG-104",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Invoice INV-77 reopened after payment was reversed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "ghost-citation",
+   "stage": "records",
+   "label": "H-REFUNDED",
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-REFUNDED",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "EV-RFS-401",
+     "EV-PSP-402"
+    ],
+    "systems": [
+     "refunds",
+     "psp"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-REFUNDED",
+     "status": "active",
+     "confidence": 0.56,
+     "supporting": [
+      {
+       "id": "EV-RFS-401",
+       "system": "refunds",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Refund RF-3301 approved and issued for ORD-5120."
+      },
+      {
+       "id": "EV-PSP-402",
+       "system": "psp",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Refund RF-3301 settled to card ending 4421."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-REFUNDED",
+     "status": "weakening",
+     "confidence": 0.24,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RFS-401",
+       "system": "refunds",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Refund RF-3301 approved and issued for ORD-5120."
+      },
+      {
+       "id": "EV-PSP-402",
+       "system": "psp",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Refund RF-3301 settled to card ending 4421."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "missing-evidence",
+   "stage": "claim",
+   "label": null,
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-DEFECT",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "EV-WCF-301",
+     "EV-SVC-302"
+    ],
+    "systems": [
+     "claims",
+     "service"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-DEFECT",
+     "status": "active",
+     "confidence": 0.52,
+     "supporting": [
+      {
+       "id": "EV-WCF-301",
+       "system": "claims",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Customer reports pump failure after three months, suggesting a possible defect."
+      },
+      {
+       "id": "EV-SVC-302",
+       "system": "service",
+       "basis": "model",
+       "strength": 0.7,
+       "counts": true,
+       "rationale": "Service centre received unit, inspection scheduled, indicating defect possible."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-MISUSE",
+     "status": "proposed",
+     "confidence": 0.3,
+     "supporting": [],
+     "contradicting": []
+    },
+    {
+     "key": "H-NO-FAULT",
+     "status": "weakening",
+     "confidence": 0.164,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-WCF-301",
+       "system": "claims",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Failure after three months contradicts no-fault assumption."
+      },
+      {
+       "id": "EV-SVC-302",
+       "system": "service",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Scheduled inspection implies fault exists, contradicting no-fault."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "model-misreading",
+   "stage": "carrier-scan",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [],
+    "systems": [],
+    "missing": [
+     "no record that still counts supports it"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-COLLECTED",
+     "status": "proposed",
+     "confidence": 0.45,
+     "supporting": [],
+     "contradicting": []
+    },
+    {
+     "key": "H-AWAITING",
+     "status": "proposed",
+     "confidence": 0.4,
+     "supporting": [],
+     "contradicting": []
+    },
+    {
+     "key": "H-LOST",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-TRK-201",
+       "system": "carrier",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact delivery.location = pickup_point (decisive counter-example)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "model-misreading",
+   "stage": "pickup-report",
+   "label": "H-AWAITING",
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "EV-PUP-202"
+    ],
+    "systems": [
+     "pickup"
+    ],
+    "missing": [
+     "its support comes from one source system (pickup); corroboration needs 2 different ones"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-AWAITING",
+     "status": "active",
+     "confidence": 0.48,
+     "supporting": [
+      {
+       "id": "EV-PUP-202",
+       "system": "pickup",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Parcel still on shelf, awaiting collection."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-COLLECTED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-PUP-202",
+       "system": "pickup",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact parcel.collected = false (decisive counter-example)"
+      }
+     ]
+    },
+    {
+     "key": "H-LOST",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-TRK-201",
+       "system": "carrier",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact delivery.location = pickup_point (decisive counter-example)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "held-out",
+   "caseId": "partial-support",
+   "stage": "arrival",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "EV-RCV-502"
+    ],
+    "systems": [
+     "receiving"
+    ],
+    "missing": [
+     "its support comes from one source system (receiving); corroboration needs 2 different ones"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-CARRIER-LIABLE",
+     "status": "active",
+     "confidence": 0.472,
+     "supporting": [
+      {
+       "id": "EV-RCV-502",
+       "system": "receiving",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Receiving log notes damage, supporting carrier liability."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-SHIPPER-PACKING",
+     "status": "weakening",
+     "confidence": 0.236,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RCV-502",
+       "system": "receiving",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Receiving log notes damage, contradicting inadequate packing."
+      }
+     ]
+    },
+    {
+     "key": "H-PRE-EXISTING",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-DSP-501",
+       "system": "wms",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact dispatch.photo_shows_damage = false (decisive counter-example)"
+      },
+      {
+       "id": "EV-RCV-502",
+       "system": "receiving",
+       "basis": "model",
+       "strength": 0.7,
+       "counts": true,
+       "rationale": "Receiving log confirms damage, contradicting pre-existing damage."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "misattributed-scan",
+   "stage": "scan",
+   "label": "H-DELIVERED",
+   "state": "leading",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "EV-RV3-02"
+    ],
+    "systems": [
+     "carrier"
+    ],
+    "missing": [
+     "its support comes from one source system (carrier); corroboration needs 2 different ones",
+     "EV-RV3-01 is recorded against it",
+     "H-IN-DEPOT still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-DELIVERED",
+     "status": "active",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "EV-RV3-02",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Carrier API confirms delivery."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-RV3-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Parcel handed to carrier, not delivered."
+      }
+     ]
+    },
+    {
+     "key": "H-IN-DEPOT",
+     "status": "weakening",
+     "confidence": 0.3,
+     "supporting": [
+      {
+       "id": "EV-RV3-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Parcel handed to carrier at dock, likely in depot."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-RV3-02",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Carrier API confirms delivery, not in depot."
+      }
+     ]
+    },
+    {
+     "key": "H-NOT-SHIPPED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV3-01",
+       "system": "wms",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact warehouse.handover = true (decisive counter-example)"
+      },
+      {
+       "id": "EV-RV3-02",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Carrier API confirms delivery, so it left warehouse."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "misattributed-scan",
+   "stage": "correction",
+   "label": "H-IN-DEPOT",
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-IN-DEPOT",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "EV-RV3-01",
+     "EV-RV3-03",
+     "EV-RV3-04"
+    ],
+    "systems": [
+     "wms",
+     "carrier",
+     "depot"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-IN-DEPOT",
+     "status": "active",
+     "confidence": 0.524,
+     "supporting": [
+      {
+       "id": "EV-RV3-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Parcel handed to carrier at dock, likely in depot."
+      },
+      {
+       "id": "EV-RV3-03",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 0.95,
+       "counts": true,
+       "rationale": "Carrier tracking API indicates parcel is at Wendouree depot."
+      },
+      {
+       "id": "EV-RV3-04",
+       "system": "depot",
+       "basis": "model",
+       "strength": 0.95,
+       "counts": true,
+       "rationale": "Depot shelf check confirms parcel is held at depot."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-DELIVERED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV3-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Parcel handed to carrier, not delivered."
+      },
+      {
+       "id": "EV-RV3-03",
+       "system": "carrier",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact carrier.status = in_depot (decisive counter-example)"
+      },
+      {
+       "id": "EV-RV3-04",
+       "system": "depot",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Depot shelf check shows parcel is on shelf, not delivered."
+      }
+     ]
+    },
+    {
+     "key": "H-NOT-SHIPPED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV3-01",
+       "system": "wms",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact warehouse.handover = true (decisive counter-example)"
+      },
+      {
+       "id": "EV-RV3-03",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Parcel is at depot, meaning it was shipped."
+      },
+      {
+       "id": "EV-RV3-04",
+       "system": "depot",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Parcel is in depot, so it was shipped."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "return-cancelled",
+   "stage": "credit",
+   "label": "H-PAID",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-PAID",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-PAID",
+     "status": "supported",
+     "confidence": 0.66,
+     "supporting": [
+      {
+       "id": "EV-RV1-01",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Bank statement confirms payment received."
+      },
+      {
+       "id": "EV-RV1-02",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger marks invoice paid."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-UNPAID",
+     "status": "rejected",
+     "confidence": 0.14,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV1-01",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payment received contradicts unpaid status."
+      },
+      {
+       "id": "EV-RV1-02",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger status is paid, not unpaid."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "return-cancelled",
+   "stage": "return",
+   "label": "H-UNPAID",
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-UNPAID",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "EV-RV1-03",
+     "EV-RV1-04"
+    ],
+    "systems": [
+     "bank",
+     "ledger"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-UNPAID",
+     "status": "active",
+     "confidence": 0.436,
+     "supporting": [
+      {
+       "id": "EV-RV1-03",
+       "system": "bank",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Payment reversed, so unpaid."
+      },
+      {
+       "id": "EV-RV1-04",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Ledger reopened, so unpaid."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-PAID",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV1-03",
+       "system": "bank",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact payment.reversed = true (decisive counter-example)"
+      },
+      {
+       "id": "EV-RV1-04",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Ledger reopened, so not paid."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "return-cancelled",
+   "stage": "return-cancelled",
+   "label": "H-PAID",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-PAID",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-PAID",
+     "status": "supported",
+     "confidence": 0.668,
+     "supporting": [
+      {
+       "id": "EV-RV1-01",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Bank statement confirms payment received."
+      },
+      {
+       "id": "EV-RV1-02",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger marks invoice paid."
+      },
+      {
+       "id": "EV-RV1-06",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger explicitly states invoice is paid."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-RV1-05",
+       "system": "bank",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Bank statement shows return cancelled, payment not actually made."
+      }
+     ]
+    },
+    {
+     "key": "H-UNPAID",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV1-01",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payment received contradicts unpaid status."
+      },
+      {
+       "id": "EV-RV1-02",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Ledger status is paid, not unpaid."
+      },
+      {
+       "id": "EV-RV1-05",
+       "system": "bank",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact payment.return_cancelled = true (decisive counter-example)"
+      },
+      {
+       "id": "EV-RV1-06",
+       "system": "ledger",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Ledger says paid, so invoice is not unpaid."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "withdrawn-scan",
+   "stage": "scans",
+   "label": "H-RECEIVED",
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-RECEIVED",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "EV-RV2-01",
+     "EV-RV2-02"
+    ],
+    "systems": [
+     "carrier",
+     "warehouse"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-RECEIVED",
+     "status": "active",
+     "confidence": 0.56,
+     "supporting": [
+      {
+       "id": "EV-RV2-01",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier tracking API confirms delivery to warehouse dock 3."
+      },
+      {
+       "id": "EV-RV2-02",
+       "system": "warehouse",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Warehouse management system records RMA-55 received in returns bay."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-RECEIVED",
+     "status": "weakening",
+     "confidence": 0.24,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV2-01",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier tracking API confirms delivery to warehouse dock 3."
+      },
+      {
+       "id": "EV-RV2-02",
+       "system": "warehouse",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Warehouse management system records RMA-55 received in returns bay."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "withdrawn-scan",
+   "stage": "withdrawn",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "EV-RV2-01"
+    ],
+    "systems": [
+     "carrier"
+    ],
+    "missing": [
+     "its support comes from one source system (carrier); corroboration needs 2 different ones"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-RECEIVED",
+     "status": "active",
+     "confidence": 0.48,
+     "supporting": [
+      {
+       "id": "EV-RV2-01",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier tracking API confirms delivery to warehouse dock 3."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-RECEIVED",
+     "status": "weakening",
+     "confidence": 0.32,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "EV-RV2-01",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier tracking API confirms delivery to warehouse dock 3."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "regression",
+   "caseId": "withdrawn-scan",
+   "stage": "audit",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "EV-RV2-01"
+    ],
+    "systems": [
+     "carrier"
+    ],
+    "missing": [
+     "its support comes from one source system (carrier); corroboration needs 2 different ones",
+     "EV-RV2-03 is recorded against it",
+     "H-NOT-RECEIVED still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-RECEIVED",
+     "status": "weakening",
+     "confidence": 0.408,
+     "supporting": [
+      {
+       "id": "EV-RV2-01",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier tracking API confirms delivery to warehouse dock 3."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-RV2-03",
+       "system": "warehouse",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "The system reports RMA-55 not found in the returns bay."
+      }
+     ]
+    },
+    {
+     "key": "H-NOT-RECEIVED",
+     "status": "active",
+     "confidence": 0.392,
+     "supporting": [
+      {
+       "id": "EV-RV2-03",
+       "system": "warehouse",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "The system reports RMA-55 not found in the returns bay."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "EV-RV2-01",
+       "system": "carrier",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Carrier tracking API confirms delivery to warehouse dock 3."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "claim-decision-missing",
+   "stage": "recommendation",
+   "label": null,
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-APPROVED",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "CH3-01",
+     "CH3-02"
+    ],
+    "systems": [
+     "adjuster",
+     "customer"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-APPROVED",
+     "status": "active",
+     "confidence": 0.482,
+     "supporting": [
+      {
+       "id": "CH3-01",
+       "system": "adjuster",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Adjuster recommends approval."
+      },
+      {
+       "id": "CH3-02",
+       "system": "customer",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Customer expects approval."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-DECLINED",
+     "status": "weakening",
+     "confidence": 0.178,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH3-01",
+       "system": "adjuster",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Adjuster recommends approval, not decline."
+      },
+      {
+       "id": "CH3-02",
+       "system": "customer",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Customer expects approval, not decline."
+      }
+     ]
+    },
+    {
+     "key": "H-PENDING",
+     "status": "weakening",
+     "confidence": 0.178,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH3-01",
+       "system": "adjuster",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Adjuster recommends approval, not pending."
+      },
+      {
+       "id": "CH3-02",
+       "system": "customer",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Customer expects approval, not pending."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "claim-decision-missing",
+   "stage": "decision",
+   "label": "H-DECLINED",
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "CH3-03"
+    ],
+    "systems": [
+     "claims"
+    ],
+    "missing": [
+     "its support comes from one source system (claims); corroboration needs 2 different ones",
+     "CH3-01, CH3-02 are recorded against it"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-DECLINED",
+     "status": "active",
+     "confidence": 0.258,
+     "supporting": [
+      {
+       "id": "CH3-03",
+       "system": "claims",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Claim decision is declined under exclusion 4.2."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH3-01",
+       "system": "adjuster",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Adjuster recommends approval, not decline."
+      },
+      {
+       "id": "CH3-02",
+       "system": "customer",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Customer expects approval, not decline."
+      }
+     ]
+    },
+    {
+     "key": "H-APPROVED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH3-03",
+       "system": "claims",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact claim.decision = declined (decisive counter-example)"
+      }
+     ]
+    },
+    {
+     "key": "H-PENDING",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH3-01",
+       "system": "adjuster",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Adjuster recommends approval, not pending."
+      },
+      {
+       "id": "CH3-02",
+       "system": "customer",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Customer expects approval, not pending."
+      },
+      {
+       "id": "CH3-03",
+       "system": "claims",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact claim.decision = declined (decisive counter-example)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "customs-hold-lifted",
+   "stage": "conflict",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "CH2-02"
+    ],
+    "systems": [
+     "terminal"
+    ],
+    "missing": [
+     "its support comes from one source system (terminal); corroboration needs 2 different ones",
+     "CH2-01 is recorded against it",
+     "H-RELEASED still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-HELD",
+     "status": "active",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "CH2-02",
+       "system": "terminal",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Status HOLD indicates held at port."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH2-01",
+       "system": "broker",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Entry E-55120 cleared, not held."
+      }
+     ]
+    },
+    {
+     "key": "H-RELEASED",
+     "status": "weakening",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "CH2-01",
+       "system": "broker",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Entry E-55120 cleared, container ready for release."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH2-02",
+       "system": "terminal",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Status HOLD, not available for collection."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "customs-hold-lifted",
+   "stage": "inspection-done",
+   "label": "H-RELEASED",
+   "state": "leading",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "CH2-01",
+     "CH2-03"
+    ],
+    "systems": [
+     "broker",
+     "customs"
+    ],
+    "missing": [
+     "CH2-02 is recorded against it",
+     "H-HELD still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-RELEASED",
+     "status": "active",
+     "confidence": 0.58,
+     "supporting": [
+      {
+       "id": "CH2-01",
+       "system": "broker",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Entry E-55120 cleared, container ready for release."
+      },
+      {
+       "id": "CH2-03",
+       "system": "customs",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Release authority sent to the terminal confirms release."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH2-02",
+       "system": "terminal",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Status HOLD, not available for collection."
+      }
+     ]
+    },
+    {
+     "key": "H-HELD",
+     "status": "weakening",
+     "confidence": 0.42,
+     "supporting": [
+      {
+       "id": "CH2-02",
+       "system": "terminal",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Status HOLD indicates held at port."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH2-01",
+       "system": "broker",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Entry E-55120 cleared, not held."
+      },
+      {
+       "id": "CH2-03",
+       "system": "customs",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Release authority sent to the terminal contradicts being held."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "payroll-final-pay-returned",
+   "stage": "paid",
+   "label": "H-PAID",
+   "state": "supported",
+   "route": "corroboration",
+   "concluded": "H-PAID",
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": true,
+    "records": [
+     "CH1-01",
+     "CH1-02"
+    ],
+    "systems": [
+     "payroll",
+     "bank"
+    ],
+    "missing": []
+   },
+   "hypotheses": [
+    {
+     "key": "H-PAID",
+     "status": "active",
+     "confidence": 0.49,
+     "supporting": [
+      {
+       "id": "CH1-01",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Final pay status is paid."
+      },
+      {
+       "id": "CH1-02",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Settlement credited to account."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-PAID",
+     "status": "weakening",
+     "confidence": 0.17,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH1-01",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Final pay status is paid, not unpaid."
+      },
+      {
+       "id": "CH1-02",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Settlement was credited, not unpaid."
+      }
+     ]
+    },
+    {
+     "key": "H-PART-PAID",
+     "status": "weakening",
+     "confidence": 0.17,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH1-01",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Full pay is paid, not partial."
+      },
+      {
+       "id": "CH1-02",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Full amount credited, not partial."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "payroll-final-pay-returned",
+   "stage": "returned",
+   "label": "H-NOT-PAID",
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "CH1-04"
+    ],
+    "systems": [
+     "payroll"
+    ],
+    "missing": [
+     "its support comes from one source system (payroll); corroboration needs 2 different ones",
+     "CH1-03 is recorded against it",
+     "H-NOT-PAID still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-PART-PAID",
+     "status": "active",
+     "confidence": 0.33,
+     "supporting": [
+      {
+       "id": "CH1-04",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payroll system shows final pay FP-30 status unpaid, implying no payment."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH1-03",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Bank settlement report confirms full AUD 6,180 returned, not partial."
+      }
+     ]
+    },
+    {
+     "key": "H-NOT-PAID",
+     "status": "active",
+     "confidence": 0.33,
+     "supporting": [
+      {
+       "id": "CH1-04",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payroll system shows final pay FP-30 status unpaid."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH1-03",
+       "system": "bank",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Bank settlement report confirms AUD 6,180 returned to employer's account, not to employee."
+      }
+     ]
+    },
+    {
+     "key": "H-PAID",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH1-03",
+       "system": "bank",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact bank.settlement = returned (decisive counter-example)"
+      },
+      {
+       "id": "CH1-04",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payroll system shows final pay FP-30 status unpaid."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "refund-settlement-withdrawn",
+   "stage": "settled",
+   "label": "H-RECEIVED",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-RECEIVED",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-RECEIVED",
+     "status": "supported",
+     "confidence": 0.648,
+     "supporting": [
+      {
+       "id": "CH4-01",
+       "system": "refunds",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Refund submitted to card network."
+      },
+      {
+       "id": "CH4-02",
+       "system": "card",
+       "basis": "model",
+       "strength": 0.95,
+       "counts": true,
+       "rationale": "Credit settled to card."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-RECEIVED",
+     "status": "weakening",
+     "confidence": 0.352,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH4-01",
+       "system": "refunds",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Refund submitted to card network."
+      },
+      {
+       "id": "CH4-02",
+       "system": "card",
+       "basis": "model",
+       "strength": 0.95,
+       "counts": true,
+       "rationale": "Credit settled to card."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "refund-settlement-withdrawn",
+   "stage": "settlement-withdrawn",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "CH4-03"
+    ],
+    "systems": [
+     "support"
+    ],
+    "missing": [
+     "its support comes from one source system (support); corroboration needs 2 different ones",
+     "CH4-01 is recorded against it",
+     "H-RECEIVED still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-NOT-RECEIVED",
+     "status": "active",
+     "confidence": 0.508,
+     "supporting": [
+      {
+       "id": "CH4-03",
+       "system": "support",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Customer explicitly states no refund has appeared."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH4-01",
+       "system": "refunds",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Refund submitted to card network."
+      }
+     ]
+    },
+    {
+     "key": "H-RECEIVED",
+     "status": "weakening",
+     "confidence": 0.492,
+     "supporting": [
+      {
+       "id": "CH4-01",
+       "system": "refunds",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Refund submitted to card network."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH4-03",
+       "system": "support",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Customer explicitly states no refund has appeared."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "stock-recount",
+   "stage": "first-count",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-1",
+    "holds": false,
+    "records": [
+     "CH5-02"
+    ],
+    "systems": [
+     "count"
+    ],
+    "missing": [
+     "its support comes from one source system (count); corroboration needs 2 different ones",
+     "CH5-01 is recorded against it",
+     "H-ENOUGH still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-SHORT",
+     "status": "active",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "CH5-02",
+       "system": "count",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Cycle count shows 38 units, below 50."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH5-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Stock level is sufficient, not short."
+      }
+     ]
+    },
+    {
+     "key": "H-ENOUGH",
+     "status": "weakening",
+     "confidence": 0.5,
+     "supporting": [
+      {
+       "id": "CH5-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Stock level is sufficient, meeting the 50-unit requirement."
+      }
+     ],
+     "contradicting": [
+      {
+       "id": "CH5-02",
+       "system": "count",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Cycle count shows only 38 units, below 50."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge",
+   "caseId": "stock-recount",
+   "stage": "recount",
+   "label": "H-ENOUGH",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-ENOUGH",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-ENOUGH",
+     "status": "supported",
+     "confidence": 0.74,
+     "supporting": [
+      {
+       "id": "CH5-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Stock level is sufficient, meeting the 50-unit requirement."
+      },
+      {
+       "id": "CH5-03",
+       "system": "count",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "61 units is greater than 50, so sufficient stock."
+      },
+      {
+       "id": "CH5-04",
+       "system": "wms",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "64 units is greater than 50, so sufficient stock."
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-SHORT",
+     "status": "weakening",
+     "confidence": 0.26,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "CH5-01",
+       "system": "wms",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Stock level is sufficient, not short."
+      },
+      {
+       "id": "CH5-03",
+       "system": "count",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "61 units is not fewer than 50, so not short."
+      },
+      {
+       "id": "CH5-04",
+       "system": "wms",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "64 units is not fewer than 50, so not short."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
