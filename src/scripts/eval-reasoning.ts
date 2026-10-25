@@ -1,11 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import { loadConfig, ROOT_DIR } from "../config.js";
+import { CONCLUSION_RULES, loadConfig, ROOT_DIR, type ConclusionRule } from "../config.js";
 import { loadEvalCases, REGRESSION_DIR } from "../eval/cases.js";
 import { runEvaluation, systemsFor, type EvalReport } from "../eval/harness.js";
 
 // npm run eval:reasoning [-- --repeats N] [-- --only <config>]
 // npm run eval:reasoning -- --summarize <dir>
+// npm run eval:reasoning -- --rule corroborated-2 [--out <name>]  the Build 5
+//   candidate rule (docs/build-5-corroboration.md); corroborated-1 is scored
+//   on the same judgments as well
 //
 // The live evaluation (held-out and regression groups) on local Ollama under
 // two assessor configurations, alternated and repeated, with every system
@@ -41,22 +44,26 @@ const option = (name: string) => { const index = args.indexOf(`--${name}`); retu
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(ROOT_DIR, "dist", "src", "scripts", "eval-reasoning.js")) {
   const summarizeOnly = option("summarize");
   const dir = summarizeOnly ? path.resolve(summarizeOnly)
-    : path.join(ROOT_DIR, "eval", "results", "experiments", "reasoning", new Date().toISOString().replace(/[:.]/g, "-"));
+    : path.join(ROOT_DIR, "eval", "results", "experiments", "reasoning", option("out") ?? new Date().toISOString().replace(/[:.]/g, "-"));
   if (!summarizeOnly) await run(dir, Number(option("repeats") ?? 3), option("only"));
   fs.writeFileSync(path.join(dir, "summary.md"), summarize(dir));
   console.log(`\n${fs.readFileSync(path.join(dir, "summary.md"), "utf8")}`);
 }
 
 async function run(dir: string, repeats: number, only?: string): Promise<void> {
+  const rule = (option("rule") ?? "corroborated-1") as ConclusionRule;
+  if (!CONCLUSION_RULES.includes(rule)) throw new Error(`--rule must be one of ${CONCLUSION_RULES.join(", ")}`);
   fs.mkdirSync(dir, { recursive: true });
   for (let repeat = 1; repeat <= repeats; repeat++) {
     for (const [name, settings] of Object.entries(CONFIGS).filter(([name]) => !only || name === only)) {
       const nemotron = loadConfig({ REASONER: "nemotron", MODEL_PROVIDER: "ollama", NEMOTRON_TIMEOUT_MS: "300000", ...settings }).nemotron;
       for (const group of [{ id: "held-out", cases: loadEvalCases() }, { id: "regression", cases: loadEvalCases(REGRESSION_DIR) }]) {
         const began = Date.now();
-        const report = await runEvaluation("live", group.cases, systemsFor("live", nemotron));
-        fs.writeFileSync(path.join(dir, `${name}.r${repeat}.${group.id}.json`),
-          `${JSON.stringify({ generatedAt: new Date().toISOString(), config: name, settings, repeat, group: group.id, wallMs: Date.now() - began, ...report }, null, 1)}\n`);
+        const report = await runEvaluation("live", group.cases, systemsFor("live", nemotron, rule));
+        const file = path.join(dir, `${name}.r${repeat}.${group.id}.json`);
+        if (fs.existsSync(file)) throw new Error(`${file} exists; live reports are never overwritten`);
+        fs.writeFileSync(file,
+          `${JSON.stringify({ generatedAt: new Date().toISOString(), config: name, settings, rule, repeat, group: group.id, wallMs: Date.now() - began, ...report }, null, 1)}\n`);
         console.log(`${name} repeat ${repeat} ${group.id}: ${Math.round((Date.now() - began) / 1000)} s; `
           + report.systems.map((system) => `${system.system} ${system.metrics.correctness.count}/${system.metrics.correctness.of}`).join("; "));
       }

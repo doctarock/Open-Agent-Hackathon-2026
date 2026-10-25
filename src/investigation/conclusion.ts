@@ -1,4 +1,5 @@
 import { hypothesisStatus, type MentalObject } from "#speck";
+import type { ConclusionRule } from "../config.js";
 import type { EvidenceRecord } from "../evidence/types.js";
 import type { RelationJudgment } from "../reasoning/types.js";
 import type { QuestionSpec } from "../scenario.js";
@@ -43,7 +44,7 @@ export interface EvidenceRef {
   judgedBy: "rules" | "model";
   // The judgment behind this relation, and the confidence change Speck made
   // when it applied it to the current hypothesis.
-  judgment: Pick<RelationJudgment, "basis" | "decisive" | "strength" | "rationale"> | null;
+  judgment: Pick<RelationJudgment, "basis" | "decisive" | "strength" | "rationale" | "strengthReported" | "establishes"> | null;
   delta: number | null;
 }
 
@@ -68,15 +69,20 @@ export interface Direction {
 }
 
 // How an established conclusion was reached: Speck's own supported status, or
-// rule corroborated-1 while Speck's confidence is still below its threshold.
+// the corroboration rule in force while Speck's confidence is still below its
+// threshold.
 export type ConclusionRoute = "speck-threshold" | "corroboration";
 
 export interface Corroboration {
-  rule: typeof CORROBORATION_RULE;
+  rule: ConclusionRule;
   holds: boolean;
-  // The records that still count supporting the explanation, and their systems.
+  // The records that still count supporting the explanation, and their
+  // systems; under corroborated-2 only those whose judgment qualifies.
   records: string[];
   systems: string[];
+  // corroborated-2: supporting records that still count but do not qualify,
+  // and why. Empty under corroborated-1.
+  excluded: Array<{ recordId: string; reason: string }>;
   // Why it does not hold, in plain words; empty when it holds.
   missing: string[];
 }
@@ -168,6 +174,18 @@ export const LEADING_MIN_MARGIN = 0.1;
 // satisfies it, and any counting record against it, or for a rival, blocks it.
 export const CORROBORATION_RULE = "corroborated-1";
 export const CORROBORATION_MIN_SYSTEMS = 2;
+// Rule corroborated-2 (docs/build-5-corroboration.md, section 3), the Build 5
+// candidate: as corroborated-1, but only qualifying judgments count towards
+// the two systems. A judgment qualifies when its strength was reported and is
+// at least CORROBORATION_MIN_STRENGTH, and it is a fact rule's, or the model
+// marked it as establishing the explanation (the record itself records it as
+// the case, not a request, plan, expectation or someone else's report of it).
+// Why: live, the model judged "inspection scheduled" and "the customer expects
+// approval" as support at 0.7-1.0, as strongly as a returned payment; its
+// strength does not separate a record that anticipates a state from one that
+// establishes it, so the distinction is asked for explicitly. Non-qualifying
+// support neither counts nor blocks; any support for a rival still blocks.
+export const CORROBORATION_MIN_STRENGTH = 0.5;
 
 const ESTABLISHED = new Set(["supported", "confirmed"]);
 const OUT = new Set(["rejected", "superseded"]);
@@ -186,7 +204,10 @@ export function deriveConclusion(input: {
   // The judgments recorded for an assessed record, to say what an
   // invalidated record's removal took away.
   judgmentsFor?: (recordId: string) => readonly RelationJudgment[];
+  // Absent: corroborated-1.
+  rule?: ConclusionRule;
 }): Conclusion {
+  const rule = input.rule ?? CORROBORATION_RULE;
   const invalidated = input.invalidated ?? new Map<string, Invalidation>();
   const supersededBy = new Map<string, string>();
   if (input.invalidated) {
@@ -206,7 +227,11 @@ export function deriveConclusion(input: {
         recordId: record.id, sourceSystem: record.source.system, sourceName: record.source.name,
         observedAt: record.observedAt, retrievalMode: record.retrieval.mode, supersededBy: supersededBy.get(record.id) ?? null,
         reliability: found.reliability, judgedBy: found.judgedBy,
-        judgment: judgment ? { basis: judgment.basis, decisive: judgment.decisive, strength: judgment.strength, rationale: judgment.rationale } : null,
+        judgment: judgment ? {
+          basis: judgment.basis, decisive: judgment.decisive, strength: judgment.strength, rationale: judgment.rationale,
+          ...(judgment.strengthReported === false ? { strengthReported: false as const } : {}),
+          ...(judgment.establishes !== undefined ? { establishes: judgment.establishes } : {})
+        } : null,
         delta: typeof delta === "number" ? round(delta) : null
       }];
     };
@@ -238,7 +263,7 @@ export function deriveConclusion(input: {
     route = "speck-threshold";
   } else if (top?.supporting.length && top.confidence >= LEADING_MIN_CONFIDENCE && (margin ?? 0) >= LEADING_MIN_MARGIN) state = "leading";
   const counts = (ref: EvidenceRef) => !invalidated.has(ref.recordId) && !ref.supersededBy;
-  const corroboration = top && route === null ? corroborate(top, live, counts) : null;
+  const corroboration = top && route === null ? corroborate(top, live, counts, rule) : null;
   if (corroboration?.holds) {
     state = "supported";
     route = "corroboration";
@@ -348,27 +373,48 @@ export function withholdForPending(conclusion: Conclusion, pending: readonly str
   };
 }
 
-// Rule corroborated-1 applied to the top explanation; `counts` says whether a
-// record still counts.
+// The corroboration rule applied to the top explanation; `counts` says
+// whether a record still counts.
 // Why every recorded contradiction blocks it, counting or not: once beliefs
 // are reconciled Speck holds only counting records against a hypothesis, so
 // this is the same rule; before they are (an interrupted recomputation) a
 // contradiction Speck still applies must not be argued away here.
-function corroborate(top: HypothesisView, live: readonly HypothesisView[], counts: (ref: EvidenceRef) => boolean): Corroboration {
-  const support = top.supporting.filter(counts);
+function corroborate(top: HypothesisView, live: readonly HypothesisView[], counts: (ref: EvidenceRef) => boolean, rule: ConclusionRule): Corroboration {
+  const excluded: Corroboration["excluded"] = [];
+  const support = top.supporting.filter(counts).filter((ref) => {
+    if (rule !== "corroborated-2") return true;
+    const reason = disqualified(ref);
+    if (reason) excluded.push({ recordId: ref.recordId, reason });
+    return !reason;
+  });
   const records = [...new Set(support.map((ref) => ref.recordId))];
   const systems = [...new Set(support.map((ref) => ref.sourceSystem))];
   const against = top.contradicting.map((ref) => ref.recordId);
   const rivals = live.filter((view) => view !== top && view.supporting.some(counts)).map((view) => view.key);
   const missing: string[] = [];
+  const qualifying = rule === "corroborated-2" ? "qualifying " : "";
   if (systems.length < CORROBORATION_MIN_SYSTEMS) {
     missing.push(systems.length
-      ? `its support comes from one source system (${systems[0]}); corroboration needs ${CORROBORATION_MIN_SYSTEMS} different ones`
-      : "no record that still counts supports it");
+      ? `its ${qualifying}support comes from one source system (${systems[0]}); corroboration needs ${CORROBORATION_MIN_SYSTEMS} different ones`
+      : qualifying ? "no record that still counts gives it qualifying support" : "no record that still counts supports it");
+  }
+  if (excluded.length && systems.length < CORROBORATION_MIN_SYSTEMS) {
+    missing.push(`not counted: ${excluded.map((item) => `${item.recordId} (${item.reason})`).join("; ")}`);
   }
   if (against.length) missing.push(`${against.join(", ")} ${against.length === 1 ? "is" : "are"} recorded against it`);
   if (rivals.length) missing.push(`${rivals.join(", ")} still ha${rivals.length === 1 ? "s" : "ve"} support of ${rivals.length === 1 ? "its" : "their"} own`);
-  return { rule: CORROBORATION_RULE, holds: missing.length === 0, records, systems, missing };
+  return { rule, holds: missing.length === 0, records, systems, excluded, missing };
+}
+
+// Why a supporting judgment does not qualify under corroborated-2, or null.
+function disqualified(ref: EvidenceRef): string | null {
+  const judgment = ref.judgment;
+  if (!judgment) return "no judgment recorded";
+  if (judgment.strengthReported === false) return "the model gave no strength";
+  if (judgment.strength < CORROBORATION_MIN_STRENGTH) return `strength ${judgment.strength} is below ${CORROBORATION_MIN_STRENGTH}`;
+  if (judgment.basis === "rule") return null;
+  if (judgment.establishes === undefined) return "the model was not asked whether it establishes this";
+  return judgment.establishes ? null : "the model judged that it does not itself establish this";
 }
 
 function justify(input: {
@@ -393,7 +439,8 @@ function justify(input: {
   }
   if (route === "corroboration" && corroboration) {
     reasons.push(`Speck holds ${subject.key} as ${subject.status} at ${subject.confidence}, ${gap} short of its supported threshold of ${belief.supportedThreshold}; Speck itself has not established it.`);
-    reasons.push(`Concluded by corroboration (rule ${corroboration.rule}): ${corroboration.records.join(", ")} from ${corroboration.systems.length} different sources (${corroboration.systems.join(", ")}) support it, no record that still counts is against it, and every other explanation is ruled out or has no support.`);
+    reasons.push(`Concluded by corroboration (rule ${corroboration.rule}): ${corroboration.records.join(", ")} from ${corroboration.systems.length} different sources (${corroboration.systems.join(", ")}) support it${corroboration.rule === "corroborated-2" ? ", each judged as establishing it" : ""}, no record that still counts is against it, and every other explanation is ruled out or has no support.`);
+    if (corroboration.excluded.length) reasons.push(`Not counted towards it: ${corroboration.excluded.map((item) => `${item.recordId} (${item.reason})`).join("; ")}.`);
     const capped = subject.supporting.filter((item) => item.judgedBy === "model");
     if (capped.length) reasons.push(`The gap is Speck's cap on model-judged evidence: ${capped.map((item) => item.recordId).join(", ")} ${capped.length === 1 ? "was" : "were"} judged by the model, so each adds at most ${round(belief.supportBonus * belief.modelReliabilityCeiling)}.`);
     wouldChange.push(`Any record that still counts against ${subject.key}, or supports another explanation, withdraws this conclusion.`);

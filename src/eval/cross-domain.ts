@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import type { ConclusionRule } from "../config.js";
 import { EvidenceDesk, RUN_SCHEMA } from "../investigation/desk.js";
 import { loadEvalCases, CROSS_DOMAIN_DIR, type EvalCase } from "./cases.js";
 import { scoreSystem, type Rate, type SystemScore } from "./metrics.js";
@@ -36,7 +37,12 @@ export function verifyLock(dir = CROSS_DOMAIN_DIR, lockFile = LOCK_FILE): { lock
 // Line endings are normalised, so a checkout that converts them still matches.
 const sha256 = (file: string) => createHash("sha256").update(fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n")).digest("hex");
 
-export const CROSS_DOMAIN_SYSTEMS = (): EvalSystem[] => [speckDesk({ kind: "rules" }), speckFresh({ kind: "rules" }), statelessRules()];
+// The Speck systems conclude with `rule`; under corroborated-2, corroborated-1
+// is also scored on the same runs (`<system>~corroborated-1`).
+export const CROSS_DOMAIN_SYSTEMS = (rule: ConclusionRule = "corroborated-1"): EvalSystem[] => {
+  const choice = { rule, variants: (rule === "corroborated-2" ? ["corroborated-1"] : []) as ConclusionRule[] };
+  return [speckDesk({ kind: "rules" }, choice), speckFresh({ kind: "rules" }, choice), statelessRules()];
+};
 
 export const CROSS_DOMAIN_DIFFERENCES = [
   "All three systems read the same records from the same files at each checkpoint, apply the same scenario fact rules, and use no model.",
@@ -102,11 +108,13 @@ export interface Divergence {
 
 const rate = (count: number, of: number): Rate => ({ count, of, rate: of ? Math.round((count / of) * 1000) / 1000 : null });
 
-export async function runCrossDomain(onProgress?: (message: string) => void): Promise<CrossDomainReport> {
+export async function runCrossDomain(onProgress?: (message: string) => void, rule: ConclusionRule = "corroborated-1"): Promise<CrossDomainReport> {
   const lock = verifyLock();
   const cases = loadEvalCases(CROSS_DOMAIN_DIR);
-  const systems = CROSS_DOMAIN_SYSTEMS();
+  const systems = CROSS_DOMAIN_SYSTEMS(rule);
   const runs = new Map<string, CaseRun[]>();
+  // Each system, then the other rule read from its runs; the baseline stays last.
+  const names: string[] = [];
   for (const system of systems) {
     const results: CaseRun[] = [];
     for (const item of cases) {
@@ -114,10 +122,15 @@ export async function runCrossDomain(onProgress?: (message: string) => void): Pr
       results.push({ item, result: await system.run(item) });
     }
     runs.set(system.name, results);
+    names.push(system.name);
+    for (const variant of Object.keys(results[0]?.result.variants ?? {}) as ConclusionRule[]) {
+      runs.set(`${system.name}~${variant}`, results.map(({ item, result }) => ({ item, result: { checkpoints: result.variants![variant]!, model: result.model } })));
+      names.push(`${system.name}~${variant}`);
+    }
   }
-  const scores = systems.map((system) => scoreSystem(system.name, runs.get(system.name)!));
-  const extras = systems.map((system, index) => extrasFor(system.name, runs.get(system.name)!, scores[index]!));
-  const reference = runs.get(systems[0]!.name)!;
+  const scores = names.map((name) => scoreSystem(name, runs.get(name)!));
+  const extras = names.map((name, index) => extrasFor(name, runs.get(name)!, scores[index]!));
+  const reference = runs.get(names[0]!)!;
   const recovery: RecoveryResult[] = [];
   for (const { item, result } of reference) {
     for (const index of item.checkpoints.keys()) {
@@ -137,7 +150,7 @@ export async function runCrossDomain(onProgress?: (message: string) => void): Pr
       identical: rate(recovery.filter((item) => item.interrupted && item.identical).length, recovery.filter((item) => item.interrupted).length),
       correct: rate(recovery.filter((item) => item.interrupted && item.correct).length, recovery.filter((item) => item.interrupted).length)
     },
-    divergences: cases.map((item) => divergence(item, systems.map((system) => system.name), runs)),
+    divergences: cases.map((item) => divergence(item, names, runs)),
     differences: CROSS_DOMAIN_DIFFERENCES,
     runs: Object.fromEntries([...runs].map(([name, results]) => [name, results.map(({ item, result }) => ({ caseId: item.id, checkpoints: result.checkpoints }))]))
   };

@@ -3,7 +3,7 @@ import type { Rate } from "./metrics.js";
 
 // The console report of an evaluation: the metrics with their denominators,
 // then every checkpoint, then what each system got wrong. A Speck conclusion
-// reached by corroboration (rule corroborated-1) is marked "(c)".
+// reached by corroboration (the rule in force) is marked "(c)".
 
 export function printReport(report: EvalReport, title: string): void {
   const show = (value: Rate) => (value.of ? `${value.count}/${value.of}` : "n/a");

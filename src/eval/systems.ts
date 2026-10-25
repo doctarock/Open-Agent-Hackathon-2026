@@ -2,12 +2,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { contractInstruction, parseModelCompletion, type SpeckRuntime, type StructuredOutputContract } from "#speck";
-import { loadConfig, type AppConfig, type NemotronConfig } from "../config.js";
+import { loadConfig, type AppConfig, type ConclusionRule, type NemotronConfig } from "../config.js";
 import { FixtureEvidenceProvider } from "../evidence/fixture-provider.js";
 import { byObservation, EvidenceProviderError, type EvidenceProvider, type EvidenceRecord } from "../evidence/types.js";
 import { ZetarisEvidenceProvider } from "../evidence/zetaris-provider.js";
 import type { Conclusion } from "../investigation/conclusion.js";
-import { EvidenceDesk, type RunSnapshot } from "../investigation/desk.js";
+import { EvidenceDesk, nemotronOptions, type RunSnapshot } from "../investigation/desk.js";
 import { NemotronProcessor, NemotronReasoner } from "../reasoning/nemotron.js";
 import { RuleReasoner, ruleJudgments } from "../reasoning/rules.js";
 import type { Reasoner } from "../reasoning/types.js";
@@ -71,6 +71,10 @@ export interface ModelStats {
 export interface SystemResult {
   checkpoints: CheckpointOutcome[];
   model: ModelStats | null;
+  // Speck systems: the same runs' checkpoints read under other corroboration
+  // rules, keyed by rule. Same Speck state, same judgments; only the
+  // conclusion policy differs (scored as `<system>~<rule>`).
+  variants?: Partial<Record<ConclusionRule, CheckpointOutcome[]>>;
 }
 
 export interface EvalSystem {
@@ -91,12 +95,23 @@ function providerFor(item: EvalCase, config: AppConfig): EvidenceProvider {
     : new FixtureEvidenceProvider(path.join(item.dir, "evidence.json"), config.rootDir);
 }
 
-export function caseConfig(item: EvalCase, reasoner: ReasonerChoice): AppConfig {
+export function caseConfig(item: EvalCase, reasoner: ReasonerChoice, conclusionRule: ConclusionRule = "corroborated-1"): AppConfig {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "evidence-desk-eval-"));
   return loadConfig({}, {
     scenarioDir: item.dir, databasePath: path.join(dir, "desk.sqlite"), historyDir: path.join(dir, "meterless"),
-    reasoner: reasoner.kind, ...(reasoner.kind === "nemotron" ? { nemotron: reasoner.config } : {})
+    reasoner: reasoner.kind, ...(reasoner.kind === "nemotron" ? { nemotron: reasoner.config } : {}), conclusionRule
   });
+}
+
+// Which corroboration rule a Speck system concludes with, and which others
+// are scored on the same runs. Under corroborated-1 the system keeps its
+// Build 4 name, so its reports compare with earlier ones.
+export interface RuleChoice { rule?: ConclusionRule; variants?: readonly ConclusionRule[] }
+
+const named = (base: string, rule: ConclusionRule) => rule === "corroborated-1" ? base : `${base}@${rule}`;
+
+function variantOutcomes(variants: readonly ConclusionRule[], read: (rule: ConclusionRule) => CheckpointOutcome, into: Partial<Record<ConclusionRule, CheckpointOutcome[]>>): void {
+  for (const rule of variants) (into[rule] ??= []).push(read(rule));
 }
 
 // Scored on Speck's current conclusion, which equals the run's own unless
@@ -177,7 +192,7 @@ function failingOn(inner: Reasoner, failing: readonly string[]): Reasoner {
 
 export function deskOptions(item: EvalCase, config: AppConfig, reasoner: ReasonerChoice): Parameters<typeof EvidenceDesk.open>[1] {
   const reasonerFor = (runtime: SpeckRuntime): Reasoner =>
-    reasoner.kind === "nemotron" ? new NemotronReasoner(runtime, reasoner.config) : new RuleReasoner();
+    reasoner.kind === "nemotron" ? new NemotronReasoner(runtime, reasoner.config, nemotronOptions(config)) : new RuleReasoner();
   return {
     provider: providerFor(item, config),
     ...(item.failAssessment?.length
@@ -188,26 +203,33 @@ export function deskOptions(item: EvalCase, config: AppConfig, reasoner: Reasone
 
 // Evidence Desk as built: one persistent Speck case across the checkpoints;
 // each update is introduced and the investigation rerun.
-export function speckDesk(reasoner: ReasonerChoice): EvalSystem {
+export function speckDesk(reasoner: ReasonerChoice, choice: RuleChoice = {}): EvalSystem {
+  const rule = choice.rule ?? "corroborated-1";
+  const variants = choice.variants ?? [];
   return {
-    name: `speck-desk/${reasoner.kind}`,
+    name: named(`speck-desk/${reasoner.kind}`, rule),
     description: "Evidence Desk: persistent Speck beliefs across checkpoints, incremental evidence.",
     async run(item) {
-      const config = caseConfig(item, reasoner);
+      const config = caseConfig(item, reasoner, rule);
       const desk = await EvidenceDesk.open(config, deskOptions(item, config, reasoner));
       const checkpoints: CheckpointOutcome[] = [];
+      const others: Partial<Record<ConclusionRule, CheckpointOutcome[]>> = {};
       try {
         for (const checkpoint of item.checkpoints) {
           while (desk.currentStage().id !== checkpoint.afterStage) await desk.introduceNextUpdate();
           try {
             for (const withdrawal of checkpoint.withdrawBefore ?? []) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
             const run = await desk.run();
-            checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk), speckInfluencing(desk)));
+            const visible = await visibleIds(desk);
+            const influencing = speckInfluencing(desk);
+            checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, visible, influencing));
+            variantOutcomes(variants, (other) => speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck([], other), run, visible, influencing), others);
           } catch (error) {
             checkpoints.push(errorOutcome(checkpoint.afterStage, error));
+            variantOutcomes(variants, () => errorOutcome(checkpoint.afterStage, error), others);
           }
         }
-        return { checkpoints, model: speckModelStats(desk) };
+        return { checkpoints, model: speckModelStats(desk), ...(variants.length ? { variants: others } : {}) };
       } finally {
         desk.close();
       }
@@ -218,30 +240,37 @@ export function speckDesk(reasoner: ReasonerChoice): EvalSystem {
 // The same Speck pipeline with no carried state: a new database for every
 // checkpoint, given all evidence visible by then in one run. It separates
 // what persistence contributes from what Speck's revision policy does.
-export function speckFresh(reasoner: ReasonerChoice): EvalSystem {
+export function speckFresh(reasoner: ReasonerChoice, choice: RuleChoice = {}): EvalSystem {
+  const rule = choice.rule ?? "corroborated-1";
+  const variants = choice.variants ?? [];
   return {
-    name: `speck-fresh/${reasoner.kind}`,
+    name: named(`speck-fresh/${reasoner.kind}`, rule),
     description: "Speck pipeline with a fresh database per checkpoint (no persisted beliefs or history).",
     async run(item) {
       const checkpoints: CheckpointOutcome[] = [];
+      const others: Partial<Record<ConclusionRule, CheckpointOutcome[]>> = {};
       const stats: Array<ModelStats | null> = [];
       for (const [index, checkpoint] of item.checkpoints.entries()) {
-        const config = caseConfig(item, reasoner);
+        const config = caseConfig(item, reasoner, rule);
         const desk = await EvidenceDesk.open(config, deskOptions(item, config, reasoner));
         try {
           while (desk.currentStage().id !== checkpoint.afterStage) await desk.introduceNextUpdate();
           const run = await desk.run();
           // Everything is assessed at once, then every withdrawal so far applied.
           for (const withdrawal of withdrawnBy(item, index)) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
-          checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, await visibleIds(desk), speckInfluencing(desk)));
+          const visible = await visibleIds(desk);
+          const influencing = speckInfluencing(desk);
+          checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, visible, influencing));
+          variantOutcomes(variants, (other) => speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck([], other), run, visible, influencing), others);
         } catch (error) {
           checkpoints.push(errorOutcome(checkpoint.afterStage, error));
+          variantOutcomes(variants, () => errorOutcome(checkpoint.afterStage, error), others);
         } finally {
           stats.push(speckModelStats(desk));
           desk.close();
         }
       }
-      return { checkpoints, model: mergeStats(stats) };
+      return { checkpoints, model: mergeStats(stats), ...(variants.length ? { variants: others } : {}) };
     }
   };
 }

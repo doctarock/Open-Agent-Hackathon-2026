@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { SpeckRuntime, type ActorInput, type MentalObject, type MentalObjectId, type Worker, type WorkerId } from "#speck";
-import type { AppConfig, CaseConfig } from "../config.js";
+import type { AppConfig, CaseConfig, ConclusionRule } from "../config.js";
 import { createEvidenceProvider } from "../evidence/provider.js";
 import { byObservation, type EvidenceFetch, type EvidenceProvider } from "../evidence/types.js";
 import { NemotronReasoner } from "../reasoning/nemotron.js";
@@ -91,7 +91,7 @@ export class EvidenceDesk extends EventEmitter {
     const scenario = loadScenario(config.scenarioDir);
     const provider = options.provider ?? createEvidenceProvider(config, options.fetchImpl);
     const reasoner = typeof options.reasoner === "function" ? options.reasoner(runtime)
-      : options.reasoner ?? (config.reasoner === "nemotron" ? new NemotronReasoner(runtime, config.nemotron) : new RuleReasoner());
+      : options.reasoner ?? (config.reasoner === "nemotron" ? new NemotronReasoner(runtime, config.nemotron, nemotronOptions(config)) : new RuleReasoner());
     const desk = new EvidenceDesk(config, runtime, scenario, provider, reasoner);
     await desk.exclusive(async () => {
       await desk.ensureCase();
@@ -139,7 +139,7 @@ export class EvidenceDesk extends EventEmitter {
   // The case's state in Speck as it is now. A snapshot: read again after a
   // change. Read once to show several views that must agree.
   read(): CaseState {
-    return new CaseState(this.runtime, this.scenario, this.worker());
+    return new CaseState(this.runtime, this.scenario, this.worker(), this.config.conclusionRule);
   }
 
   // The case's Speck worker, created with its hypotheses on first use.
@@ -322,7 +322,7 @@ export class EvidenceDesk extends EventEmitter {
 
   hypotheses(): HypothesisView[] { return this.read().hypotheses(); }
 
-  conclusionFromSpeck(inFlight: readonly AssessedEvidence[] = []): Conclusion { return this.read().conclusion(inFlight); }
+  conclusionFromSpeck(inFlight: readonly AssessedEvidence[] = [], rule?: ConclusionRule): Conclusion { return this.read().conclusion(inFlight, rule); }
 
   beliefsReconciled(inFlight: readonly AssessedEvidence[] = []): boolean { return this.read().beliefsReconciled(inFlight); }
 
@@ -424,6 +424,12 @@ async function withForegroundLease<T>(runtime: SpeckRuntime, work: () => Promise
   } finally {
     release();
   }
+}
+
+// The model is asked whether each judgment establishes its explanation only
+// when rule corroborated-2 reads it; otherwise its prompt is Build 4's.
+export function nemotronOptions(config: Pick<CaseConfig, "conclusionRule">): { establishes: boolean } {
+  return { establishes: config.conclusionRule === "corroborated-2" };
 }
 
 export function relativeDataPath(config: CaseConfig, file: string): string {

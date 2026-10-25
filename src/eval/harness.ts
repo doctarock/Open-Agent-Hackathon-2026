@@ -1,7 +1,7 @@
-import type { NemotronConfig } from "../config.js";
+import type { ConclusionRule, NemotronConfig } from "../config.js";
 import type { EvalCase } from "./cases.js";
 import { scoreSystem, type SystemScore } from "./metrics.js";
-import { speckDesk, speckFresh, statelessModel, statelessRules, type EvalSystem } from "./systems.js";
+import { speckDesk, speckFresh, statelessModel, statelessRules, type EvalSystem, type RuleChoice } from "./systems.js";
 
 export type EvalMode = "fixture" | "live";
 
@@ -16,11 +16,17 @@ export interface EvalReport {
 
 // fixture: deterministic, no model and no network beyond a refused local port.
 // live: the configured Nemotron endpoint for every model-backed system.
-export function systemsFor(mode: EvalMode, nemotron?: NemotronConfig): EvalSystem[] {
-  if (mode === "fixture") return [speckDesk({ kind: "rules" }), speckFresh({ kind: "rules" }), statelessRules()];
+// rule: the corroboration rule the Speck systems conclude with. Under
+// corroborated-2, corroborated-1 is also scored on the same runs and
+// judgments; under corroborated-1 (the default) the systems are exactly
+// Build 4's, and nothing else is scored: live, the model was not asked what
+// corroborated-2 reads (docs/build-5-corroboration.md, 3b).
+export function systemsFor(mode: EvalMode, nemotron?: NemotronConfig, rule: ConclusionRule = "corroborated-1"): EvalSystem[] {
+  const choice: RuleChoice = { rule, variants: rule === "corroborated-2" ? ["corroborated-1"] : [] };
+  if (mode === "fixture") return [speckDesk({ kind: "rules" }, choice), speckFresh({ kind: "rules" }, choice), statelessRules()];
   if (!nemotron) throw new Error("Live evaluation needs a Nemotron configuration");
   const reasoner = { kind: "nemotron" as const, config: nemotron };
-  return [speckDesk(reasoner), speckFresh(reasoner), statelessModel(nemotron)];
+  return [speckDesk(reasoner, choice), speckFresh(reasoner, choice), statelessModel(nemotron)];
 }
 
 export const DIFFERENCES: Record<EvalMode, string[]> = {
@@ -47,6 +53,10 @@ export async function runEvaluation(mode: EvalMode, cases: readonly EvalCase[], 
       results.push({ item, result: await system.run(item) });
     }
     scores.push(scoreSystem(system.name, results));
+    // Other rules read from the same runs, scored the same way.
+    for (const rule of Object.keys(results[0]?.result.variants ?? {}) as ConclusionRule[]) {
+      scores.push(scoreSystem(`${system.name}~${rule}`, results.map(({ item, result }) => ({ item, result: { checkpoints: result.variants![rule]!, model: result.model } }))));
+    }
   }
   return {
     mode,

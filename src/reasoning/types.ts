@@ -25,6 +25,14 @@ export interface RelationJudgment {
   decisive: boolean;
   basis: "rule" | "model";
   rationale: string;
+  // Model judgments only. false when the reply gave no usable strength and
+  // the default 0.5 was used; absent otherwise.
+  strengthReported?: false;
+  // Model judgments made for rule corroborated-2 only: whether the model said
+  // the record itself records the hypothesis as the case, rather than a
+  // request, plan, expectation or someone else's report of it. Absent when
+  // not asked (corroborated-1, judgments saved before Build 5).
+  establishes?: boolean;
 }
 
 export interface BatchAssessment {

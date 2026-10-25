@@ -53,6 +53,8 @@ export const REGRESSION_DIR = path.join(ROOT_DIR, "eval", "regression");
 export const CROSS_DOMAIN_DIR = path.join(ROOT_DIR, "eval", "cross-domain");
 // The Build 4 challenge cases, reported apart from all of the above (npm run eval:challenge).
 export const CHALLENGE_DIR = path.join(ROOT_DIR, "eval", "challenge");
+// The Build 5 challenge set (eval/challenge-5/README.md), reported apart again.
+export const CHALLENGE5_DIR = path.join(ROOT_DIR, "eval", "challenge-5");
 export const DEV_FIXTURES_DIR = path.join(ROOT_DIR, "fixtures", "scenarios");
 
 export function loadEvalCases(dir = EVAL_DIR): EvalCase[] {

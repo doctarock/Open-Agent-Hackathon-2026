@@ -53,6 +53,10 @@ export const COMPARISON_SCHEMA = "evidence-desk.comparison.v1";
 // Why it is recorded and fingerprinted: samples made under different policies
 // must never be counted together.
 export const EVIDENCE_POLICY = "build-4 (restatement, corroborated-1)";
+// The policy a configuration runs under: Build 4's name is kept for
+// corroborated-1, so its samples still group with those saved before Build 5.
+export const evidencePolicy = (config: Pick<CaseConfig, "conclusionRule">): string =>
+  !config.conclusionRule || config.conclusionRule === "corroborated-1" ? EVIDENCE_POLICY : `build-5 (restatement, ${config.conclusionRule})`;
 
 export interface ComparedRecord {
   id: string;
@@ -195,7 +199,7 @@ export function comparisonFingerprint(config: CaseConfig, evidence: ProviderDesc
   const read = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n") : "");
   const hash = createHash("sha256");
   hash.update(COMPARISON_SCHEMA);
-  hash.update(EVIDENCE_POLICY);
+  hash.update(evidencePolicy(config));
   hash.update(read(path.join(config.scenarioDir, "scenario.json")));
   hash.update(evidence.mode);
   if (evidence.mode === "fixture") hash.update(read(path.join(config.scenarioDir, "evidence.json")));
@@ -453,7 +457,7 @@ export async function runComparison(config: CaseConfig, options: {
         ? "The evaluation's stateless model baseline: at each stage, one call to the same Nemotron endpoint with the question, the explanations and every visible record (its text, its facts, and \"replaces …\" where the source says so). It keeps nothing between stages."
         : "The evaluation's stateless rule baseline: at each stage, the same fact rules summed from scratch (reliability × strength, contradictions negative); the top positive score is its conclusion. It keeps nothing between stages and has no notion of a replaced record.",
       labels: labels ? "Pre-registered labels from the case's expected.json, written before any system was run on it." : "No pre-registered labels: this case is not an evaluation case.",
-      policy: EVIDENCE_POLICY
+      policy: evidencePolicy(config)
     },
     fingerprint: comparisonFingerprint(config, evidence),
     stages,

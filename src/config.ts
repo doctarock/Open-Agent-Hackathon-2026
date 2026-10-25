@@ -18,6 +18,11 @@ import { METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, normaliseMeterlessUrl, us
 
 export type EvidenceMode = "fixture" | "zetaris";
 export type ReasonerKind = "rules" | "nemotron";
+// Evidence Desk's corroboration rule (src/investigation/conclusion.ts):
+// corroborated-1 (Build 4, the default) or the Build 5 candidate
+// corroborated-2 (docs/build-5-corroboration.md).
+export type ConclusionRule = "corroborated-1" | "corroborated-2";
+export const CONCLUSION_RULES: readonly ConclusionRule[] = ["corroborated-1", "corroborated-2"];
 // Where the model assessor's calls go. meterless: a Meterless Runtime, which
 // routes each call (src/reasoning/meterless.ts). ollama, nvidia: a Nemotron
 // model on local Ollama or NVIDIA's hosted API. openai-compatible: any other
@@ -72,6 +77,8 @@ export interface CaseConfig {
   reasoner: ReasonerKind;
   nemotron: NemotronConfig;
   execution: { maxChunks: number; batchSize: number };
+  // Absent: corroborated-1.
+  conclusionRule?: ConclusionRule;
 }
 
 // A standalone desk also opens its own Speck database, and the standalone
@@ -146,6 +153,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
       timeoutMs: positiveInt(env.ZETARIS_TIMEOUT_MS, 120_000, "ZETARIS_TIMEOUT_MS")
     },
     reasoner: oneOf(env.REASONER, ["rules", "nemotron"], "rules", "REASONER"),
+    conclusionRule: oneOf(env.CONCLUSION_RULE, CONCLUSION_RULES, "corroborated-1", "CONCLUSION_RULE"),
     nemotron: modelConfig(env),
     execution: {
       maxChunks: positiveInt(env.MARKOVIAN_MAX_CHUNKS, 8, "MARKOVIAN_MAX_CHUNKS"),

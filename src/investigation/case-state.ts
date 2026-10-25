@@ -1,4 +1,5 @@
 import type { CognitiveEvent, MentalObject, SpeckRuntime, Worker } from "#speck";
+import type { ConclusionRule } from "../config.js";
 import { byObservation, type EvidenceRecord } from "../evidence/types.js";
 import type { Scenario, StageSpec } from "../scenario.js";
 import { deriveBasis, isPrefix, type BeliefBasis, type LedgerEntry } from "./basis.js";
@@ -42,7 +43,8 @@ type AttemptEntry = { runId: string; at: string; item: AssessedEvidence | null; 
 export class CaseState {
   private readonly memo = new Map<string, unknown>();
 
-  constructor(readonly runtime: SpeckRuntime, readonly scenario: Scenario, readonly worker: Worker) {}
+  // rule: the corroboration rule conclusions use unless one is named.
+  constructor(readonly runtime: SpeckRuntime, readonly scenario: Scenario, readonly worker: Worker, readonly rule: ConclusionRule = "corroborated-1") {}
 
   private once<T>(key: string, make: () => T): T {
     if (!this.memo.has(key)) this.memo.set(key, make());
@@ -261,7 +263,9 @@ export class CaseState {
   // derived here, from Speck's ranked hypotheses: the conclusion is read from
   // the belief state, never taken from a model's answer, so it can always be
   // traced to the records and judgments behind it.
-  conclusion(inFlight: readonly AssessedEvidence[] = []): Conclusion {
+  // rule: another corroboration rule read from the same state (the evaluation
+  // scores both on the same judgments); Speck's state is not changed.
+  conclusion(inFlight: readonly AssessedEvidence[] = [], rule: ConclusionRule = this.rule): Conclusion {
     const make = () => {
       const ledger = this.ledger(inFlight);
       // Every record in Speck's ledger, including any from a run interrupted
@@ -287,7 +291,8 @@ export class CaseState {
         questions: this.scenario.questions,
         belief: { supportedThreshold, supportBonus, modelReliabilityCeiling },
         invalidated: this.basis(inFlight).invalid,
-        judgmentsFor: (recordId) => byRecordId.get(recordId)?.judgments ?? []
+        judgmentsFor: (recordId) => byRecordId.get(recordId)?.judgments ?? [],
+        rule
       });
       // Never present beliefs that lag the ledger as if they were current.
       if (!this.beliefsReconciled(inFlight)) {
@@ -301,7 +306,7 @@ export class CaseState {
       const pending = (this.runs().at(-1)?.unprocessed ?? []).filter((id) => !inLedger.has(id) && !excluded.has(id));
       return withholdForPending(conclusion, pending);
     };
-    return inFlight.length ? make() : this.once("conclusion", make);
+    return inFlight.length ? make() : this.once(`conclusion:${rule}`, make);
   }
 
   hypotheses(): HypothesisView[] {

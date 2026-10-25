@@ -199,7 +199,13 @@ export class NemotronReasoner implements Reasoner {
   private readonly registry = new ModelRegistry();
   private lastTrace: ModelCallTrace | null = null;
 
-  constructor(_runtime: SpeckRuntime, private readonly config: NemotronConfig) {
+  // establishes: ask for the extra per-judgment field rule corroborated-2
+  // reads (docs/build-5-corroboration.md, 3b). Off, the prompt and contract
+  // are exactly Build 4's.
+  private readonly establishes: boolean;
+
+  constructor(_runtime: SpeckRuntime, private readonly config: NemotronConfig, options: { establishes?: boolean } = {}) {
+    this.establishes = options.establishes === true;
     this.processor = new NemotronProcessor(config);
     if (!this.problem()) {
       const descriptor: ModelProcessorDescriptor = {
@@ -226,13 +232,13 @@ export class NemotronReasoner implements Reasoner {
     if (!input.batch.length) return { judgments, notes, narrative: "" };
     const ids = input.batch.map((record) => record.id);
     const keys = input.hypotheses.map((hypothesis) => hypothesis.key);
-    const contract = relationsContract(ids, keys);
+    const contract = relationsContract(ids, keys, this.establishes);
     const trace = this.beginTrace("relation-judgments", contract.name, ids.length * keys.length);
     let response;
     try {
       response = await this.registry.infer({
         processorId: NEMOTRON_PROCESSOR_ID,
-        prompt: assessmentPrompt(input.chunkPrompt, input.batch, input.hypotheses),
+        prompt: assessmentPrompt(input.chunkPrompt, input.batch, input.hypotheses, this.establishes),
         contract,
         temperature: TEMPERATURE,
         timeoutMs: this.config.timeoutMs,
@@ -276,7 +282,10 @@ export class NemotronReasoner implements Reasoner {
         strength: Number.isFinite(strength) ? Math.min(1, Math.max(0.1, strength)) : 0.5,
         decisive: false,
         basis: "model",
-        rationale: String(raw.rationale ?? "").slice(0, 400)
+        rationale: String(raw.rationale ?? "").slice(0, 400),
+        ...(Number.isFinite(strength) ? {} : { strengthReported: false as const }),
+        // Only the boolean true counts; anything else is "does not establish".
+        ...(this.establishes ? { establishes: raw.establishes === true } : {})
       });
       counts.kept += 1;
     }
@@ -399,7 +408,7 @@ export class NemotronReasoner implements Reasoner {
   }
 }
 
-function assessmentPrompt(chunkPrompt: string, batch: readonly EvidenceRecord[], hypotheses: readonly HypothesisSpec[]): string {
+function assessmentPrompt(chunkPrompt: string, batch: readonly EvidenceRecord[], hypotheses: readonly HypothesisSpec[], establishes = false): string {
   return [
     chunkPrompt,
     "",
@@ -427,11 +436,15 @@ function assessmentPrompt(chunkPrompt: string, batch: readonly EvidenceRecord[],
     "- relation: \"supports\", \"contradicts\" or \"neutral\"",
     "- strength: a number from 0.1 (weak) to 1 (strong)",
     "- rationale: one short sentence",
+    // Wording pre-registered in docs/build-5-corroboration.md, 3b.
+    ...(establishes ? [
+      "- establishes: true only when relation is \"supports\" and the item itself records that the hypothesis is the case (a completed event, a recorded decision, an observed state). false when it only reports a request, plan, schedule, intention, recommendation, expectation or prediction, or repeats what another party said. false for \"contradicts\" and \"neutral\"."
+    ] : []),
     "summary: one or two sentences on what this chunk changed."
   ].join("\n");
 }
 
-function relationsContract(ids: string[], keys: string[]): StructuredOutputContract {
+function relationsContract(ids: string[], keys: string[], establishes = false): StructuredOutputContract {
   return {
     name: "evidence_relations",
     description: "How each evidence item bears on each hypothesis",
@@ -446,9 +459,10 @@ function relationsContract(ids: string[], keys: string[]): StructuredOutputContr
             hypothesis: { type: "string", enum: keys },
             relation: { type: "string", enum: ["supports", "contradicts", "neutral"] },
             strength: { type: "number" },
-            rationale: { type: "string" }
+            rationale: { type: "string" },
+            ...(establishes ? { establishes: { type: "boolean" } } : {})
           },
-          required: ["evidence_id", "hypothesis", "relation", "strength", "rationale"]
+          required: ["evidence_id", "hypothesis", "relation", "strength", "rationale", ...(establishes ? ["establishes"] : [])]
         }
       },
       summary: { type: "string" }
