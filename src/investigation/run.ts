@@ -7,7 +7,7 @@ import type { Explanation, ModelCallTrace, Reasoner } from "../reasoning/types.j
 import type { StageSpec } from "../scenario.js";
 import { describeInvalidation, type Invalidation } from "./basis.js";
 import type { CaseHandle, CaseState } from "./case-state.js";
-import type { Conclusion, HypothesisView } from "./conclusion.js";
+import { withholdForPending, type Conclusion, type HypothesisView } from "./conclusion.js";
 import { reconcile, revisionNotes } from "./reconcile.js";
 import {
   ASSESSMENT_SCHEMA, MARKOVIAN_SOURCE, ReasonerNotReadyError, RUN_SCHEMA,
@@ -248,7 +248,7 @@ export async function executeRun(desk: RunContext): Promise<RunSnapshot> {
     unprocessed,
     recovered: recovered.map((item) => item.runId),
     notes: collapse(notes),
-    conclusion: desk.read().conclusion(assessed),
+    conclusion: withholdForPending(desk.read().conclusion(assessed), unprocessed),
     explanation,
     retrieval,
     explanationCall: reflection.call

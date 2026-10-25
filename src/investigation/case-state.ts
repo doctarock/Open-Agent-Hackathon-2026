@@ -2,7 +2,7 @@ import type { CognitiveEvent, MentalObject, SpeckRuntime, Worker } from "#speck"
 import { byObservation, type EvidenceRecord } from "../evidence/types.js";
 import type { Scenario, StageSpec } from "../scenario.js";
 import { deriveBasis, isPrefix, type BeliefBasis, type LedgerEntry } from "./basis.js";
-import { deriveConclusion, type Conclusion, type HypothesisView } from "./conclusion.js";
+import { deriveConclusion, withholdForPending, type Conclusion, type HypothesisView } from "./conclusion.js";
 import {
   ASSESSMENT_SCHEMA, EXCLUSION_SCHEMA, RECOMPUTE_SCHEMA, RUN_SCHEMA, STAGE_KEY,
   type AssessedEvidence, type AssessmentAttempt, type AssessmentStatus, type EvidenceListing, type Exclusion,
@@ -294,7 +294,12 @@ export class CaseState {
         conclusion.reconciled = false;
         conclusion.uncertainty.notes.unshift("Speck's current beliefs do not yet reflect every recorded judgment (a run or recomputation was interrupted). They are reconciled when the desk is next opened or run.");
       }
-      return conclusion;
+      if (inFlight.length) return conclusion;
+      // Records the latest run could not assess, still neither assessed nor withdrawn.
+      const inLedger = new Set(ledger.map((entry) => entry.record.id));
+      const excluded = this.exclusions();
+      const pending = (this.runs().at(-1)?.unprocessed ?? []).filter((id) => !inLedger.has(id) && !excluded.has(id));
+      return withholdForPending(conclusion, pending);
     };
     return inFlight.length ? make() : this.once("conclusion", make);
   }

@@ -37,7 +37,9 @@ export function heldAt(report, index, side) {
   const outcome = stage[side];
   if (outcome.error) return { kind: "error", key: null, text: `stopped with an error (${outcome.error})` };
   if (outcome.concluded) {
-    return { kind: "firm", key: outcome.concluded, text: side === "speck" ? `concludes ${outcome.concluded} (supported, ${outcome.confidence})` : `concludes ${outcome.concluded}` };
+    return { kind: "firm", key: outcome.concluded, text: side !== "speck" ? `concludes ${outcome.concluded}`
+      : outcome.route === "corroboration" ? `concludes ${outcome.concluded} by corroboration (Speck's own confidence ${outcome.confidence} is below its threshold)`
+      : `concludes ${outcome.concluded} (supported, ${outcome.confidence})` };
   }
   if (side === "speck" && outcome.tentative) {
     return { kind: "tentative", key: outcome.tentative, text: `${outcome.state === "leading" ? "leans towards" : "points to"} ${outcome.tentative} (${outcome.state}, ${outcome.confidence}) but does not conclude it` };
@@ -168,6 +170,7 @@ function statelessColumn(report, index) {
     s.error ? el("p", {}, badge(s.error, "bad long")) : null,
     el("div", { className: "meta" }, "Cites as support: ", chips(checks.presentedSupport, index)),
     checks.supportFromReplaced.length ? el("p", {}, badge(`relies on replaced record ${list(checks.supportFromReplaced)}`, "bad long")) : null,
+    checks.supportFromOutdated?.length ? el("p", {}, badge(`relies on out-of-date record ${list(checks.supportFromOutdated)}`, "bad long")) : null,
     checks.unknownCitations.length ? el("p", {}, badge(`cites records that do not exist: ${list(checks.unknownCitations)}`, "bad long")) : null,
     s.rationale ? el("blockquote", { className: "cmp-rationale" }, badge("model's words", "warn"), " ", s.rationale) : null,
     s.scores ? el("div", { className: "meta" }, "Scores: ", Object.entries(s.scores).map(([key, value]) => `${key} ${value}`).join(" · "),
@@ -187,9 +190,14 @@ function speckColumn(report, index) {
     item.decisive ? " decisive" : "", item.rationale ? ` - ${item.rationale}` : "");
   return el("div", { className: "cmp-side cmp-speck" },
     el("h4", {}, "Speck", " ", badge(report.configuration.assessor.kind === "nemotron" ? `${/^meterless\//.test(report.configuration.assessor.model ?? "") ? "Meterless Runtime" : "Nemotron"} + Speck belief state` : "rules + Speck belief state", "ok")),
-    el("p", { className: "cmp-verdict" }, outcomeBadge(report, index, "speck")),
+    el("p", { className: "cmp-verdict" }, outcomeBadge(report, index, "speck"),
+      s.concluded && s.route === "corroboration" ? [" ", badge(`by corroboration; Speck's own confidence ${s.confidence}`, "warn long")] : null),
     s.error ? el("p", {}, badge(s.error, "bad long")) : null,
     s.headline ? el("p", { className: "meta" }, s.headline) : null,
+    s.reasons?.length ? el("details", { className: "meta cmp-reasons", open: s.concluded ? null : "" }, el("summary", {}, s.concluded ? "Why Speck concludes this" : "Why Speck does not conclude"),
+      el("ul", {}, s.reasons.map((reason) => el("li", {}, reason)))) : null,
+    s.run?.modelCalls !== null && s.run?.modelCalls !== undefined
+      ? el("div", { className: "meta" }, `${s.run.modelCalls} model call(s) this run${s.run.modelFailures ? `, ${s.run.modelFailures} failed after retries` : ""}; served ${s.run.servedModels?.join(", ") || "model not reported"}.`) : null,
     el("div", { className: "meta" }, `Evidence for ${s.concluded ?? s.tentative ?? "it"}:`, s.support.length ? el("ul", { className: "refs" }, s.support.map(ref)) : el("span", { className: "muted" }, " none")),
     s.against.length ? el("div", { className: "meta" }, "Against:", el("ul", { className: "refs" }, s.against.map(ref))) : null,
     s.ruledOut.length ? el("div", { className: "meta" }, "Ruled out: ", s.ruledOut.map((item) => [el("code", {}, item.key), " by ", chips(item.refutedBy, index)])) : null,
@@ -212,6 +220,7 @@ function labelLine(score) {
     badge(score.correct ? "matches the pre-registered label" : "does not match the pre-registered label", score.correct ? "ok" : "bad"),
     ` label: ${score.expected ?? "no conclusion is justified"}`,
     score.unsupportedClaim ? [" ", badge("unsupported conclusion", "bad")] : null,
+    score.abstention === "appropriate" ? [" ", badge("abstained, rightly", "ok")] : score.abstention === "inappropriate" ? [" ", badge("abstained where a conclusion was due", "bad")] : null,
     score.presentedRuledOut.length ? [" ", badge(`presents ruled-out ${list(score.presentedRuledOut)}`, "bad")] : null);
 }
 
@@ -251,9 +260,11 @@ function stageBlock(report, index, decisive = false) {
         el("code", {}, record.id), " ", el("span", { className: "muted" }, `${record.source} · ${when(record.observedAt)}`), " ",
         index > 0 && stage.arrived.includes(record.id) ? badge("new", "pending") : null,
         record.replacedBy ? badge(`replaced by ${record.replacedBy}`, "bad") : null,
+        record.outdatedBy ? badge(`out of date: its source now reports otherwise (${record.outdatedBy})`, "bad long") : null,
         badge(record.retrieval.mode === "zetaris" ? "Zetaris live" : "fixture", record.retrieval.mode),
         el("div", {}, record.content))))),
     el("div", { className: "cmp-columns" }, statelessColumn(report, index), speckColumn(report, index)),
+    stage.disagreement ? el("p", { className: "cmp-disagreement" }, el("strong", {}, "Why they differ: "), stage.disagreement) : null,
     decisive ? decisiveBlock(report, index) : null);
 }
 
@@ -374,14 +385,15 @@ function comparisonAggregates(groups) {
     el("summary", {}, el("strong", {}, "Side-by-side comparisons, Speck and the stateless baseline"), ` (${groups.reduce((sum, g) => sum + g.samples, 0)} saved by npm run compare / compare:live)`),
     el("p", { className: "meta" }, "Per case and configuration: how many of the saved comparisons (samples) showed each behaviour at each stage. Live samples differ because the model's judgments vary."),
     el("div", { className: "table-wrap" }, el("table", { className: "eval-table" },
-      el("thead", {}, el("tr", {}, el("th", {}, "Case · configuration · stage"), el("th", {}, "Approach"), el("th", {}, "Concluded"), el("th", {}, "Relied on a replaced record"), el("th", {}, "Recorded why it changed"), el("th", {}, "Matches label"))),
+      el("thead", {}, el("tr", {}, el("th", {}, "Case · configuration · stage"), el("th", {}, "Approach"), el("th", {}, "Concluded"), el("th", {}, "Relied on a replaced or out-of-date record"), el("th", {}, "Abstained where a conclusion was due"), el("th", {}, "Recorded why it changed"), el("th", {}, "Matches label"))),
       el("tbody", {}, groups.flatMap((group) => group.stages.flatMap((stage, index) => ["stateless", "speck"].map((side) => {
         const a = stage.approaches[side];
         return el("tr", {},
-          side === "stateless" ? el("th", { scope: "row", rowspan: "2" }, `${group.title}`, el("div", { className: "meta" }, `${group.kind} · ${group.evidence} · ${group.assessor} · ${group.samples} sample(s)`), el("div", {}, `Stage ${index + 1}: ${stage.stage}`)) : null,
+          side === "stateless" ? el("th", { scope: "row", rowspan: "2" }, `${group.title}`, el("div", { className: "meta" }, `${group.kind} · ${group.evidence} · ${group.assessor} · ${group.samples} sample(s)`), el("div", { className: "meta" }, group.policy), el("div", {}, `Stage ${index + 1}: ${stage.stage}`)) : null,
           el("td", {}, side === "speck" ? "Speck" : "Stateless"),
-          el("td", {}, Object.entries(a.conclusions).map(([key, count]) => `${key} ×${count}`).join(", ")),
-          el("td", {}, `${a.supportFromReplaced}/${group.samples}`),
+          el("td", {}, Object.entries(a.conclusions).map(([key, count]) => `${key} ×${count}`).join(", "), side === "speck" && a.corroborated ? el("div", { className: "meta" }, `${a.corroborated} by corroboration`) : null),
+          el("td", {}, `${a.supportFromReplaced + (a.supportFromOutdated ?? 0)}/${group.samples}`),
+          el("td", {}, a.inappropriateAbstentions === null || a.inappropriateAbstentions === undefined ? "no label" : `${a.inappropriateAbstentions}/${group.samples}`),
           el("td", {}, index === 0 ? "n/a" : `${a.recordsWhy}/${group.samples}`),
           el("td", {}, a.matchesLabel === null ? "no label" : `${a.matchesLabel}/${group.samples}`));
       })))))));

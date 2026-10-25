@@ -37,3 +37,11 @@ Run with `npm run eval:challenge` (deterministic) and `npm run eval:challenge --
 Written expecting Evidence Desk to have difficulty: `customs-hold-lifted` (the hold notice keeps
 counting against release) and `claim-decision-missing` at the decision (a single record, however
 authoritative, is not corroboration). These are recorded as they come out.
+
+## Results (2026-10-25)
+
+Live, local `nemotron-3-nano:4b`, 3 repeats (30 checkpoint-samples per system): Speck 18/30 under
+Build 3 and 18/30 under Build 4; the stateless call 18/30. Deterministic: Speck 6/10 (Build 3),
+7/10 (Build 4); the stateless rule baseline 5/10. Per checkpoint, with what each got wrong:
+[docs/build-4-bank-return.md](../../docs/build-4-bank-return.md), section 5c. Reports:
+`eval/results/experiments/challenge/2026-10-25-build3-before/` and `.../2026-10-25-build4-after/`.

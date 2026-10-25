@@ -530,6 +530,8 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .cmp-verdict .badge { white-space: normal; }
 .edk .cmp-why { margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--edk-good); background: var(--edk-accent-soft); }
 .edk .cmp-why ul { margin: 4px 0 0; padding-left: 18px; }
+.edk .cmp-disagreement { margin: 8px 0 0; padding: 8px 10px; border-left: 3px solid var(--edk-warn); }
+.edk .cmp-reasons ul { margin: 4px 0 0; padding-left: 18px; }
 .edk .cmp-rationale { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--edk-border); font-size: 0.9rem; }
 .edk .cmp-label { margin-top: 8px; }
 .edk .chip {

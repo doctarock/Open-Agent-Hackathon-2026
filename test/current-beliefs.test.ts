@@ -122,7 +122,7 @@ test("no path presents a superseded belief as current, even when Speck ranks it 
       // ("superseded" may appear as a record's invalidation, never as a belief's status.)
       const presented = [body.current.hypothesis, ...body.current.alternatives, ...body.current.rejected].filter(Boolean);
       assert.deepEqual(presented.map((view: any) => view.status).filter((status: string) => status === "superseded"), []);
-      assert.deepEqual(body.current.noLongerCounted.map((item: any) => [item.recordId, item.invalidation.kind]), [["P1", "superseded"]]);
+      assert.deepEqual(body.current.noLongerCounted.map((item: any) => [item.recordId, item.invalidation.kind]), [["P1", "superseded"], ["P2", "restated"]]);
     } finally {
       server.close();
     }

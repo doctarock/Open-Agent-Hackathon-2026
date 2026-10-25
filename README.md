@@ -2,18 +2,26 @@
 
 > **For judges:** Evidence Desk is a **Speck plugin**. Install (`npm run setup`), start Speck (`npm run speck`) for the full experience, alternatively view the project as a standalone interface or CLI (explained below), (`npm run configure`) if you need to change settings.
 
+> Open the **Evidence** tab and take the guided demo. It ends on **Speck beside a stateless
 > baseline**, a tab on each case: one click runs the same case, with the same
 > evidence and the same correction, through both, and shows what each actually did.
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
+> - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
+>   live, what changed, and the before-and-after evaluation, including where it got worse.
 > - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
->   and every saved result.
+>   and every saved result; [eval/results/comparisons/SUMMARY.md](eval/results/comparisons/SUMMARY.md)
+>   counts every saved sample.
+> - [docs/sponsor-audit.md](docs/sponsor-audit.md): each sponsor claim checked against a receipt.
 > - [DEMO.md](DEMO.md): the 3-minute walkthrough and slide outline.
 > - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
 >   could not observe. It needs local Zetaris and a Meterless Runtime. For what it needs and how
 >   to read it, see [Verifying the sponsors yourself](docs/SUBMISSION.md#verifying-the-sponsors-yourself).
->   **Receipt log:** the saved report of the 2026-10-24 run, with its trace and the model that
->   served every call, is
->   [eval/results/sponsors/2026-10-24T02-14-08-828Z.json](eval/results/sponsors/2026-10-24T02-14-08-828Z.json).
+>   **Receipt log:** the saved reports of the 2026-10-25 runs, with their traces and the model
+>   that served every call: local 4B
+>   [eval/results/sponsors/2026-10-25T13-04-35-404Z.json](eval/results/sponsors/2026-10-25T13-04-35-404Z.json),
+>   through Nightshift
+>   [eval/results/sponsors/2026-10-25T13-04-05-519Z.json](eval/results/sponsors/2026-10-25T13-04-05-519Z.json)
+>   (earlier: [2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json)).
 > - [Which agent uses which model](#which-agent-uses-which-model): one table.
 > - **Reading the code:** each source file in `src/` and `plugin/` opens with its role and a
 >   *Why it is built this way* list, and the decisions inside it are marked with `Why:` comments.
@@ -63,9 +71,20 @@ disputed delivery, the stateless model call kept "delivered" after the carrier's
 cited the replaced scan as support, while Speck revised and recorded why (see
 [docs/comparison.md](docs/comparison.md) for every sample, including the ones that favour the
 baseline). The evaluation finds no measurable accuracy difference between keeping beliefs across
-runs and recomputing them from scratch, and Speck abstains more often than the baseline. What
-Evidence Desk adds is traceability: an auditable record of which evidence each conclusion rests
-on, and how and why it changed.
+runs and recomputing them from scratch. What Evidence Desk adds is traceability: an auditable
+record of which evidence each conclusion rests on, and how and why it changed.
+
+**Build 4 (2026-10-25).** Live, Speck had failed the bank return after the return in every
+sample (0/12) while the stateless call was right 11/12. The cause was arithmetic, not the model:
+two capped model-judged records could never reach Speck's threshold, and the ledger's own
+superseded "paid" status still counted against "unpaid". Build 4 stops counting a record whose
+source has since reported a new value for every fact in it, and concludes when independent
+sources agree with nothing against (marked as such, with Speck's own confidence shown). The bank
+return is now 6/6 live, and held-out + regression went from 27/48 to 40/48 live; but on five new
+cases locked before any run it scored 18/30, the same as before, and it concluded from weak
+agreement in 6 checkpoint-samples where a careful person would wait. Full diagnosis and results:
+[docs/build-4-bank-return.md](docs/build-4-bank-return.md). Sponsor claims are checked against
+receipts in [docs/sponsor-audit.md](docs/sponsor-audit.md).
 
 **It is compact.** The model that weighs the evidence is a 4-billion-parameter Nemotron.
 
@@ -460,8 +479,14 @@ recovery after an interrupted run, withdrawals and recomputations.
   every record and in the trace, and the trace says no Zetaris query was made. There is never a
   fallback: if Zetaris fails, the API returns 502 and nothing is recorded.
 - **Verified:**
-  - against a local Zetaris platform (`npm run zetaris:check`, and live runs on 2026-10-22);
+  - against a local Zetaris platform (`npm run zetaris:check`, and live runs on 2026-10-22 and
+    2026-10-25: 4 SELECTs per run, 6 records, each with its query token);
   - in tests, through a stand-in HTTP layer that exercises the real adapter.
+- **The live path reads these four Lightning tables, not the Unified Semantic Layer.** The USL
+  (`npm run zetaris:usl`) and its data-quality rule are real and were re-run on 2026-10-25
+  (`eval/results/sponsors/2026-10-25-zetaris-usl.md`), as a separate demonstration. All of this
+  is the repository's sample data, not business data. See
+  [docs/sponsor-audit.md](docs/sponsor-audit.md#zetaris).
 
 ### Meterless
 
@@ -547,9 +572,21 @@ record (the engine never recorded it) and the assessments it had saved.
 ## How conclusions are derived
 
 The conclusion always comes from Speck's belief state (`src/investigation/conclusion.ts`):
-- **supported:** the top live hypothesis is Speck-`supported`/`confirmed` and has supporting evidence.
+- **supported:** the top live hypothesis is Speck-`supported`/`confirmed` and has supporting
+  evidence (route `speck-threshold`), or, since Build 4, rule `corroborated-1` holds (route
+  `corroboration`): at least two source systems support it with records that still count,
+  nothing is recorded against it, and every other live explanation has no supporting record.
+  A corroborated conclusion always shows Speck's own (lower) confidence beside it.
 - **leading:** confidence ≥ 0.5, a margin of at least 0.1, and supporting evidence.
-- **unresolved:** anything else, including a hypothesis held only on its prior.
+- **unresolved:** anything else, including a hypothesis held only on its prior, and any
+  conclusion while records the last run could not assess are still waiting (Build 4).
+
+Why corroboration exists: Speck caps model-judged evidence at 0.4, so each record moves a belief
+by at most 0.08. From a prior of 0.3, Speck's 0.6 threshold needed four unanimous records, so
+whether a live case could conclude depended on its prior, not its evidence (the bank return:
+0/12 live). The rule uses no confidence value; a single record never satisfies it. Its known
+weakness: it counts *that* sources agree, not *how strongly*, and it concluded from weak
+agreement in 6 live checkpoint-samples ([docs/build-4-bank-return.md](docs/build-4-bank-return.md)).
 
 Confidence is shown as Speck's belief-revision score, not as a probability.
 
@@ -604,8 +641,14 @@ still valid:
 - **The basis** (`src/investigation/basis.ts`). From the ledger it derives which records still
   count:
   - not withdrawn;
-  - not superseded by a *valid* later record. If a correction is itself superseded or withdrawn,
-    the record it replaced counts again.
+  - not superseded by a *valid* record that names it. If a correction is itself superseded or
+    withdrawn, the record it replaced counts again. Since Build 4 a named replacement holds
+    whatever the timestamps (a backfilled record can be stamped later than the correction that
+    names it);
+  - not **out of date** (Build 4): a record stops counting when its own source system later
+    reports a new value for every fact it reported, such as a ledger that said `paid` and now
+    says `reopened`. Different systems never replace each other, the same value again changes
+    nothing, and a correction is replaced only by being named or withdrawn.
 
   It also derives which judgments take effect: no support for a decisively refuted hypothesis.
   The result is each hypothesis's relations in observation order, not arrival order.
@@ -841,8 +884,10 @@ and Ollama running.
    - the explanation call, with any disagreement or invented citation flagged.
 6. Restart the server and reload: the trace is unchanged.
 
-The model's judgments vary between runs. On 2026-10-22, the second run ended *leading*
-H-MISDELIVERED, held back by the 0.4 cap on model-judged evidence.
+The model's judgments vary between runs. On 2026-10-22 (Build 2), the second run ended *leading*
+H-MISDELIVERED, held back by the 0.4 cap on model-judged evidence. Under Build 4, in six live
+comparisons on 2026-10-25, it was concluded by corroboration twice, left unresolved three times,
+and once the correction's assessment failed (counted as an error).
 
 In that run, Speck's contract check rejected one Nemotron reply and the retry succeeded. The trace
 showed this as one retry.
@@ -1103,7 +1148,30 @@ are within run-to-run variation. The 19 versus 35 difference for the baseline is
 npm run eval        # deterministic: no model, no credentials; same result every run
 npm run eval:live   # same cases with the configured Nemotron endpoint (exits 2 if none is configured)
 npm run eval:cross-domain   # the separate cross-domain suite (logistics, payments, procurement)
+npm run eval:challenge      # the Build 4 challenge cases, locked before any run (add -- --live)
+npm run compare:summary     # every saved side-by-side comparison, counted, to eval/results/comparisons/SUMMARY.md
 ```
+
+**Build 4 before and after, at a glance** (full tables and per-checkpoint results in
+[docs/build-4-bank-return.md](docs/build-4-bank-return.md); live = local `nemotron-3-nano:4b`,
+reasoning off, 3 repeats, run back to back on 2026-10-25):
+
+| | Speck, Build 3 | Speck, Build 4 | Stateless baseline |
+|---|---|---|---|
+| Held-out + regression, live: matches label | 27/48 | 40/48 | 20/48, 18/48 |
+| ... unsupported conclusions | 0/9 | 3/28 | 19/45, 21/45 |
+| ... abstained when a conclusion was due | 21/30 | 5/30 | 0/30 |
+| Challenge cases (new, locked), live: matches label | 18/30 | 18/30 | 18/30, 18/30 |
+| ... abstained where abstaining was right | 12/12 | 9/12 | 0/12 |
+| Bank return after the return, live comparison | 0/6 | 6/6 | 6/6, 5/6 |
+| Cross-domain, deterministic | 15/27 | 19/27 | 17/27 |
+| Held-out and regression, deterministic | 8/8, 8/8 | 8/8, 8/8 | 5/8, 6/8 |
+
+The live gains are on cases seen during development (the bank return was the case the change
+was designed on). On the new challenge cases Build 4 is no better than Build 3. Both experiment
+folders are in `eval/results/experiments/reasoning/2026-10-25-*` and
+`eval/results/experiments/challenge/2026-10-25-*`. The tables further below are the Build 3
+results as first reported.
 
 The cross-domain suite is reported apart from the two groups below. Its labels were locked
 before its first run. Its findings, including two defects it exposed, are in
@@ -1285,7 +1353,9 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 139 tests with no network access beyond localhost and no credentials:
+`npm test` runs 157 tests with no network access beyond localhost and no credentials (157/157 passing on 2026-10-25):
+
+- **Build 4** (`test/build4.test.ts`): the live bank-return failure replayed with the model judgments of a saved live sample (concluded by corroboration, Speck's own belief unchanged, the ledger's old status out of date); counterexamples that must still abstain (a status from another system, a single source, a rival with support of its own, the restating record withdrawn, the return cancelled); a failed assessment withholds the earlier conclusion until a later run; and the validity rules alone (same system only, changed value only, every fact, strictly later, declared replacement and withdrawal first).
 
 - **Side-by-side comparison** (`test/compare.test.ts`, and a route test in `test/plugin.test.ts`): both approaches see the same records at every stage, and each side equals the evaluation's own system on the same case; a stateless answer citing a replaced record is flagged (a stand-in model endpoint); the case on the page is untouched; saved comparisons are never overwritten, partial writes are ignored, and a comparison made with other settings is never shown as current; a failed comparison saves nothing; one runs at a time (409); the page's findings are built from the report; the evaluation summary reads the reports as written; rewriting a report archives the previous one.
 
@@ -1469,6 +1539,12 @@ from a security review of this repository's code (Speck is reviewed separately).
   them.
 
 ## Known limits of this slice
+
+- **Corroboration over-concludes (Build 4).** `corroborated-1` counts that two source systems agree, not how strongly. Live it concluded from weak agreement in 6 checkpoint-samples where the labels say to wait (`missing-evidence`, the claim challenge case). No strength requirement was added: tuning it on those cases would contaminate them. On new locked cases Build 4 scored the same as Build 3 (18/30).
+
+- **A failed model call leaves a correction unassessed.** The earlier conclusion is withheld until a run assesses the waiting records (Build 4), but a declared replacement does not take effect until then. This happened in 4 live samples on 2026-10-25.
+
+- **Restatement assumes one entity per fact key.** A source reporting the same fact for two different items in one case would wrongly make one out of date. No current case does this.
 
 - **The side-by-side comparison is two cases.** Six live samples each of a small local model show
   behaviour on these cases, in both directions; they are not rates and no significance is claimed.

@@ -1,0 +1,515 @@
+{
+  "schema": "evidence-desk.comparison.v1",
+  "id": "2026-10-25T12-08-38-600Z-55b328d7",
+  "startedAt": "2026-10-25T12:08:24.263Z",
+  "finishedAt": "2026-10-25T12:08:38.600Z",
+  "durationMs": 14337,
+  "kind": "live",
+  "case": {
+    "caseId": "EVAL-PAY-01",
+    "title": "Was invoice INV-77 paid?",
+    "question": "Accounts receivable marked invoice INV-77 (AUD 4,200) as paid. Was it actually paid?",
+    "hypotheses": [
+      {
+        "key": "H-PAID",
+        "statement": "Invoice INV-77 has been paid in full.",
+        "prior": 0.5
+      },
+      {
+        "key": "H-UNPAID",
+        "statement": "Invoice INV-77 remains unpaid.",
+        "prior": 0.3
+      },
+      {
+        "key": "H-PARTIAL",
+        "statement": "Only part of invoice INV-77 has been paid.",
+        "prior": 0.2
+      }
+    ]
+  },
+  "configuration": {
+    "evidence": {
+      "mode": "fixture",
+      "label": "Local fixtures (not Zetaris)",
+      "target": "eval/scenarios/correction-supersedes/evidence.json",
+      "ready": true,
+      "problem": null
+    },
+    "assessor": {
+      "kind": "nemotron",
+      "model": "nemotron-3-nano:4b",
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "temperature": 0.1,
+      "maxTokens": 4096,
+      "reasoningEffort": "none"
+    },
+    "speck": "Evidence Desk as built: one Speck case carried across the stages on a temporary Speck database (the case on the page is not touched). Each stage's new records are assessed and Speck's beliefs revised; a record replaced by a later one stops counting and the beliefs that rested on it are rebuilt.",
+    "stateless": "The evaluation's stateless model baseline: at each stage, one call to the same Nemotron endpoint with the question, the explanations and every visible record (its text, its facts, and \"replaces …\" where the source says so). It keeps nothing between stages.",
+    "labels": "Pre-registered labels from the case's expected.json, written before any system was run on it."
+  },
+  "fingerprint": "2c5a21d2278e379e",
+  "stages": [
+    {
+      "stage": {
+        "id": "before-return",
+        "label": "Payment received (5 Sep)",
+        "asOf": "2026-09-06T00:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "EV-BNK-101",
+          "source": "Bank statement feed",
+          "observedAt": "2026-09-05T01:10:00.000Z",
+          "content": "Credit AUD 4,200.00 from Hollis Cafe Pty Ltd, reference INV-77.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-LDG-102",
+          "source": "Accounts ledger",
+          "observedAt": "2026-09-05T03:00:00.000Z",
+          "content": "Invoice INV-77 matched to bank credit and marked paid.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "EV-BNK-101",
+        "EV-LDG-102"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "Invoice INV-77 has been paid in full.",
+        "concluded": "H-PAID",
+        "tentative": null,
+        "confidence": 0.66,
+        "support": [
+          {
+            "recordId": "EV-BNK-101",
+            "delta": 0.08,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Payment received matches invoice amount."
+          },
+          {
+            "recordId": "EV-LDG-102",
+            "delta": 0.08,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Ledger status is paid."
+          }
+        ],
+        "against": [],
+        "ruledOut": [
+          {
+            "key": "H-UNPAID",
+            "refutedBy": [
+              "EV-BNK-101",
+              "EV-LDG-102"
+            ]
+          },
+          {
+            "key": "H-PARTIAL",
+            "refutedBy": [
+              "EV-BNK-101",
+              "EV-LDG-102"
+            ]
+          }
+        ],
+        "noLongerCounted": [],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-PAID",
+            "status": "supported",
+            "confidence": 0.66
+          },
+          {
+            "key": "H-UNPAID",
+            "status": "rejected",
+            "confidence": 0.14
+          },
+          {
+            "key": "H-PARTIAL",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 1,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 2
+        },
+        "explanation": {
+          "text": "The invoice INV-77 has been paid in full, as confirmed by both EV-BNK-101 (bank statement showing a full AUD 4,200 credit) and EV-LDG-102 (ledger marking the invoice as paid). These two pieces of evidence contradict H-UNPAID and H-PARTIAL, leaving only H-PAID as the supported hypothesis. The conclusion is established based on this evidence.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": "H-UNPAID",
+        "cited": [
+          "EV-LDG-102"
+        ],
+        "rationale": "The ledger indicates invoice INV-77 is marked paid, but the bank statement shows a payment of AUD 4,200.00 from Hollis Cafe Pty Ltd, which matches the invoice amount. This suggests the invoice was paid, contradicting the ledger's unpaid status.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            947
+          ],
+          "servedModels": [
+            "nemotron-3-nano:4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-BNK-101",
+            "EV-LDG-102"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "first",
+          "recordsWhy": false
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-LDG-102"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "first",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "before-return",
+          "conclusion": "H-PAID",
+          "notCurrent": [
+            "H-PARTIAL"
+          ],
+          "unsupported": [
+            "H-UNPAID",
+            "H-PARTIAL"
+          ]
+        },
+        "speck": {
+          "expected": "H-PAID",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        },
+        "stateless": {
+          "expected": "H-PAID",
+          "correct": false,
+          "unsupportedClaim": true,
+          "presentedRuledOut": []
+        }
+      }
+    },
+    {
+      "stage": {
+        "id": "after-return",
+        "label": "Bank return (9 Sep)",
+        "asOf": "2026-09-10T00:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "EV-BNK-101",
+          "source": "Bank statement feed",
+          "observedAt": "2026-09-05T01:10:00.000Z",
+          "content": "Credit AUD 4,200.00 from Hollis Cafe Pty Ltd, reference INV-77.",
+          "supersedes": [],
+          "replacedBy": "EV-BNK-103",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-LDG-102",
+          "source": "Accounts ledger",
+          "observedAt": "2026-09-05T03:00:00.000Z",
+          "content": "Invoice INV-77 matched to bank credit and marked paid.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-BNK-103",
+          "source": "Bank statement feed",
+          "observedAt": "2026-09-09T00:40:00.000Z",
+          "content": "Debit AUD 4,200.00: payment reference INV-77 returned unpaid (dishonoured, insufficient funds). Reverses the credit of 5 Sep.",
+          "supersedes": [
+            "EV-BNK-101"
+          ],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "EV-LDG-104",
+          "source": "Accounts ledger",
+          "observedAt": "2026-09-09T02:15:00.000Z",
+          "content": "Invoice INV-77 reopened after the bank returned the payment.",
+          "supersedes": [],
+          "replacedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/scenarios/correction-supersedes/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "EV-BNK-103",
+        "EV-LDG-104"
+      ],
+      "replaced": [
+        {
+          "recordId": "EV-BNK-101",
+          "by": "EV-BNK-103"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "unresolved",
+        "headline": "Unresolved: the evidence points to \"Invoice INV-77 remains unpaid.\" but does not yet justify it as a conclusion.",
+        "concluded": null,
+        "tentative": "H-UNPAID",
+        "confidence": 0.372,
+        "support": [
+          {
+            "recordId": "EV-BNK-103",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Payment reference INV-77 returned unpaid, confirming unpaid status."
+          },
+          {
+            "recordId": "EV-LDG-104",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Reopening suggests payment was not processed."
+          }
+        ],
+        "against": [
+          {
+            "recordId": "EV-LDG-102",
+            "delta": -0.08,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Ledger status is paid, not unpaid."
+          }
+        ],
+        "ruledOut": [
+          {
+            "key": "H-PAID",
+            "refutedBy": [
+              "EV-BNK-103",
+              "EV-LDG-104"
+            ]
+          },
+          {
+            "key": "H-PARTIAL",
+            "refutedBy": [
+              "EV-LDG-102",
+              "EV-BNK-103",
+              "EV-LDG-104"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "EV-BNK-101",
+            "explanation": "EV-BNK-103 replaces all of EV-BNK-101, not only the facts it restates. No record that still counts states payment.received=true, payment.amount_matches=true. Its judgments no longer apply: contradicts H-PARTIAL decisively; supports H-PAID; contradicts H-UNPAID.",
+            "consequences": []
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-PAID",
+            "mode": "replaced",
+            "before": {
+              "status": "supported",
+              "confidence": 0.66
+            },
+            "cause": "EV-BNK-101 superseded by EV-BNK-103; support withheld: EV-BNK-103 refutes H-PAID decisively",
+            "dropped": [
+              "EV-BNK-101 (EV-BNK-101 superseded by EV-BNK-103)",
+              "EV-LDG-102 (support withheld: EV-BNK-103 refutes H-PAID decisively)"
+            ]
+          },
+          {
+            "key": "H-UNPAID",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.14
+            },
+            "cause": "EV-BNK-101 superseded by EV-BNK-103",
+            "dropped": [
+              "EV-BNK-101 (EV-BNK-101 superseded by EV-BNK-103)"
+            ]
+          },
+          {
+            "key": "H-PARTIAL",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.05
+            },
+            "cause": "EV-BNK-101 superseded by EV-BNK-103",
+            "dropped": [
+              "EV-BNK-101 (EV-BNK-101 superseded by EV-BNK-103)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-UNPAID",
+            "status": "active",
+            "confidence": 0.372
+          },
+          {
+            "key": "H-PAID",
+            "status": "rejected",
+            "confidence": 0.05
+          },
+          {
+            "key": "H-PARTIAL",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 2,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 4
+        },
+        "explanation": {
+          "text": "The evidence shows that invoice INV-77 was marked as paid in the ledger (EV-LDG-102) but the bank statement indicates the payment was reversed due to insufficient funds (EV-BNK-103), causing the invoice to be reopened (EV-LDG-104). This indicates the payment was not actually processed, supporting the hypothesis that the invoice remains unpaid. The evidence does not confirm any new payment after the return, so the conclusion is unresolved.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": "H-UNPAID",
+        "cited": [
+          "EV-BNK-103",
+          "EV-LDG-104"
+        ],
+        "rationale": "The bank statement shows the payment was reversed due to insufficient funds, and the ledger status was reopened, indicating the invoice remains unpaid.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            777
+          ],
+          "servedModels": [
+            "nemotron-3-nano:4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [
+            "EV-BNK-103",
+            "EV-LDG-104"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-BNK-103",
+            "EV-LDG-104"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "changed": "retained",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "after-return",
+          "conclusion": "H-UNPAID",
+          "notCurrent": [
+            "H-PAID",
+            "H-PARTIAL"
+          ],
+          "unsupported": [
+            "H-PAID",
+            "H-PARTIAL"
+          ]
+        },
+        "speck": {
+          "expected": "H-UNPAID",
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        },
+        "stateless": {
+          "expected": "H-UNPAID",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": []
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Both approaches saw the same records at every stage, the same question and explanations, and the same assessor configuration.",
+    "Speck counts a conclusion only when it holds it as supported; a leading or pointed-to explanation is tentative. The stateless baseline has no such threshold beyond answering \"unresolved\" (model) or a tie or non-positive score (rules).",
+    "Differences come from Speck's explicit evidence and revision state and its conclusion policy (thresholds, decisive refutation, supersession), not from persistence alone: the evaluation's speck-fresh system, which rebuilds from scratch each time, reaches the same conclusions as speck-desk.",
+    "Live: model judgments vary between runs. This is one sample, not a rate. Speck calls the model per evidence chunk plus once for its explanation; the baseline calls it once per stage, so call counts and latency are not like for like.",
+    "Speck caps model-judged evidence at reliability 0.4, so live Speck conclusions tend to stay tentative."
+  ]
+}

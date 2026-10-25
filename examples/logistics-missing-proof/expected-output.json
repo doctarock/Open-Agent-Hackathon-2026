@@ -25,6 +25,7 @@
       "noLongerCounted": [],
       "conclusion": {
         "state": "unresolved",
+        "route": null,
         "hypothesis": null,
         "statement": null,
         "confidence": 0.46,
@@ -49,6 +50,7 @@
       "noLongerCounted": [],
       "conclusion": {
         "state": "unresolved",
+        "route": null,
         "hypothesis": null,
         "statement": null,
         "confidence": 0.46,
@@ -63,6 +65,7 @@
   ],
   "final": {
     "state": "unresolved",
+    "route": null,
     "hypothesis": null,
     "statement": null,
     "confidence": 0.46,

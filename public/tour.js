@@ -24,9 +24,9 @@ export function subjectOf(conclusion) {
 }
 
 export const STATE_MEANING = {
-  supported: "Supported: Speck holds this explanation at or above its supported threshold, and evidence that still counts supports it.",
+  supported: "Supported: Speck holds this explanation at or above its supported threshold, or (marked \"by corroboration\") at least two independent sources support it with nothing recorded against it and every rival ruled out or unsupported. Either way, evidence that still counts supports it.",
   leading: "Leading: this explanation is ahead of the others by a clear margin, but not established. Treat it as the current best reading, not a finding.",
-  unresolved: "Unresolved: no explanation is far enough ahead to point to. The evidence conflicts, or there is not enough of it."
+  unresolved: "Unresolved: no explanation is established. The evidence conflicts, there is not enough of it, or records are still waiting to be assessed."
 };
 
 export const CONFIDENCE_MEANING = "Confidence is Speck's belief-revision score: each record that counts moves it by an amount set by its source's reliability and how it bears on the explanation. It is not a calibrated probability.";

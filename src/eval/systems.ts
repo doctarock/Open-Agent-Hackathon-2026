@@ -39,6 +39,9 @@ export interface CheckpointOutcome {
   // Speck holds the hypothesis as supported; "leading" and "points to" are
   // tentative and count as abstaining.
   conclusion: string | null;
+  // Speck systems: how the conclusion was reached (Speck's threshold, or
+  // rule corroborated-1); absent for the baselines.
+  route?: Conclusion["justification"]["route"];
   tentative: string | null;
   // Hypotheses presented as current or favoured.
   presentedAsCurrent: string[];
@@ -105,6 +108,7 @@ export function speckOutcome(stage: string, c: Conclusion, run: RunSnapshot, vis
   return {
     stage, error: null,
     conclusion: concluded?.key ?? null,
+    route: c.justification.route,
     tentative: concluded ? null : c.hypothesis?.key ?? c.direction.pointsTo?.key ?? null,
     presentedAsCurrent: presented,
     citations: [...new Set([...views.flatMap((view) => [...view.supporting, ...view.contradicting].map((ref) => ref.recordId)), ...(run.explanation?.citedEvidence ?? [])])],

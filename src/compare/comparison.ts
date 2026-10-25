@@ -47,6 +47,12 @@ import { loadScenario, type Scenario } from "../scenario.js";
 //   ones that favour the baseline (docs/comparison.md lists them all).
 
 export const COMPARISON_SCHEMA = "evidence-desk.comparison.v1";
+// Evidence Desk's evidence and conclusion policy the comparison ran under.
+// Reports saved before Build 4 have none (they ran under Build 3: declared
+// replacement only, Speck's threshold the only route to a conclusion).
+// Why it is recorded and fingerprinted: samples made under different policies
+// must never be counted together.
+export const EVIDENCE_POLICY = "build-4 (restatement, corroborated-1)";
 
 export interface ComparedRecord {
   id: string;
@@ -57,6 +63,9 @@ export interface ComparedRecord {
   // Stated by a later visible record: it replaces this one. Derived from the
   // records alone (the same rule for both approaches).
   replacedBy: string | null;
+  // Out of date: the same source later reported a new value for every fact in
+  // it (docs/build-4-bank-return.md). Derived from the records alone.
+  outdatedBy?: string | null;
   retrieval: { mode: EvidenceRecord["retrieval"]["mode"]; location: string; queryToken: string | null };
 }
 
@@ -67,8 +76,13 @@ export interface SpeckSide {
   // Firm only when Speck holds the explanation as supported; a leading or
   // pointed-to explanation is tentative (the evaluation scores it as abstaining).
   concluded: string | null;
+  // How a firm conclusion was reached: Speck's own supported status, or
+  // corroboration while Speck's confidence is below its threshold.
+  route?: "speck-threshold" | "corroboration" | null;
   tentative: string | null;
   confidence: number | null;
+  // Why Speck concludes or does not, in its own words (the justification).
+  reasons?: string[];
   support: Array<{ recordId: string; delta: number | null; basis: string | null; decisive: boolean; rationale: string | null }>;
   against: Array<{ recordId: string; delta: number | null; basis: string | null; decisive: boolean; rationale: string | null }>;
   ruledOut: Array<{ key: string; refutedBy: string[] }>;
@@ -76,7 +90,11 @@ export interface SpeckSide {
   // Beliefs rebuilt or extended by this stage's run, and why.
   revisions: Array<{ key: string; mode: string; before: { status: string; confidence: number }; cause: string; dropped: string[] }>;
   beliefs: Array<{ key: string; status: string; confidence: number }>;
-  run: { runNumber: number; status: string; unprocessed: string[]; modelCalls: number | null } | null;
+  run: {
+    runNumber: number; status: string; unprocessed: string[]; modelCalls: number | null;
+    // Speck's model registry for this run: failed calls (after retries) and the models the endpoint reported serving.
+    modelFailures?: number | null; servedModels?: string[];
+  } | null;
   explanation: { text: string; agrees: boolean | null; problems: string[]; invalidCitations: string[] } | null;
 }
 
@@ -105,6 +123,9 @@ export interface SideChecks {
   unknownCitations: string[];
   // Of those, records a later visible record replaced.
   supportFromReplaced: string[];
+  // Of those, records whose source later reported a new value for every fact
+  // in them (out of date, though not declared replaced).
+  supportFromOutdated?: string[];
   // Whether the conclusion (firm or tentative) differs from the previous stage's.
   changed: "first" | "formed" | "revised" | "retained" | "withdrawn" | "still none";
   // Whether the approach itself recorded why its conclusion changed.
@@ -116,6 +137,9 @@ export interface LabelScore {
   correct: boolean;
   unsupportedClaim: boolean;
   presentedRuledOut: string[];
+  // Whether concluding nothing was right here: "appropriate" when the label
+  // is no conclusion, "inappropriate" when one was due; null when it concluded.
+  abstention?: "appropriate" | "inappropriate" | null;
 }
 
 export interface StageComparison {
@@ -128,6 +152,8 @@ export interface StageComparison {
   checks: { speck: SideChecks; stateless: SideChecks };
   // Pre-registered labels (eval cases only), written before any system ran.
   label: { checkpoint: Checkpoint; speck: LabelScore; stateless: LabelScore } | null;
+  // Where the two differ, why, in plain words; null when they agree.
+  disagreement?: string | null;
 }
 
 export interface ComparisonReport {
@@ -144,6 +170,7 @@ export interface ComparisonReport {
     speck: string;
     stateless: string;
     labels: string;
+    policy?: string;
   };
   fingerprint: string;
   stages: StageComparison[];
@@ -168,6 +195,7 @@ export function comparisonFingerprint(config: CaseConfig, evidence: ProviderDesc
   const read = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n") : "");
   const hash = createHash("sha256");
   hash.update(COMPARISON_SCHEMA);
+  hash.update(EVIDENCE_POLICY);
   hash.update(read(path.join(config.scenarioDir, "scenario.json")));
   hash.update(evidence.mode);
   if (evidence.mode === "fixture") hash.update(read(path.join(config.scenarioDir, "evidence.json")));
@@ -193,11 +221,12 @@ const plain = (record: EvidenceRecord): EvidenceRecord => ({
 // desk lists as visible, less any the investigator withdrew; and which of them
 // a later visible record replaces (derived from the records alone, so the same
 // rule applies to both approaches).
-export async function visibleRecords(desk: EvidenceDesk): Promise<{ records: EvidenceRecord[]; replaced: Map<string, string> }> {
+export async function visibleRecords(desk: EvidenceDesk): Promise<{ records: EvidenceRecord[]; replaced: Map<string, string>; outdated: Map<string, string> }> {
   const listing = await desk.listEvidence();
   const records = listing.records.filter((record) => record.status !== "withdrawn" && record.invalidation?.kind !== "withdrawn").map(plain);
   const invalid = deriveBasis(records.map((record) => ({ record, judgments: [], withdrawn: null })), []).invalid;
-  return { records, replaced: new Map([...invalid].flatMap(([id, why]) => (why.kind === "superseded" ? [[id, why.by] as [string, string]] : []))) };
+  const of = (kind: "superseded" | "restated") => new Map([...invalid].flatMap(([id, why]) => (why.kind === kind ? [[id, why.by] as [string, string]] : [])));
+  return { records, replaced: of("superseded"), outdated: of("restated") };
 }
 
 // The evaluation's stateless baseline on those records: one model call with
@@ -234,15 +263,20 @@ function speckSide(desk: EvidenceDesk, c: Conclusion, run: Awaited<ReturnType<Ev
     state: c.state,
     headline: c.headline,
     concluded,
+    route: c.justification.route,
     tentative: concluded ? null : c.hypothesis?.key ?? c.direction.pointsTo?.key ?? null,
     confidence: subject ? subject.confidence : null,
+    reasons: c.justification.reasons,
     support: (subject?.supporting ?? []).map(refOut),
     against: (subject?.contradicting ?? []).map(refOut),
     ruledOut: c.direction.eliminated.map((item) => ({ key: item.key, refutedBy: item.refutedBy })),
     noLongerCounted: c.noLongerCounted.map((item) => ({ recordId: item.recordId, explanation: item.explanation, consequences: item.consequences })),
     revisions,
     beliefs: desk.hypotheses().map((view) => ({ key: view.key, status: view.status, confidence: view.confidence })),
-    run: { runNumber: run.runNumber, status: run.execution.status, unprocessed: run.unprocessed, modelCalls: run.reasonerUsage ? run.reasonerUsage.calls : null },
+    run: {
+      runNumber: run.runNumber, status: run.execution.status, unprocessed: run.unprocessed, modelCalls: run.reasonerUsage ? run.reasonerUsage.calls : null,
+      modelFailures: run.reasonerUsage ? run.reasonerUsage.failures : null, servedModels: run.reasonerUsage?.servedModels ?? []
+    },
     explanation: run.explanation
       ? { text: run.explanation.text, agrees: run.explanation.agreement?.agrees ?? null, problems: run.explanation.agreement?.problems ?? [], invalidCitations: run.explanation.invalidCitations }
       : null
@@ -265,7 +299,7 @@ function changeOf(previous: string | null | undefined, current: string | null): 
 
 function checks(input: {
   concluded: string | null; tentative: string | null; error: string | null; presentedSupport: string[];
-  visible: Set<string>; replaced: Map<string, string>; previous: string | null | undefined; recordsWhy: boolean;
+  visible: Set<string>; replaced: Map<string, string>; outdated: Map<string, string>; previous: string | null | undefined; recordsWhy: boolean;
 }): SideChecks {
   const held = input.concluded ?? input.tentative;
   return {
@@ -274,6 +308,7 @@ function checks(input: {
     presentedSupport: input.presentedSupport,
     unknownCitations: input.presentedSupport.filter((id) => !input.visible.has(id)),
     supportFromReplaced: input.presentedSupport.filter((id) => input.replaced.has(id)),
+    supportFromOutdated: input.presentedSupport.filter((id) => input.outdated.has(id)),
     changed: input.error ? "still none" : changeOf(input.previous, held),
     recordsWhy: input.recordsWhy
   };
@@ -285,8 +320,33 @@ function labelScore(label: Checkpoint, concluded: string | null, presented: stri
     expected: label.conclusion,
     correct: !error && concluded === label.conclusion,
     unsupportedClaim: concluded !== null && (label.unsupported.includes(concluded) || support.filter((id) => visible.has(id)).length === 0),
-    presentedRuledOut: presented.filter((key) => label.notCurrent.includes(key))
+    presentedRuledOut: presented.filter((key) => label.notCurrent.includes(key)),
+    abstention: concluded !== null || error ? null : label.conclusion === null ? "appropriate" : "inappropriate"
   };
+}
+
+// Why the two approaches differ at a stage, from what each returned.
+// Why derived, not written by a model: it must say only what the two outputs
+// show, for every stage of every saved comparison alike.
+function disagreement(speck: SpeckSide, stateless: StatelessSide, checks: { speck: SideChecks; stateless: SideChecks }): string | null {
+  if (speck.error || stateless.error) {
+    return [speck.error ? `Speck's run failed (${speck.error.slice(0, 160)})` : "", stateless.error ? `the stateless call failed (${stateless.error.slice(0, 160)})` : ""].filter(Boolean).join("; ") + ".";
+  }
+  if (speck.concluded === stateless.concluded) return null;
+  const parts: string[] = [];
+  if (speck.concluded) {
+    parts.push(`Speck concludes ${speck.concluded}${speck.route === "corroboration" ? " by corroboration (its own confidence is below its threshold)" : ""}`);
+  } else {
+    const blocking = (speck.reasons ?? []).find((reason) => reason.startsWith("Not corroborated")) ?? (speck.reasons ?? [])[0];
+    parts.push(`Speck concludes nothing${speck.tentative ? ` (it points to ${speck.tentative})` : ""}${blocking ? `: ${blocking.replace(/\.$/, "")}` : ""}`);
+  }
+  if (stateless.concluded) {
+    const stale = [...checks.stateless.supportFromReplaced, ...(checks.stateless.supportFromOutdated ?? [])];
+    parts.push(`the stateless call concludes ${stateless.concluded} citing ${stateless.cited.join(", ") || "nothing"}${stale.length ? `, including ${stale.join(", ")}, which no longer count${stale.length === 1 ? "s" : ""}` : ""}`);
+  } else {
+    parts.push("the stateless call concludes nothing");
+  }
+  return `${parts.join("; ")}.`;
 }
 
 export async function runComparison(config: CaseConfig, options: {
@@ -325,7 +385,7 @@ export async function runComparison(config: CaseConfig, options: {
       }
 
       // The records visible at this stage, exactly as Speck's desk lists them.
-      const { records, replaced } = await visibleRecords(desk);
+      const { records, replaced, outdated } = await visibleRecords(desk);
       const visible = new Set(records.map((record) => record.id));
 
       // Stateless: the same records, from scratch, with no memory of the last stage.
@@ -336,27 +396,30 @@ export async function runComparison(config: CaseConfig, options: {
       const speckSupport = [...new Set(speck.support.map((ref) => ref.recordId))];
       const statelessSupport = stateless.concluded ? [...new Set(stateless.cited)] : [];
       const label = labels?.find((checkpoint) => checkpoint.afterStage === stage.id) ?? null;
+      const stageChecks = {
+        speck: checks({ concluded: speck.concluded, tentative: speck.tentative, error: speck.error, presentedSupport: speckSupport, visible, replaced, outdated, previous: previousSpeck,
+          recordsWhy: speck.revisions.length > 0 || speck.noLongerCounted.length > 0 }),
+        stateless: checks({ concluded: stateless.concluded, tentative: null, error: stateless.error, presentedSupport: statelessSupport, visible, replaced, outdated, previous: previousStateless, recordsWhy: false })
+      };
       stages.push({
         stage: { id: stage.id, label: stage.label, asOf: stage.asOf },
         visible: records.map((record) => ({
           id: record.id, source: record.source.name, observedAt: record.observedAt, content: record.content, supersedes: record.provenance.supersedes,
           replacedBy: replaced.get(record.id) ?? null,
+          outdatedBy: outdated.get(record.id) ?? null,
           retrieval: { mode: record.retrieval.mode, location: record.retrieval.location, queryToken: record.retrieval.queryToken ?? null }
         })),
         arrived: records.filter((record) => !seenRecords.has(record.id)).map((record) => record.id),
         replaced: [...replaced].map(([recordId, by]) => ({ recordId, by })),
         speck,
         stateless,
-        checks: {
-          speck: checks({ concluded: speck.concluded, tentative: speck.tentative, error: speck.error, presentedSupport: speckSupport, visible, replaced, previous: previousSpeck,
-            recordsWhy: speck.revisions.length > 0 || speck.noLongerCounted.length > 0 }),
-          stateless: checks({ concluded: stateless.concluded, tentative: null, error: stateless.error, presentedSupport: statelessSupport, visible, replaced, previous: previousStateless, recordsWhy: false })
-        },
+        checks: stageChecks,
         label: label ? {
           checkpoint: label,
           speck: labelScore(label, speck.concluded, speckPresented, speck.concluded ? speckSupport : [], visible, speck.error),
           stateless: labelScore(label, stateless.concluded, stateless.concluded ? [stateless.concluded] : [], statelessSupport, visible, stateless.error)
-        } : null
+        } : null,
+        disagreement: disagreement(speck, stateless, stageChecks)
       });
       if (!speck.error) previousSpeck = speck.concluded ?? speck.tentative;
       if (!stateless.error) previousStateless = stateless.concluded;
@@ -389,7 +452,8 @@ export async function runComparison(config: CaseConfig, options: {
       stateless: config.reasoner === "nemotron"
         ? "The evaluation's stateless model baseline: at each stage, one call to the same Nemotron endpoint with the question, the explanations and every visible record (its text, its facts, and \"replaces …\" where the source says so). It keeps nothing between stages."
         : "The evaluation's stateless rule baseline: at each stage, the same fact rules summed from scratch (reliability × strength, contradictions negative); the top positive score is its conclusion. It keeps nothing between stages and has no notion of a replaced record.",
-      labels: labels ? "Pre-registered labels from the case's expected.json, written before any system was run on it." : "No pre-registered labels: this case is not an evaluation case."
+      labels: labels ? "Pre-registered labels from the case's expected.json, written before any system was run on it." : "No pre-registered labels: this case is not an evaluation case.",
+      policy: EVIDENCE_POLICY
     },
     fingerprint: comparisonFingerprint(config, evidence),
     stages,
@@ -399,7 +463,7 @@ export async function runComparison(config: CaseConfig, options: {
       "Differences come from Speck's explicit evidence and revision state and its conclusion policy (thresholds, decisive refutation, supersession), not from persistence alone: the evaluation's speck-fresh system, which rebuilds from scratch each time, reaches the same conclusions as speck-desk.",
       ...(config.reasoner === "nemotron" ? [
         "Live: model judgments vary between runs. This is one sample, not a rate. Speck calls the model per evidence chunk plus once for its explanation; the baseline calls it once per stage, so call counts and latency are not like for like.",
-        "Speck caps model-judged evidence at reliability 0.4, so live Speck conclusions tend to stay tentative."
+        "Speck caps model-judged evidence at reliability 0.4, so Speck's own confidence rarely reaches its 0.6 threshold live. Since Build 4 Evidence Desk can still conclude by corroboration (two or more source systems agree, nothing recorded against, every rival ruled out or unsupported); each such conclusion is marked, with Speck's own confidence beside it."
       ] : ["Deterministic: no model was called; the same inputs give the same result every time."])
     ]
   };

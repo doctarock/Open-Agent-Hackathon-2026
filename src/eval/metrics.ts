@@ -15,6 +15,8 @@ export interface CheckpointScore {
   stage: string;
   expected: string | null;
   concluded: string | null;
+  // How a Speck system concluded (speck-threshold or corroboration); null otherwise.
+  route: string | null;
   tentative: string | null;
   error: string | null;
   correct: boolean;
@@ -78,7 +80,7 @@ export function scoreSystem(system: string, results: Array<{ item: EvalCase; res
       checkpoints.push({
         caseId: item.id, category: item.category, stage: label.afterStage,
         expected: item.expectError ? `error:${item.expectError}` : label.conclusion,
-        concluded, tentative: outcome.tentative, error: outcome.error,
+        concluded, route: outcome.route ?? null, tentative: outcome.tentative, error: outcome.error,
         correct: item.expectError
           ? Boolean(outcome.error?.startsWith(`${item.expectError}:`)) && concluded === null
           : !outcome.error && concluded === label.conclusion,

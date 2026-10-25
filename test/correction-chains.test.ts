@@ -62,15 +62,19 @@ test("replacement of a replacement: only the latest valid record in the chain co
     assert.deepEqual(desk.recomputations().map((item) => item.hypotheses.map((entry) => `${entry.key}: ${entry.cause}`)), [["H-FRONT: S1 superseded by S2"], ["H-NEIGHBOUR: S2 superseded by S3"]]);
     assert.deepEqual(desk.replacedHypotheses().map((item) => `${item.key} ${item.statusWhenReplaced} ${item.confidence}`), ["H-FRONT active 0.47", "H-NEIGHBOUR active 0.47"]);
   });
-  // S3 replaces only S2. S2 no longer counts, so its claim on S1 lapses and S1 counts again.
+  // S3 replaces only S2. S2 no longer counts, so its claim on S1 lapses, but
+  // S1 still does not count: the same carrier system now reports "left" as
+  // locker (S3), so S1's "front" is out of date. (Build 3 counted S1 again;
+  // the lapse itself is tested without facts in revision.test.ts.)
   await withDesk(testConfig({ scenarioDir: chainScenario(["S2"]) }), async (desk) => {
     await through(desk, "amended");
     await through(desk, "amended-again");
     assert.deepEqual(support(desk), {
-      "H-FRONT": "active 0.47 +[S1] -[]", "H-LOCKER": "active 0.47 +[S3] -[]", "H-NEIGHBOUR": "proposed 0.3 +[] -[]", "H-LOST": "rejected 0.05 +[] -[I1]"
+      "H-FRONT": "proposed 0.3 +[] -[]", "H-LOCKER": "active 0.47 +[S3] -[]", "H-NEIGHBOUR": "proposed 0.3 +[] -[]", "H-LOST": "rejected 0.05 +[] -[I1]"
     });
-    const front = desk.recomputations().at(-1)!.hypotheses.find((entry) => entry.key === "H-FRONT")!;
-    assert.deepEqual(front.added, [{ recordId: "S1", direction: "supports", reinstated: true }]);
+    assert.deepEqual(desk.conclusionFromSpeck().noLongerCounted.map((item) => item.reason), [
+      "S1 out of date: its source now reports left=locker (S3, was front)", "S2 superseded by S3"
+    ]);
   });
 });
 

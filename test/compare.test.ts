@@ -58,7 +58,10 @@ test("the correction: Speck's recorded revision, the baseline's lack of one, and
   const [before, after] = report.stages;
   assert.equal(before!.checks.speck.changed, "first");
   assert.equal(after!.checks.speck.recordsWhy, true, "Speck records why its conclusion changed");
-  assert.deepEqual(after!.speck.noLongerCounted.map((item) => item.recordId), ["EV-BNK-101"]);
+  // EV-BNK-101 is replaced by the bank's return; EV-LDG-102 ("marked paid") is
+  // out of date because the same ledger now reports the invoice reopened.
+  assert.deepEqual(after!.speck.noLongerCounted.map((item) => item.recordId), ["EV-BNK-101", "EV-LDG-102"]);
+  assert.match(after!.speck.noLongerCounted[1]!.explanation, /Accounts ledger has since reported a newer value for every fact in EV-LDG-102 \(ledger\.status: paid → reopened in EV-LDG-104\)/);
   assert.ok(after!.speck.revisions.length > 0, "the beliefs that rested on EV-BNK-101 were rebuilt");
   assert.equal(after!.checks.stateless.recordsWhy, false, "a stateless call keeps nothing to explain a change with");
   assert.deepEqual(after!.checks.speck.supportFromReplaced, [], "Speck's current support never includes the replaced record");
@@ -66,10 +69,21 @@ test("the correction: Speck's recorded revision, the baseline's lack of one, and
   assert.equal(after!.label?.checkpoint.conclusion, "H-UNPAID");
   assert.equal(typeof after!.label?.stateless.correct, "boolean");
 
+  // Build 4 fields: the out-of-date ledger status is marked for both sides,
+  // the route is reported, and abstention is scored against the label.
+  assert.equal(after!.visible.find((record) => record.id === "EV-LDG-102")?.outdatedBy, "EV-LDG-104");
+  assert.equal(after!.speck.route, "speck-threshold");
+  assert.equal(after!.label?.speck.abstention, null);
+  assert.deepEqual(after!.checks.stateless.supportFromOutdated, []);
+  assert.equal(after!.disagreement, null, "both conclude H-UNPAID");
+  assert.equal(report.configuration.policy, "build-4 (restatement, corroborated-1)");
+
   // An evaluation-free case has no labels, and says so.
   const delivery = await compare(DELIVERY);
   assert.ok(delivery.stages.every((stage) => stage.label === null));
   assert.match(delivery.configuration.labels, /No pre-registered labels/);
+  // Where they part, the report says why from what each returned.
+  assert.match(delivery.stages[0]!.disagreement ?? "", /^Speck concludes nothing \(it points to H-DELIVERED\): .*; the stateless call concludes H-DELIVERED citing/);
 });
 
 test("the checks are computed the same way for both sides: a stateless answer citing a replaced record is flagged", async () => {

@@ -1,0 +1,667 @@
+{
+  "generatedAt": "2026-10-25T12:17:59.723Z",
+  "platform": "http://localhost:3000",
+  "sources": {
+    "wms_handover": {
+      "table": "EVIDENCE_DESK_SOURCES.wms_handover",
+      "format": "csv",
+      "records": 1
+    },
+    "carrier_tracking": {
+      "table": "EVIDENCE_DESK_SOURCES.carrier_tracking",
+      "format": "json",
+      "records": 2
+    }
+  },
+  "usl": {
+    "table": "lightning.metastore.evidence_desk.delivery_usl.delivery_evidence",
+    "headers": [
+      "evidence_id",
+      "source_system",
+      "source_record_ref",
+      "shipment_id",
+      "order_id",
+      "event_type",
+      "observed_at",
+      "supersedes_ref",
+      "inferred_fields"
+    ],
+    "rows": [
+      [
+        "wms:scans/dock3/MAN-5521/PCL-88412",
+        "wms",
+        "scans/dock3/MAN-5521/PCL-88412",
+        "PCL-88412",
+        "ORD-1042",
+        "warehouse_handover",
+        "2026-10-11 23:40:00.0",
+        "null",
+        "evidence_id,source_system,event_type"
+      ],
+      [
+        "carrier:tracking/PCL-88412/events/7",
+        "carrier",
+        "tracking/PCL-88412/events/7",
+        "PCL-88412",
+        "null",
+        "carrier_delivered",
+        "2026-10-13 03:02:00.0",
+        "null",
+        "evidence_id,source_system,event_type,supersedes_ref"
+      ],
+      [
+        "carrier:tracking/PCL-88412/pod-review/1",
+        "carrier",
+        "tracking/PCL-88412/pod-review/1",
+        "PCL-88412",
+        "null",
+        "carrier_delivery_amended",
+        "2026-10-15 05:20:00.0",
+        "carrier:tracking/PCL-88412/events/7",
+        "evidence_id,source_system,event_type,supersedes_ref"
+      ]
+    ]
+  },
+  "checks": {
+    "uslMatchesSources": true,
+    "scenarioRecordsFound": [
+      "EV-WMS-002",
+      "EV-CAR-003",
+      "EV-CAR-005"
+    ],
+    "scenarioRecordsExpected": [
+      "EV-WMS-002",
+      "EV-CAR-003",
+      "EV-CAR-005"
+    ],
+    "correctionPreserved": true
+  },
+  "dataQuality": {
+    "rule": "`evidence_id_present`",
+    "expression": "evidence_id IS NOT NULL AND length(trim(evidence_id)) > 0",
+    "usl": {
+      "name": "`evidence_id_present`",
+      "table": "delivery_evidence",
+      "type": "Custom Data Quality",
+      "total_record": "3",
+      "valid_record": "3",
+      "invalid_record": "0"
+    },
+    "isolatedSample": {
+      "name": "`evidence_id_present`",
+      "table": "delivery_evidence",
+      "type": "Custom Data Quality",
+      "total_record": "4",
+      "valid_record": "3",
+      "invalid_record": "1"
+    },
+    "failingSampleRecords": [
+      [
+        "",
+        "carrier",
+        "",
+        "PCL-88412",
+        "null",
+        "carrier_other",
+        "IN_TRANSIT",
+        "2026-10-12 01:00:00.0",
+        "SAMPLE DATA for the data-quality demonstration only: a carrier event exported without its event id.",
+        "null",
+        "evidence_id,source_system,event_type,supersedes_ref"
+      ]
+    ]
+  },
+  "integration": {
+    "rows": 3,
+    "queryToken": "YmU1NDhiNTItNWMzNy00MGFiLTk1ZGQtOTA3ZDU3MjBjODc5",
+    "latencyMs": 310,
+    "sameAsUslQuery": true
+  },
+  "timing": {
+    "sourceQueriesMs": 266,
+    "uslQueryMs": 308
+  },
+  "steps": [
+    {
+      "title": "Create Lightning database for the sources",
+      "sql": "CREATE LIGHTNING DATABASE EVIDENCE_DESK_SOURCES DESCRIBE BY \"SAMPLE DATA - Evidence Desk delivery sources in native formats\" OPTIONS ()",
+      "outcome": "already present",
+      "ms": 82
+    },
+    {
+      "title": "Onboard warehouse handover export (CSV)",
+      "sql": "CREATE LIGHTNING FILESTORE TABLE wms_handover FROM EVIDENCE_DESK_SOURCES FORMAT csv OPTIONS (path \"file:///home/zetaris/customer-data/shared/evidence_desk_usl/wms_handover\", header \"true\")",
+      "outcome": "already present",
+      "ms": 43
+    },
+    {
+      "title": "Onboard carrier tracking feed (JSON)",
+      "sql": "CREATE LIGHTNING FILESTORE TABLE carrier_tracking FROM EVIDENCE_DESK_SOURCES FORMAT json OPTIONS (path \"file:///home/zetaris/customer-data/shared/evidence_desk_usl/carrier_tracking\")",
+      "outcome": "already present",
+      "ms": 38
+    },
+    {
+      "title": "Describe wms_handover",
+      "sql": "DESC TABLE EVIDENCE_DESK_SOURCES.wms_handover",
+      "outcome": "ok",
+      "ms": 55,
+      "headers": [
+        "col_name",
+        "data_type",
+        "comment"
+      ],
+      "rows": [
+        [
+          "handover_id",
+          "string",
+          "null"
+        ],
+        [
+          "order_no",
+          "string",
+          "null"
+        ],
+        [
+          "parcel_no",
+          "string",
+          "null"
+        ],
+        [
+          "event_code",
+          "string",
+          "null"
+        ],
+        [
+          "scanned_at_utc",
+          "string",
+          "null"
+        ],
+        [
+          "dock",
+          "string",
+          "null"
+        ],
+        [
+          "manifest_no",
+          "string",
+          "null"
+        ],
+        [
+          "weight_kg",
+          "string",
+          "null"
+        ],
+        [
+          "scanner_id",
+          "string",
+          "null"
+        ],
+        [
+          "remarks",
+          "string",
+          "null"
+        ]
+      ]
+    },
+    {
+      "title": "Describe carrier_tracking",
+      "sql": "DESC TABLE EVIDENCE_DESK_SOURCES.carrier_tracking",
+      "outcome": "ok",
+      "ms": 52,
+      "headers": [
+        "col_name",
+        "data_type",
+        "comment"
+      ],
+      "rows": [
+        [
+          "amends_event_id",
+          "string",
+          "null"
+        ],
+        [
+          "delivered_address",
+          "string",
+          "null"
+        ],
+        [
+          "description",
+          "string",
+          "null"
+        ],
+        [
+          "driver_id",
+          "string",
+          "null"
+        ],
+        [
+          "event_id",
+          "string",
+          "null"
+        ],
+        [
+          "event_time",
+          "string",
+          "null"
+        ],
+        [
+          "gps_distance_m",
+          "bigint",
+          "null"
+        ],
+        [
+          "recorded_by",
+          "string",
+          "null"
+        ],
+        [
+          "status",
+          "string",
+          "null"
+        ],
+        [
+          "tracking_no",
+          "string",
+          "null"
+        ]
+      ]
+    },
+    {
+      "title": "Count wms_handover",
+      "sql": "SELECT count(*) AS records FROM EVIDENCE_DESK_SOURCES.wms_handover",
+      "outcome": "ok",
+      "ms": 145,
+      "headers": [
+        "records"
+      ],
+      "rows": [
+        [
+          "1"
+        ]
+      ]
+    },
+    {
+      "title": "Count carrier_tracking",
+      "sql": "SELECT count(*) AS records FROM EVIDENCE_DESK_SOURCES.carrier_tracking",
+      "outcome": "ok",
+      "ms": 94,
+      "headers": [
+        "records"
+      ],
+      "rows": [
+        [
+          "2"
+        ]
+      ]
+    },
+    {
+      "title": "Query wms_handover for the shipment",
+      "sql": "SELECT handover_id, parcel_no, order_no, event_code, scanned_at_utc FROM EVIDENCE_DESK_SOURCES.wms_handover WHERE parcel_no = 'PCL-88412' ORDER BY scanned_at_utc",
+      "outcome": "ok",
+      "ms": 122,
+      "headers": [
+        "handover_id",
+        "parcel_no",
+        "order_no",
+        "event_code",
+        "scanned_at_utc"
+      ],
+      "rows": [
+        [
+          "scans/dock3/MAN-5521/PCL-88412",
+          "PCL-88412",
+          "ORD-1042",
+          "HANDED_TO_CARRIER",
+          "2026-10-11T23:40:00Z"
+        ]
+      ]
+    },
+    {
+      "title": "Query carrier_tracking for the shipment",
+      "sql": "SELECT event_id, tracking_no, status, event_time, amends_event_id FROM EVIDENCE_DESK_SOURCES.carrier_tracking WHERE tracking_no = 'PCL-88412' ORDER BY event_time",
+      "outcome": "ok",
+      "ms": 144,
+      "headers": [
+        "event_id",
+        "tracking_no",
+        "status",
+        "event_time",
+        "amends_event_id"
+      ],
+      "rows": [
+        [
+          "tracking/PCL-88412/events/7",
+          "PCL-88412",
+          "DELIVERED",
+          "2026-10-13T03:02:00Z",
+          "null"
+        ],
+        [
+          "tracking/PCL-88412/pod-review/1",
+          "PCL-88412",
+          "DELIVERED_INCORRECT_ADDRESS",
+          "2026-10-15T05:20:00Z",
+          "tracking/PCL-88412/events/7"
+        ]
+      ]
+    },
+    {
+      "title": "Create USL namespace",
+      "sql": "CREATE NAMESPACE IF NOT EXISTS lightning.metastore.evidence_desk",
+      "outcome": "ok",
+      "ms": 42,
+      "headers": [
+        "Result"
+      ],
+      "rows": []
+    },
+    {
+      "title": "Compile and deploy USL delivery_usl",
+      "sql": "COMPILE USL IF NOT EXISTS delivery_usl DEPLOY NAMESPACE lightning.metastore.evidence_desk DDL CREATE TABLE delivery_evidence (\n  evidence_id string NOT NULL,\n  source_system string NOT NULL,\n  source_record_ref string,\n  shipment_id string,\n  order_id string,\n  event_type string,\n  source_event_code string,\n  observed_at timestamp,\n  content string,\n  supersedes_ref string,\n  inferred_fields string,\n  CONSTRAINT pk_delivery_evidence PRIMARY KEY (evidence_id)\n);",
+      "outcome": "ok",
+      "ms": 83,
+      "headers": [
+        "json"
+      ],
+      "rows": [
+        [
+          "{\"namespace\":[\"metastore\",\"evidence_desk\"],\"name\":\"delivery_usl\",\"tables\":[{\"name\":\"delivery_evidence\",\"columnSpecs\":[{\"name\":\"evidence_id\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_system\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_record_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"shipment_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"order_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"event_type\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_event_code\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"observed_at\",\"dataType\":\"\\\"timestamp\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"content\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"supersedes_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"inferred_fields\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]}],\"primaryKey\":{\"columns\":[\"evidence_id\"],\"name\":\"pk_delivery_evidence\"},\"unique\":[],\"foreignKeys\":[],\"checks\":[],\"ifNotExit\":false,\"namespace\":[\"lightning\",\"metastore\",\"evidence_desk\",\"delivery_usl\"],\"dqAnnotations\":[],\"acAnnotations\":[]}]}"
+        ]
+      ]
+    },
+    {
+      "title": "Activate delivery_evidence over both sources",
+      "sql": "ACTIVATE USL TABLE lightning.metastore.evidence_desk.delivery_usl.delivery_evidence AS SELECT\n  COALESCE(CASE WHEN handover_id IS NULL OR trim(handover_id) = '' THEN NULL ELSE concat('wms:', handover_id) END, '') AS evidence_id,\n  'wms' AS source_system,\n  handover_id AS source_record_ref,\n  parcel_no AS shipment_id,\n  order_no AS order_id,\n  CASE event_code WHEN 'HANDED_TO_CARRIER' THEN 'warehouse_handover' ELSE 'warehouse_other' END AS event_type,\n  event_code AS source_event_code,\n  CAST(scanned_at_utc AS timestamp) AS observed_at,\n  remarks AS content,\n  CAST(NULL AS string) AS supersedes_ref,\n  'evidence_id,source_system,event_type' AS inferred_fields\nFROM EVIDENCE_DESK_SOURCES.wms_handover\nUNION ALL\nSELECT\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\n  'carrier' AS source_system,\n  event_id AS source_record_ref,\n  tracking_no AS shipment_id,\n  CAST(NULL AS string) AS order_id,\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\n  status AS source_event_code,\n  CAST(event_time AS timestamp) AS observed_at,\n  description AS content,\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\nFROM EVIDENCE_DESK_SOURCES.carrier_tracking",
+      "outcome": "ok",
+      "ms": 102,
+      "headers": [
+        "registered"
+      ],
+      "rows": [
+        [
+          "{\"name\":\"delivery_evidence\",\"query\":\"SELECT\\n  COALESCE(CASE WHEN handover_id IS NULL OR trim(handover_id) = '' THEN NULL ELSE concat('wms:', handover_id) END, '') AS evidence_id,\\n  'wms' AS source_system,\\n  handover_id AS source_record_ref,\\n  parcel_no AS shipment_id,\\n  order_no AS order_id,\\n  CASE event_code WHEN 'HANDED_TO_CARRIER' THEN 'warehouse_handover' ELSE 'warehouse_other' END AS event_type,\\n  event_code AS source_event_code,\\n  CAST(scanned_at_utc AS timestamp) AS observed_at,\\n  remarks AS content,\\n  CAST(NULL AS string) AS supersedes_ref,\\n  'evidence_id,source_system,event_type' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.wms_handover\\nUNION ALL\\nSELECT\\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\\n  'carrier' AS source_system,\\n  event_id AS source_record_ref,\\n  tracking_no AS shipment_id,\\n  CAST(NULL AS string) AS order_id,\\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\\n  status AS source_event_code,\\n  CAST(event_time AS timestamp) AS observed_at,\\n  description AS content,\\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.carrier_tracking\"}"
+        ]
+      ]
+    },
+    {
+      "title": "List the USL's tables",
+      "sql": "SHOW NAMESPACES OR TABLES IN lightning.metastore.evidence_desk.delivery_usl",
+      "outcome": "ok",
+      "ms": 43,
+      "headers": [
+        "name",
+        "type",
+        "usl_id",
+        "count",
+        "activated"
+      ],
+      "rows": [
+        [
+          "delivery_evidence",
+          "table",
+          "null",
+          "0",
+          "true"
+        ]
+      ]
+    },
+    {
+      "title": "Query the USL for the disputed shipment",
+      "sql": "SELECT evidence_id, source_system, source_record_ref, shipment_id, order_id, event_type, observed_at, supersedes_ref, inferred_fields FROM lightning.metastore.evidence_desk.delivery_usl.delivery_evidence WHERE shipment_id = 'PCL-88412' ORDER BY observed_at",
+      "outcome": "ok",
+      "ms": 308,
+      "headers": [
+        "evidence_id",
+        "source_system",
+        "source_record_ref",
+        "shipment_id",
+        "order_id",
+        "event_type",
+        "observed_at",
+        "supersedes_ref",
+        "inferred_fields"
+      ],
+      "rows": [
+        [
+          "wms:scans/dock3/MAN-5521/PCL-88412",
+          "wms",
+          "scans/dock3/MAN-5521/PCL-88412",
+          "PCL-88412",
+          "ORD-1042",
+          "warehouse_handover",
+          "2026-10-11 23:40:00.0",
+          "null",
+          "evidence_id,source_system,event_type"
+        ],
+        [
+          "carrier:tracking/PCL-88412/events/7",
+          "carrier",
+          "tracking/PCL-88412/events/7",
+          "PCL-88412",
+          "null",
+          "carrier_delivered",
+          "2026-10-13 03:02:00.0",
+          "null",
+          "evidence_id,source_system,event_type,supersedes_ref"
+        ],
+        [
+          "carrier:tracking/PCL-88412/pod-review/1",
+          "carrier",
+          "tracking/PCL-88412/pod-review/1",
+          "PCL-88412",
+          "null",
+          "carrier_delivery_amended",
+          "2026-10-15 05:20:00.0",
+          "carrier:tracking/PCL-88412/events/7",
+          "evidence_id,source_system,event_type,supersedes_ref"
+        ]
+      ]
+    },
+    {
+      "title": "Register DQ rule on the USL",
+      "sql": "REGISTER DQ `evidence_id_present` TABLE lightning.metastore.evidence_desk.delivery_usl.delivery_evidence AS evidence_id IS NOT NULL AND length(trim(evidence_id)) > 0",
+      "outcome": "ok",
+      "ms": 234,
+      "headers": [
+        "json"
+      ],
+      "rows": [
+        [
+          "{\"namespace\":[\"metastore\",\"evidence_desk\"],\"name\":\"delivery_usl\",\"tables\":[{\"name\":\"delivery_evidence\",\"columnSpecs\":[{\"name\":\"evidence_id\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_system\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_record_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"shipment_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"order_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"event_type\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_event_code\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"observed_at\",\"dataType\":\"\\\"timestamp\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"content\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"supersedes_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"inferred_fields\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]}],\"primaryKey\":{\"columns\":[\"evidence_id\"],\"name\":\"pk_delivery_evidence\"},\"unique\":[],\"foreignKeys\":[],\"checks\":[],\"ifNotExit\":false,\"namespace\":[\"lightning\",\"metastore\",\"evidence_desk\",\"delivery_usl\"],\"dqAnnotations\":[{\"name\":\"`evidence_id_present`\",\"expression\":\"evidence_id IS NOT NULL AND length(trim(evidence_id)) > 0\",\"cte\":{}}],\"acAnnotations\":[],\"activateQuery\":\"SELECT\\n  COALESCE(CASE WHEN handover_id IS NULL OR trim(handover_id) = '' THEN NULL ELSE concat('wms:', handover_id) END, '') AS evidence_id,\\n  'wms' AS source_system,\\n  handover_id AS source_record_ref,\\n  parcel_no AS shipment_id,\\n  order_no AS order_id,\\n  CASE event_code WHEN 'HANDED_TO_CARRIER' THEN 'warehouse_handover' ELSE 'warehouse_other' END AS event_type,\\n  event_code AS source_event_code,\\n  CAST(scanned_at_utc AS timestamp) AS observed_at,\\n  remarks AS content,\\n  CAST(NULL AS string) AS supersedes_ref,\\n  'evidence_id,source_system,event_type' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.wms_handover\\nUNION ALL\\nSELECT\\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\\n  'carrier' AS source_system,\\n  event_id AS source_record_ref,\\n  tracking_no AS shipment_id,\\n  CAST(NULL AS string) AS order_id,\\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\\n  status AS source_event_code,\\n  CAST(event_time AS timestamp) AS observed_at,\\n  description AS content,\\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.carrier_tracking\"}]}"
+        ]
+      ]
+    },
+    {
+      "title": "List DQ rules on the USL",
+      "sql": "LIST DQ USL lightning.metastore.evidence_desk.delivery_usl",
+      "outcome": "ok",
+      "ms": 43,
+      "headers": [
+        "name",
+        "table",
+        "type",
+        "expression"
+      ],
+      "rows": [
+        [
+          "evidence_id",
+          "delivery_evidence",
+          "Primary key constraints",
+          ""
+        ],
+        [
+          "`evidence_id_present`",
+          "delivery_evidence",
+          "Custom Data Quality",
+          "evidence_id IS NOT NULL AND length(trim(evidence_id)) > 0"
+        ]
+      ]
+    },
+    {
+      "title": "Run DQ rule on the USL",
+      "sql": "RUN DQ `evidence_id_present` TABLE lightning.metastore.evidence_desk.delivery_usl.delivery_evidence",
+      "outcome": "ok",
+      "ms": 592,
+      "headers": [
+        "name",
+        "table",
+        "type",
+        "total_record",
+        "valid_record",
+        "invalid_record"
+      ],
+      "rows": [
+        [
+          "`evidence_id_present`",
+          "delivery_evidence",
+          "Custom Data Quality",
+          "3",
+          "3",
+          "0"
+        ]
+      ]
+    },
+    {
+      "title": "Show records failing the rule (USL)",
+      "sql": "SHOW DQ INVALID RECORD `evidence_id_present` TABLE lightning.metastore.evidence_desk.delivery_usl.delivery_evidence",
+      "outcome": "ok",
+      "ms": 342,
+      "headers": [
+        "evidence_id",
+        "source_system",
+        "source_record_ref",
+        "shipment_id",
+        "order_id",
+        "event_type",
+        "source_event_code",
+        "observed_at",
+        "content",
+        "supersedes_ref",
+        "inferred_fields"
+      ],
+      "rows": []
+    },
+    {
+      "title": "Create Lightning database for the DQ sample",
+      "sql": "CREATE LIGHTNING DATABASE EVIDENCE_DESK_DQ_SAMPLE DESCRIBE BY \"SAMPLE DATA - isolated rows for the data-quality demonstration\" OPTIONS ()",
+      "outcome": "already present",
+      "ms": 32
+    },
+    {
+      "title": "Onboard the DQ sample row (JSON)",
+      "sql": "CREATE LIGHTNING FILESTORE TABLE carrier_tracking_dq_sample FROM EVIDENCE_DESK_DQ_SAMPLE FORMAT json OPTIONS (path \"file:///home/zetaris/customer-data/shared/evidence_desk_usl/carrier_tracking_dq_sample\")",
+      "outcome": "already present",
+      "ms": 32
+    },
+    {
+      "title": "Create sample USL namespace",
+      "sql": "CREATE NAMESPACE IF NOT EXISTS lightning.metastore.evidence_desk_dq_sample",
+      "outcome": "ok",
+      "ms": 38,
+      "headers": [
+        "Result"
+      ],
+      "rows": []
+    },
+    {
+      "title": "Compile sample USL",
+      "sql": "COMPILE USL IF NOT EXISTS delivery_usl_dq_sample DEPLOY NAMESPACE lightning.metastore.evidence_desk_dq_sample DDL CREATE TABLE delivery_evidence (\n  evidence_id string NOT NULL,\n  source_system string NOT NULL,\n  source_record_ref string,\n  shipment_id string,\n  order_id string,\n  event_type string,\n  source_event_code string,\n  observed_at timestamp,\n  content string,\n  supersedes_ref string,\n  inferred_fields string,\n  CONSTRAINT pk_delivery_evidence PRIMARY KEY (evidence_id)\n);",
+      "outcome": "ok",
+      "ms": 42,
+      "headers": [
+        "json"
+      ],
+      "rows": [
+        [
+          "{\"namespace\":[\"metastore\",\"evidence_desk_dq_sample\"],\"name\":\"delivery_usl_dq_sample\",\"tables\":[{\"name\":\"delivery_evidence\",\"columnSpecs\":[{\"name\":\"evidence_id\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_system\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_record_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"shipment_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"order_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"event_type\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_event_code\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"observed_at\",\"dataType\":\"\\\"timestamp\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"content\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"supersedes_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"inferred_fields\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]}],\"primaryKey\":{\"columns\":[\"evidence_id\"],\"name\":\"pk_delivery_evidence\"},\"unique\":[],\"foreignKeys\":[],\"checks\":[],\"ifNotExit\":false,\"namespace\":[\"lightning\",\"metastore\",\"evidence_desk_dq_sample\",\"delivery_usl_dq_sample\"],\"dqAnnotations\":[],\"acAnnotations\":[]}]}"
+        ]
+      ]
+    },
+    {
+      "title": "Activate sample delivery_evidence (sources plus the sample row)",
+      "sql": "ACTIVATE USL TABLE lightning.metastore.evidence_desk_dq_sample.delivery_usl_dq_sample.delivery_evidence AS SELECT\n  COALESCE(CASE WHEN handover_id IS NULL OR trim(handover_id) = '' THEN NULL ELSE concat('wms:', handover_id) END, '') AS evidence_id,\n  'wms' AS source_system,\n  handover_id AS source_record_ref,\n  parcel_no AS shipment_id,\n  order_no AS order_id,\n  CASE event_code WHEN 'HANDED_TO_CARRIER' THEN 'warehouse_handover' ELSE 'warehouse_other' END AS event_type,\n  event_code AS source_event_code,\n  CAST(scanned_at_utc AS timestamp) AS observed_at,\n  remarks AS content,\n  CAST(NULL AS string) AS supersedes_ref,\n  'evidence_id,source_system,event_type' AS inferred_fields\nFROM EVIDENCE_DESK_SOURCES.wms_handover\nUNION ALL\nSELECT\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\n  'carrier' AS source_system,\n  event_id AS source_record_ref,\n  tracking_no AS shipment_id,\n  CAST(NULL AS string) AS order_id,\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\n  status AS source_event_code,\n  CAST(event_time AS timestamp) AS observed_at,\n  description AS content,\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\nFROM EVIDENCE_DESK_SOURCES.carrier_tracking\n\nUNION ALL\nSELECT\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\n  'carrier' AS source_system,\n  event_id AS source_record_ref,\n  tracking_no AS shipment_id,\n  CAST(NULL AS string) AS order_id,\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\n  status AS source_event_code,\n  CAST(event_time AS timestamp) AS observed_at,\n  description AS content,\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\nFROM EVIDENCE_DESK_DQ_SAMPLE.carrier_tracking_dq_sample",
+      "outcome": "ok",
+      "ms": 144,
+      "headers": [
+        "registered"
+      ],
+      "rows": [
+        [
+          "{\"name\":\"delivery_evidence\",\"query\":\"SELECT\\n  COALESCE(CASE WHEN handover_id IS NULL OR trim(handover_id) = '' THEN NULL ELSE concat('wms:', handover_id) END, '') AS evidence_id,\\n  'wms' AS source_system,\\n  handover_id AS source_record_ref,\\n  parcel_no AS shipment_id,\\n  order_no AS order_id,\\n  CASE event_code WHEN 'HANDED_TO_CARRIER' THEN 'warehouse_handover' ELSE 'warehouse_other' END AS event_type,\\n  event_code AS source_event_code,\\n  CAST(scanned_at_utc AS timestamp) AS observed_at,\\n  remarks AS content,\\n  CAST(NULL AS string) AS supersedes_ref,\\n  'evidence_id,source_system,event_type' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.wms_handover\\nUNION ALL\\nSELECT\\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\\n  'carrier' AS source_system,\\n  event_id AS source_record_ref,\\n  tracking_no AS shipment_id,\\n  CAST(NULL AS string) AS order_id,\\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\\n  status AS source_event_code,\\n  CAST(event_time AS timestamp) AS observed_at,\\n  description AS content,\\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.carrier_tracking\\n\\nUNION ALL\\nSELECT\\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\\n  'carrier' AS source_system,\\n  event_id AS source_record_ref,\\n  tracking_no AS shipment_id,\\n  CAST(NULL AS string) AS order_id,\\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\\n  status AS source_event_code,\\n  CAST(event_time AS timestamp) AS observed_at,\\n  description AS content,\\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\\nFROM EVIDENCE_DESK_DQ_SAMPLE.carrier_tracking_dq_sample\"}"
+        ]
+      ]
+    },
+    {
+      "title": "Register DQ rule on the sample USL",
+      "sql": "REGISTER DQ `evidence_id_present` TABLE lightning.metastore.evidence_desk_dq_sample.delivery_usl_dq_sample.delivery_evidence AS evidence_id IS NOT NULL AND length(trim(evidence_id)) > 0",
+      "outcome": "ok",
+      "ms": 410,
+      "headers": [
+        "json"
+      ],
+      "rows": [
+        [
+          "{\"namespace\":[\"metastore\",\"evidence_desk_dq_sample\"],\"name\":\"delivery_usl_dq_sample\",\"tables\":[{\"name\":\"delivery_evidence\",\"columnSpecs\":[{\"name\":\"evidence_id\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_system\",\"dataType\":\"\\\"string\\\"\",\"notNull\":{\"columns\":[]},\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_record_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"shipment_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"order_id\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"event_type\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"source_event_code\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"observed_at\",\"dataType\":\"\\\"timestamp\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"content\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"supersedes_ref\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]},{\"name\":\"inferred_fields\",\"dataType\":\"\\\"string\\\"\",\"dqAnnotations\":[],\"acAnnotations\":[]}],\"primaryKey\":{\"columns\":[\"evidence_id\"],\"name\":\"pk_delivery_evidence\"},\"unique\":[],\"foreignKeys\":[],\"checks\":[],\"ifNotExit\":false,\"namespace\":[\"lightning\",\"metastore\",\"evidence_desk_dq_sample\",\"delivery_usl_dq_sample\"],\"dqAnnotations\":[{\"name\":\"`evidence_id_present`\",\"expression\":\"evidence_id IS NOT NULL AND length(trim(evidence_id)) > 0\",\"cte\":{}}],\"acAnnotations\":[],\"activateQuery\":\"SELECT\\n  COALESCE(CASE WHEN handover_id IS NULL OR trim(handover_id) = '' THEN NULL ELSE concat('wms:', handover_id) END, '') AS evidence_id,\\n  'wms' AS source_system,\\n  handover_id AS source_record_ref,\\n  parcel_no AS shipment_id,\\n  order_no AS order_id,\\n  CASE event_code WHEN 'HANDED_TO_CARRIER' THEN 'warehouse_handover' ELSE 'warehouse_other' END AS event_type,\\n  event_code AS source_event_code,\\n  CAST(scanned_at_utc AS timestamp) AS observed_at,\\n  remarks AS content,\\n  CAST(NULL AS string) AS supersedes_ref,\\n  'evidence_id,source_system,event_type' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.wms_handover\\nUNION ALL\\nSELECT\\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\\n  'carrier' AS source_system,\\n  event_id AS source_record_ref,\\n  tracking_no AS shipment_id,\\n  CAST(NULL AS string) AS order_id,\\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\\n  status AS source_event_code,\\n  CAST(event_time AS timestamp) AS observed_at,\\n  description AS content,\\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\\nFROM EVIDENCE_DESK_SOURCES.carrier_tracking\\n\\nUNION ALL\\nSELECT\\n  COALESCE(CASE WHEN event_id IS NULL OR trim(event_id) = '' THEN NULL ELSE concat('carrier:', event_id) END, '') AS evidence_id,\\n  'carrier' AS source_system,\\n  event_id AS source_record_ref,\\n  tracking_no AS shipment_id,\\n  CAST(NULL AS string) AS order_id,\\n  CASE status WHEN 'DELIVERED' THEN 'carrier_delivered' WHEN 'DELIVERED_INCORRECT_ADDRESS' THEN 'carrier_delivery_amended' ELSE 'carrier_other' END AS event_type,\\n  status AS source_event_code,\\n  CAST(event_time AS timestamp) AS observed_at,\\n  description AS content,\\n  CASE WHEN amends_event_id IS NULL OR trim(amends_event_id) = '' THEN NULL ELSE concat('carrier:', amends_event_id) END AS supersedes_ref,\\n  'evidence_id,source_system,event_type,supersedes_ref' AS inferred_fields\\nFROM EVIDENCE_DESK_DQ_SAMPLE.carrier_tracking_dq_sample\"}]}"
+        ]
+      ]
+    },
+    {
+      "title": "Run DQ rule on the sample USL",
+      "sql": "RUN DQ `evidence_id_present` TABLE lightning.metastore.evidence_desk_dq_sample.delivery_usl_dq_sample.delivery_evidence",
+      "outcome": "ok",
+      "ms": 715,
+      "headers": [
+        "name",
+        "table",
+        "type",
+        "total_record",
+        "valid_record",
+        "invalid_record"
+      ],
+      "rows": [
+        [
+          "`evidence_id_present`",
+          "delivery_evidence",
+          "Custom Data Quality",
+          "4",
+          "3",
+          "1"
+        ]
+      ]
+    },
+    {
+      "title": "Show records failing the rule (sample USL)",
+      "sql": "SHOW DQ INVALID RECORD `evidence_id_present` TABLE lightning.metastore.evidence_desk_dq_sample.delivery_usl_dq_sample.delivery_evidence",
+      "outcome": "ok",
+      "ms": 327,
+      "headers": [
+        "evidence_id",
+        "source_system",
+        "source_record_ref",
+        "shipment_id",
+        "order_id",
+        "event_type",
+        "source_event_code",
+        "observed_at",
+        "content",
+        "supersedes_ref",
+        "inferred_fields"
+      ],
+      "rows": [
+        [
+          "",
+          "carrier",
+          "",
+          "PCL-88412",
+          "null",
+          "carrier_other",
+          "IN_TRANSIT",
+          "2026-10-12 01:00:00.0",
+          "SAMPLE DATA for the data-quality demonstration only: a carrier event exported without its event id.",
+          "null",
+          "evidence_id,source_system,event_type,supersedes_ref"
+        ]
+      ]
+    }
+  ]
+}

@@ -99,7 +99,9 @@ export function caseSummary(state: CaseState): string {
     subject?.supporting.length ? `Evidence supporting ${subject.statement}: ${subject.supporting.map((ref) => quote(ref.recordId)).join("; ")}.` : null,
     subject?.contradicting.length ? `Evidence against it: ${subject.contradicting.map((ref) => quote(ref.recordId)).join("; ")}.` : null,
     c.rejected.length ? `Ruled out: ${c.rejected.map((view) => `${view.statement}${view.contradicting.length ? ` (refuted by ${view.contradicting.map((ref) => ref.recordId).join(", ")})` : ""}`).join("; ")}.` : null,
-    c.noLongerCounted.length ? `No longer counts: ${c.noLongerCounted.map((item) => `${item.recordId}, ${item.invalidation.kind === "superseded" ? `replaced by its source with ${item.invalidation.by}` : `withdrawn (${item.invalidation.reason})`}`).join("; ")}.` : null,
+    c.noLongerCounted.length ? `No longer counts: ${c.noLongerCounted.map((item) => `${item.recordId}, ${item.invalidation.kind === "superseded" ? `replaced by its source with ${item.invalidation.by}`
+      : item.invalidation.kind === "restated" ? `out of date: its source now reports ${item.invalidation.facts.map((fact) => `${fact.fact}=${fact.now}`).join(", ")} (${item.invalidation.by})`
+      : `withdrawn (${item.invalidation.reason})`}`).join("; ")}.` : null,
     c.openQuestions.length ? `Still open: ${c.openQuestions.map((q) => q.text).join(" ")}` : null,
     // How it got here: each run's conclusion in order, so a change can be explained.
     runs.length > 1 ? `History: ${runs.map((run) => `run ${run.runNumber} at stage "${run.stage.label}" concluded: ${run.conclusion.headline}`).join("; then ")}.` : null,

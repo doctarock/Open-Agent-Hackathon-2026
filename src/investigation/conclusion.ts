@@ -67,8 +67,24 @@ export interface Direction {
   summary: string;
 }
 
+// How an established conclusion was reached: Speck's own supported status, or
+// rule corroborated-1 while Speck's confidence is still below its threshold.
+export type ConclusionRoute = "speck-threshold" | "corroboration";
+
+export interface Corroboration {
+  rule: typeof CORROBORATION_RULE;
+  holds: boolean;
+  // The records that still count supporting the explanation, and their systems.
+  records: string[];
+  systems: string[];
+  // Why it does not hold, in plain words; empty when it holds.
+  missing: string[];
+}
+
 export interface Justification {
   established: boolean;
+  route: ConclusionRoute | null;
+  corroboration: Corroboration | null;
   confidence: number | null;
   status: string | null;
   thresholds: { supported: number; leading: number; leadingMargin: number };
@@ -139,6 +155,19 @@ export interface BeliefSettings {
 // hand. They are not tuned per case.
 export const LEADING_MIN_CONFIDENCE = 0.5;
 export const LEADING_MIN_MARGIN = 0.1;
+// Rule corroborated-1 (docs/build-4-bank-return.md), fixed as first written.
+// When Speck holds no explanation as supported, the top explanation is
+// concluded if at least CORROBORATION_MIN_SYSTEMS different source systems
+// support it with records that still count, no record that still counts is
+// against it, and every other explanation is ruled out or has no support.
+// Why: with model-judged evidence capped at 0.4, each record moves a belief
+// by at most 0.08, so from a prior of 0.3 Speck's threshold needs four
+// unanimous records; whether a case could conclude depended on its prior, not
+// its evidence. This rule uses no confidence value: it asks whether the
+// support is independent, unanimous and unopposed. A single record never
+// satisfies it, and any counting record against it, or for a rival, blocks it.
+export const CORROBORATION_RULE = "corroborated-1";
+export const CORROBORATION_MIN_SYSTEMS = 2;
 
 const ESTABLISHED = new Set(["supported", "confirmed"]);
 const OUT = new Set(["rejected", "superseded"]);
@@ -203,8 +232,17 @@ export function deriveConclusion(input: {
   // established (its supported threshold, and whether the latest evidence
   // weakened it); this code reports that decision rather than making its own.
   let state: ConclusionState = "unresolved";
-  if (top?.supporting.length && ESTABLISHED.has(top.status)) state = "supported";
-  else if (top?.supporting.length && top.confidence >= LEADING_MIN_CONFIDENCE && (margin ?? 0) >= LEADING_MIN_MARGIN) state = "leading";
+  let route: ConclusionRoute | null = null;
+  if (top?.supporting.length && ESTABLISHED.has(top.status)) {
+    state = "supported";
+    route = "speck-threshold";
+  } else if (top?.supporting.length && top.confidence >= LEADING_MIN_CONFIDENCE && (margin ?? 0) >= LEADING_MIN_MARGIN) state = "leading";
+  const counts = (ref: EvidenceRef) => !invalidated.has(ref.recordId) && !ref.supersededBy;
+  const corroboration = top && route === null ? corroborate(top, live, counts) : null;
+  if (corroboration?.holds) {
+    state = "supported";
+    route = "corroboration";
+  }
 
   const answeredQuestions: Conclusion["answeredQuestions"] = [];
   const openQuestions: Conclusion["openQuestions"] = [];
@@ -220,7 +258,7 @@ export function deriveConclusion(input: {
   // its own and is alone or clearly ahead, independent of its confidence.
   const favoured = top && top.supporting.length && (!runnerUp || (margin ?? 0) >= LEADING_MIN_MARGIN) ? top : null;
   const direction = describeDirection(favoured, live, rejected);
-  const justification = justify({ state, favoured, top, openQuestions, belief: input.belief });
+  const justification = justify({ state, route, corroboration, favoured, top, openQuestions, belief: input.belief });
 
   const notes = ["Confidence is Speck's belief-revision score from source reliability and evidence relations. It is not a calibrated probability."];
   if (top?.contradicting.length) notes.push(`${top.key} is contested by ${top.contradicting.map((item) => item.recordId).join(", ")}.`);
@@ -288,8 +326,55 @@ function describeDirection(favoured: HypothesisView | null, live: readonly Hypot
   };
 }
 
+// A conclusion is not presented as firm while records the last run could not
+// assess are still waiting: they may replace or refute what it rests on.
+// Why: a failed model call leaves a newer record unassessed (live, 2026-10-25:
+// a carrier correction and a claims decline). Speck's state then still holds
+// the earlier conclusion, built without them; presenting it as current would
+// pass a stale answer off as one that has seen the correction. Speck's belief
+// state is not changed; the next run assesses the records and decides.
+export function withholdForPending(conclusion: Conclusion, pending: readonly string[]): Conclusion {
+  if (!pending.length || conclusion.state === "unresolved") return conclusion;
+  const held = conclusion.hypothesis;
+  const reason = `${pending.length} visible record(s) (${pending.join(", ")}) could not be assessed in the last run, so the conclusion is withheld until a run assesses them${held ? `; without them Speck would hold ${held.key} as ${conclusion.state === "supported" ? "established" : "leading"}` : ""}.`;
+  return {
+    ...conclusion,
+    state: "unresolved",
+    headline: `Unresolved: ${pending.length} newer record(s) not yet assessed (${pending.join(", ")}).${held ? ` Before them, the evidence pointed to "${held.statement}".` : ""}`,
+    hypothesis: null,
+    alternatives: held ? [held, ...conclusion.alternatives] : conclusion.alternatives,
+    justification: { ...conclusion.justification, established: false, route: null, reasons: [reason, ...conclusion.justification.reasons], wouldChange: ["Run the investigation again to assess the waiting records.", ...conclusion.justification.wouldChange] },
+    uncertainty: { ...conclusion.uncertainty, notes: [reason, ...conclusion.uncertainty.notes] }
+  };
+}
+
+// Rule corroborated-1 applied to the top explanation; `counts` says whether a
+// record still counts.
+// Why every recorded contradiction blocks it, counting or not: once beliefs
+// are reconciled Speck holds only counting records against a hypothesis, so
+// this is the same rule; before they are (an interrupted recomputation) a
+// contradiction Speck still applies must not be argued away here.
+function corroborate(top: HypothesisView, live: readonly HypothesisView[], counts: (ref: EvidenceRef) => boolean): Corroboration {
+  const support = top.supporting.filter(counts);
+  const records = [...new Set(support.map((ref) => ref.recordId))];
+  const systems = [...new Set(support.map((ref) => ref.sourceSystem))];
+  const against = top.contradicting.map((ref) => ref.recordId);
+  const rivals = live.filter((view) => view !== top && view.supporting.some(counts)).map((view) => view.key);
+  const missing: string[] = [];
+  if (systems.length < CORROBORATION_MIN_SYSTEMS) {
+    missing.push(systems.length
+      ? `its support comes from one source system (${systems[0]}); corroboration needs ${CORROBORATION_MIN_SYSTEMS} different ones`
+      : "no record that still counts supports it");
+  }
+  if (against.length) missing.push(`${against.join(", ")} ${against.length === 1 ? "is" : "are"} recorded against it`);
+  if (rivals.length) missing.push(`${rivals.join(", ")} still ha${rivals.length === 1 ? "s" : "ve"} support of ${rivals.length === 1 ? "its" : "their"} own`);
+  return { rule: CORROBORATION_RULE, holds: missing.length === 0, records, systems, missing };
+}
+
 function justify(input: {
   state: ConclusionState;
+  route: ConclusionRoute | null;
+  corroboration: Corroboration | null;
   favoured: HypothesisView | null;
   top: HypothesisView | null;
   openQuestions: Conclusion["openQuestions"];
@@ -301,11 +386,19 @@ function justify(input: {
   const gap = subject ? round(Math.max(0, belief.supportedThreshold - subject.confidence)) : null;
   const reasons: string[] = [];
   const wouldChange: string[] = [];
+  const { route, corroboration } = input;
   if (!subject) {
     reasons.push("There is no explanation left to justify.");
-    return { established: false, confidence: null, status: null, thresholds, gapToSupported: null, reasons, wouldChange };
+    return { established: false, route, corroboration, confidence: null, status: null, thresholds, gapToSupported: null, reasons, wouldChange };
   }
-  if (input.state === "supported") {
+  if (route === "corroboration" && corroboration) {
+    reasons.push(`Speck holds ${subject.key} as ${subject.status} at ${subject.confidence}, ${gap} short of its supported threshold of ${belief.supportedThreshold}; Speck itself has not established it.`);
+    reasons.push(`Concluded by corroboration (rule ${corroboration.rule}): ${corroboration.records.join(", ")} from ${corroboration.systems.length} different sources (${corroboration.systems.join(", ")}) support it, no record that still counts is against it, and every other explanation is ruled out or has no support.`);
+    const capped = subject.supporting.filter((item) => item.judgedBy === "model");
+    if (capped.length) reasons.push(`The gap is Speck's cap on model-judged evidence: ${capped.map((item) => item.recordId).join(", ")} ${capped.length === 1 ? "was" : "were"} judged by the model, so each adds at most ${round(belief.supportBonus * belief.modelReliabilityCeiling)}.`);
+    wouldChange.push(`Any record that still counts against ${subject.key}, or supports another explanation, withdraws this conclusion.`);
+    for (const question of input.openQuestions) wouldChange.push(`Evidence answering: ${question.text}`);
+  } else if (input.state === "supported") {
     reasons.push(`Speck holds ${subject.key} as ${subject.status} at ${subject.confidence}, at or above its supported threshold of ${belief.supportedThreshold}.`);
   } else if (input.state === "leading" && gap === 0) {
     // At or above the threshold but not established: Speck marks a belief
@@ -319,6 +412,9 @@ function justify(input: {
     reasons.push(`Speck's confidence in ${subject.key} is ${subject.confidence}, ${gap} short of its supported threshold of ${belief.supportedThreshold}`
       + (subject.confidence < LEADING_MIN_CONFIDENCE ? ` and below the ${LEADING_MIN_CONFIDENCE} needed even to call it leading.` : "."));
     if (!favoured) reasons.push("Other explanations remain too close to it to say the evidence favours it.");
+  }
+  if (input.state !== "supported" && corroboration && corroboration.missing.length) {
+    reasons.push(`Not corroborated (rule ${corroboration.rule}): ${corroboration.missing.join("; ")}.`);
   }
   if (input.state !== "supported") {
     if (subject.prior < LEADING_MIN_CONFIDENCE) reasons.push(`It started from a low prior of ${subject.prior}, so its support has had further to climb.`);
@@ -339,6 +435,8 @@ function justify(input: {
   }
   return {
     established: input.state === "supported",
+    route,
+    corroboration,
     confidence: subject.confidence,
     status: subject.status,
     thresholds,
@@ -369,9 +467,10 @@ function explainInvalidation(
       consequences.push(`${view.key} is no longer ruled out: ${record.id} was its decisive refutation, and it is now ${view.status} at ${view.confidence}.`);
     }
   }
-  const replacedBy = invalidation.kind === "superseded" ? invalidation.by : null;
   const explanation = [
-    replacedBy ? `${replacedBy} replaces all of ${record.id}, not only the facts it restates.` : `${record.id} was withdrawn (${invalidation.kind === "withdrawn" ? invalidation.reason : ""}).`,
+    invalidation.kind === "superseded" ? `${invalidation.by} replaces all of ${record.id}, not only the facts it restates.`
+      : invalidation.kind === "restated" ? `${record.source.name} has since reported a newer value for every fact in ${record.id} (${invalidation.facts.map((item) => `${item.fact}: ${item.was} → ${item.now} in ${item.recordId}`).join("; ")}), so ${record.id} no longer describes the current state.`
+      : `${record.id} was withdrawn (${invalidation.reason}).`,
     unrestatedFacts.length ? `No record that still counts states ${unrestatedFacts.map((item) => `${item.fact}=${item.value}`).join(", ")}.` : "",
     lostJudgments.length
       ? `Its judgments no longer apply: ${lostJudgments.map((item) => `${item.direction} ${item.hypothesisKey}${item.decisive ? " decisively" : ""}`).join("; ")}.`

@@ -51,6 +51,9 @@ export interface StageResult {
 
 export interface ConclusionSummary {
   state: Conclusion["state"];
+  // How an established conclusion was reached: Speck's own threshold, or
+  // corroboration while Speck's confidence is below it (null when none is).
+  route: Conclusion["justification"]["route"];
   hypothesis: string | null;
   statement: string | null;
   confidence: number | null;
@@ -69,6 +72,7 @@ export function summarise(conclusion: Conclusion): ConclusionSummary {
   const held = conclusion.hypothesis;
   return {
     state: conclusion.state,
+    route: conclusion.justification.route,
     hypothesis: held?.key ?? null,
     statement: held?.statement ?? null,
     confidence: round(conclusion.justification.confidence),

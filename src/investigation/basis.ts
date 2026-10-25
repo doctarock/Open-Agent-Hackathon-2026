@@ -7,19 +7,29 @@ import type { RelationJudgment } from "../reasoning/types.js";
 // rested on it. The desk then makes Speck's current hypotheses equal a replay
 // of this basis (reconcile.ts).
 //
-// Two dependencies are tracked, both stated by the data:
-// - a record stops counting when a valid later record says it supersedes it,
-//   or when it is withdrawn;
+// Three dependencies are tracked, all stated by the data:
+// - a record stops counting when a valid record says it supersedes it, or
+//   when it is withdrawn;
+// - a record stops counting when the same source system later reports a new
+//   value for every fact it reported (restated);
 // - support for a hypothesis is withheld while a valid decisive contradiction
 //   refutes it (nothing short of invalidating the refutation revives it).
 //
 // Why it is built this way:
 // - Pure. No Speck, no model, no I/O: the same ledger always gives the same
 //   basis, and the rules can be tested exhaustively on their own.
-// - Supersession must be stated, never inferred. A record replaces another
-//   only when its source says so (provenance.supersedes). Inferring it, from
-//   similar content or a later time, would let a heuristic or a model decide
-//   which evidence counts, and that decision belongs to the source.
+// - Replacement comes from the source, never from a heuristic or a model. A
+//   source replaces a record in one of two ways: by naming it
+//   (provenance.supersedes), or by reporting a newer value for every fact it
+//   reported (a ledger that marked an invoice paid and now reports it
+//   reopened). Both are read from the source's own structured fields.
+//   Similar content, a later time alone, or a model's reading never replace
+//   anything. Build 3 accepted only the first; the bank return showed the
+//   second matters (docs/build-4-bank-return.md): the ledger's old "paid"
+//   status kept counting against the invoice being unpaid.
+// - A named replacement holds whatever the timestamps. A record id in
+//   supersedes is unambiguous, and a backfilled record can be stamped later
+//   than the correction that names it.
 // - A decisive refutation is final. In Speck only "superseded" is terminal:
 //   later support moves a "rejected" hypothesis back to active. That happened
 //   in a live run, where a model judgment revived "delivered" after the
@@ -38,7 +48,10 @@ export interface LedgerEntry {
 
 export type Invalidation =
   | { kind: "superseded"; by: string }
-  | { kind: "withdrawn"; reason: string; at: string };
+  | { kind: "withdrawn"; reason: string; at: string }
+  // Every fact the record reported, with the later value its own source
+  // system now reports for it.
+  | { kind: "restated"; by: string; facts: Array<{ fact: string; was: string; now: string; recordId: string }> };
 
 export interface PlannedRelation {
   recordId: string;
@@ -67,22 +80,7 @@ export interface BeliefBasis {
 
 export function deriveBasis(entries: readonly LedgerEntry[], hypothesisKeys: readonly string[]): BeliefBasis {
   const ordered = [...entries].sort((left, right) => byObservation(left.record, right.record));
-
-  // Newest first, so a record's validity is settled before the claims it
-  // makes about older records are honoured. A superseded or withdrawn
-  // correction therefore supersedes nothing, and a claim about a later
-  // record is ignored.
-  const invalid = new Map<string, Invalidation>();
-  const supersededBy = new Map<string, string>();
-  for (const entry of [...ordered].reverse()) {
-    const id = entry.record.id;
-    if (entry.withdrawn) invalid.set(id, { kind: "withdrawn", ...entry.withdrawn });
-    else if (supersededBy.has(id)) invalid.set(id, { kind: "superseded", by: supersededBy.get(id)! });
-    if (invalid.has(id)) continue;
-    // Overwritten as older superseders are reached: the earliest one is named.
-    for (const target of entry.record.provenance.supersedes) supersededBy.set(target, id);
-  }
-
+  const invalid = deriveValidity(ordered);
   const valid = ordered.filter((entry) => !invalid.has(entry.record.id));
   const keys = new Set(hypothesisKeys);
   const refutedBy = new Map<string, string>();
@@ -110,6 +108,100 @@ export function deriveBasis(entries: readonly LedgerEntry[], hypothesisKeys: rea
   return { invalid, plan, withheld, refutedBy };
 }
 
+// Which records no longer count, from the records and withdrawals alone.
+// `ordered` is in observation order.
+//
+// 1. Declared replacement. A record is replaced when a record that still
+//    counts names it in supersedes, whatever their timestamps. Chains
+//    resolve: a withdrawn or replaced correction replaces nothing, so the
+//    record it named counts again. Where declarations form a cycle, a claim
+//    by the older record against the newer one is ignored, which leaves no
+//    cycle. The earliest valid record naming it is reported.
+// 2. Restatement, among the records still counting. A record is restated
+//    when a strictly later record from the same source system reports every
+//    fact it reported and at least one value differs.
+//    - Different systems never restate each other: a cycle count does not
+//      replace a warehouse figure, it disagrees with it.
+//    - The same value again changes nothing, so the older record counts.
+//    - A correction (a record that itself names records it replaces) is
+//      replaced only by being named or withdrawn. Why: restating it would
+//      also undo the replacement it declared, which the source never said.
+//    - Records without facts are never restated.
+export function deriveValidity(ordered: readonly LedgerEntry[]): Map<string, Invalidation> {
+  const invalid = new Map<string, Invalidation>();
+  const position = new Map(ordered.map((entry, index) => [entry.record.id, index]));
+  const claims = new Map<string, string[]>(ordered.map((entry) => [entry.record.id, entry.record.provenance.supersedes.filter((target) => target !== entry.record.id && position.has(target))]));
+  const reaches = (from: string, to: string): boolean => {
+    const seen = new Set<string>();
+    const queue = [from];
+    while (queue.length) {
+      const id = queue.pop()!;
+      if (id === to) return true;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      queue.push(...claims.get(id)!);
+    }
+    return false;
+  };
+  // Target -> the records whose claim on it stands, earliest first.
+  const claimants = new Map<string, string[]>();
+  for (const entry of ordered) {
+    const id = entry.record.id;
+    for (const target of claims.get(id)!) {
+      if (position.get(id)! < position.get(target)! && reaches(target, id)) continue;
+      claimants.set(target, [...(claimants.get(target) ?? []), id]);
+    }
+  }
+  const byId = new Map(ordered.map((entry) => [entry.record.id, entry]));
+  const settled = new Map<string, boolean>();
+  const counts = (id: string): boolean => {
+    if (settled.has(id)) return settled.get(id)!;
+    const entry = byId.get(id)!;
+    let result = true;
+    if (entry.withdrawn) {
+      invalid.set(id, { kind: "withdrawn", ...entry.withdrawn });
+      result = false;
+    } else {
+      const by = (claimants.get(id) ?? []).find(counts);
+      if (by) {
+        invalid.set(id, { kind: "superseded", by });
+        result = false;
+      }
+    }
+    settled.set(id, result);
+    return result;
+  };
+  for (const entry of ordered) counts(entry.record.id);
+
+  // Newest first, so the value each system now reports is known before the
+  // records it may restate are reached.
+  const latest = new Map<string, { value: string; recordId: string; observedAt: number }>();
+  const slot = (system: string, fact: string) => `${system}\u0000${fact}`;
+  for (const entry of [...ordered].reverse()) {
+    const { record } = entry;
+    if (invalid.has(record.id)) continue;
+    const facts = Object.entries(record.facts);
+    const observedAt = Date.parse(record.observedAt);
+    if (facts.length && !record.provenance.supersedes.length) {
+      const later = facts.map(([fact, value]) => ({ fact, was: value, newer: latest.get(slot(record.source.system, fact)) }));
+      if (later.every((item) => item.newer && item.newer.observedAt > observedAt) && later.some((item) => item.newer!.value !== item.was)) {
+        const changed = later.filter((item) => item.newer!.value !== item.was);
+        invalid.set(record.id, {
+          kind: "restated",
+          by: changed.map((item) => item.newer!).sort((left, right) => right.observedAt - left.observedAt)[0]!.recordId,
+          facts: later.map((item) => ({ fact: item.fact, was: item.was, now: item.newer!.value, recordId: item.newer!.recordId }))
+        });
+        continue;
+      }
+    }
+    for (const [fact, value] of facts) {
+      const key = slot(record.source.system, fact);
+      if (!latest.has(key)) latest.set(key, { value, recordId: record.id, observedAt });
+    }
+  }
+  return invalid;
+}
+
 // Whether the relations already applied to a hypothesis are the start of its
 // plan, so the rest can be appended instead of replaying from the prior.
 // Why it is safe: Speck's revision depends only on a hypothesis's own sequence
@@ -120,7 +212,9 @@ export function isPrefix(applied: ReadonlyArray<{ recordId: string; direction: s
 }
 
 export function describeInvalidation(recordId: string, invalidation: Invalidation): string {
-  return invalidation.kind === "superseded"
-    ? `${recordId} superseded by ${invalidation.by}`
-    : `${recordId} withdrawn (${invalidation.reason})`;
+  if (invalidation.kind === "superseded") return `${recordId} superseded by ${invalidation.by}`;
+  if (invalidation.kind === "restated") {
+    return `${recordId} out of date: its source now reports ${invalidation.facts.map((item) => `${item.fact}=${item.now} (${item.recordId}, was ${item.was})`).join(", ")}`;
+  }
+  return `${recordId} withdrawn (${invalidation.reason})`;
 }

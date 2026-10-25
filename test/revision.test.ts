@@ -100,7 +100,11 @@ test("bank reversal: the superseded payment's effect leaves current belief", asy
     const conclusion = desk.conclusionFromSpeck();
     assert.equal(conclusion.state, "supported");
     assert.equal(conclusion.hypothesis?.key, "H-UNPAID");
-    assert.deepEqual(conclusion.noLongerCounted.map((item) => [item.recordId, item.invalidation]), [["P1", { kind: "superseded", by: "P3" }]]);
+    // P2 ("marked paid") is out of date: the same ledger now reports reopened (P4).
+    assert.deepEqual(conclusion.noLongerCounted.map((item) => [item.recordId, item.invalidation]), [
+      ["P1", { kind: "superseded", by: "P3" }],
+      ["P2", { kind: "restated", by: "P4", facts: [{ fact: "ledger.status", was: "paid", now: "reopened", recordId: "P4" }] }]
+    ]);
     // Each current adjustment names its record, judgment and delta.
     assert.deepEqual(conclusion.hypothesis!.supporting.map((ref) => [ref.recordId, ref.judgment?.basis, ref.delta]), [["P3", "rule", 0.19], ["P4", "rule", 0.17]]);
     // Speck's saved state agrees: the current hypothesis object holds 0.66.
@@ -163,23 +167,29 @@ test("correction withdrawal: when a correction stops counting, what it displaced
     const now = beliefs(desk);
     // P1 is reinstated (its superseder is itself superseded). P4 still counts
     // as a record, but its support is withheld: P5 refutes H-UNPAID decisively.
-    assert.deepEqual(now["H-PAID"], { status: "confirmed", confidence: 1, supporting: ["P1", "P2", "P5"], contradicting: [] });
+    // P2 ("marked paid") does not come back: the ledger's latest status is
+    // still "reopened" (P4); no ledger record says paid again.
+    assert.deepEqual(now["H-PAID"], { status: "confirmed", confidence: 0.88, supporting: ["P1", "P5"], contradicting: [] });
     assert.deepEqual(now["H-UNPAID"], { status: "rejected", confidence: 0.05, supporting: [], contradicting: ["P1", "P5"] });
     assert.deepEqual((await desk.listEvidence()).records.find((item) => item.id === "P4")!.assessment!.judgments.map((j) => [j.effect, j.refutedBy]), [["withheld", "P5"]]);
     const last = desk.recomputations().at(-1)!;
     const paid = last.hypotheses.find((item) => item.key === "H-PAID")!;
     assert.deepEqual(paid.dropped.map((item) => [item.recordId, item.reason]), [["P3", "P3 superseded by P5"]]);
-    assert.deepEqual(paid.added.map((item) => [item.recordId, item.reinstated]), [["P1", true], ["P2", true], ["P5", false]]);
+    assert.deepEqual(paid.added.map((item) => [item.recordId, item.reinstated]), [["P1", true], ["P5", false]]);
   });
   // By the investigator: the reversal is withdrawn. P2's support for H-PAID,
   // withheld while P3 refuted it, applies again.
+  // (P2 is first out of date while the ledger reports reopened, P4; the
+  // investigator withdraws P4 too, so P2 counts and its support is withheld.)
   await withDesk(testConfig({ scenarioDir: payScenario() }), async (desk) => {
     await runTo(desk, "reversal");
+    assert.equal((await desk.listEvidence()).records.find((item) => item.id === "P2")!.assessment!.judgments[0]!.effect, "void");
+    await desk.withdrawRecord("P4", "Reopened against the wrong invoice");
     assert.equal((await desk.listEvidence()).records.find((item) => item.id === "P2")!.assessment!.judgments[0]!.effect, "withheld");
     await desk.withdrawRecord("P3", "Posted against the wrong invoice");
     const now = beliefs(desk);
     assert.deepEqual(now["H-PAID"], { status: "confirmed", confidence: 0.86, supporting: ["P1", "P2"], contradicting: [] });
-    assert.deepEqual(now["H-UNPAID"], { status: "active", confidence: 0.28, supporting: ["P4"], contradicting: ["P1"] });
+    assert.deepEqual(now["H-UNPAID"], { status: "rejected", confidence: 0.11, supporting: [], contradicting: ["P1"] });
     assert.equal(desk.conclusionFromSpeck().hypothesis?.key, "H-PAID");
     assert.equal((await desk.listEvidence()).records.find((item) => item.id === "P2")!.assessment!.judgments[0]!.effect, "applied");
   });
@@ -372,7 +382,7 @@ test("the API withdraws a record, reports the recomputation, and keeps history a
   });
 });
 
-test("the basis resolves supersession chains newest first and ignores claims about later records", () => {
+test("the basis resolves supersession chains, and honours a named replacement whatever the timestamps", () => {
   const entry = (id: string, observedAt: string, supersedes: string[], withdrawn = false) => ({
     record: { ...record(id, "bank", observedAt, {}, supersedes), retrieval: { mode: "fixture" as const, location: "", retrievedAt: "" } },
     judgments: [{ hypothesisKey: "H", direction: "supports" as const, strength: 1, decisive: false, basis: "rule" as const, rationale: "" }],
@@ -385,7 +395,13 @@ test("the basis resolves supersession chains newest first and ignores claims abo
     entry("D", "2026-01-04T00:00:00Z", ["E"]),
     entry("E", "2026-01-05T00:00:00Z", [])
   ], ["H"]);
-  // C is withdrawn, so B stands and still replaces A; D cannot replace the later E.
-  assert.deepEqual([...basis.invalid].map(([id, why]) => [id, why.kind]), [["C", "withdrawn"], ["A", "superseded"]]);
-  assert.deepEqual(basis.plan.get("H")!.map((item) => item.recordId), ["B", "D", "E"]);
+  // C is withdrawn, so B stands and still replaces A. D names E, which is
+  // stamped later (a backfilled record): the named replacement holds.
+  // Build 3 ignored a claim about a later record (docs/build-4-bank-return.md).
+  assert.deepEqual([...basis.invalid].map(([id, why]) => [id, why.kind]), [["C", "withdrawn"], ["A", "superseded"], ["E", "superseded"]]);
+  assert.deepEqual(basis.plan.get("H")!.map((item) => item.recordId), ["B", "D"]);
+
+  // Two records naming each other: the older one's claim on the newer is ignored.
+  const cycle = deriveBasis([entry("X", "2026-01-01T00:00:00Z", ["Y"]), entry("Y", "2026-01-02T00:00:00Z", ["X"])], ["H"]);
+  assert.deepEqual([...cycle.invalid].map(([id, why]) => [id, why.kind === "superseded" ? why.by : why.kind]), [["X", "Y"]]);
 });

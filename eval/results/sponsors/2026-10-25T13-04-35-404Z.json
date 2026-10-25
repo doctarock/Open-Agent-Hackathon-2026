@@ -1,0 +1,605 @@
+{
+  "generatedAt": "2026-10-25T13:04:35.404Z",
+  "evidenceMode": "zetaris",
+  "reasoner": "nemotron",
+  "model": "nemotron-3-nano:4b",
+  "verdicts": [
+    {
+      "sponsor": "Zetaris",
+      "status": "OBSERVED",
+      "evidence": [
+        "run 1: 4 SELECTs on http://localhost:3000 (EVIDENCE_DESK.order_events 1 row(s), 157 ms; EVIDENCE_DESK.warehouse_scans 1 row(s), 94 ms; EVIDENCE_DESK.carrier_events 2 row(s), 118 ms; EVIDENCE_DESK.support_messages 2 row(s), 143 ms); 4 newly assessed record(s), each carrying one of this run's query tokens",
+        "run 2: 4 SELECTs on http://localhost:3000 (EVIDENCE_DESK.order_events 1 row(s), 149 ms; EVIDENCE_DESK.warehouse_scans 1 row(s), 137 ms; EVIDENCE_DESK.carrier_events 2 row(s), 170 ms; EVIDENCE_DESK.support_messages 2 row(s), 171 ms); 2 newly assessed record(s), each carrying one of this run's query tokens"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Meterless Markovian (execution engine)",
+      "status": "OBSERVED",
+      "evidence": [
+        "run 1: engine run run-1 (engine timestamp 1792933454428), completed, 2 chunk(s), found in C:\\Users\\Derek\\AppData\\Local\\Temp\\evidence-desk-sponsors-jsSGpt\\meterless\\history.json",
+        "run 2: engine run run-2 (engine timestamp 1792933468609), completed, 1 chunk(s), found in C:\\Users\\Derek\\AppData\\Local\\Temp\\evidence-desk-sponsors-jsSGpt\\meterless\\history.json",
+        "engine: Meterless Markovian reference engine @meterless/markovian-reference@0.1.0, upstream commit 1742dec56a66e58eef9dda2d2b865823758ca8cd"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Meterless Nightshift (HTTP API, model provider)",
+      "status": "NOT OBSERVED",
+      "evidence": [],
+      "problems": [
+        "MODEL_PROVIDER is ollama: model calls went to http://127.0.0.1:11434/v1, not through Nightshift"
+      ]
+    },
+    {
+      "sponsor": "NVIDIA Nemotron (local)",
+      "status": "OBSERVED",
+      "evidence": [
+        "5 call(s) to Nemotron on local Ollama at http://127.0.0.1:11434/v1; endpoint reported serving nemotron-3-nano:4b",
+        "5 attempt(s): 0 rejected by Speck's contract check, 0 transport failure(s) (no usable answer), then retried; 5 of 5 call(s) ended with a valid reply",
+        "6 evidence object(s) in Speck with model provenance, all at reliability <= 0.4"
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Speck",
+      "status": "OBSERVED",
+      "evidence": [
+        "run 1: 9 belief revision(s) in Speck's event log, all in the trace",
+        "run 2: 10 belief revision(s) in Speck's event log, all in the trace",
+        "current conclusion from Speck's state: The carrier delivered the parcel to the wrong address."
+      ],
+      "problems": []
+    },
+    {
+      "sponsor": "Cursor",
+      "status": "NOT A RUNTIME COMPONENT",
+      "evidence": [
+        "a development tool; nothing in a run can observe it"
+      ],
+      "problems": []
+    }
+  ],
+  "trace": [
+    {
+      "kind": "run",
+      "runId": "107ad424-05b5-4cab-9dfc-8dc619835af4",
+      "runNumber": 1,
+      "status": "completed",
+      "startedAt": "2026-10-25T13:04:13.913Z",
+      "finishedAt": "2026-10-25T13:04:27.974Z",
+      "evidence": {
+        "mode": "zetaris",
+        "label": "Zetaris Lightning (live)",
+        "target": "http://localhost:3000",
+        "visible": 4,
+        "sources": [
+          {
+            "location": "EVIDENCE_DESK.order_events",
+            "rows": 1,
+            "queryToken": "ZjVmN2FmMzctZjc1YS00NTgxLTlmNTQtNjA5ZWJhYmFlZjQx",
+            "latencyMs": 157
+          },
+          {
+            "location": "EVIDENCE_DESK.warehouse_scans",
+            "rows": 1,
+            "queryToken": "YmFkYWNjNTMtMDdjOS00YWI3LWJhNDQtZDA0ZTQyZDE4OGI3",
+            "latencyMs": 94
+          },
+          {
+            "location": "EVIDENCE_DESK.carrier_events",
+            "rows": 2,
+            "queryToken": "YTAyMDZkMzgtY2UwMi00YTJjLWFmOWUtOTI2Yzc5NTU1MDU5",
+            "latencyMs": 118
+          },
+          {
+            "location": "EVIDENCE_DESK.support_messages",
+            "rows": 2,
+            "queryToken": "ODc3NjcyNWQtNmRkYS00Y2U3LWFkY2UtMmYyYjc0NWU3NGZj",
+            "latencyMs": 143
+          }
+        ]
+      },
+      "meterless": {
+        "engine": "Meterless Markovian reference engine @meterless/markovian-reference@0.1.0, upstream commit 1742dec, vendor/meterless-markovian/ (unmodified)",
+        "runId": "run-1",
+        "status": "completed",
+        "chunks": 2,
+        "maxChunks": 8,
+        "reflection": true,
+        "durationMs": 13545,
+        "inHistory": true
+      },
+      "reasoner": {
+        "kind": "nemotron",
+        "model": "nemotron-3-nano:4b",
+        "endpoint": "http://127.0.0.1:11434/v1"
+      },
+      "steps": [
+        {
+          "kind": "chunk",
+          "chunk": 1,
+          "meterless": {
+            "tokens": 152,
+            "carryoverIn": false
+          },
+          "records": [
+            "EV-OMS-001",
+            "EV-WMS-002"
+          ],
+          "failed": [],
+          "model": {
+            "purpose": "relation-judgments",
+            "processor": "nemotron",
+            "requestedModel": "nemotron-3-nano:4b",
+            "endpoint": "http://127.0.0.1:11434/v1",
+            "servedModels": [
+              "nemotron-3-nano:4b"
+            ],
+            "constraints": {
+              "contract": "evidence_relations",
+              "requiredPairs": 6,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 6873,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null,
+            "judgments": {
+              "returned": 6,
+              "neutral": 2,
+              "kept": 3,
+              "discardedUnknown": 0,
+              "ruleKept": 0,
+              "repeated": 1,
+              "unanswered": []
+            }
+          },
+          "judgments": {
+            "rule": 1,
+            "model": 3,
+            "noBearing": []
+          },
+          "notes": [],
+          "speck": {
+            "recorded": [
+              "EV-OMS-001",
+              "EV-WMS-002"
+            ],
+            "revisions": [
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-OMS-001",
+                "from": "proposed 0.50",
+                "to": "active 0.58",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-OMS-001",
+                "from": "proposed 0.15",
+                "to": "rejected 0.07",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-WMS-002",
+                "from": "active 0.58",
+                "to": "supported 0.66",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-WMS-002",
+                "from": "rejected 0.07",
+                "to": "rejected 0.05",
+                "historical": true
+              }
+            ],
+            "recomputations": []
+          }
+        },
+        {
+          "kind": "chunk",
+          "chunk": 2,
+          "meterless": {
+            "tokens": 184,
+            "carryoverIn": true
+          },
+          "records": [
+            "EV-CAR-003",
+            "EV-SUP-004"
+          ],
+          "failed": [],
+          "model": {
+            "purpose": "relation-judgments",
+            "processor": "nemotron",
+            "requestedModel": "nemotron-3-nano:4b",
+            "endpoint": "http://127.0.0.1:11434/v1",
+            "servedModels": [
+              "nemotron-3-nano:4b"
+            ],
+            "constraints": {
+              "contract": "evidence_relations",
+              "requiredPairs": 6,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 4870,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null,
+            "judgments": {
+              "returned": 6,
+              "neutral": 1,
+              "kept": 5,
+              "discardedUnknown": 0,
+              "ruleKept": 0,
+              "repeated": 0,
+              "unanswered": []
+            }
+          },
+          "judgments": {
+            "rule": 0,
+            "model": 5,
+            "noBearing": []
+          },
+          "notes": [],
+          "speck": {
+            "recorded": [
+              "EV-CAR-003",
+              "EV-SUP-004"
+            ],
+            "revisions": [
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-CAR-003",
+                "from": "supported 0.66",
+                "to": "supported 0.74",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-CAR-003",
+                "from": "proposed 0.35",
+                "to": "weakening 0.27",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-CAR-003",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-SUP-004",
+                "from": "supported 0.74",
+                "to": "weakening 0.66",
+                "historical": true
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-SUP-004",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": true
+              }
+            ],
+            "recomputations": []
+          }
+        },
+        {
+          "kind": "explanation",
+          "model": {
+            "purpose": "explanation",
+            "processor": "nemotron",
+            "requestedModel": "nemotron-3-nano:4b",
+            "endpoint": "http://127.0.0.1:11434/v1",
+            "servedModels": [
+              "nemotron-3-nano:4b"
+            ],
+            "constraints": {
+              "contract": "investigation_explanation",
+              "requiredPairs": 0,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 1786,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null
+          },
+          "agrees": false,
+          "problems": [
+            "It concludes \"unresolved\"; Speck's conclusion is \"H-DELIVERED\"."
+          ],
+          "invalidCitations": []
+        }
+      ],
+      "flags": {
+        "pending": [],
+        "failed": [],
+        "modelCalls": 3,
+        "retries": 0,
+        "contractFailures": 0,
+        "invalidCitations": [],
+        "recovered": [],
+        "revisions": 9,
+        "recomputations": []
+      }
+    },
+    {
+      "kind": "run",
+      "runId": "61b8406e-fd4e-4266-a5a7-c19822eae0e1",
+      "runNumber": 2,
+      "status": "completed",
+      "startedAt": "2026-10-25T13:04:27.981Z",
+      "finishedAt": "2026-10-25T13:04:35.389Z",
+      "evidence": {
+        "mode": "zetaris",
+        "label": "Zetaris Lightning (live)",
+        "target": "http://localhost:3000",
+        "visible": 6,
+        "sources": [
+          {
+            "location": "EVIDENCE_DESK.order_events",
+            "rows": 1,
+            "queryToken": "Nzg5YTdiYzEtNDY2ZC00NWZkLWE2NzYtYzhkMDg0ZmY2MTQ4",
+            "latencyMs": 149
+          },
+          {
+            "location": "EVIDENCE_DESK.warehouse_scans",
+            "rows": 1,
+            "queryToken": "YmYyMjBkNjQtMzMyMS00NGQwLWI5MWEtMjM2NmQ4MmU2MDk3",
+            "latencyMs": 137
+          },
+          {
+            "location": "EVIDENCE_DESK.carrier_events",
+            "rows": 2,
+            "queryToken": "NTQ0ZTg2NWMtOGUxMi00YTViLWI3NmMtOTUxZGE4YjZjODdk",
+            "latencyMs": 170
+          },
+          {
+            "location": "EVIDENCE_DESK.support_messages",
+            "rows": 2,
+            "queryToken": "NjQzMDJmODEtYWJmNi00M2NmLTg1OWQtOTE0Y2U1NzRmZDY4",
+            "latencyMs": 171
+          }
+        ]
+      },
+      "meterless": {
+        "engine": "Meterless Markovian reference engine @meterless/markovian-reference@0.1.0, upstream commit 1742dec, vendor/meterless-markovian/ (unmodified)",
+        "runId": "run-2",
+        "status": "completed",
+        "chunks": 1,
+        "maxChunks": 8,
+        "reflection": true,
+        "durationMs": 6779,
+        "inHistory": true
+      },
+      "reasoner": {
+        "kind": "nemotron",
+        "model": "nemotron-3-nano:4b",
+        "endpoint": "http://127.0.0.1:11434/v1"
+      },
+      "steps": [
+        {
+          "kind": "chunk",
+          "chunk": 1,
+          "meterless": {
+            "tokens": 206,
+            "carryoverIn": false
+          },
+          "records": [
+            "EV-CAR-005",
+            "EV-SUP-006"
+          ],
+          "failed": [],
+          "model": {
+            "purpose": "relation-judgments",
+            "processor": "nemotron",
+            "requestedModel": "nemotron-3-nano:4b",
+            "endpoint": "http://127.0.0.1:11434/v1",
+            "servedModels": [
+              "nemotron-3-nano:4b"
+            ],
+            "constraints": {
+              "contract": "evidence_relations",
+              "requiredPairs": 6,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 5101,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null,
+            "judgments": {
+              "returned": 6,
+              "neutral": 0,
+              "kept": 5,
+              "discardedUnknown": 0,
+              "ruleKept": 1,
+              "repeated": 0,
+              "unanswered": []
+            }
+          },
+          "judgments": {
+            "rule": 1,
+            "model": 5,
+            "noBearing": []
+          },
+          "notes": [
+            "Model said EV-CAR-005 supports H-DELIVERED; kept the rule judgment (contradicts, decisive)."
+          ],
+          "speck": {
+            "recorded": [
+              "EV-CAR-005",
+              "EV-SUP-006"
+            ],
+            "revisions": [
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-OMS-001",
+                "from": "proposed 0.15",
+                "to": "rejected 0.07",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-WMS-002",
+                "from": "rejected 0.07",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-SUP-004",
+                "from": "proposed 0.50",
+                "to": "weakening 0.42",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-SUP-004",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-CAR-005",
+                "from": "weakening 0.42",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-CAR-005",
+                "from": "proposed 0.35",
+                "to": "active 0.43",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-CAR-005",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-DELIVERED",
+                "recordId": "EV-SUP-006",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-MISDELIVERED",
+                "recordId": "EV-SUP-006",
+                "from": "active 0.43",
+                "to": "active 0.50",
+                "historical": false
+              },
+              {
+                "hypothesisKey": "H-NOT-SHIPPED",
+                "recordId": "EV-SUP-006",
+                "from": "rejected 0.05",
+                "to": "rejected 0.05",
+                "historical": false
+              }
+            ],
+            "recomputations": [
+              1
+            ]
+          }
+        },
+        {
+          "kind": "explanation",
+          "model": {
+            "purpose": "explanation",
+            "processor": "nemotron",
+            "requestedModel": "nemotron-3-nano:4b",
+            "endpoint": "http://127.0.0.1:11434/v1",
+            "servedModels": [
+              "nemotron-3-nano:4b"
+            ],
+            "constraints": {
+              "contract": "investigation_explanation",
+              "requiredPairs": 0,
+              "temperature": 0.1,
+              "maxAttempts": 2,
+              "maxTokens": 4096,
+              "reasoningEffort": "none"
+            },
+            "attempts": 1,
+            "contractFailures": 0,
+            "transportFailures": 0,
+            "httpCalls": [
+              {
+                "latencyMs": 1667,
+                "answered": true
+              }
+            ],
+            "outcome": "valid",
+            "error": null
+          },
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      ],
+      "flags": {
+        "pending": [],
+        "failed": [],
+        "modelCalls": 2,
+        "retries": 0,
+        "contractFailures": 0,
+        "invalidCitations": [],
+        "recovered": [],
+        "revisions": 10,
+        "recomputations": [
+          1
+        ]
+      }
+    }
+  ]
+}

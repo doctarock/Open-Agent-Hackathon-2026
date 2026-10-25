@@ -23,11 +23,23 @@ does keeping the case as explicit state (Speck) do any better on the same inputs
 | Memory between stages | none | the case's evidence, beliefs, judgments and revisions |
 
 Every check is computed the same way for both sides:
-- **Concludes or abstains.** Speck concludes only when it holds an explanation as *supported*;
-  *leading* or *points to* count as abstaining, as in the evaluation.
+- **Concludes or abstains.** Speck concludes when it holds an explanation as *supported*, or
+  (since Build 4) when Evidence Desk's rule `corroborated-1` holds: two or more source systems
+  support it with records that still count, nothing is recorded against it, and every rival is
+  ruled out or unsupported. Each Speck conclusion says which route it took, with Speck's own
+  confidence beside it. *Leading* or *points to* count as abstaining, as in the evaluation.
+  Whether abstaining was right is scored against the label (abstained rightly, or where a
+  conclusion was due).
 - **Support offered.** The records each side cites for what it presents.
 - **Relies on a replaced record.** Any of those records replaced by a later visible record,
   derived from the records alone with the same rule for both.
+- **Relies on an out-of-date record** (Build 4). Any of those records whose own source later
+  reported a new value for every fact in it (a ledger that said "paid", then "reopened"),
+  derived the same way for both.
+- **Why they differ.** At each stage where the two disagree, a sentence built from what each
+  returned: Speck's blocking reason or route, and what the stateless call cited.
+- **Model identity and failures.** For both sides: calls, retries, failures, and the model name
+  the endpoint reported serving.
 - **Changed since the previous stage**, and **recorded why** (only something the approach itself
   kept counts).
 - **Pre-registered label** (evaluation cases only): matches, and unsupported conclusion, scored
@@ -39,7 +51,59 @@ and revision state *and* its conclusion policy (thresholds, decisive refutation,
 the 0.4 cap), not from persistence alone. The evaluation's `speck-fresh` system, which rebuilds
 from scratch at every checkpoint, reaches the same conclusions as the persistent one.
 
-## Results
+## Results, Build 4 (2026-10-25)
+
+Every saved comparison, counted per case, Evidence Desk policy, evidence source and model, is in
+[eval/results/comparisons/SUMMARY.md](../eval/results/comparisons/SUMMARY.md)
+(`npm run compare:summary`), with every sample listed. Build 4's changes and their full
+evaluation are in [build-4-bank-return.md](build-4-bank-return.md).
+
+Live: `nemotron-3-nano:4b` (Q4_K_M) on local Ollama, reasoning off, temperature 0.1, both sides;
+the endpoint reported that model on every call. Six samples per case and build, run back to back
+on the same machine: Build 3 (commit `fbed6e7`), then Build 4. None was discarded. The disputed
+delivery's evidence was read live from the local Zetaris platform; the bank return's from its
+fixture file.
+
+### Bank return (held-out case `correction-supersedes`; the Build 4 change was designed on it)
+
+| Live, 6 samples each | Stateless, beside Build 3 | Speck, Build 3 | Stateless, beside Build 4 | Speck, Build 4 |
+|---|---|---|---|---|
+| Before the return (label: paid): matches | 0/6 (6 unsupported "unpaid") | 6/6 | 0/6 (6 unsupported "unpaid") | 6/6 |
+| After the return (label: unpaid): matches | 6/6 | **0/6** (unresolved 0.364-0.38) | 5/6 (1 unresolved) | **6/6** by corroboration (Speck's own confidence 0.444-0.46) |
+| After: counts the ledger's old "paid" against "unpaid" | n/a | 6/6 | n/a | 0/6 |
+| After: recorded why its conclusion changed | 0/6 | 6/6 | 0/6 | 6/6 |
+
+**Why Build 3 failed and the baseline did not.** In every live sample the model judged the two
+new records correctly. Speck caps model-judged evidence at reliability 0.4, so each record moved
+"unpaid" by at most 0.08 from its prior of 0.30, and the ledger's own superseded "paid" status
+still counted 0.08 against it: 0.38 at best, against a threshold of 0.6 that two records could
+never reach. The abstention was arithmetic, not a judgment about the evidence. The stateless call
+read the four records and answered. Build 4 stops counting a record whose source has since
+reported a new value for every fact in it, and concludes when independent sources agree with
+nothing against and every rival ruled out or unsupported.
+
+### Disputed delivery (development fixture, no labels)
+
+| Live, 6 samples each | Stateless, beside Build 3 | Speck, Build 3 | Stateless, beside Build 4 | Speck, Build 4 |
+|---|---|---|---|---|
+| After the correction: concluded | "delivered" 6/6 | nothing 4, error 2 | "delivered" 6/6 | "misdelivered" 2 (by corroboration), nothing 3, error 1 |
+| ... cites the replaced scan `EV-CAR-003` | 6/6 | 0/4, plus the 2 errored samples | 6/6 | 0/5, plus the errored sample |
+| ... recorded why its conclusion changed | 0/6 | 4/6 | 0/6 | 5/6 |
+
+**The errored samples.** In three of the twelve samples (two under Build 3, one under Build 4)
+the model's reply for the correction failed Speck's contract twice, the correction stayed
+unassessed, and Speck's state still held "delivered" on the replaced scan. All three are counted
+as errors. Since Build 4 such a conclusion is withheld until
+the waiting records are assessed (build-4-bank-return.md, section 6).
+
+**What these support.** The correction is still where the approaches part: the stateless call
+kept citing the replaced scan in every delivery sample. On the bank return Build 4 now reaches the
+labelled answer, but the case it was designed on is not a test of it. On five new cases written
+and locked beforehand, Build 4 scored the same as Build 3 live (18/30, the baseline also 18/30),
+and its corroboration rule concluded twice from agreement a careful investigator would not accept
+(build-4-bank-return.md, sections 5b and 5c). No accuracy claim is made.
+
+## Results, Build 3 (2026-10-23)
 
 Run on 2026-10-23. Live: `nemotron-3-nano:4b` on local Ollama (the endpoint reported that model on
 every call); the disputed delivery's evidence read live from the local Zetaris platform, the bank

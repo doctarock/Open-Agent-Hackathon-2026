@@ -19,7 +19,7 @@ npm run investigate -- examples/payment-correction-chain/input.json --output res
 
 | Example | Domain | What it exercises | Per stage: conclusion (pre-registered label) |
 |---|---|---|---|
-| [payment-correction-chain](payment-correction-chain/) | Payments | A correction that is itself corrected. Speck revises twice and stops counting all three replaced records. | `credit`: leading H-PAID-FULL (H-PAID-FULL) · `first-correction`: leading H-PARTIAL; XP1-01 no longer counts (H-PARTIAL) · `second-correction`: supported H-PAID-FULL; XP1-01, XP1-02, XP1-03 no longer count (H-PAID-FULL) |
+| [payment-correction-chain](payment-correction-chain/) | Payments | A correction that is itself corrected. Speck revises twice and stops counting all three replaced records. Before Build 4 the first correction ended only *leading*. | `credit`: leading H-PAID-FULL (H-PAID-FULL) · `first-correction`: supported H-PARTIAL, by corroboration (bank and ledger agree, both rivals refuted; Speck's own confidence 0.56); XP1-01 no longer counts (H-PARTIAL) · `second-correction`: supported H-PAID-FULL; XP1-01, XP1-02, XP1-03 no longer count (H-PAID-FULL) |
 | [procurement-short-delivery](procurement-short-delivery/) | Procurement | A receipt amended by a recount, then confirmed by the manifest. Speck abstains between the two. | `receipt`: supported H-FULL (H-FULL) · `recount`: **unresolved**, points to H-SHORT; XR1-02 no longer counts (H-SHORT: Speck abstains where the label commits) · `manifest`: supported H-SHORT (H-SHORT) |
 | [logistics-missing-proof](logistics-missing-proof/) | Logistics | Conflicting claims, and the proof that would settle them does not exist. Speck correctly declines to conclude. | `dispute`: unresolved (no conclusion) · `proof-requested`: unresolved (no conclusion) |
 
@@ -41,6 +41,7 @@ results are in [docs/cross-domain-evaluation.md](../docs/cross-domain-evaluation
     "noLongerCounted": [{ "recordId", "reason" }],  // replaced or withdrawn
     "conclusion": {
       "state": "supported" | "leading" | "unresolved",
+      "route": "speck-threshold" | "corroboration" | null,   // how a supported conclusion was reached (Build 4)
       "hypothesis", "statement", "confidence",       // null when unresolved
       "pointsTo",                                    // what the evidence favours, even unresolved
       "eliminated", "supportedBy", "contradictedBy", "headline"

@@ -44,7 +44,7 @@ test("the rule: agreement on records that still count concludes; anything else f
 test("on every saved comparison, decisive mode never accepts an answer that rests on a replaced record", () => {
   const dir = path.join(ROOT_DIR, "eval", "results", "comparisons");
   let stages = 0;
-  for (const scenario of fs.existsSync(dir) ? fs.readdirSync(dir) : []) {
+  for (const scenario of fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name) : []) {
     for (const file of fs.readdirSync(path.join(dir, scenario)).filter((name) => name.endsWith(".json"))) {
       const report = JSON.parse(fs.readFileSync(path.join(dir, scenario, file), "utf8"));
       for (const stage of report.stages) {

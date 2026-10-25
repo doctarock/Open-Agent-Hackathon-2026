@@ -332,14 +332,17 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   function countingBadge(record, byId) {
     if (record.invalidation?.kind === "superseded") return badge(`no longer counts: replaced by ${record.invalidation.by}`, "bad");
     if (record.invalidation?.kind === "withdrawn") return badge("withdrawn: no longer counts", "bad");
+    if (record.invalidation?.kind === "restated") {
+      return badge(`no longer counts: ${record.source.name} now reports ${record.invalidation.facts.map((item) => `${item.fact} = ${item.now}`).join(", ")} (${record.invalidation.by})`, "bad long");
+    }
     if (record.supersededBy) {
       // The page's listing names a replacement even when that replacement no
-      // longer counts itself, or arrived before this record; the record then
-      // still counts, and the badge says so rather than striking it through.
+      // longer counts itself, or when two records name each other; the record
+      // then still counts, and the badge says so rather than striking it through.
       const replacement = byId.get(record.supersededBy);
       return badge(replacement?.invalidation
         ? `its replacement ${record.supersededBy} no longer counts, so this record counts again`
-        : `${record.supersededBy} says it replaces this record, but this record arrived later and still counts`, "warn long");
+        : `${record.supersededBy} says it replaces this record, but this record also replaces it; the newer claim stands`, "warn long");
     }
     return null;
   }
@@ -513,12 +516,13 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const t = justification.thresholds;
     return el("div", { className: "confidence" },
       el("p", {}, badge(justification.established ? "established" : "not established", justification.established ? "supported" : "unresolved"),
+        justification.route === "corroboration" ? [" ", badge("by corroboration: Speck's own confidence is below its threshold", "warn long")] : null,
         justification.confidence !== null ? ` Speck confidence ${justification.confidence} (${justification.status}). Supported needs ${t.supported}; leading needs ${t.leading} and a ${t.leadingMargin} margin.` : ""),
       justification.confidence !== null
         ? el("meter", { min: "0", max: "1", low: String(t.leading), high: String(t.supported), optimum: "1", value: String(justification.confidence), "aria-label": `Speck confidence ${justification.confidence}` })
         : null,
       el("ul", {}, justification.reasons.map((reason) => el("li", {}, reason))),
-      justification.wouldChange.length ? [el("h4", {}, "What would make it firm"), el("ul", {}, justification.wouldChange.map((item) => el("li", {}, item)))] : null);
+      justification.wouldChange.length ? [el("h4", {}, justification.established ? "What would undo it" : "What would make it firm"), el("ul", {}, justification.wouldChange.map((item) => el("li", {}, item)))] : null);
   }
 
   const hypothesisLine = (view) => el("li", {},

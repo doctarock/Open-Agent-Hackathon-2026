@@ -15,9 +15,13 @@ Evidence Desk keeps each case in Speck as explicit, inspectable state: the evide
 competing explanations and Speck's belief in each, the judgment behind every adjustment (a
 deterministic rule or a model interpretation, with the confidence change it made), and every
 revision. When a record is corrected or withdrawn, the beliefs that rested on it are rebuilt from
-the evidence that still counts, and the old beliefs stay on record as history. A conclusion is
-only drawn when Speck's belief clears its threshold; otherwise the page says what the evidence
-points to and why that is not yet enough.
+the evidence that still counts, and the old beliefs stay on record as history. A record also
+stops counting when its own source later reports a new value for every fact in it (a ledger that
+said "paid", then "reopened"). A conclusion is drawn when Speck's belief clears its threshold, or
+when independent sources agree with nothing against and every rival ruled out or unsupported
+(rule `corroborated-1`, Build 4; each conclusion says which route it took, with Speck's own
+confidence beside it). Otherwise the page says what the evidence points to and why that is not
+yet enough.
 
 ## Demonstration
 
@@ -30,19 +34,37 @@ again, and read "why this changed".
 
 ## Proof
 
-Real outputs, clearly labelled ([comparison.md](comparison.md) has every sample):
+Real outputs, clearly labelled. [comparison.md](comparison.md) and
+[eval/results/comparisons/SUMMARY.md](../eval/results/comparisons/SUMMARY.md) list every sample;
+[build-4-bank-return.md](build-4-bank-return.md) has the diagnosis, the change and its full
+before-and-after evaluation.
 
-| Live, `nemotron-3-nano:4b`, 6 samples per case | Stateless model call | Speck |
-|---|---|---|
-| Disputed delivery, after the carrier's correction: concluded | "delivered" 6/6 | nothing 6/6 (pointing to "misdelivered" 5/6) |
-| ... cited the replaced delivery scan as support | 6/6 | 0/6 |
-| ... recorded why its conclusion changed | 0/6 | 6/6 |
-| Bank return, before the return: matches the pre-registered label | 3/6 (3 unsupported "unpaid" claims) | 6/6 |
-| Bank return, after the return: matches the label | 5/6 | **0/6** (unresolved: the 0.4 cap on model-judged evidence) |
+| Live, local `nemotron-3-nano:4b`, 6 samples per row, 2026-10-25 | Stateless model call | Speck, Build 3 | Speck, Build 4 |
+|---|---|---|---|
+| Disputed delivery, after the carrier's correction: cites the replaced scan | 12/12 | 0/4 (2 errors) | 0/5 (1 error) |
+| ... recorded why its conclusion changed | 0/12 | 4/6 | 5/6 |
+| Bank return, before the return: matches the label | 0/12 (12 unsupported "unpaid") | 6/6 | 6/6 |
+| Bank return, after the return: matches the label | 11/12 | **0/6** | **6/6** (by corroboration) |
 
-Deterministic fixtures, the test suite and the evaluation are below. Persistence alone shows no
-measurable accuracy benefit, and Speck abstains more often than the baseline; the consistent
-difference is traceability.
+| Live, 3 repeats per suite | Stateless | Speck, Build 3 | Speck, Build 4 |
+|---|---|---|---|
+| Held-out + regression cases: matches the label | 20/48, 18/48 | 27/48 | 40/48 |
+| ... unsupported conclusions | 19/45, 21/45 | 0/9 | **3/28** |
+| New challenge cases, locked before any run: matches the label | 18/30, 18/30 | 18/30 | **18/30** |
+| ... abstained where abstaining was right | 0/12 | 12/12 | 9/12 |
+
+What this shows, and does not:
+- **The bank-return failure is fixed as diagnosed**: it was arithmetic (two capped records could
+  never reach the threshold) plus an obsolete ledger status still counting against the answer.
+  But the change was designed on that case, so it is not a test of it.
+- **On cases it was not designed on, Build 4 is no better than Build 3** (18/30 both). Its
+  corroboration rule concluded from agreement a careful investigator would not accept, in 6
+  checkpoint-samples (`missing-evidence`, the claim case).
+- **The consistent difference is evidence handling, not accuracy**: Speck did not rely on a
+  replaced or out-of-date record in any live sample; the stateless call cited the replaced
+  delivery scan every time. The stateless call is better where one authoritative record settles
+  the case, and never abstains.
+- Persistence alone shows no measurable accuracy benefit.
 
 ## Impact
 
@@ -92,8 +114,9 @@ The submodule is pinned to upstream Speck.
    - The **Execution trace** shows what Zetaris, Meterless, Nemotron and Speck did in each run.
    - Both are read back from saved state, and are identical after a restart.
 3. **It does not overclaim.**
-   - Model-judged evidence is capped at reliability 0.4, so live conclusions stay tentative; we
-     did not tune the cap for the demo.
+   - Model-judged evidence is capped at reliability 0.4 (Speck's cap, unchanged). Since Build 4 a
+     conclusion reached by corroboration is marked as such, with Speck's own lower confidence
+     beside it, and the evaluation reports where that rule was wrong.
    - The deterministic baseline over-commits, and so does the live stateless-model baseline;
      Evidence Desk abstains instead.
    - Persistence shows no measurable accuracy benefit, and we say so.
@@ -115,7 +138,17 @@ The submodule is pinned to upstream Speck.
 
 `npm run sponsors:verify` runs a real two-stage investigation on throwaway storage. It checks
 each contribution against an independent source, and reports NOT OBSERVED rather than simulating
-one. Its runs on 2026-10-22 (model on local Ollama) and 2026-10-24 (model through Nightshift) reported:
+one. It was re-run on 2026-10-25 in both configurations, local Nemotron 4B
+(`eval/results/sponsors/2026-10-25T13-04-35-404Z.json`) and through Nightshift
+(`...2026-10-25T13-04-05-519Z.json`); [sponsor-audit.md](sponsor-audit.md) checks every claim
+below against those receipts, and states what is not verified. Two points a judge should know:
+- **The live investigation reads four Zetaris Lightning tables, not the USL.** The Unified
+  Semantic Layer and its data-quality rule are real and re-run on 2026-10-25, but as a separate
+  demonstration. All Zetaris data is this repository's sample data.
+- **Nightshift chose 30B and 550B Nemotrons**; every evaluation and comparison number comes from
+  the local 4B model instead.
+
+Its runs on 2026-10-22 (model on local Ollama) and 2026-10-24 (model through Nightshift) reported:
 
 | Sponsor | What it does in Evidence Desk | Observed in the live run |
 |---|---|---|
@@ -156,7 +189,9 @@ copy is kept in `eval/results/sponsors/<time>.json` and never overwritten.
 | NVIDIA Nemotron | Model calls were made, the served model is a Nemotron, and Speck holds model-judged evidence at reliability 0.4 or below. | The served model names, and Speck's evidence objects. |
 | Speck | Every belief revision in Speck's event log appears in the trace, exactly once. | Speck's raw event log. |
 
-- **Exit status:** 0 when every configured sponsor is OBSERVED; 1 otherwise.
+- **Exit status:** 0 when every sponsor it checks is OBSERVED; 1 otherwise. Nightshift is always
+  checked, so a run on local Ollama exits 1 with Nightshift NOT OBSERVED ("model calls went to
+  http://127.0.0.1:11434/v1, not through Nightshift"), as on 2026-10-25.
 - **Without the services:** it still runs. Each sponsor that was not set up is reported NOT
   OBSERVED, with the reason (for example "EVIDENCE_MODE is not zetaris"), and it exits 1. That
   is the check working, not failing: nothing is simulated in place of a missing service.
@@ -168,26 +203,28 @@ copy is kept in `eval/results/sponsors/<time>.json` and never overwritten.
 
 These are counts over these cases only, not general accuracy.
 
-| | Build 2 | Build 3 onward |
-|---|---|---|
-| Held-out cases, deterministic (9 checkpoints) | 7/8 correct | 8/8 correct, 0 unsupported conclusions |
-| Correction regression cases, deterministic (8 checkpoints) | 4/8 | 8/8; withdrawn or superseded evidence never used as support (5/5) |
-| Held-out cases, live `nemotron-3-nano:4b` (single samples) | 5/8 | 5/8, identical per checkpoint |
-| Tests | 29 | 139 |
+| Deterministic (fact rules, no model) | Build 2 | Build 3 | Build 4 |
+|---|---|---|---|
+| Held-out cases (8 labelled checkpoints) | 7/8 correct | 8/8, 0 unsupported | 8/8, 0 unsupported |
+| Correction regression cases (8) | 4/8 | 8/8; replaced or withdrawn evidence never used as support (5/5) | 8/8 (5/5) |
+| Cross-domain suite (27) | | 15/27; same records in another order, identical: 0/2 | 19/27, 0 unsupported; 2/2 |
+| Challenge cases, locked before any run (10) | | 6/10 | 7/10 (stateless rule baseline 5/10) |
+| Tests | 29 | 147 | 157 |
 
-Across two live samples on the held-out cases, the stateless model baseline made 4 unsupported
-conclusions each time (4 of 7, then 4 of 6). Evidence Desk made none, but it abstained when a
-conclusion was due 3 times in 4, because of the 0.4 cap.
+The live results (3 repeats per suite) are in the proof tables above and, per checkpoint, in
+[build-4-bank-return.md](build-4-bank-return.md).
 
 ## Try it
 
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 139 tests, no credentials or network needed
+npm test                 # 157 tests, no credentials or network needed
 npm run investigate -- examples/payment-correction-chain/input.json   # one case, JSON in, JSON + trace out, offline
 npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups
+npm run eval:challenge   # the locked challenge cases (add -- --live for the model)
+npm run compare:summary  # every saved comparison counted, to eval/results/comparisons/SUMMARY.md
 npm run sponsors:verify  # with Zetaris and a Meterless Runtime configured; see Verifying the sponsors yourself
 ```
 
@@ -197,7 +234,13 @@ history are in [build-3-revision.md](build-3-revision.md).
 ## Known limits
 
 - **One investigation scenario.** The fact rules are hand-written.
-- **Few cases.** Seven held-out cases and three regression cases.
+- **Few cases.** Seven held-out cases, three regression cases, ten cross-domain cases and five
+  challenge cases; live results are three repeats of one small model.
+- **Corroboration over-concludes.** `corroborated-1` counts that two sources agree, not how
+  strongly; it concluded from weak agreement in 6 live checkpoint-samples. No strength requirement
+  has been added, because tuning it on those cases would contaminate them.
+- **A failed model call leaves a correction unassessed.** The earlier conclusion is now withheld
+  until the next run, but the correction itself does not take effect until it is assessed.
 - **Supersession is record-level.** A correction replaces a whole record. Facts it doesn't
   restate stop counting, and the page says which.
 - **Small model.** The local model is small and inconsistent: live conclusions vary between runs,

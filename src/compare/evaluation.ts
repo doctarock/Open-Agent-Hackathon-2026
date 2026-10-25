@@ -71,6 +71,8 @@ export interface ComparisonAggregate {
   kind: "deterministic" | "live";
   evidence: string;
   assessor: string;
+  // Evidence Desk's policy the samples ran under (Build 3 before Build 4's change).
+  policy: string;
   samples: number;
   first: string;
   last: string;
@@ -80,6 +82,14 @@ export interface ComparisonAggregate {
     approaches: Record<"speck" | "stateless", {
       committed: number; abstained: number; errors: number; supportFromReplaced: number; unknownCitations: number;
       matchesLabel: number | null; unsupportedClaims: number | null; recordsWhy: number;
+      // Samples whose support includes a record its source later restated (out of date).
+      supportFromOutdated: number;
+      // Speck only: firm conclusions reached by corroboration rather than Speck's threshold.
+      corroborated: number;
+      // Labelled stages only: abstained where no conclusion was due / where one was.
+      appropriateAbstentions: number | null; inappropriateAbstentions: number | null;
+      // Labelled stages whose label differs from the previous stage's: the side reached the new label.
+      followedRevision: number | null;
       // What each sample concluded (firm conclusion, or "none").
       conclusions: Record<string, number>;
     }>;
@@ -131,6 +141,9 @@ export function evaluationSummary(rootDir: string): EvaluationSummary {
   return { resultsDir, reports, comparisons: aggregateComparisons(path.join(resultsDir, "comparisons")) };
 }
 
+// Reports saved before Build 4 carry no policy: they ran under Build 3.
+export const policyOf = (report: ComparisonReport) => report.configuration.policy ?? "build-3 (declared replacement only, Speck's threshold only)";
+
 export function aggregateComparisons(dir: string): ComparisonAggregate[] {
   if (!fs.existsSync(dir)) return [];
   const groups = new Map<string, ComparisonReport[]>();
@@ -144,7 +157,7 @@ export function aggregateComparisons(dir: string): ComparisonAggregate[] {
         continue;
       }
       const assessor = report.configuration.assessor.kind === "nemotron" ? `Nemotron ${report.configuration.assessor.model}` : "deterministic rules";
-      const key = [scenario.name, report.fingerprint, report.kind, report.configuration.evidence.mode, assessor].join("|");
+      const key = [scenario.name, report.fingerprint, report.kind, report.configuration.evidence.mode, assessor, policyOf(report)].join("|");
       groups.set(key, [...(groups.get(key) ?? []), report]);
     }
   }
@@ -155,12 +168,14 @@ export function aggregateComparisons(dir: string): ComparisonAggregate[] {
     const tally = (side: "speck" | "stateless", stageIndex: number) => {
       const conclusions: Record<string, number> = {};
       let committed = 0, abstained = 0, errors = 0, supportFromReplaced = 0, unknownCitations = 0, recordsWhy = 0, matches = 0, unsupported = 0, labelled = 0;
+      let supportFromOutdated = 0, corroborated = 0, appropriate = 0, inappropriate = 0, revisionDue = 0, followed = 0;
       for (const report of reports) {
         const stage = report.stages[stageIndex];
         if (!stage) continue;
         const checks = stage.checks[side];
         const outcome = side === "speck" ? stage.speck : stage.stateless;
-        const concluded = outcome.concluded ?? "none";
+        // A run that failed is counted as an error, whatever state it left behind.
+        const concluded = outcome.error ? "error" : outcome.concluded ?? "none";
         conclusions[concluded] = (conclusions[concluded] ?? 0) + 1;
         if (outcome.error) errors += 1;
         if (checks.commits) committed += 1;
@@ -168,13 +183,27 @@ export function aggregateComparisons(dir: string): ComparisonAggregate[] {
         if (checks.supportFromReplaced.length) supportFromReplaced += 1;
         if (checks.unknownCitations.length) unknownCitations += 1;
         if (checks.recordsWhy) recordsWhy += 1;
+        if (checks.supportFromOutdated?.length) supportFromOutdated += 1;
+        if (side === "speck" && stage.speck.route === "corroboration" && stage.speck.concluded) corroborated += 1;
         if (stage.label) {
           labelled += 1;
           if (stage.label[side].correct) matches += 1;
           if (stage.label[side].unsupportedClaim) unsupported += 1;
+          const abstainedHere = !outcome.error && !outcome.concluded;
+          if (abstainedHere && stage.label.checkpoint.conclusion === null) appropriate += 1;
+          if (abstainedHere && stage.label.checkpoint.conclusion !== null) inappropriate += 1;
+          const before = report.stages[stageIndex - 1]?.label?.checkpoint.conclusion;
+          if (before !== undefined && before !== stage.label.checkpoint.conclusion) {
+            revisionDue += 1;
+            if (stage.label[side].correct) followed += 1;
+          }
         }
       }
-      return { committed, abstained, errors, supportFromReplaced, unknownCitations, recordsWhy, matchesLabel: labelled ? matches : null, unsupportedClaims: labelled ? unsupported : null, conclusions };
+      return {
+        committed, abstained, errors, supportFromReplaced, unknownCitations, recordsWhy, matchesLabel: labelled ? matches : null, unsupportedClaims: labelled ? unsupported : null, conclusions,
+        supportFromOutdated, corroborated, appropriateAbstentions: labelled ? appropriate : null, inappropriateAbstentions: labelled ? inappropriate : null,
+        followedRevision: revisionDue ? followed : null
+      };
     };
     return {
       scenarioId: scenarioId!,
@@ -182,6 +211,7 @@ export function aggregateComparisons(dir: string): ComparisonAggregate[] {
       kind: sample.kind,
       evidence: sample.configuration.evidence.mode === "zetaris" ? "Zetaris live" : "fixture file",
       assessor: sample.configuration.assessor.kind === "nemotron" ? `Nemotron ${sample.configuration.assessor.model}` : "deterministic rules",
+      policy: policyOf(sample),
       samples: reports.length,
       first: reports[0]!.finishedAt,
       last: reports.at(-1)!.finishedAt,
@@ -191,5 +221,5 @@ export function aggregateComparisons(dir: string): ComparisonAggregate[] {
         approaches: { speck: tally("speck", index), stateless: tally("stateless", index) }
       }))
     };
-  }).sort((left, right) => left.scenarioId.localeCompare(right.scenarioId) || left.kind.localeCompare(right.kind));
+  }).sort((left, right) => left.scenarioId.localeCompare(right.scenarioId) || left.kind.localeCompare(right.kind) || right.policy.localeCompare(left.policy));
 }
