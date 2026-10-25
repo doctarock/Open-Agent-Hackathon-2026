@@ -1,0 +1,1101 @@
+{
+ "generatedAt": "2026-10-25T14:25:25.086Z",
+ "group": "challenge-5",
+ "rule": "corroborated-1",
+ "lock": {
+  "lockedAt": "2026-10-25T13:45:45.881Z",
+  "files": 24
+ },
+ "repeat": 1,
+ "wallMs": 249009,
+ "model": {
+  "provider": "ollama",
+  "model": "nemotron-3-nano:4b",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "reasoningEffort": "none",
+  "maxTokens": 4096
+ },
+ "mode": "live",
+ "cases": [
+  {
+   "id": "enrolment-conflict-corrected",
+   "category": "conflict, then declared correction",
+   "checkpoints": 2
+  },
+  {
+   "id": "grant-receipt-withdrawn",
+   "category": "withdrawn evidence, then conflict",
+   "checkpoints": 2
+  },
+  {
+   "id": "leave-approval",
+   "category": "intention and hearsay, then recorded decision",
+   "checkpoints": 2
+  },
+  {
+   "id": "number-port",
+   "category": "independent agreement",
+   "checkpoints": 1
+  },
+  {
+   "id": "referral-attendance",
+   "category": "anticipation, then authoritative record with a dependent copy",
+   "checkpoints": 2
+  },
+  {
+   "id": "utility-disconnection",
+   "category": "missing information, then completion",
+   "checkpoints": 2
+  },
+  {
+   "id": "vehicle-transfer-cancelled",
+   "category": "corrected evidence",
+   "checkpoints": 2
+  },
+  {
+   "id": "venue-booking",
+   "category": "repeated same-source evidence, then authoritative record",
+   "checkpoints": 2
+  }
+ ],
+ "systems": [
+  {
+   "system": "speck-desk/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "enrolment-conflict-corrected",
+     "category": "conflict, then declared correction",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "enrolment-conflict-corrected",
+     "category": "conflict, then declared correction",
+     "stage": "corrected",
+     "expected": "H-ENROLLED",
+     "concluded": "H-ENROLLED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "grant-receipt-withdrawn",
+     "category": "withdrawn evidence, then conflict",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "grant-receipt-withdrawn",
+     "category": "withdrawn evidence, then conflict",
+     "stage": "receipt-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "leave-approval",
+     "category": "intention and hearsay, then recorded decision",
+     "stage": "intent",
+     "expected": null,
+     "concluded": "H-APPROVED",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "leave-approval",
+     "category": "intention and hearsay, then recorded decision",
+     "stage": "recorded",
+     "expected": "H-APPROVED",
+     "concluded": "H-APPROVED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "number-port",
+     "category": "independent agreement",
+     "stage": "ported",
+     "expected": "H-PORTED",
+     "concluded": "H-PORTED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "referral-attendance",
+     "category": "anticipation, then authoritative record with a dependent copy",
+     "stage": "booked",
+     "expected": null,
+     "concluded": "H-SEEN",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "referral-attendance",
+     "category": "anticipation, then authoritative record with a dependent copy",
+     "stage": "letter",
+     "expected": "H-SEEN",
+     "concluded": "H-SEEN",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "utility-disconnection",
+     "category": "missing information, then completion",
+     "stage": "scheduled",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "utility-disconnection",
+     "category": "missing information, then completion",
+     "stage": "completed",
+     "expected": "H-DISCONNECTED",
+     "concluded": "H-DISCONNECTED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "vehicle-transfer-cancelled",
+     "category": "corrected evidence",
+     "stage": "transferred",
+     "expected": "H-BUYER",
+     "concluded": "H-BUYER",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "vehicle-transfer-cancelled",
+     "category": "corrected evidence",
+     "stage": "cancelled",
+     "expected": "H-SELLER",
+     "concluded": "H-SELLER",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "venue-booking",
+     "category": "repeated same-source evidence, then authoritative record",
+     "stage": "phone",
+     "expected": null,
+     "concluded": "H-CONFIRMED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "venue-booking",
+     "category": "repeated same-source evidence, then authoritative record",
+     "stage": "venue-record",
+     "expected": "H-CONFIRMED",
+     "concluded": "H-CONFIRMED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 12,
+     "of": 15,
+     "rate": 0.8
+    },
+    "validCitations": {
+     "count": 36,
+     "of": 36,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 1,
+     "of": 12,
+     "rate": 0.083
+    },
+    "correctionHandling": {
+     "count": 7,
+     "of": 7,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 3,
+     "of": 3,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 3,
+     "of": 6,
+     "rate": 0.5
+    },
+    "overAbstention": {
+     "count": 0,
+     "of": 9,
+     "rate": 0
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 12,
+     "of": 15,
+     "rate": 0.8
+    },
+    "model": {
+     "httpCalls": 32,
+     "answered": {
+      "count": 32,
+      "of": 32,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 31,
+      "of": 32,
+      "rate": 0.969
+     },
+     "latencyMs": {
+      "mean": 3392,
+      "median": 1859,
+      "max": 33024
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "enrolment-conflict-corrected",
+     "category": "conflict, then declared correction",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "enrolment-conflict-corrected",
+     "category": "conflict, then declared correction",
+     "stage": "corrected",
+     "expected": "H-ENROLLED",
+     "concluded": "H-ENROLLED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "grant-receipt-withdrawn",
+     "category": "withdrawn evidence, then conflict",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "grant-receipt-withdrawn",
+     "category": "withdrawn evidence, then conflict",
+     "stage": "receipt-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "leave-approval",
+     "category": "intention and hearsay, then recorded decision",
+     "stage": "intent",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "leave-approval",
+     "category": "intention and hearsay, then recorded decision",
+     "stage": "recorded",
+     "expected": "H-APPROVED",
+     "concluded": "H-APPROVED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "number-port",
+     "category": "independent agreement",
+     "stage": "ported",
+     "expected": "H-PORTED",
+     "concluded": "H-PORTED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "referral-attendance",
+     "category": "anticipation, then authoritative record with a dependent copy",
+     "stage": "booked",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "referral-attendance",
+     "category": "anticipation, then authoritative record with a dependent copy",
+     "stage": "letter",
+     "expected": "H-SEEN",
+     "concluded": "H-SEEN",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "utility-disconnection",
+     "category": "missing information, then completion",
+     "stage": "scheduled",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "utility-disconnection",
+     "category": "missing information, then completion",
+     "stage": "completed",
+     "expected": "H-DISCONNECTED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "vehicle-transfer-cancelled",
+     "category": "corrected evidence",
+     "stage": "transferred",
+     "expected": "H-BUYER",
+     "concluded": "H-BUYER",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "vehicle-transfer-cancelled",
+     "category": "corrected evidence",
+     "stage": "cancelled",
+     "expected": "H-SELLER",
+     "concluded": "H-SELLER",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "venue-booking",
+     "category": "repeated same-source evidence, then authoritative record",
+     "stage": "phone",
+     "expected": null,
+     "concluded": "H-CONFIRMED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "venue-booking",
+     "category": "repeated same-source evidence, then authoritative record",
+     "stage": "venue-record",
+     "expected": "H-CONFIRMED",
+     "concluded": "H-CONFIRMED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 13,
+     "of": 15,
+     "rate": 0.867
+    },
+    "validCitations": {
+     "count": 38,
+     "of": 38,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 9,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 7,
+     "of": 7,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 3,
+     "of": 3,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 5,
+     "of": 6,
+     "rate": 0.833
+    },
+    "overAbstention": {
+     "count": 1,
+     "of": 9,
+     "rate": 0.111
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 13,
+     "of": 15,
+     "rate": 0.867
+    },
+    "model": {
+     "httpCalls": 40,
+     "answered": {
+      "count": 40,
+      "of": 40,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 39,
+      "of": 40,
+      "rate": 0.975
+     },
+     "latencyMs": {
+      "mean": 3198,
+      "median": 2105,
+      "max": 32262
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "baseline-stateless/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "enrolment-conflict-corrected",
+     "category": "conflict, then declared correction",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": "H-ENROLLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "enrolment-conflict-corrected",
+     "category": "conflict, then declared correction",
+     "stage": "corrected",
+     "expected": "H-ENROLLED",
+     "concluded": "H-ENROLLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "grant-receipt-withdrawn",
+     "category": "withdrawn evidence, then conflict",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "grant-receipt-withdrawn",
+     "category": "withdrawn evidence, then conflict",
+     "stage": "receipt-withdrawn",
+     "expected": null,
+     "concluded": "H-PAID",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "leave-approval",
+     "category": "intention and hearsay, then recorded decision",
+     "stage": "intent",
+     "expected": null,
+     "concluded": "H-APPROVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "leave-approval",
+     "category": "intention and hearsay, then recorded decision",
+     "stage": "recorded",
+     "expected": "H-APPROVED",
+     "concluded": "H-APPROVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "number-port",
+     "category": "independent agreement",
+     "stage": "ported",
+     "expected": "H-PORTED",
+     "concluded": "H-PORTED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "referral-attendance",
+     "category": "anticipation, then authoritative record with a dependent copy",
+     "stage": "booked",
+     "expected": null,
+     "concluded": "H-SEEN",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "referral-attendance",
+     "category": "anticipation, then authoritative record with a dependent copy",
+     "stage": "letter",
+     "expected": "H-SEEN",
+     "concluded": "H-SEEN",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "utility-disconnection",
+     "category": "missing information, then completion",
+     "stage": "scheduled",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": "error: model: conclusion must be exactly one of \"H-DISCONNECTED\", \"H-CONNECTED\", \"unresolved\"",
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "utility-disconnection",
+     "category": "missing information, then completion",
+     "stage": "completed",
+     "expected": "H-DISCONNECTED",
+     "concluded": "H-DISCONNECTED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "vehicle-transfer-cancelled",
+     "category": "corrected evidence",
+     "stage": "transferred",
+     "expected": "H-BUYER",
+     "concluded": "H-BUYER",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "vehicle-transfer-cancelled",
+     "category": "corrected evidence",
+     "stage": "cancelled",
+     "expected": "H-SELLER",
+     "concluded": "H-SELLER",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N5V-02"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "venue-booking",
+     "category": "repeated same-source evidence, then authoritative record",
+     "stage": "phone",
+     "expected": null,
+     "concluded": "H-NOT-CONFIRMED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "venue-booking",
+     "category": "repeated same-source evidence, then authoritative record",
+     "stage": "venue-record",
+     "expected": "H-CONFIRMED",
+     "concluded": "H-CONFIRMED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 9,
+     "of": 15,
+     "rate": 0.6
+    },
+    "validCitations": {
+     "count": 29,
+     "of": 29,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 1,
+     "of": 14,
+     "rate": 0.071
+    },
+    "correctionHandling": {
+     "count": 7,
+     "of": 7,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 2,
+     "of": 3,
+     "rate": 0.667
+    },
+    "appropriateAbstention": {
+     "count": 0,
+     "of": 6,
+     "rate": 0
+    },
+    "overAbstention": {
+     "count": 0,
+     "of": 9,
+     "rate": 0
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "model": {
+     "httpCalls": 16,
+     "answered": {
+      "count": 16,
+      "of": 16,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 14,
+      "of": 16,
+      "rate": 0.875
+     },
+     "latencyMs": {
+      "mean": 726,
+      "median": 705,
+      "max": 900
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  }
+ ],
+ "differences": [
+  "All model-backed systems use the same Nemotron endpoint, model, temperature (0.1), reasoning effort and output budget, and at most two attempts per structured reply.",
+  "Speck systems call the model once per evidence chunk (relation judgments) plus once for the explanation; the baseline calls it once per checkpoint with all visible evidence. Call counts and latencies are therefore not like for like.",
+  "Speck systems also apply the scenario's decisive fact rules and Speck's 0.4 reliability cap on model-judged evidence; the baseline sees the same facts in its prompt but has no rules, so differences cannot be attributed to persistence alone.",
+  "The baseline is told to answer \"unresolved\" when nothing is established; Speck systems abstain through Speck's thresholds. Only Speck systems produce an explanation, so explanation agreement exists only for them.",
+  "Evidence comes from the held-out fixture files in both modes; the provider-failure case uses the real Zetaris adapter against an unreachable port."
+ ]
+}

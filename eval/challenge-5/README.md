@@ -41,3 +41,13 @@ against `corroborated-1`, and are reported apart from every other suite.
 | `referral-attendance` | anticipation, then authoritative record with a dependent copy | abstain (referral, booking and reminder; the date has passed, no attendance record); then seen (the clinic records the attendance; the GP only files the clinic's letter) |
 | `number-port` | independent agreement | ported (the losing carrier records the port-out; the customer sees the number working on the new SIM) |
 | `venue-booking` | repeated same-source evidence, then authoritative record | abstain (one planner's verbal assurance, recorded twice); then confirmed (the venue's own system) |
+
+## Results (2026-10-26)
+
+Live, local `nemotron-3-nano:4b`, 3 repeats (45 checkpoint-samples per system): Speck 37/45 under
+`corroborated-1`, 39/45 under `corroborated-2` (and 39/45 for `corroborated-1` scored on the same
+judgments); the stateless call 27/45. Deterministic: Speck 13/15 under both rules; the rule
+baseline 9/15. Per checkpoint, with what each got wrong:
+[docs/build-5-corroboration.md](../../docs/build-5-corroboration.md), section 6. Reports:
+`eval/results/experiments/challenge-5/`. These cases have now been seen; a further rule needs a
+new locked set.

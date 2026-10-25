@@ -1,0 +1,1322 @@
+{
+ "generatedAt": "2026-10-25T14:47:13.556Z",
+ "group": "challenge",
+ "rule": "corroborated-2",
+ "lock": {
+  "lockedAt": "2026-10-25T11:57:28.078Z",
+  "files": 15
+ },
+ "repeat": 1,
+ "wallMs": 157032,
+ "model": {
+  "provider": "ollama",
+  "model": "nemotron-3-nano:4b",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "reasoningEffort": "none",
+  "maxTokens": 4096
+ },
+ "mode": "live",
+ "cases": [
+  {
+   "id": "claim-decision-missing",
+   "category": "missing information",
+   "checkpoints": 2
+  },
+  {
+   "id": "customs-hold-lifted",
+   "category": "contradictory evidence",
+   "checkpoints": 2
+  },
+  {
+   "id": "payroll-final-pay-returned",
+   "category": "corrected evidence",
+   "checkpoints": 2
+  },
+  {
+   "id": "refund-settlement-withdrawn",
+   "category": "withdrawn evidence",
+   "checkpoints": 2
+  },
+  {
+   "id": "stock-recount",
+   "category": "conflict, then same-source recount",
+   "checkpoints": 2
+  }
+ ],
+ "systems": [
+  {
+   "system": "speck-desk/nemotron@corroborated-2",
+   "checkpoints": [
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "recommendation",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "decision",
+     "expected": "H-DECLINED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-DECLINED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "inspection-done",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RELEASED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "returned",
+     "expected": "H-NOT-PAID",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settled",
+     "expected": "H-RECEIVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settlement-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-RECEIVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "first-count",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "recount",
+     "expected": "H-ENOUGH",
+     "concluded": "H-ENOUGH",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 6,
+     "of": 10,
+     "rate": 0.6
+    },
+    "validCitations": {
+     "count": 23,
+     "of": 23,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 2,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 4,
+     "of": 4,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 4,
+     "of": 6,
+     "rate": 0.667
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 8,
+     "of": 10,
+     "rate": 0.8
+    },
+    "model": {
+     "httpCalls": 20,
+     "answered": {
+      "count": 20,
+      "of": 20,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 20,
+      "of": 20,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 2528,
+      "median": 1712,
+      "max": 5007
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-desk/nemotron@corroborated-2~corroborated-1",
+   "checkpoints": [
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "recommendation",
+     "expected": null,
+     "concluded": "H-APPROVED",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "decision",
+     "expected": "H-DECLINED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-DECLINED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "inspection-done",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RELEASED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "returned",
+     "expected": "H-NOT-PAID",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settled",
+     "expected": "H-RECEIVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settlement-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-RECEIVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "first-count",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "recount",
+     "expected": "H-ENOUGH",
+     "concluded": "H-ENOUGH",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 5,
+     "of": 10,
+     "rate": 0.5
+    },
+    "validCitations": {
+     "count": 23,
+     "of": 23,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 3,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 3,
+     "of": 4,
+     "rate": 0.75
+    },
+    "overAbstention": {
+     "count": 4,
+     "of": 6,
+     "rate": 0.667
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 8,
+     "of": 10,
+     "rate": 0.8
+    },
+    "model": {
+     "httpCalls": 20,
+     "answered": {
+      "count": 20,
+      "of": 20,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 20,
+      "of": 20,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 2528,
+      "median": 1712,
+      "max": 5007
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron@corroborated-2",
+   "checkpoints": [
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "recommendation",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "decision",
+     "expected": "H-DECLINED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-DECLINED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "inspection-done",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RELEASED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "returned",
+     "expected": "H-NOT-PAID",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settled",
+     "expected": "H-RECEIVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settlement-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "first-count",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "recount",
+     "expected": "H-ENOUGH",
+     "concluded": "H-ENOUGH",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 6,
+     "of": 10,
+     "rate": 0.6
+    },
+    "validCitations": {
+     "count": 23,
+     "of": 23,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 2,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 4,
+     "of": 4,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 4,
+     "of": 6,
+     "rate": 0.667
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 9,
+     "of": 10,
+     "rate": 0.9
+    },
+    "model": {
+     "httpCalls": 26,
+     "answered": {
+      "count": 26,
+      "of": 26,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 25,
+      "of": 26,
+      "rate": 0.962
+     },
+     "latencyMs": {
+      "mean": 3818,
+      "median": 2490,
+      "max": 32335
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron@corroborated-2~corroborated-1",
+   "checkpoints": [
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "recommendation",
+     "expected": null,
+     "concluded": "H-APPROVED",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "decision",
+     "expected": "H-DECLINED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-DECLINED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "inspection-done",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RELEASED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": "corroboration",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "returned",
+     "expected": "H-NOT-PAID",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settled",
+     "expected": "H-RECEIVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RECEIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settlement-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "first-count",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "recount",
+     "expected": "H-ENOUGH",
+     "concluded": "H-ENOUGH",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 5,
+     "of": 10,
+     "rate": 0.5
+    },
+    "validCitations": {
+     "count": 23,
+     "of": 23,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 3,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 3,
+     "of": 4,
+     "rate": 0.75
+    },
+    "overAbstention": {
+     "count": 4,
+     "of": 6,
+     "rate": 0.667
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 9,
+     "of": 10,
+     "rate": 0.9
+    },
+    "model": {
+     "httpCalls": 26,
+     "answered": {
+      "count": 26,
+      "of": 26,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 25,
+      "of": 26,
+      "rate": 0.962
+     },
+     "latencyMs": {
+      "mean": 3818,
+      "median": 2490,
+      "max": 32335
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "baseline-stateless/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "recommendation",
+     "expected": null,
+     "concluded": "H-APPROVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "claim-decision-missing",
+     "category": "missing information",
+     "stage": "decision",
+     "expected": "H-DECLINED",
+     "concluded": "H-DECLINED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "conflict",
+     "expected": null,
+     "concluded": "H-HELD",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "customs-hold-lifted",
+     "category": "contradictory evidence",
+     "stage": "inspection-done",
+     "expected": "H-RELEASED",
+     "concluded": "H-RELEASED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "payroll-final-pay-returned",
+     "category": "corrected evidence",
+     "stage": "returned",
+     "expected": "H-NOT-PAID",
+     "concluded": "H-NOT-PAID",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "CH1-02"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settled",
+     "expected": "H-RECEIVED",
+     "concluded": "H-RECEIVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "refund-settlement-withdrawn",
+     "category": "withdrawn evidence",
+     "stage": "settlement-withdrawn",
+     "expected": null,
+     "concluded": "H-NOT-RECEIVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "first-count",
+     "expected": null,
+     "concluded": "H-ENOUGH",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "stock-recount",
+     "category": "conflict, then same-source recount",
+     "stage": "recount",
+     "expected": "H-ENOUGH",
+     "concluded": "H-ENOUGH",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 6,
+     "of": 10,
+     "rate": 0.6
+    },
+    "validCitations": {
+     "count": 17,
+     "of": 17,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 10,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 2,
+     "of": 2,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 1,
+     "of": 2,
+     "rate": 0.5
+    },
+    "appropriateAbstention": {
+     "count": 0,
+     "of": 4,
+     "rate": 0
+    },
+    "overAbstention": {
+     "count": 0,
+     "of": 6,
+     "rate": 0
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "model": {
+     "httpCalls": 10,
+     "answered": {
+      "count": 10,
+      "of": 10,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 10,
+      "of": 10,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 662,
+      "median": 631,
+      "max": 843
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  }
+ ],
+ "differences": [
+  "All model-backed systems use the same Nemotron endpoint, model, temperature (0.1), reasoning effort and output budget, and at most two attempts per structured reply.",
+  "Speck systems call the model once per evidence chunk (relation judgments) plus once for the explanation; the baseline calls it once per checkpoint with all visible evidence. Call counts and latencies are therefore not like for like.",
+  "Speck systems also apply the scenario's decisive fact rules and Speck's 0.4 reliability cap on model-judged evidence; the baseline sees the same facts in its prompt but has no rules, so differences cannot be attributed to persistence alone.",
+  "The baseline is told to answer \"unresolved\" when nothing is established; Speck systems abstain through Speck's thresholds. Only Speck systems produce an explanation, so explanation agreement exists only for them.",
+  "Evidence comes from the held-out fixture files in both modes; the provider-failure case uses the real Zetaris adapter against an unreachable port."
+ ]
+}

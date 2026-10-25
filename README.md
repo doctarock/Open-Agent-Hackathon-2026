@@ -8,6 +8,8 @@
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
 >   live, what changed, and the before-and-after evaluation, including where it got worse.
+> - [docs/build-5-corroboration.md](docs/build-5-corroboration.md): a pre-registered successor to
+>   the corroboration rule, tested on eight new locked cases, with what it did and did not show.
 > - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
 >   and every saved result; [eval/results/comparisons/SUMMARY.md](eval/results/comparisons/SUMMARY.md)
 >   counts every saved sample.
@@ -85,6 +87,18 @@ cases locked before any run it scored 18/30, the same as before, and it conclude
 agreement in 6 checkpoint-samples where a careful person would wait. Full diagnosis and results:
 [docs/build-4-bank-return.md](docs/build-4-bank-return.md). Sponsor claims are checked against
 receipts in [docs/sponsor-audit.md](docs/sponsor-audit.md).
+
+**Build 5 (2026-10-26), an experiment.** A live diagnostic showed that the model rates
+"inspection scheduled" or "the customer expects approval" as support at 0.7-1.0, as strongly as a
+returned payment, so a strength threshold cannot fix weak agreement. The pre-registered candidate,
+rule `corroborated-2`, asks the model whether each record *establishes* the explanation and counts
+only those. On eight new cases locked before any run it met all its pre-registered criteria, but
+narrowly: 6 instead of 8 conclusions where abstaining was right (of 18), no correct conclusion lost
+(27/27), and the bank return still fixed. Scored on the same judgments, the old rule did just as
+well, so on the new cases the gain came with the changed prompt, not the rule's check. Most
+remaining false conclusions come from Speck's own threshold. The default stays `corroborated-1`;
+`CONCLUSION_RULE=corroborated-2` selects the candidate. Full record:
+[docs/build-5-corroboration.md](docs/build-5-corroboration.md).
 
 **It is compact.** The model that weighs the evidence is a 4-billion-parameter Nemotron.
 
@@ -577,6 +591,9 @@ The conclusion always comes from Speck's belief state (`src/investigation/conclu
   `corroboration`): at least two source systems support it with records that still count,
   nothing is recorded against it, and every other live explanation has no supporting record.
   A corroborated conclusion always shows Speck's own (lower) confidence beside it.
+  With `CONCLUSION_RULE=corroborated-2` (Build 5, opt-in), only supporting judgments that are a
+  fact rule's, or that the model marked as establishing the explanation, with a reported strength
+  of at least 0.5, count towards the two systems; the reasons list each record not counted and why.
 - **leading:** confidence ≥ 0.5, a margin of at least 0.1, and supporting evidence.
 - **unresolved:** anything else, including a hypothesis held only on its prior, and any
   conclusion while records the last run could not assess are still waiting (Build 4).
@@ -1149,6 +1166,7 @@ npm run eval        # deterministic: no model, no credentials; same result every
 npm run eval:live   # same cases with the configured Nemotron endpoint (exits 2 if none is configured)
 npm run eval:cross-domain   # the separate cross-domain suite (logistics, payments, procurement)
 npm run eval:challenge      # the Build 4 challenge cases, locked before any run (add -- --live)
+npm run eval:challenge -- --set 5   # the Build 5 set (eval/challenge-5/); add --rule corroborated-2, --live
 npm run compare:summary     # every saved side-by-side comparison, counted, to eval/results/comparisons/SUMMARY.md
 ```
 
@@ -1168,7 +1186,18 @@ reasoning off, 3 repeats, run back to back on 2026-10-25):
 | Held-out and regression, deterministic | 8/8, 8/8 | 8/8, 8/8 | 5/8, 6/8 |
 
 The live gains are on cases seen during development (the bank return was the case the change
-was designed on). On the new challenge cases Build 4 is no better than Build 3. Both experiment
+was designed on). On the new challenge cases Build 4 is no better than Build 3.
+
+**Build 5, set 5 (eight new cases locked before any run), live, 3 repeats, 2026-10-26**
+([docs/build-5-corroboration.md](docs/build-5-corroboration.md), section 6):
+
+| | Speck, `corroborated-1` (Build 4) | Speck, `corroborated-2` | `corroborated-1` on the candidate's own judgments | Stateless |
+|---|---|---|---|---|
+| Matches label | 37/45 | 39/45 | 39/45 | 27/45 |
+| Concluded where abstaining was right | 8/18 | 6/18 | 6/18 | 15/18 |
+| Correct where a conclusion was due | 27/27 | 27/27 | 27/27 | 27/27 |
+
+Deterministically the two rules are identical on every suite. Both experiment
 folders are in `eval/results/experiments/reasoning/2026-10-25-*` and
 `eval/results/experiments/challenge/2026-10-25-*`. The tables further below are the Build 3
 results as first reported.
@@ -1353,7 +1382,9 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 157 tests with no network access beyond localhost and no credentials (157/157 passing on 2026-10-25):
+`npm test` runs 174 tests with no network access beyond localhost and no credentials (174/174 passing on 2026-10-26):
+
+- **Build 5** (`test/build5.test.ts`): rule `corroborated-2` beside `corroborated-1`: strong independent, weak, non-establishing, duplicated, conflicting, missing-strength, never-asked, withdrawn and superseded support; the bank return and the two Build 4 false positives replayed; a failed model call; the model contract under each rule; set 5's lock.
 
 - **Build 4** (`test/build4.test.ts`): the live bank-return failure replayed with the model judgments of a saved live sample (concluded by corroboration, Speck's own belief unchanged, the ledger's old status out of date); counterexamples that must still abstain (a status from another system, a single source, a rival with support of its own, the restating record withdrawn, the return cancelled); a failed assessment withholds the earlier conclusion until a later run; and the validity rules alone (same system only, changed value only, every fact, strictly later, declared replacement and withdrawal first).
 
@@ -1540,7 +1571,9 @@ from a security review of this repository's code (Speck is reviewed separately).
 
 ## Known limits of this slice
 
-- **Corroboration over-concludes (Build 4).** `corroborated-1` counts that two source systems agree, not how strongly. Live it concluded from weak agreement in 6 checkpoint-samples where the labels say to wait (`missing-evidence`, the claim challenge case). No strength requirement was added: tuning it on those cases would contaminate them. On new locked cases Build 4 scored the same as Build 3 (18/30).
+- **Corroboration over-concludes (Build 4).** `corroborated-1` counts that two source systems agree, not whether the records establish anything. Live it concluded from weak agreement in 6 checkpoint-samples where the labels say to wait (`missing-evidence`, the claim challenge case). The Build 5 candidate `corroborated-2` (opt-in) removes those, but on new locked cases its own check changed no outcome; see [docs/build-5-corroboration.md](docs/build-5-corroboration.md).
+
+- **Speck's own threshold can conclude from one source.** With a prior of 0.5, two model-judged records from one system reach 0.644 (a planner's two phone notes, a booking and its reminder): 6 of the candidate's 6 remaining false conclusions on set 5. Neither corroboration rule applies there; Speck's threshold and priors are deliberately unchanged.
 
 - **A failed model call leaves a correction unassessed.** The earlier conclusion is withheld until a run assesses the waiting records (Build 4), but a declared replacement does not take effect until then. This happened in 4 live samples on 2026-10-25.
 

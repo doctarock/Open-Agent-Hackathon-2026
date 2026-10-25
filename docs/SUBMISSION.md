@@ -20,7 +20,8 @@ stops counting when its own source later reports a new value for every fact in i
 said "paid", then "reopened"). A conclusion is drawn when Speck's belief clears its threshold, or
 when independent sources agree with nothing against and every rival ruled out or unsupported
 (rule `corroborated-1`, Build 4; each conclusion says which route it took, with Speck's own
-confidence beside it). Otherwise the page says what the evidence points to and why that is not
+confidence beside it). Build 5 tested a successor, `corroborated-2` (opt-in), that counts only
+records the model judges as establishing the explanation. Otherwise the page says what the evidence points to and why that is not
 yet enough.
 
 ## Demonstration
@@ -53,6 +54,12 @@ before-and-after evaluation.
 | New challenge cases, locked before any run: matches the label | 18/30, 18/30 | 18/30 | **18/30** |
 | ... abstained where abstaining was right | 0/12 | 12/12 | 9/12 |
 
+| Live, Build 5 set (8 new cases locked before any run), 3 repeats, 2026-10-26 | Stateless | Speck, `corroborated-1` | Speck, `corroborated-2` |
+|---|---|---|---|
+| Matches the label | 27/45, 27/45 | 37/45 | 39/45 |
+| ... concluded where abstaining was right | 15/18, 15/18 | 8/18 | 6/18 |
+| ... correct where a conclusion was due | 27/27, 27/27 | 27/27 | 27/27 |
+
 What this shows, and does not:
 - **The bank-return failure is fixed as diagnosed**: it was arithmetic (two capped records could
   never reach the threshold) plus an obsolete ledger status still counting against the answer.
@@ -60,6 +67,14 @@ What this shows, and does not:
 - **On cases it was not designed on, Build 4 is no better than Build 3** (18/30 both). Its
   corroboration rule concluded from agreement a careful investigator would not accept, in 6
   checkpoint-samples (`missing-evidence`, the claim case).
+- **Build 5's candidate met its pre-registered criteria on eight new locked cases, narrowly**
+  (8 → 6 wrong conclusions where abstaining was right, 27/27 correct where due, the bank return
+  still fixed). The old rule scored on the candidate's own judgments did as well, so the gain came
+  with the changed prompt, not the rule's check; most remaining errors come from Speck's own
+  threshold ([build-5-corroboration.md](build-5-corroboration.md)). On that set Speck matched the
+  label more often than the stateless call (37/45 and 39/45 against 27/45), mostly because the
+  stateless call never abstained; the set was written by the rule's author, and on the Build 4
+  cases the two were level.
 - **The consistent difference is evidence handling, not accuracy**: Speck did not rely on a
   replaced or out-of-date record in any live sample; the stateless call cited the replaced
   delivery scan every time. The stateless call is better where one authoritative record settles
@@ -234,11 +249,14 @@ history are in [build-3-revision.md](build-3-revision.md).
 ## Known limits
 
 - **One investigation scenario.** The fact rules are hand-written.
-- **Few cases.** Seven held-out cases, three regression cases, ten cross-domain cases and five
-  challenge cases; live results are three repeats of one small model.
-- **Corroboration over-concludes.** `corroborated-1` counts that two sources agree, not how
-  strongly; it concluded from weak agreement in 6 live checkpoint-samples. No strength requirement
-  has been added, because tuning it on those cases would contaminate them.
+- **Few cases.** Seven held-out cases, three regression cases, ten cross-domain cases, five Build 4
+  challenge cases and eight Build 5 cases; live results are three repeats of one small local model.
+- **Corroboration over-concludes.** `corroborated-1` counts that two sources agree, not whether the
+  records establish anything; it concluded from weak agreement in 6 live checkpoint-samples. The
+  model's strengths cannot separate weak from strong (0.6-1.0 for everything). The Build 5
+  candidate asks the model directly; on new cases its own check changed no outcome.
+- **Speck's own threshold can conclude from one source** when the prior is 0.5 (two model-judged
+  records reach 0.644): most remaining false conclusions on the Build 5 cases.
 - **A failed model call leaves a correction unassessed.** The earlier conclusion is now withheld
   until the next run, but the correction itself does not take effect until it is assessed.
 - **Supersession is record-level.** A correction replaces a whole record. Facts it doesn't

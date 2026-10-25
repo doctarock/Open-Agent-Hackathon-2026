@@ -127,6 +127,10 @@ baseline** tab.
   plus "inspection scheduled"; a recommendation plus the customer's hope).
 - The stateless call is better when one authoritative record settles the case. Speck never
   relied on a replaced or out-of-date record; the stateless call did.
+- Build 5 (`docs/build-5-corroboration.md`): the model's strengths could not separate weak from
+  strong support, so a successor rule asks it whether a record *establishes* the explanation. On
+  eight new locked cases it met its pre-registered criteria narrowly (8 → 6 wrong where abstaining
+  was right), but the old rule on the same judgments did as well. It stays opt-in.
 
 **2:35 The sponsors, briefly (25 s).** Select **Disputed delivery**, open **Audit**, then
 **Execution trace** for a run:
@@ -252,6 +256,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 | What does Meterless do here? | It runs each investigation: one bounded chunk per batch of evidence, with carryover between chunks, plus the reflection pass for the explanation. Recovery and recomputation are Evidence Desk's own code, and the trace labels them that way. | `vendor/meterless-markovian/NOTICE.md`, the trace |
 | What if the process crashes mid-run? | Judgments are saved per chunk before evidence enters Speck, and beliefs are reconciled on restart. A test kills the process at every write, and again during recovery, and checks the outcome is the same as an uninterrupted run. | `test/interruption.test.ts`, `test/recovery.test.ts` |
 | Is it better than a plain LLM? | Not in accuracy, on our evidence. Live, on five new cases locked before any run, Speck and the stateless call both scored 18/30, with opposite errors: the stateless call never abstained (wrong at all 12 checkpoint-samples where waiting was right) and Speck abstained where one authoritative record settled the case. Speck never relied on a replaced or out-of-date record; the stateless call cited the replaced delivery scan in all 12 live comparisons. Few cases, one small model, three repeats: not a general result. | `docs/build-4-bank-return.md`, `docs/comparison.md` |
+| What did Build 5 change? | An opt-in successor rule, `corroborated-2`, pre-registered and tested on eight new locked cases. It met its criteria narrowly, but the old rule scored on the same judgments did as well, so the gain came with the changed prompt. Most remaining false conclusions there are Speck's own threshold concluding from one source's two records. On those cases Speck matched the label more often than the stateless call (37-39/45 against 27/45), mostly because the stateless call never abstains; the cases are the rule author's own. | `docs/build-5-corroboration.md` |
 | Did persistence help? | No measurable accuracy difference from recomputing from scratch. | README, *Evaluation* |
 | Can Speck's chat be trusted about a case? | It is given only the case summaries Evidence Desk published, and told to answer from them; without that, a small model invented details. The wording is still the model's, so the case page is the record. | Speck's `src/tests/investigations-component.test.ts`, `test/memory-links.test.ts` |
 | Where do the memory map's lines come from? | Evidence Desk links each case's memories with Speck's `reinforceAssociation`: derived-from, supports, contradicts, and inhibitory for a correction. | `test/memory-links.test.ts` |
@@ -260,6 +265,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 
 - That persistence improves accuracy.
 - That Build 4 improved accuracy in general. Its live gains are on cases seen in development; on new locked cases it scored the same as Build 3.
+- That Build 5's rule is a validated improvement. It met its pre-registered criteria narrowly, and on the new cases its own check changed no outcome.
 - That a conclusion "by corroboration" is Speck's own judgment. Speck's confidence is below its threshold; Evidence Desk's rule concluded.
 - That the live investigation queries the Zetaris USL. It reads four Lightning tables; the USL is a separate demonstration on sample data.
 - That Nightshift's models produced any evaluation number. All of them come from the local 4B model.

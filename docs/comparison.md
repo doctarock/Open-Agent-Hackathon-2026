@@ -103,6 +103,11 @@ and locked beforehand, Build 4 scored the same as Build 3 live (18/30, the basel
 and its corroboration rule concluded twice from agreement a careful investigator would not accept
 (build-4-bank-return.md, sections 5b and 5c). No accuracy claim is made.
 
+Build 5 (build-5-corroboration.md) tested a successor rule, `corroborated-2`, on eight more locked
+cases through the evaluation, not this panel; no new side-by-side comparisons were recorded for it.
+Samples made under it carry the policy `build-5 (restatement, corroborated-2)`, so they are never
+counted with Build 4's.
+
 ## Results, Build 3 (2026-10-23)
 
 Run on 2026-10-23. Live: `nemotron-3-nano:4b` on local Ollama (the endpoint reported that model on

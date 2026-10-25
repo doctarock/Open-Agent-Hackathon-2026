@@ -1,0 +1,563 @@
+{
+ "generatedAt": "2026-10-25T14:57:31.440Z",
+ "model": {
+  "provider": "ollama",
+  "model": "nemotron-3-nano:4b",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "reasoningEffort": "none",
+  "maxTokens": 4096
+ },
+ "rule": "corroborated-2",
+ "posthoc": true,
+ "repeat": 1,
+ "checkpoints": [
+  {
+   "suite": "challenge-5",
+   "caseId": "leave-approval",
+   "stage": "intent",
+   "label": null,
+   "state": "unresolved",
+   "route": null,
+   "concluded": null,
+   "unprocessed": [],
+   "corroboration": {
+    "rule": "corroborated-2",
+    "holds": false,
+    "records": [],
+    "systems": [],
+    "excluded": [
+     {
+      "recordId": "N5H-01",
+      "reason": "the model judged that it does not itself establish this"
+     },
+     {
+      "recordId": "N5H-02",
+      "reason": "the model judged that it does not itself establish this"
+     }
+    ],
+    "missing": [
+     "no record that still counts gives it qualifying support",
+     "not counted: N5H-01 (the model judged that it does not itself establish this); N5H-02 (the model judged that it does not itself establish this)",
+     "H-PENDING still has support of its own"
+    ]
+   },
+   "hypotheses": [
+    {
+     "key": "H-APPROVED",
+     "status": "active",
+     "confidence": 0.466,
+     "supporting": [
+      {
+       "id": "N5H-01",
+       "system": "manager",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Manager intends to approve leave request",
+       "establishes": false
+      },
+      {
+       "id": "N5H-02",
+       "system": "employee",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Employee states manager said yes",
+       "establishes": false
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-PENDING",
+     "status": "active",
+     "confidence": 0.442,
+     "supporting": [
+      {
+       "id": "N5H-01",
+       "system": "manager",
+       "basis": "model",
+       "strength": 0.7,
+       "counts": true,
+       "rationale": "Manager has not yet approved",
+       "establishes": false
+      },
+      {
+       "id": "N5H-02",
+       "system": "employee",
+       "basis": "model",
+       "strength": 0.7,
+       "counts": true,
+       "rationale": "Employee believes approval is pending",
+       "establishes": false
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-DECLINED",
+     "status": "weakening",
+     "confidence": 0.186,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5H-01",
+       "system": "manager",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Manager says yes, not no",
+       "establishes": false
+      },
+      {
+       "id": "N5H-02",
+       "system": "employee",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Employee says manager said yes, not no",
+       "establishes": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge-5",
+   "caseId": "leave-approval",
+   "stage": "recorded",
+   "label": "H-APPROVED",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-APPROVED",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-APPROVED",
+     "status": "supported",
+     "confidence": 0.626,
+     "supporting": [
+      {
+       "id": "N5H-01",
+       "system": "manager",
+       "basis": "model",
+       "strength": 0.8,
+       "counts": true,
+       "rationale": "Manager intends to approve leave request",
+       "establishes": false
+      },
+      {
+       "id": "N5H-02",
+       "system": "employee",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Employee states manager said yes",
+       "establishes": false
+      },
+      {
+       "id": "N5H-03",
+       "system": "hris",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "HR system records approval by M. Chen",
+       "establishes": true
+      },
+      {
+       "id": "N5H-04",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Payroll ledger confirms leave booked from approved request",
+       "establishes": true
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-PENDING",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5H-03",
+       "system": "hris",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact hris.leave_status = approved (decisive counter-example)"
+      },
+      {
+       "id": "N5H-04",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Leave is booked, so request is not pending",
+       "establishes": false
+      }
+     ]
+    },
+    {
+     "key": "H-DECLINED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5H-01",
+       "system": "manager",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Manager says yes, not no",
+       "establishes": false
+      },
+      {
+       "id": "N5H-02",
+       "system": "employee",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Employee says manager said yes, not no",
+       "establishes": false
+      },
+      {
+       "id": "N5H-03",
+       "system": "hris",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact hris.leave_status = approved (decisive counter-example)"
+      },
+      {
+       "id": "N5H-04",
+       "system": "payroll",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Leave is booked, so request is not declined",
+       "establishes": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge-5",
+   "caseId": "referral-attendance",
+   "stage": "booked",
+   "label": null,
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-SEEN",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-SEEN",
+     "status": "supported",
+     "confidence": 0.618,
+     "supporting": [
+      {
+       "id": "N5M-02",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Appointment booked confirms a visit.",
+       "establishes": true
+      },
+      {
+       "id": "N5M-03",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.57,
+       "counts": true,
+       "rationale": "Reminder sent for appointment on 18 Nov, 10:30.",
+       "establishes": false
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-SEEN",
+     "status": "weakening",
+     "confidence": 0.394,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5M-02",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Appointment booked confirms a visit.",
+       "establishes": false
+      },
+      {
+       "id": "N5M-03",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.43,
+       "counts": true,
+       "rationale": "Appointment scheduled, so patient has been seen.",
+       "establishes": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge-5",
+   "caseId": "referral-attendance",
+   "stage": "letter",
+   "label": "H-SEEN",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-SEEN",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-SEEN",
+     "status": "supported",
+     "confidence": 0.778,
+     "supporting": [
+      {
+       "id": "N5M-02",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Appointment booked confirms a visit.",
+       "establishes": true
+      },
+      {
+       "id": "N5M-03",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.57,
+       "counts": true,
+       "rationale": "Reminder sent for appointment on 18 Nov, 10:30.",
+       "establishes": false
+      },
+      {
+       "id": "N5M-04",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Clinic letter confirms P-7713 attended and was seen by Dr Ravi.",
+       "establishes": true
+      },
+      {
+       "id": "N5M-05",
+       "system": "gp",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "GP system received clinic letter, confirming the visit.",
+       "establishes": true
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-SEEN",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5M-02",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Appointment booked confirms a visit.",
+       "establishes": false
+      },
+      {
+       "id": "N5M-03",
+       "system": "clinic",
+       "basis": "model",
+       "strength": 0.43,
+       "counts": true,
+       "rationale": "Appointment scheduled, so patient has been seen.",
+       "establishes": false
+      },
+      {
+       "id": "N5M-04",
+       "system": "clinic",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact clinic.attendance = attended (decisive counter-example)"
+      },
+      {
+       "id": "N5M-05",
+       "system": "gp",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "GP system received clinic letter, confirming the visit.",
+       "establishes": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge-5",
+   "caseId": "venue-booking",
+   "stage": "phone",
+   "label": null,
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-CONFIRMED",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-CONFIRMED",
+     "status": "supported",
+     "confidence": 0.644,
+     "supporting": [
+      {
+       "id": "N5B-01",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Planner notes verbal assurance from duty manager.",
+       "establishes": false
+      },
+      {
+       "id": "N5B-02",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Planner notes repeated verbal assurance.",
+       "establishes": false
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-CONFIRMED",
+     "status": "weakening",
+     "confidence": 0.356,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5B-01",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Verbal assurance contradicts non-confirmation.",
+       "establishes": false
+      },
+      {
+       "id": "N5B-02",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Verbal assurance contradicts non-confirmation.",
+       "establishes": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "suite": "challenge-5",
+   "caseId": "venue-booking",
+   "stage": "venue-record",
+   "label": "H-CONFIRMED",
+   "state": "supported",
+   "route": "speck-threshold",
+   "concluded": "H-CONFIRMED",
+   "unprocessed": [],
+   "corroboration": null,
+   "hypotheses": [
+    {
+     "key": "H-CONFIRMED",
+     "status": "supported",
+     "confidence": 0.724,
+     "supporting": [
+      {
+       "id": "N5B-01",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Planner notes verbal assurance from duty manager.",
+       "establishes": false
+      },
+      {
+       "id": "N5B-02",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Planner notes repeated verbal assurance.",
+       "establishes": false
+      },
+      {
+       "id": "N5B-03",
+       "system": "venue",
+       "basis": "model",
+       "strength": 1,
+       "counts": true,
+       "rationale": "Venue booking system confirms Harbour Room booking for 14 Feb.",
+       "establishes": true
+      }
+     ],
+     "contradicting": []
+    },
+    {
+     "key": "H-NOT-CONFIRMED",
+     "status": "rejected",
+     "confidence": 0.05,
+     "supporting": [],
+     "contradicting": [
+      {
+       "id": "N5B-01",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Verbal assurance contradicts non-confirmation.",
+       "establishes": false
+      },
+      {
+       "id": "N5B-02",
+       "system": "planner",
+       "basis": "model",
+       "strength": 0.9,
+       "counts": true,
+       "rationale": "Verbal assurance contradicts non-confirmation.",
+       "establishes": false
+      },
+      {
+       "id": "N5B-03",
+       "system": "venue",
+       "basis": "rule",
+       "strength": 1,
+       "counts": true,
+       "rationale": "fact venue.booking = confirmed (decisive counter-example)"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

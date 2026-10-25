@@ -219,3 +219,213 @@ model replies valid; records left unassessed by a failed call. Scoring code and 
 
 All five hold: recommend `corroborated-2` (the default stays `corroborated-1` until the owner
 switches it). Any fails: keep Build 4 as the reference and report the result as it is.
+
+---
+
+*Everything below was written after the implementation (commit `bf0a8e9`, 2026-10-26 01:06 +11:00)
+and the runs it describes. Nothing in the rule, the prompt, the cases or the scoring changed after
+the first run on set 5.*
+
+## 5. What was implemented
+
+As pre-registered in section 3, with no differences:
+
+| File | Change |
+|---|---|
+| `src/config.ts` | `CONCLUSION_RULE` → `conclusionRule` (`corroborated-1` default) |
+| `src/reasoning/types.ts` | optional `strengthReported: false` and `establishes` on a judgment |
+| `src/reasoning/nemotron.ts` | the `establishes` field and instruction (3b) only when asked; a defaulted strength is marked |
+| `src/investigation/conclusion.ts` | rule `corroborated-2`; `corroboration.excluded` lists each non-qualifying record and why |
+| `src/investigation/case-state.ts`, `desk.ts` | the rule in force, and `conclusionFromSpeck(inFlight, rule)` to read another rule from the same state |
+| `src/compare/comparison.ts` | the policy string names the rule (`build-5 (restatement, corroborated-2)`); Build 4's name is kept for `corroborated-1` |
+| `src/eval/*`, `src/scripts/eval*.ts` | `--rule`; under `corroborated-2` the Speck systems also score `corroborated-1` on the same runs (`<system>~corroborated-1`); `eval:challenge -- --set 5`; live reports refuse to overwrite |
+| `test/build5.test.ts` | 17 tests (section 7) |
+
+Under `corroborated-1` the prompt and contract are unchanged (tested), and the default eval
+reports have exactly Build 4's systems (an existing test checks it).
+
+## 6. Results
+
+**Kinds of result, never pooled.** *Deterministic*: fact rules, no model. *Live*: local
+`nemotron-3-nano:4b` on Ollama at `127.0.0.1:11434` (Q4_K_M, reasoning off, temperature 0.1,
+4,096-token output cap), each repeat a separate sample, 2026-10-25/26 UTC. Every live run in this
+document is this local 4B model; none went through Meterless/Nightshift or a 30B model. **R** is
+Build 4 as it is; **C** is the candidate (`corroborated-2` with its prompt); **C~1** is
+`corroborated-1` scored on C's own runs and judgments. Counts are over these cases only.
+
+### 6a. Set 5, live (the pre-registered decision): 3 repeats, 45 checkpoint-samples per system
+
+`eval/results/experiments/challenge-5/2026-10-26-reference/rep1-3/` and `.../2026-10-26-candidate/rep1-3/`,
+run alternately R, C, R, C, R, C.
+
+| | Speck R | Speck C | Speck C~1 | Stateless (beside R) | Stateless (beside C) |
+|---|---|---|---|---|---|
+| Conclusion matches the label | 37/45 | **39/45** | 39/45 | 27/45 | 27/45 |
+| Concluded where abstention was due | 8/18 | **6/18** | 6/18 | 15/18 | 15/18 |
+| Correct where a conclusion was due | 27/27 | 27/27 | 27/27 | 27/27 | 27/27 |
+| Concluded the wrong explanation where one was due | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 |
+| Unsupported conclusions (the labels' lists, of conclusions) | 2/35 | 3/33 | 3/33 | 3/42 | 3/42 |
+| Abstained when it should | 10/18 | 12/18 | 12/18 | 0/18 | 0/18 |
+| Refuted explanation kept out of current | 21/21 | 21/21 | 21/21 | 21/21 | 21/21 |
+| Withdrawn or replaced evidence kept out of support | 9/9 | 9/9 | 9/9 | 6/9 | 6/9 |
+| Model replies valid | 93/94 | 93/93 | (same calls) | 42/48 | 42/48 |
+| Checkpoint errors (failed model calls surfaced) | 0 | 0 | 0 | 3 | 3 |
+
+The stateless rows are identical in R and C (the baseline is unchanged; its errors are three
+failed replies at `utility-disconnection@scheduled`).
+
+Per checkpoint, Speck (3 samples each; (c) = by corroboration, otherwise Speck's own threshold):
+
+| Checkpoint | Label | R | C | C~1 |
+|---|---|---|---|---|
+| leave-approval @ intent | abstain | **H-APPROVED (c) 3** | abstain 3 | abstain 3 |
+| venue-booking @ phone | abstain | H-CONFIRMED 3 | H-CONFIRMED 3 | H-CONFIRMED 3 |
+| referral-attendance @ booked | abstain | H-SEEN 2, abstain 1 | H-SEEN 3 | H-SEEN 3 |
+| utility-disconnection @ scheduled | abstain | abstain 3 | abstain 3 | abstain 3 |
+| enrolment @ conflict, grant @ receipt-withdrawn | abstain | abstain 3, 3 | abstain 3, 3 | abstain 3, 3 |
+| leave-approval @ recorded | H-APPROVED | H-APPROVED 3 | H-APPROVED 3 (2 by (c)) | same |
+| every other checkpoint (8) | a conclusion | correct 3 each | correct 3 each | correct 3 each |
+
+**Acceptance criteria (4c):**
+
+| | Required | Result | |
+|---|---|---|---|
+| A1 | C at least 2 fewer conclusions where abstention was due | 8 → 6 | met, at the minimum |
+| A2 | C no more than 1 below R on correct conclusions where due | 27 → 27 | met |
+| A3 | refuted kept out, invalidated kept out: C no more than 1 below R | 21/21, 9/9 both | met |
+| A4 | seen suites under C: bank return after the return H-UNPAID 3/3 | 3/3 (by corroboration) | met (6b) |
+| A5 | model replies valid within 5 points | 98.9% → 100% | met |
+
+**All five pre-registered criteria are met. But the paired measure shows that on set 5 the rule
+itself changed nothing:** C~1 equals C at every checkpoint-sample. The whole difference between R
+and C is one checkpoint, `leave-approval@intent`, where under C's prompt the model also judged the
+manager's intention as supporting "still awaiting a decision" (a rival with support blocks both
+rules; section 6d). That is an effect of the changed prompt on the model's judgments (or of
+sampling), not of the qualifying check. 6 of R's 8 and all 6 of C's remaining false conclusions
+were reached by **Speck's own threshold**, which neither rule touches.
+
+### 6b. Seen suites, live, under C (previously seen: held-out, regression, Build 4 challenge)
+
+`eval/results/experiments/reasoning/2026-10-26-build5-candidate/` and
+`eval/results/experiments/challenge/2026-10-26-build5-candidate/`, 3 repeats. Compared with
+Build 4's saved receipts (`.../2026-10-25-build4-after/`), which are separate runs.
+
+| | Build 4 receipts (R) | C | C~1 | Stateless, beside C |
+|---|---|---|---|---|
+| Held-out + regression: matches the label | 40/48 | 42/48 | 42/48 | 18/48 |
+| ... concluded where abstention was due | 3/18 | **0/18** | 0/18 | 15/18 |
+| ... correct where a conclusion was due | 25/30 | 24/30 | 24/30 | 15/30 |
+| Build 4 challenge: matches the label | 18/30 | 19/30 | 16/30 | 17/30 |
+| ... concluded where abstention was due | 3/12 | **0/12** | 3/12 | 12/12 |
+| ... correct where a conclusion was due | 9/18 | 7/18 | 7/18 | 17/18 |
+| Model replies valid (held-out + regression; challenge) | 93/96; 58/65 | 93/96; 60/63 | (same calls) | 48/48; 30/30 |
+
+The 48 held-out and regression samples include the provider-failure case (3 per system), which
+every system handles correctly. Refuted explanations were kept out of current and replaced or
+withdrawn evidence kept out of support in every Speck sample under C, in both suites.
+
+Per checkpoint, where C differs from the Build 4 receipts:
+
+| Checkpoint | Label | Build 4 receipts | C | C~1 | What changed it |
+|---|---|---|---|---|---|
+| correction-supersedes @ after-return (the bank return) | H-UNPAID | H-UNPAID (c) 3 | **H-UNPAID (c) 3** | 3 | unchanged |
+| missing-evidence @ claim | abstain | H-DEFECT (c) 3 | abstain 3 | abstain 3 | the prompt (C~1 abstains too) |
+| claim-decision-missing @ recommendation | abstain | H-APPROVED (c) 3 | **abstain 3** | H-APPROVED (c) 3 | **the rule**: both records marked as not establishing |
+| claim-decision-missing @ decision | H-DECLINED | H-APPROVED 1 (failed call), abstain 2 | abstain 3 | abstain 3 | still one source |
+| misattributed-scan @ correction | H-IN-DEPOT | H-IN-DEPOT (c) 2, abstain 1 | abstain 3 | abstain 3 | prompt or sampling (a loss) |
+| refund-settlement-withdrawn @ settled | H-RECEIVED | H-RECEIVED 3 | H-RECEIVED 1, abstain 2 | same | prompt or sampling (a loss) |
+| model-misreading @ pickup-report | H-AWAITING | H-AWAITING (c) 2, abstain 1 | H-AWAITING (c) 3 | 3 | prompt or sampling |
+
+On seen cases C removed every corroboration false positive (7 samples), of which the rule's own
+check removed 3 (`claim@recommendation`); it also lost 3 correct conclusions, all of which C~1
+loses too.
+
+### 6c. Deterministic (fact rules, no model), each rule
+
+| Suite | `corroborated-1` | `corroborated-2` |
+|---|---|---|
+| Held-out | 8/8, 0/4 unsupported | identical per checkpoint |
+| Regression | 8/8 | identical |
+| Cross-domain | 19/27, 0/14 unsupported, abstained rightly 5/5, unnecessary abstentions 8/22, invalidated still bearing 1/14 | identical |
+| Build 4 challenge | 7/10 | identical |
+| Set 5 | 13/15, 2/11 unsupported | identical |
+| Rule baseline | held-out 5/8, regression 6/8, cross-domain 17/27, challenge 5/10, set 5 9/15 | (unchanged) |
+
+Deterministically the two rules never differ. On set 5 both make two unsupported conclusions
+(`utility-disconnection@scheduled`, `referral-attendance@booked`), through Speck's own threshold:
+with a prior of 0.5, two weak fact rules from uncapped sources pass 0.6.
+
+### 6d. Post-hoc diagnostic: how the set 5 outcomes arose
+
+*Run after 6a and 6b, on set 5 (now seen), to explain them; not part of the decision.*
+`eval/results/experiments/challenge-5/2026-10-26-posthoc-diagnostic/`, 3 repeats each of R and C
+on `leave-approval`, `venue-booking` and `referral-attendance`.
+
+- **leave @ intent.** R: manager and employee both support "approved" (0.7-0.9), nothing for
+  "pending", so `corroborated-1` concludes 3/3. C: the model also gives "pending" support in 3/3
+  (rival support blocks), and marks 4 of the 5 support judgments for "approved" as not
+  establishing; once it marked the employee's report of what the manager said as establishing.
+- **venue @ phone.** One source, two records, 0.9 each: Speck's own belief goes 0.5 → 0.644 and is
+  supported by threshold, in R and C alike. The model marked all 6 support judgments as not
+  establishing, correctly; the rule never applies because Speck itself concluded.
+- **referral @ booked.** Booking and reminder from one clinic system, Speck's threshold again
+  (0.618-0.644). Under C the model marked a booking or a reminder as *establishing* that the
+  patient was seen in 5 of 6 judgments: wrong.
+
+So the `establishes` judgment of this 4B model is right on some kinds of anticipation
+(recommendations, expectations, verbal assurances) and wrong on others (bookings, reminders).
+
+## 7. Tests
+
+`npm test`: **174/174 pass** (157 before, 17 new in `test/build5.test.ts`), run on the committed
+implementation. The new tests: two strong independent judgments (both rules conclude, Speck's
+lower confidence kept); two agreeing judgments that do not establish (rule 1 concludes, rule 2
+abstains and lists why); two weak judgments marked establishing (excluded below 0.5); one
+qualifying and one not (one system); duplicated same-source records (one system, both rules);
+contradiction and non-qualifying rival support (both block); missing strength, a missing judgment,
+a judgment never asked about (excluded); deterministic rules by authored strength; withdrawn and
+superseded records; Speck's own supported status untouched; the bank return replayed (both rules
+conclude H-UNPAID by corroboration, Speck 0.46); `missing-evidence` and the claim replayed from the
+diagnostic (rule 1 reproduces the false positive, rule 2 does not; the single decline stays
+unresolved); a failed model call under rule 2 (withheld, then concluded once assessed); the model
+contract through the real adapter (the field only under rule 2; a missing strength marked; only
+`true` counts); the comparison's policy string; set 5's lock and separation.
+
+## 8. Recommendation
+
+**By the pre-registered criteria, `corroborated-2` passes, and adopting it is recommended.** The
+default is not switched here: the owner decides (`CONCLUSION_RULE=corroborated-2`).
+
+What that recommendation rests on, and what it does not:
+- It removed every corroboration false positive on the previously seen suites (7 samples) and,
+  on the independent set, 2 of 8 false conclusions net (3 removed at one checkpoint, one more at
+  `referral@booked`, 2 → 3), without losing a correct conclusion there, while keeping the bank-return fix (3/3) and correction handling (every sample).
+- **It is not shown that the qualifying check works on new cases.** On set 5 the rule's own check
+  changed no outcome; the gain came with the prompt change. The check's measurable effect is on
+  one seen case (`claim@recommendation`, 3/3).
+- The gain on set 5 is the minimum the criteria required (2 samples, one checkpoint, one model).
+- It does not touch the larger remaining source of false conclusions on set 5: Speck's own
+  threshold concluding from one source's two records when the prior is 0.5 (all 6 of C's).
+- On seen cases C also lost 3 correct conclusions (all in C~1 too).
+- **Accuracy:** on set 5 both Speck configurations matched the label more often than the stateless
+  call (37/45 and 39/45 against 27/45), almost entirely because the stateless call never abstained
+  (0/18). This is one locked set written by the rule's author; on the Build 4 challenge cases the
+  three were level (18/30).
+
+## 9. Remaining limits
+
+- **Speck's own threshold over-concludes at prior 0.5.** Two model-judged records from one source
+  move a two-hypothesis case from 0.5 to 0.644. Fixing it would mean changing priors or the
+  threshold (Speck's, deliberately left alone) or adding an Evidence Desk check on threshold
+  conclusions; that is a new design and needs a new locked set.
+- **`establishes` is a model judgment** and is wrong for some kinds of anticipation (bookings,
+  reminders). Dependence between sources is detected only through it.
+- **Independent set, one author.** Set 5 was written knowing the failure, and is now seen.
+- **Small samples, one small local model**; no 30B/Nightshift run of either rule was made.
+- **Unassessed corrections** are still only withheld (Build 4, section 6).
+
+## 10. Documentation changed with this build
+
+README (results, the rule, how to select it, limits), `docs/SUBMISSION.md`, `docs/comparison.md`,
+`DEMO.md`, `eval/challenge-5/README.md`. The comparison panel needs no change: it shows each
+conclusion's route and Speck's own confidence, and its policy string now names the rule.
