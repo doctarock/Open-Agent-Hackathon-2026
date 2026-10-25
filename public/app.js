@@ -3,12 +3,13 @@
 // (index.html) or a tab inside Speck (the Evidence Desk plugin), which differ
 // only in where the API lives and how requests are authorised.
 //
-// Layout, top to bottom: the case and what the page is for; Speck beside a
-// stateless model call on the same case (./compare.js); the steps of the
-// investigation and its two actions; the current conclusion beside the
-// evidence; then history (revision timeline, execution trace) and the
-// workspace's configuration, and the evaluation results. The guided tour and the feature guide
-// (./tour.js) read the same state the page renders.
+// Layout, top to bottom: the case and what the page is for; the steps of the
+// investigation and its two actions; then one tab at a time: the current
+// conclusion, the evidence, Speck beside a stateless model call on the same
+// case (./compare.js), history (the revision timeline), and the audit
+// (execution trace, evaluation results, the workspace's configuration). The
+// guided tour and the feature guide (./tour.js) read the same state the page
+// renders, and open the tab that holds what they point at.
 
 import { CONFIDENCE_MEANING, FEATURES, STATE_MEANING, TOUR_STEPS, featureStatus, progressStore, recordToInspect, stepDone } from "./tour.js";
 import { describeFailure, describeProgress, describeRun } from "./status.js";
@@ -111,13 +112,23 @@ const TEMPLATE = `
   <div id="edk-progress" class="progress" role="status" aria-live="polite" hidden></div>
 </section>
 
-<div class="workspace">
+<div class="tabs" role="tablist" aria-label="Case views">
+  <button id="edk-tab-conclusion" role="tab" type="button" data-tab="conclusion" aria-controls="edk-pane-conclusion">Conclusion</button>
+  <button id="edk-tab-evidence" role="tab" type="button" data-tab="evidence" aria-controls="edk-pane-evidence">Evidence <span id="edk-tab-evidence-count" class="tab-count"></span></button>
+  <button id="edk-tab-compare" role="tab" type="button" data-tab="compare" aria-controls="edk-pane-compare">Speck vs. baseline</button>
+  <button id="edk-tab-history" role="tab" type="button" data-tab="history" aria-controls="edk-pane-history">History</button>
+  <button id="edk-tab-audit" role="tab" type="button" data-tab="audit" aria-controls="edk-pane-audit">Audit</button>
+</div>
+
+<div id="edk-pane-conclusion" class="tab-pane" role="tabpanel" aria-labelledby="edk-tab-conclusion">
   <section class="panel conclusion-panel" id="edk-conclusion-panel" aria-labelledby="edk-conclusion-heading">
     <h2 id="edk-conclusion-heading">Current conclusion</h2>
     <div id="edk-decisive" class="decisive"></div>
     <div id="edk-conclusion"><p class="muted">Loading…</p></div>
   </section>
+</div>
 
+<div id="edk-pane-evidence" class="tab-pane" role="tabpanel" aria-labelledby="edk-tab-evidence" hidden>
   <section class="panel evidence-panel" id="edk-evidence-panel" aria-labelledby="edk-evidence-heading">
     <h2 id="edk-evidence-heading">Evidence</h2>
     <p id="edk-evidence-summary" class="muted"></p>
@@ -127,39 +138,39 @@ const TEMPLATE = `
   </section>
 </div>
 
-<section class="panel" id="edk-timeline-panel" aria-labelledby="edk-timeline-heading">
-  <h2 id="edk-timeline-heading">Revision timeline</h2>
-  <div id="edk-timeline-help"></div>
-  <label class="muted toggle"><input id="edk-timeline-all" type="checkbox"> Show every event, not only changes</label>
-  <ol id="edk-timeline" class="timeline"></ol>
-</section>
+<div id="edk-pane-compare" class="tab-pane" role="tabpanel" aria-labelledby="edk-tab-compare" hidden>
+  <section class="panel compare-panel" id="edk-compare-panel" aria-labelledby="edk-compare-heading">
+    <h2 id="edk-compare-heading">Speck beside a stateless baseline</h2>
+    <div id="edk-compare"><p class="muted">Loading the comparison…</p></div>
+  </section>
+</div>
 
-<section class="panel compare-panel" id="edk-compare-panel" aria-labelledby="edk-compare-heading">
-  <div class="cmp-summary">
-    <div>
-      <h2 id="edk-compare-heading">Speck beside a stateless baseline</h2>
-      <p class="muted" id="edk-compare-teaser">The same case, run again on the same records by a stateless baseline that answers from scratch each time, to show what Speck's kept state changes.</p>
-    </div>
-    <button id="edk-compare-toggle" class="secondary" type="button" aria-expanded="false" aria-controls="edk-compare">Show the comparison</button>
-  </div>
-  <div id="edk-compare" hidden><p class="muted">Loading the comparison…</p></div>
-</section>
+<div id="edk-pane-history" class="tab-pane" role="tabpanel" aria-labelledby="edk-tab-history" hidden>
+  <section class="panel" id="edk-timeline-panel" aria-labelledby="edk-timeline-heading">
+    <h2 id="edk-timeline-heading">Revision timeline</h2>
+    <div id="edk-timeline-help"></div>
+    <label class="muted toggle"><input id="edk-timeline-all" type="checkbox"> Show every event, not only changes</label>
+    <ol id="edk-timeline" class="timeline"></ol>
+  </section>
+</div>
 
-<section class="panel" id="edk-trace-panel" aria-labelledby="edk-trace-heading">
-  <h2 id="edk-trace-heading">Execution trace</h2>
-  <div id="edk-trace-help"></div>
-  <div id="edk-trace"></div>
-</section>
+<div id="edk-pane-audit" class="tab-pane" role="tabpanel" aria-labelledby="edk-tab-audit" hidden>
+  <section class="panel" id="edk-trace-panel" aria-labelledby="edk-trace-heading">
+    <h2 id="edk-trace-heading">Execution trace</h2>
+    <div id="edk-trace-help"></div>
+    <div id="edk-trace"></div>
+  </section>
 
-<details class="panel evaluation" id="edk-evaluation-panel" hidden>
-  <summary><h2>Evaluation results</h2> <span class="muted">held-out cases, correction regressions, cross-domain suite, live samples and saved comparisons</span></summary>
-  <div id="edk-evaluation"><p class="muted">Loading…</p></div>
-</details>
+  <details class="panel evaluation" id="edk-evaluation-panel" hidden>
+    <summary><h2>Evaluation results</h2> <span class="muted">held-out cases, correction regressions, cross-domain suite, live samples and saved comparisons</span></summary>
+    <div id="edk-evaluation"><p class="muted">Loading…</p></div>
+  </details>
 
-<details class="panel system" id="edk-system">
-  <summary>How this workspace is configured</summary>
-  <dl id="edk-configuration" class="configuration"></dl>
-</details>
+  <details class="panel system" id="edk-system">
+    <summary>How this workspace is configured</summary>
+    <dl id="edk-configuration" class="configuration"></dl>
+  </details>
+</div>
 
 <aside id="edk-coach" class="coach" aria-labelledby="edk-coach-title" hidden></aside>
 <section id="edk-guide" class="guide" aria-labelledby="edk-guide-title" hidden></section>
@@ -197,6 +208,40 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   $("evidence-help").replaceChildren(help("What do these labels mean?", ...HELP.evidence));
   $("timeline-help").replaceChildren(help("What is this?", ...HELP.timeline));
   $("trace-help").replaceChildren(help("What is this?", ...HELP.trace));
+
+  // One view of the case at a time. The tab is remembered per viewer and per
+  // case; storage can be unavailable, and the page then opens on the conclusion.
+  const TABS = ["conclusion", "evidence", "compare", "history", "audit"];
+  const tabKey = `edk:${apiBase}:tab`;
+  function showTab(name, { focus = false } = {}) {
+    if (!TABS.includes(name)) name = "conclusion";
+    for (const tab of TABS) {
+      const selected = tab === name;
+      const button = $(`tab-${tab}`);
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      $(`pane-${tab}`).hidden = !selected;
+    }
+    if (focus) $(`tab-${name}`).focus();
+    try { storage?.setItem(tabKey, name); } catch { /* not kept */ }
+  }
+  let savedTab = null;
+  try { savedTab = storage?.getItem(tabKey) ?? null; } catch { savedTab = null; }
+  showTab(savedTab);
+  const tablist = root.querySelector(".tabs");
+  tablist.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-tab]")?.dataset.tab;
+    if (tab) showTab(tab);
+  });
+  // Arrow keys, Home and End move between tabs (the WAI-ARIA tabs pattern).
+  tablist.addEventListener("keydown", (event) => {
+    const at = TABS.indexOf(event.target.closest("[data-tab]")?.dataset.tab);
+    if (at < 0) return;
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: TABS.length - 1 }[event.key];
+    if (to === undefined) return;
+    event.preventDefault();
+    showTab(TABS[(to + TABS.length) % TABS.length], { focus: true });
+  });
 
   // Set when the host removes the page (another case, or the new-case form):
   // a request still in flight then resolves without touching the page.
@@ -363,6 +408,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     const pending = new Set(listing.pending);
     const byId = new Map(listing.records.map((record) => [record.id, record]));
     $("evidence-summary").textContent = `${listing.records.length} record(s) at stage "${listing.stage.label}", from ${listing.provider.label}. ${pending.size ? `${pending.size} not yet assessed.` : "All assessed."}`;
+    $("tab-evidence-count").textContent = pending.size ? `${listing.records.length} · ${pending.size} new` : String(listing.records.length);
     if (!listing.records.length) {
       $("evidence-list").replaceChildren(el("li", { className: "muted" }, "No records are available at this stage."));
       return;
@@ -991,20 +1037,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   function drawComparison() {
     if (destroyed) return;
     renderComparison($("compare"), { ...comparisonState, decisive: decisiveOn });
-    const latest = comparisonState.data?.current;
-    $("compare-teaser").textContent = latest
-      ? `The same case, run again on the same records by a stateless baseline that answers from scratch each time. Last compared ${new Date(latest.finishedAt).toLocaleString()} (${latest.kind === "live" ? "live model calls" : "deterministic"}).`
-      : "The same case, run again on the same records by a stateless baseline that answers from scratch each time, to show what Speck's kept state changes.";
   }
-
-  // A second layer: closed until asked for (or until the guide reaches it),
-  // so the case itself comes first.
-  function setComparisonOpen(open) {
-    $("compare").hidden = !open;
-    $("compare-toggle").setAttribute("aria-expanded", String(open));
-    $("compare-toggle").textContent = open ? "Hide the comparison" : "Show the comparison";
-  }
-  $("compare-toggle").addEventListener("click", () => setComparisonOpen($("compare").hidden));
 
   async function loadComparison() {
     try {
@@ -1196,7 +1229,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
 
   const TARGETS = {
     case: () => $("case"),
-    compare: () => { setComparisonOpen(true); return $("compare-panel"); },
+    compare: () => $("compare-panel"),
     "run-button": () => $("run-button"),
     "update-button": () => $("update-button"),
     conclusion: () => $("conclusion-panel"),
@@ -1211,6 +1244,9 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       return record ? root.querySelector(`[data-record-id="${CSS.escape(record.id)}"]`) : $("evidence-panel");
     }
   };
+  // The tab that holds each target; targets outside the tabs have none.
+  const TAB_OF = { compare: "compare", conclusion: "conclusion", why: "conclusion", evidence: "evidence", record: "evidence", timeline: "history", trace: "audit" };
+  const openTabFor = (target) => { if (TAB_OF[target]) showTab(TAB_OF[target]); };
   const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   // The workspace's one-column layout (see style.css: the same 980px container width).
   const oneColumn = () => root.getBoundingClientRect().width < 980;
@@ -1273,6 +1309,8 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         el("button", { type: "button", className: "link", "data-tour": "exit" }, guided ? "Exit the demo" : "Exit tour"))).childNodes);
     fitCoachToHost();
     const key = `${tourStep}:${step.id === "record" ? recordToInspect(view)?.id : ""}`;
+    // Only on arriving at a step, so a refresh never takes away a tab the person chose.
+    if (scrolledFor !== key) openTabFor(step.target);
     spotlight(TARGETS[step.target]?.(), scrolledFor !== key);
     scrolledFor = key;
   }
@@ -1391,6 +1429,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       const feature = FEATURES.find((item) => item.id === button.dataset.feature);
       progress.markViewed(feature.id);
       closeGuide();
+      openTabFor(feature.target);
       const target = TARGETS[feature.target]?.();
       spotlight(target);
       target?.focus?.({ preventScroll: true });

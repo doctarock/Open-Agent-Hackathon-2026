@@ -198,7 +198,7 @@ export const TOUR_STEPS = [
     },
     after: (view) => [
       `Stage now: ${view.status?.stage.label}.`,
-      pending(view).length ? `Waiting to be assessed: ${pending(view).join(", ")}. The conclusion above still reflects the earlier evidence.` : "Every record at this stage is already assessed."
+      pending(view).length ? `Waiting to be assessed: ${pending(view).join(", ")}. The conclusion still reflects the earlier evidence.` : "Every record at this stage is already assessed."
     ]
   },
   {
@@ -258,12 +258,12 @@ export const TOUR_STEPS = [
     actionLabel: "Run the side-by-side comparison",
     goal: (view) => Boolean(view.comparison?.current) && !view.comparison?.running,
     body: (view) => [
-      "You have seen Speck revise this case. The panel opened at the bottom of the page runs the whole case again on the same records, stage by stage: once as a stateless baseline that answers from scratch each time (a model call when the case is live, the fact rules otherwise), and once through Speck, which keeps the evidence, its beliefs and every revision.",
+      "You have seen Speck revise this case. The Speck vs. baseline tab runs the whole case again on the same records, stage by stage: once as a stateless baseline that answers from scratch each time (a model call when the case is live, the fact rules otherwise), and once through Speck, which keeps the evidence, its beliefs and every revision.",
       "Watch the correction stage: whether each approach changes its answer, whether it still leans on the record that was replaced, and whether it can say why it changed.",
       view.comparison?.willRun?.kind === "live"
         ? "This case is live: both approaches make real model calls, so it takes about 20-60 seconds and the result can differ from run to run."
         : "This case is deterministic (fixture evidence, fact rules), so it finishes in a second.",
-      "It runs on a temporary copy; the case above is not changed. Click Run the side-by-side comparison."
+      "It runs on a temporary copy; this case is not changed. Click Run the side-by-side comparison."
     ],
     after: (view) => {
       const report = view.comparison?.current;
@@ -271,7 +271,7 @@ export const TOUR_STEPS = [
       return [
         `${report.kind === "live" ? "Live" : "Deterministic"} comparison of ${new Date(report.finishedAt).toLocaleString()}:`,
         ...findings(report).map((finding) => [`${finding.title}.`, finding.lines]),
-        "The panel stays at the bottom of every case, closed until you open it."
+        "It stays in the Speck vs. baseline tab of every case."
       ].flat();
     }
   },

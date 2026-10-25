@@ -273,7 +273,7 @@ export function renderComparison(container, state) {
       willRun ? el("p", { className: "hint" }, willRun.kind === "live"
         ? `Live: real calls to ${willRun.assessor.model ?? "the model"}${willRun.evidence.mode === "zetaris" ? " and Zetaris" : ""}. Takes about 20-60 seconds.`
         : "Deterministic: fixture evidence and fact rules, no model. Takes a second.") : null,
-      el("p", { className: "hint" }, "Runs on its own temporary copy of the case; the case below is not changed."),
+      el("p", { className: "hint" }, "Runs on its own temporary copy of the case; this case is not changed."),
       decisiveSwitch(Boolean(state.decisive))));
 
   const body = [];

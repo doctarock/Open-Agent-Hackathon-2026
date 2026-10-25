@@ -84,8 +84,8 @@ delivery's panel then opens on a fresh live comparison (labelled with its time) 
 scan is corrected. A stateless model call answers from whatever it is handed; nothing ties its
 old answer to the record that was just replaced.
 
-**0:15 The difference, side by side (45 s).** Select **Disputed delivery**, scroll to
-**Speck beside a stateless baseline** below the revision timeline, and press **Show the comparison**. If its badge says LIVE MODEL CALLS with today's time, use it;
+**0:15 The difference, side by side (45 s).** Select **Disputed delivery** and open its
+**Speck vs. baseline** tab. If its badge says LIVE MODEL CALLS with today's time, use it;
 otherwise press **Run the side-by-side comparison** and talk over the 30-60 s.
 1. Point to the six steps across the top: observe, assess, correct, revise, verify, explain.
 2. Stage 2, the correction: "EV-CAR-005 replaces EV-CAR-003". Read the two columns:
@@ -131,7 +131,7 @@ live).** Select **Disputed delivery**.
 2. Click **Run investigation**. In rehearsal inside Speck it took about 15 s; it can take up to
    about 35 s when the model's reply is rejected and retried. The tab has no live progress
    stream, so talk over it.
-3. Open **Execution trace**, Run 1:
+3. Open the **Audit** tab's **Execution trace**, Run 1:
    - **Zetaris:** four SELECTs, each with row count, latency and query token.
    - **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
    - **Per chunk, Nemotron:** served model, contract covering all 6 evidence/hypothesis pairs,

@@ -209,11 +209,30 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .progress.outcome-error > strong { color: var(--edk-bad); }
 .edk .header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
 
-/* Conclusion beside evidence when there is room; the conclusion first. */
-.edk .workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
-@container edk (min-width: 980px) {
-  .edk .workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+/* One view of the case at a time. The tab row scrolls sideways rather than
+   wrapping when the space is narrow (inside Speck, on a phone). */
+.edk .tabs {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 12px;
+  border-bottom: 1px solid var(--edk-border);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
+.edk .tabs [role="tab"] {
+  flex: none;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 6px 6px 0 0;
+  color: var(--edk-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.edk .tabs [role="tab"]:hover { color: var(--edk-text); background: var(--edk-accent-soft); }
+.edk .tabs [role="tab"][aria-selected="true"] { color: var(--edk-accent); border-bottom-color: var(--edk-accent); }
+.edk .tab-count { margin-left: 4px; font-size: 0.8rem; font-weight: 500; color: var(--edk-muted); }
+.edk .tab-pane > .panel:last-child { margin-bottom: 0; }
 
 .edk .panel {
   min-width: 0;
@@ -437,11 +456,7 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .demo-offer { margin-bottom: 14px; }
 
 /* Speck beside a stateless model call (public/compare.js). */
-/* A second layer below the case: a summary row, the panel itself closed until opened. */
-.edk .cmp-summary { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
-.edk .cmp-summary h2 { margin: 0 0 4px; }
-.edk .cmp-summary p { margin: 0; max-width: 70ch; }
-.edk #edk-compare { margin-top: 14px; }
+.edk #edk-compare { margin-top: 10px; }
 .edk .cmp-head { display: grid; gap: 12px; }
 @container edk (min-width: 760px) {
   .edk .cmp-head { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); align-items: start; }

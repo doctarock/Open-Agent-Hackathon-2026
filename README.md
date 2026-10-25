@@ -4,7 +4,7 @@
 > **Evidence** tab in its rail and take the guided demo. It opens on a one-minute **TL;DR**: a
 > stateless baseline reaches a conclusion, a correction arrives, and the two diverge. Speck makes
 > AI reasoning auditable, correctable and evidence-driven; a plain LLM cannot. It ends on **Speck beside a stateless
-> baseline**, a panel at the bottom of each case: one click runs the same case, with the same
+> baseline**, a tab on each case: one click runs the same case, with the same
 > evidence and the same correction, through both, and shows what each actually did.
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
@@ -106,8 +106,8 @@ A standalone server serving the same page remains, for development and as a fall
 
 ### Speck beside a stateless baseline
 
-A panel at the bottom of every case, closed until opened (the guided demo opens it as its last
-case step), runs the whole case twice, stage by stage, and shows the two side by side. Code: `src/compare/comparison.ts` (server), `public/compare.js` (page); tests:
+The **Speck vs. baseline** tab of every case (the guided demo opens it first, for the TL;DR, and
+again as its last case step) runs the whole case twice, stage by stage, and shows the two side by side. Code: `src/compare/comparison.ts` (server), `public/compare.js` (page); tests:
 `test/compare.test.ts` and a route test in `test/plugin.test.ts`.
 
 | | Stateless baseline | Speck |
@@ -156,8 +156,8 @@ API (standalone under `/api`, inside Speck under `/api/plugins/evidence-desk/cas
 `GET comparison` (current, others, running, last failure), `POST comparison` (start),
 `GET comparison/<id>`. `GET /api/evaluation` (inside Speck `/api/plugins/evidence-desk/evaluation`)
 returns the evaluation reports and the saved comparisons, counted per configuration; the page
-shows them under **Evaluation results** (a button beside the cases inside Speck, a panel at the
-bottom of each case page).
+shows them under **Evaluation results** (a button beside the cases inside Speck, and in each case's
+**Audit** tab).
 
 ### Decisive mode (experimental)
 
@@ -185,6 +185,11 @@ browser, and never changes Speck's belief state, the evidence or the history.
 
 The page explains itself; no walkthrough from a developer is needed.
 
+- **One view at a time.** Under the case and its Run / Introduce update buttons, the page has
+  five tabs: **Conclusion**, **Evidence** (with its record count, and how many are new),
+  **Speck vs. baseline**, **History** (the revision timeline) and **Audit** (the execution
+  trace, evaluation results and configuration). The tab last chosen is remembered per browser.
+  The guided tour and the Guide's *Show me* open the tab that holds what they point at.
 - **A first-run introduction** says what Evidence Desk is for and offers one action, *Start the
   guided investigation*. It can be dismissed, and is not shown again to the same browser. Inside
   Speck it is on both prepared cases (not on your own investigations), and its button starts the
@@ -406,7 +411,7 @@ its runtime, with routes and a tab in its interface.
 
 ## Sponsor integrations and the execution trace
 
-The **Execution trace** panel on the page (and `GET /api/trace`) shows, for each run, what each
+The **Execution trace** in the page's **Audit** tab (and `GET /api/trace`) shows, for each run, what each
 technology actually did. It is read back from saved state only, so it is the same after a
 restart, and nothing in it is simulated:
 
@@ -754,7 +759,7 @@ In the Evidence tab (or the standalone page), use the buttons in this order:
 2. **Introduce prepared update**
 3. **Run investigation** again
 
-Then read the conclusion panel and the revision timeline.
+Then read the **Conclusion** tab and the revision timeline in the **History** tab.
 
 **Disputed delivery** (the default scenario), with rules in fixture mode:
 - Run 1 is *leading* H-DELIVERED.
@@ -796,7 +801,7 @@ and Ollama running.
    - every record is labelled **Zetaris live**, with its table and query token.
 4. Run, introduce the update, and run again. Each run takes tens of seconds on a small local
    model.
-5. Open **Execution trace**. The latest run shows:
+5. Open the **Audit** tab's **Execution trace**. The latest run shows:
    - each SELECT with its query token;
    - the Meterless run id, confirmed in the engine's `history.json`;
    - per chunk, the Nemotron call: served model, contract, required pairs, attempts and
