@@ -1,0 +1,43 @@
+{
+  "caseId": "N5-TEL-01",
+  "records": [
+    {
+      "id": "N5T-01",
+      "caseId": "N5-TEL-01",
+      "source": {
+        "system": "oldcarrier",
+        "name": "Losing carrier account system"
+      },
+      "observedAt": "2026-07-07T05:00:00Z",
+      "content": "Service for 0412 555 019 cancelled: number ported out to Brightwave on 7 Jul. Final bill to follow.",
+      "facts": {
+        "oldcarrier.service": "ported_out"
+      },
+      "provenance": {
+        "systemOfRecord": "Losing carrier account system",
+        "recordRef": "n5t-01",
+        "author": "oldcarrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5T-02",
+      "caseId": "N5-TEL-01",
+      "source": {
+        "system": "customer",
+        "name": "Customer support chat"
+      },
+      "observedAt": "2026-07-08T01:00:00Z",
+      "content": "Customer: \"My number is working on the Brightwave SIM now. Calls and texts are coming through fine.\"",
+      "facts": {
+        "customer.observation": "working_on_new_sim"
+      },
+      "provenance": {
+        "systemOfRecord": "Customer support chat",
+        "recordRef": "n5t-02",
+        "author": "customer-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

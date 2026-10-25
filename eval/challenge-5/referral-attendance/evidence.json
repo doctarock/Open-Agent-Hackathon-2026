@@ -1,0 +1,100 @@
+{
+  "caseId": "N5-MED-01",
+  "records": [
+    {
+      "id": "N5M-01",
+      "caseId": "N5-MED-01",
+      "source": {
+        "system": "gp",
+        "name": "GP practice system"
+      },
+      "observedAt": "2026-11-02T00:00:00Z",
+      "content": "Referral for P-7713 sent to the cardiology clinic. Awaiting the clinic's letter.",
+      "facts": {
+        "gp.referral": "awaiting_letter"
+      },
+      "provenance": {
+        "systemOfRecord": "GP practice system",
+        "recordRef": "n5m-01",
+        "author": "gp-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5M-02",
+      "caseId": "N5-MED-01",
+      "source": {
+        "system": "clinic",
+        "name": "Cardiology clinic system"
+      },
+      "observedAt": "2026-11-05T03:00:00Z",
+      "content": "Appointment for P-7713 booked: 18 Nov, 10:30, Dr Ravi.",
+      "facts": {
+        "clinic.appointment": "booked"
+      },
+      "provenance": {
+        "systemOfRecord": "Cardiology clinic system",
+        "recordRef": "n5m-02",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5M-03",
+      "caseId": "N5-MED-01",
+      "source": {
+        "system": "clinic",
+        "name": "Cardiology clinic system"
+      },
+      "observedAt": "2026-11-16T22:00:00Z",
+      "content": "SMS reminder sent to P-7713 for the appointment on 18 Nov, 10:30.",
+      "facts": {
+        "clinic.reminder": "sent"
+      },
+      "provenance": {
+        "systemOfRecord": "Cardiology clinic system",
+        "recordRef": "n5m-03",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5M-04",
+      "caseId": "N5-MED-01",
+      "source": {
+        "system": "clinic",
+        "name": "Cardiology clinic system"
+      },
+      "observedAt": "2026-11-20T04:00:00Z",
+      "content": "Clinic letter: P-7713 attended on 18 Nov and was seen by Dr Ravi. Echocardiogram normal; discharged to GP care.",
+      "facts": {
+        "clinic.attendance": "attended"
+      },
+      "provenance": {
+        "systemOfRecord": "Cardiology clinic system",
+        "recordRef": "n5m-04",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5M-05",
+      "caseId": "N5-MED-01",
+      "source": {
+        "system": "gp",
+        "name": "GP practice system"
+      },
+      "observedAt": "2026-11-21T01:00:00Z",
+      "content": "Cardiology clinic letter for P-7713 received and filed.",
+      "facts": {
+        "gp.clinic_letter": "received"
+      },
+      "provenance": {
+        "systemOfRecord": "GP practice system",
+        "recordRef": "n5m-05",
+        "author": "gp-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

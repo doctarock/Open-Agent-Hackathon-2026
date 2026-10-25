@@ -1,0 +1,31 @@
+{
+  "id": "referral-attendance",
+  "domain": "healthcare",
+  "family": null,
+  "order": "as recorded",
+  "category": "anticipation, then authoritative record with a dependent copy",
+  "description": "A referral, a booking and a reminder anticipate the appointment, and its date passes with no attendance record. The clinic then records the attendance; the GP's record only files the clinic's letter, so it repeats the clinic rather than confirming it independently.",
+  "checkpoints": [
+    {
+      "afterStage": "booked",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-SEEN",
+        "H-NOT-SEEN"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "letter",
+      "conclusion": "H-SEEN",
+      "notCurrent": [
+        "H-NOT-SEEN"
+      ],
+      "unsupported": [
+        "H-NOT-SEEN"
+      ],
+      "invalidated": []
+    }
+  ]
+}

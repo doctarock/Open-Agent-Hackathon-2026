@@ -1,0 +1,83 @@
+{
+  "caseId": "N5-VEH-01",
+  "records": [
+    {
+      "id": "N5V-01",
+      "caseId": "N5-VEH-01",
+      "source": {
+        "system": "dealer",
+        "name": "Dealer sales system"
+      },
+      "observedAt": "2026-10-01T04:00:00Z",
+      "content": "Sale of ABC-123 from J. Brandt to P. Okafor completed. Transfer papers lodged with the registry.",
+      "facts": {
+        "dealer.transfer": "lodged"
+      },
+      "provenance": {
+        "systemOfRecord": "Dealer sales system",
+        "recordRef": "n5v-01",
+        "author": "dealer-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5V-02",
+      "caseId": "N5-VEH-01",
+      "source": {
+        "system": "registry",
+        "name": "Transport registry"
+      },
+      "observedAt": "2026-10-02T01:00:00Z",
+      "content": "Transfer of registration ABC-123 to P. Okafor recorded.",
+      "facts": {
+        "registry.owner": "buyer"
+      },
+      "provenance": {
+        "systemOfRecord": "Transport registry",
+        "recordRef": "n5v-02",
+        "author": "registry-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5V-03",
+      "caseId": "N5-VEH-01",
+      "source": {
+        "system": "registry",
+        "name": "Transport registry"
+      },
+      "observedAt": "2026-10-09T02:00:00Z",
+      "content": "Transfer of ABC-123 recorded on 2 Oct cancelled: the buyer's payment was dishonoured. ABC-123 remains registered to J. Brandt.",
+      "facts": {
+        "registry.owner": "seller"
+      },
+      "provenance": {
+        "systemOfRecord": "Transport registry",
+        "recordRef": "n5v-03",
+        "author": "registry-feed",
+        "supersedes": [
+          "N5V-02"
+        ]
+      }
+    },
+    {
+      "id": "N5V-04",
+      "caseId": "N5-VEH-01",
+      "source": {
+        "system": "dealer",
+        "name": "Dealer sales system"
+      },
+      "observedAt": "2026-10-10T01:00:00Z",
+      "content": "Sale of ABC-123 cancelled after the buyer's payment failed; transfer withdrawn and the vehicle returned to J. Brandt.",
+      "facts": {
+        "dealer.transfer": "cancelled"
+      },
+      "provenance": {
+        "systemOfRecord": "Dealer sales system",
+        "recordRef": "n5v-04",
+        "author": "dealer-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

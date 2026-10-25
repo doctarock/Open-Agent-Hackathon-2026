@@ -1,0 +1,28 @@
+{
+  "id": "enrolment-conflict-corrected",
+  "domain": "education",
+  "family": null,
+  "order": "as recorded",
+  "category": "conflict, then declared correction",
+  "description": "The student system records a withdrawal while the learning system shows the student active and submitting work: the sources conflict. The student system then declares the withdrawal an error and replaces it.",
+  "checkpoints": [
+    {
+      "afterStage": "conflict",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "corrected",
+      "conclusion": "H-ENROLLED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-ENROLLED"
+      ],
+      "invalidated": [
+        "N5E-01"
+      ]
+    }
+  ]
+}

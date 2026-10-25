@@ -1,0 +1,70 @@
+{
+  "id": "c5-venue-booking",
+  "caseId": "N5-EVT-01",
+  "title": "Is the venue confirmed for 14 Feb?",
+  "question": "Has the Harbour Room booking for the 14 Feb dinner been confirmed by the venue?",
+  "sources": {
+    "planner": {
+      "name": "Event planner notes",
+      "reliability": 0.6
+    },
+    "venue": {
+      "name": "Venue booking system",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-CONFIRMED",
+      "statement": "The venue has confirmed the Harbour Room booking for 14 Feb.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "venue.booking",
+          "equals": "confirmed",
+          "direction": "supports"
+        },
+        {
+          "fact": "planner.note",
+          "equals": "verbal_assurance",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-CONFIRMED",
+      "statement": "The venue has not confirmed the Harbour Room booking for 14 Feb.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "venue.booking",
+          "equals": "confirmed",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-VENUE",
+      "text": "What does the venue's booking system record?",
+      "answeredBy": "venue.booking"
+    }
+  ],
+  "stages": [
+    {
+      "id": "phone",
+      "label": "Two phone notes from the planner (12 Jan)",
+      "asOf": "2027-01-12T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "venue-record",
+      "label": "The venue's system records the booking (15 Jan)",
+      "asOf": "2027-01-15T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

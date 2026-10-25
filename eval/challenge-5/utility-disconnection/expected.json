@@ -1,0 +1,31 @@
+{
+  "id": "utility-disconnection",
+  "domain": "utilities",
+  "family": null,
+  "order": "as recorded",
+  "category": "missing information, then completion",
+  "description": "A disconnection is requested and scheduled, and the scheduled date passes with no completion record: nothing establishes it happened. The network then records the job completed and billing closes the account on a final read.",
+  "checkpoints": [
+    {
+      "afterStage": "scheduled",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-DISCONNECTED",
+        "H-CONNECTED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "completed",
+      "conclusion": "H-DISCONNECTED",
+      "notCurrent": [
+        "H-CONNECTED"
+      ],
+      "unsupported": [
+        "H-CONNECTED"
+      ],
+      "invalidated": []
+    }
+  ]
+}

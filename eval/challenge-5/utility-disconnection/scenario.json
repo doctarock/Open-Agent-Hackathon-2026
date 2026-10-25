@@ -1,0 +1,92 @@
+{
+  "id": "c5-utility-disconnection",
+  "caseId": "N5-UTL-01",
+  "title": "Has the supply at 14 Rowe St been disconnected?",
+  "question": "The tenant at 14 Rowe St moved out on 12 Nov and asked for the electricity supply to be disconnected. Has it been disconnected?",
+  "sources": {
+    "retailer": {
+      "name": "Retailer CRM",
+      "reliability": 0.8
+    },
+    "network": {
+      "name": "Network field service",
+      "reliability": 0.95
+    },
+    "billing": {
+      "name": "Billing system",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DISCONNECTED",
+      "statement": "The supply at 14 Rowe St has been disconnected.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "network.job",
+          "equals": "completed",
+          "direction": "supports"
+        },
+        {
+          "fact": "billing.account",
+          "equals": "closed_final_read",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "retailer.request",
+          "equals": "disconnect_requested",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "network.job",
+          "equals": "scheduled",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-CONNECTED",
+      "statement": "The supply at 14 Rowe St is still connected.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "network.job",
+          "equals": "completed",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "billing.account",
+          "equals": "closed_final_read",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-JOB",
+      "text": "Has the network recorded the disconnection job as completed?",
+      "answeredBy": "network.job"
+    }
+  ],
+  "stages": [
+    {
+      "id": "scheduled",
+      "label": "Requested and scheduled; the scheduled date has passed (14 Nov)",
+      "asOf": "2026-11-14T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "completed",
+      "label": "Network completes the job; final bill issued (16 Nov)",
+      "asOf": "2026-11-16T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

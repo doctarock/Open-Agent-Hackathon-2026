@@ -1,0 +1,70 @@
+{
+  "id": "c5-number-port",
+  "caseId": "N5-TEL-01",
+  "title": "Has 0412 555 019 been ported?",
+  "question": "The customer asked to move mobile number 0412 555 019 to Brightwave on 5 Jul. Has the number been ported to Brightwave?",
+  "sources": {
+    "oldcarrier": {
+      "name": "Losing carrier account system",
+      "reliability": 0.85
+    },
+    "customer": {
+      "name": "Customer support chat",
+      "reliability": 0.5
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PORTED",
+      "statement": "0412 555 019 has been ported to Brightwave.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "oldcarrier.service",
+          "equals": "ported_out",
+          "direction": "supports"
+        },
+        {
+          "fact": "customer.observation",
+          "equals": "working_on_new_sim",
+          "direction": "supports",
+          "strength": 0.5
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-PORTED",
+      "statement": "0412 555 019 has not been ported to Brightwave.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "oldcarrier.service",
+          "equals": "ported_out",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "customer.observation",
+          "equals": "working_on_new_sim",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-PORT",
+      "text": "Has the losing carrier released the number?",
+      "answeredBy": "oldcarrier.service"
+    }
+  ],
+  "stages": [
+    {
+      "id": "ported",
+      "label": "The losing carrier records the port-out; the customer reports the new SIM working (8 Jul)",
+      "asOf": "2026-07-08T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

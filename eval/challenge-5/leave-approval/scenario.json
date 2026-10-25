@@ -1,0 +1,114 @@
+{
+  "id": "c5-leave-approval",
+  "caseId": "N5-HRL-01",
+  "title": "Has leave request LR-90 been approved?",
+  "question": "Employee E-5512 asked for annual leave from 2 to 13 Dec (request LR-90). Has it been approved?",
+  "sources": {
+    "manager": {
+      "name": "Manager email",
+      "reliability": 0.7
+    },
+    "employee": {
+      "name": "Employee message",
+      "reliability": 0.5
+    },
+    "hris": {
+      "name": "HR system",
+      "reliability": 0.95
+    },
+    "payroll": {
+      "name": "Payroll leave ledger",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-APPROVED",
+      "statement": "Leave request LR-90 has been approved.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "hris.leave_status",
+          "equals": "approved",
+          "direction": "supports"
+        },
+        {
+          "fact": "payroll.leave",
+          "equals": "booked",
+          "direction": "supports"
+        },
+        {
+          "fact": "manager.note",
+          "equals": "intends_to_approve",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "employee.statement",
+          "equals": "manager_said_yes",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-DECLINED",
+      "statement": "Leave request LR-90 has been declined.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "hris.leave_status",
+          "equals": "approved",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "manager.note",
+          "equals": "intends_to_approve",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    },
+    {
+      "key": "H-PENDING",
+      "statement": "Leave request LR-90 is still awaiting a decision.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "hris.leave_status",
+          "equals": "approved",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "manager.note",
+          "equals": "intends_to_approve",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-STATUS",
+      "text": "What status does the HR system record for LR-90?",
+      "answeredBy": "hris.leave_status"
+    }
+  ],
+  "stages": [
+    {
+      "id": "intent",
+      "label": "Manager intends to approve; employee says the manager said yes (21 Nov)",
+      "asOf": "2026-11-21T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "recorded",
+      "label": "HR system and payroll record the leave (26 Nov)",
+      "asOf": "2026-11-26T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

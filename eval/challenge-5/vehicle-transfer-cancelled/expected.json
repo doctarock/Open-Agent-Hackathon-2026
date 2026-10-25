@@ -1,0 +1,34 @@
+{
+  "id": "vehicle-transfer-cancelled",
+  "domain": "vehicle registration",
+  "family": null,
+  "order": "as recorded",
+  "category": "corrected evidence",
+  "description": "The registry records a transfer to the buyer, then cancels it (declared replacement) after the payment fails; the dealer's own status changes from lodged to cancelled.",
+  "checkpoints": [
+    {
+      "afterStage": "transferred",
+      "conclusion": "H-BUYER",
+      "notCurrent": [
+        "H-SELLER"
+      ],
+      "unsupported": [
+        "H-SELLER"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "cancelled",
+      "conclusion": "H-SELLER",
+      "notCurrent": [
+        "H-BUYER"
+      ],
+      "unsupported": [
+        "H-BUYER"
+      ],
+      "invalidated": [
+        "N5V-02"
+      ]
+    }
+  ]
+}

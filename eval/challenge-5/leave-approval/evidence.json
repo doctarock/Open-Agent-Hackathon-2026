@@ -1,0 +1,81 @@
+{
+  "caseId": "N5-HRL-01",
+  "records": [
+    {
+      "id": "N5H-01",
+      "caseId": "N5-HRL-01",
+      "source": {
+        "system": "manager",
+        "name": "Manager email"
+      },
+      "observedAt": "2026-11-20T03:00:00Z",
+      "content": "From M. Chen: \"Happy to support E-5512's leave for 2-13 Dec. I'll put it through in the system when I'm back on Monday.\"",
+      "facts": {
+        "manager.note": "intends_to_approve"
+      },
+      "provenance": {
+        "systemOfRecord": "Manager email",
+        "recordRef": "n5h-01",
+        "author": "manager-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5H-02",
+      "caseId": "N5-HRL-01",
+      "source": {
+        "system": "employee",
+        "name": "Employee message"
+      },
+      "observedAt": "2026-11-21T01:00:00Z",
+      "content": "E-5512: \"My manager said yes to my December leave, so I've booked my flights.\"",
+      "facts": {
+        "employee.statement": "manager_said_yes"
+      },
+      "provenance": {
+        "systemOfRecord": "Employee message",
+        "recordRef": "n5h-02",
+        "author": "employee-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5H-03",
+      "caseId": "N5-HRL-01",
+      "source": {
+        "system": "hris",
+        "name": "HR system"
+      },
+      "observedAt": "2026-11-24T23:00:00Z",
+      "content": "Leave request LR-90 (E-5512, annual leave 2-13 Dec): status approved by M. Chen on 25 Nov.",
+      "facts": {
+        "hris.leave_status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "HR system",
+        "recordRef": "n5h-03",
+        "author": "hris-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5H-04",
+      "caseId": "N5-HRL-01",
+      "source": {
+        "system": "payroll",
+        "name": "Payroll leave ledger"
+      },
+      "observedAt": "2026-11-26T02:00:00Z",
+      "content": "Annual leave booked for E-5512: 10 days, 2-13 Dec, from approved request LR-90. Leave balance reduced accordingly.",
+      "facts": {
+        "payroll.leave": "booked"
+      },
+      "provenance": {
+        "systemOfRecord": "Payroll leave ledger",
+        "recordRef": "n5h-04",
+        "author": "payroll-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

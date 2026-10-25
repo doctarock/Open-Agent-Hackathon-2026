@@ -1,0 +1,97 @@
+{
+  "id": "c5-vehicle-transfer-cancelled",
+  "caseId": "N5-VEH-01",
+  "title": "Who is ABC-123 registered to?",
+  "question": "Vehicle ABC-123 was sold by J. Brandt to P. Okafor through a dealer on 1 Oct. Is it now registered to the buyer?",
+  "sources": {
+    "registry": {
+      "name": "Transport registry",
+      "reliability": 0.95
+    },
+    "dealer": {
+      "name": "Dealer sales system",
+      "reliability": 0.8
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-BUYER",
+      "statement": "ABC-123 is registered to the buyer, P. Okafor.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "registry.owner",
+          "equals": "buyer",
+          "direction": "supports"
+        },
+        {
+          "fact": "dealer.transfer",
+          "equals": "lodged",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "registry.owner",
+          "equals": "seller",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "dealer.transfer",
+          "equals": "cancelled",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-SELLER",
+      "statement": "ABC-123 is still registered to the seller, J. Brandt.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "registry.owner",
+          "equals": "seller",
+          "direction": "supports"
+        },
+        {
+          "fact": "dealer.transfer",
+          "equals": "cancelled",
+          "direction": "supports"
+        },
+        {
+          "fact": "registry.owner",
+          "equals": "buyer",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "dealer.transfer",
+          "equals": "lodged",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-OWNER",
+      "text": "Who does the registry record as the owner?",
+      "answeredBy": "registry.owner"
+    }
+  ],
+  "stages": [
+    {
+      "id": "transferred",
+      "label": "Dealer lodges the transfer; the registry records it (2 Oct)",
+      "asOf": "2026-10-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "cancelled",
+      "label": "The registry cancels the transfer; the dealer cancels the sale (10 Oct)",
+      "asOf": "2026-10-10T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

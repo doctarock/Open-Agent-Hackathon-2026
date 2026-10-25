@@ -1,0 +1,62 @@
+{
+  "caseId": "N5-GRT-01",
+  "records": [
+    {
+      "id": "N5G-01",
+      "caseId": "N5-GRT-01",
+      "source": {
+        "system": "funder",
+        "name": "Funder grants portal"
+      },
+      "observedAt": "2026-08-04T01:00:00Z",
+      "content": "G-2207 instalment 1 (AUD 120,000): payment released to the university's nominated account on 4 Aug.",
+      "facts": {
+        "funder.payment": "released"
+      },
+      "provenance": {
+        "systemOfRecord": "Funder grants portal",
+        "recordRef": "n5g-01",
+        "author": "funder-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5G-02",
+      "caseId": "N5-GRT-01",
+      "source": {
+        "system": "ledger",
+        "name": "University finance ledger"
+      },
+      "observedAt": "2026-08-06T02:00:00Z",
+      "content": "Receipt of AUD 120,000 from the funder allocated to G-2207 instalment 1.",
+      "facts": {
+        "ledger.receipt": "received"
+      },
+      "provenance": {
+        "systemOfRecord": "University finance ledger",
+        "recordRef": "n5g-02",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5G-03",
+      "caseId": "N5-GRT-01",
+      "source": {
+        "system": "ledger",
+        "name": "University finance ledger"
+      },
+      "observedAt": "2026-08-20T03:00:00Z",
+      "content": "After reallocation, no receipt has been found for G-2207 instalment 1. Query raised with the funder.",
+      "facts": {
+        "ledger.receipt": "not_found"
+      },
+      "provenance": {
+        "systemOfRecord": "University finance ledger",
+        "recordRef": "n5g-03",
+        "author": "ledger-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

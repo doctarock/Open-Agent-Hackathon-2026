@@ -1,0 +1,32 @@
+{
+  "id": "leave-approval",
+  "domain": "human resources",
+  "family": null,
+  "order": "as recorded",
+  "category": "intention and hearsay, then recorded decision",
+  "description": "A manager says they intend to approve and the employee repeats what the manager told them: neither records a decision, and the employee's message depends on the manager's. The HR system then records the approval and payroll books the leave.",
+  "checkpoints": [
+    {
+      "afterStage": "intent",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-DECLINED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "recorded",
+      "conclusion": "H-APPROVED",
+      "notCurrent": [
+        "H-DECLINED",
+        "H-PENDING"
+      ],
+      "unsupported": [
+        "H-DECLINED",
+        "H-PENDING"
+      ],
+      "invalidated": []
+    }
+  ]
+}

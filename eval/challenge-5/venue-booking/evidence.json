@@ -1,0 +1,62 @@
+{
+  "caseId": "N5-EVT-01",
+  "records": [
+    {
+      "id": "N5B-01",
+      "caseId": "N5-EVT-01",
+      "source": {
+        "system": "planner",
+        "name": "Event planner notes"
+      },
+      "observedAt": "2027-01-08T02:00:00Z",
+      "content": "Called the venue: the duty manager said 14 Feb in the Harbour Room should be ours. Written confirmation to follow.",
+      "facts": {
+        "planner.note": "verbal_assurance"
+      },
+      "provenance": {
+        "systemOfRecord": "Event planner notes",
+        "recordRef": "n5b-01",
+        "author": "planner-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5B-02",
+      "caseId": "N5-EVT-01",
+      "source": {
+        "system": "planner",
+        "name": "Event planner notes"
+      },
+      "observedAt": "2027-01-12T03:00:00Z",
+      "content": "Called the venue again: the duty manager repeated that 14 Feb is ours.",
+      "facts": {
+        "planner.note": "verbal_assurance"
+      },
+      "provenance": {
+        "systemOfRecord": "Event planner notes",
+        "recordRef": "n5b-02",
+        "author": "planner-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5B-03",
+      "caseId": "N5-EVT-01",
+      "source": {
+        "system": "venue",
+        "name": "Venue booking system"
+      },
+      "observedAt": "2027-01-15T01:00:00Z",
+      "content": "Booking VB-2231, Harbour Room, 14 Feb: confirmed. Deposit AUD 1,500 received.",
+      "facts": {
+        "venue.booking": "confirmed"
+      },
+      "provenance": {
+        "systemOfRecord": "Venue booking system",
+        "recordRef": "n5b-03",
+        "author": "venue-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

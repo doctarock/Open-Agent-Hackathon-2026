@@ -1,0 +1,21 @@
+{
+  "id": "number-port",
+  "domain": "telecommunications",
+  "family": null,
+  "order": "as recorded",
+  "category": "independent agreement",
+  "description": "The losing carrier records the port-out and the customer independently observes the number working on the new SIM.",
+  "checkpoints": [
+    {
+      "afterStage": "ported",
+      "conclusion": "H-PORTED",
+      "notCurrent": [
+        "H-NOT-PORTED"
+      ],
+      "unsupported": [
+        "H-NOT-PORTED"
+      ],
+      "invalidated": []
+    }
+  ]
+}

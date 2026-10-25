@@ -1,0 +1,83 @@
+{
+  "id": "c5-grant-receipt-withdrawn",
+  "caseId": "N5-GRT-01",
+  "title": "Has grant G-2207's first instalment been paid?",
+  "question": "Has the first instalment (AUD 120,000) of research grant G-2207 been paid to the university?",
+  "sources": {
+    "funder": {
+      "name": "Funder grants portal",
+      "reliability": 0.85
+    },
+    "ledger": {
+      "name": "University finance ledger",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "The first instalment of G-2207 has been paid to the university.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "funder.payment",
+          "equals": "released",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.receipt",
+          "equals": "received",
+          "direction": "supports"
+        },
+        {
+          "fact": "ledger.receipt",
+          "equals": "not_found",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-PAID",
+      "statement": "The first instalment of G-2207 has not been paid to the university.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "ledger.receipt",
+          "equals": "not_found",
+          "direction": "supports"
+        },
+        {
+          "fact": "funder.payment",
+          "equals": "released",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "ledger.receipt",
+          "equals": "received",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-RECEIPT",
+      "text": "Has the university's ledger recorded the receipt?",
+      "answeredBy": "ledger.receipt"
+    }
+  ],
+  "stages": [
+    {
+      "id": "paid",
+      "label": "Funder releases the payment; the university records a receipt (6 Aug)",
+      "asOf": "2026-08-06T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "receipt-withdrawn",
+      "label": "The receipt is withdrawn as another grant's; the university finds no receipt (20 Aug)",
+      "asOf": "2026-08-20T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "id": "c5-referral-attendance",
+  "caseId": "N5-MED-01",
+  "title": "Has P-7713 been seen by cardiology?",
+  "question": "Patient P-7713 was referred to the cardiology clinic on 2 Nov. Have they been seen by the clinic?",
+  "sources": {
+    "gp": {
+      "name": "GP practice system",
+      "reliability": 0.8
+    },
+    "clinic": {
+      "name": "Cardiology clinic system",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-SEEN",
+      "statement": "P-7713 has been seen by the cardiology clinic.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "clinic.attendance",
+          "equals": "attended",
+          "direction": "supports"
+        },
+        {
+          "fact": "gp.clinic_letter",
+          "equals": "received",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "clinic.appointment",
+          "equals": "booked",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "clinic.reminder",
+          "equals": "sent",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-SEEN",
+      "statement": "P-7713 has not yet been seen by the cardiology clinic.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "clinic.attendance",
+          "equals": "attended",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "gp.referral",
+          "equals": "awaiting_letter",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-ATTEND",
+      "text": "Does the clinic record P-7713 as having attended?",
+      "answeredBy": "clinic.attendance"
+    }
+  ],
+  "stages": [
+    {
+      "id": "booked",
+      "label": "Referral sent, appointment booked and reminded; the appointment date has passed (19 Nov)",
+      "asOf": "2026-11-19T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "letter",
+      "label": "The clinic records the attendance; the GP files the clinic's letter (21 Nov)",
+      "asOf": "2026-11-21T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

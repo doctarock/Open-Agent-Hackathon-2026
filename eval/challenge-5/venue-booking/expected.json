@@ -1,0 +1,28 @@
+{
+  "id": "venue-booking",
+  "domain": "events",
+  "family": null,
+  "order": "as recorded",
+  "category": "repeated same-source evidence, then authoritative record",
+  "description": "The planner records the same verbal assurance twice: one source repeating itself, with nothing from the venue. The venue's own system then records the booking as confirmed.",
+  "checkpoints": [
+    {
+      "afterStage": "phone",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "venue-record",
+      "conclusion": "H-CONFIRMED",
+      "notCurrent": [
+        "H-NOT-CONFIRMED"
+      ],
+      "unsupported": [
+        "H-NOT-CONFIRMED"
+      ],
+      "invalidated": []
+    }
+  ]
+}

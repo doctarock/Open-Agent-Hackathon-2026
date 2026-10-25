@@ -1,0 +1,85 @@
+{
+  "id": "c5-enrolment-conflict-corrected",
+  "caseId": "N5-EDU-01",
+  "title": "Is S-3381 enrolled in CHEM201?",
+  "question": "Is student S-3381 enrolled in CHEM201 this semester?",
+  "sources": {
+    "sis": {
+      "name": "Student information system",
+      "reliability": 0.9
+    },
+    "lms": {
+      "name": "Learning management system",
+      "reliability": 0.7
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-ENROLLED",
+      "statement": "S-3381 is enrolled in CHEM201.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "sis.enrolment",
+          "equals": "enrolled",
+          "direction": "supports"
+        },
+        {
+          "fact": "lms.participation",
+          "equals": "active",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "sis.enrolment",
+          "equals": "withdrawn",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-ENROLLED",
+      "statement": "S-3381 is not enrolled in CHEM201.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "sis.enrolment",
+          "equals": "withdrawn",
+          "direction": "supports"
+        },
+        {
+          "fact": "sis.enrolment",
+          "equals": "enrolled",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "lms.participation",
+          "equals": "active",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-SIS",
+      "text": "What enrolment status does the student information system record?",
+      "answeredBy": "sis.enrolment"
+    }
+  ],
+  "stages": [
+    {
+      "id": "conflict",
+      "label": "Student system says withdrawn; the learning system shows the student active (11 Mar)",
+      "asOf": "2027-03-11T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "corrected",
+      "label": "The student system reverses the withdrawal (13 Mar)",
+      "asOf": "2027-03-13T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "grant-receipt-withdrawn",
+  "domain": "research grants",
+  "family": null,
+  "order": "as recorded",
+  "category": "withdrawn evidence, then conflict",
+  "description": "The funder releases the payment and the university records a receipt: two independent sources agree. The investigator then withdraws the receipt (it was another grant's) and the university reports no receipt, so the funder and the university disagree.",
+  "checkpoints": [
+    {
+      "afterStage": "paid",
+      "conclusion": "H-PAID",
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-PAID"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "receipt-withdrawn",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": [
+        "N5G-02"
+      ],
+      "withdrawBefore": [
+        {
+          "recordId": "N5G-02",
+          "reason": "University finance confirmed the AUD 120,000 receipt belonged to grant G-2270 and has reallocated it."
+        }
+      ]
+    }
+  ]
+}

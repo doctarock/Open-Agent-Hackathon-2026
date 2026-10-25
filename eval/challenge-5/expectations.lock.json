@@ -1,0 +1,30 @@
+{
+  "lockedAt": "2026-10-25T13:45:45.881Z",
+  "note": "Written before any system was run on these cases, before the live strength diagnostic of Build 5 was read, and before rule corroborated-2 was written down or implemented.",
+  "files": {
+    "enrolment-conflict-corrected/scenario.json": "0e65ddaa08a47f5c4d0478042c3a23b1f8a42e29688754160d9c8585e4327c86",
+    "enrolment-conflict-corrected/evidence.json": "6e0cfbf3e01bdb77ccf725c7bcdf6ec7b1f63ff327c0c68159ac0574a5b60e01",
+    "enrolment-conflict-corrected/expected.json": "b0041671c23c67205ae3612e799b85adbe792aaffdab263567ff345af99dce6d",
+    "grant-receipt-withdrawn/scenario.json": "60c7e821cd7809e896df8e586c74fa7ac44d387a066bb15258fd9cc1fc3b8318",
+    "grant-receipt-withdrawn/evidence.json": "c4f80ed8ad6f36699ea89a6957cc7b9db219760b915dfae6301449bacca50953",
+    "grant-receipt-withdrawn/expected.json": "a127ed5100b376a79746b66dfdc0e9842a256df8f544677213763f836735dd67",
+    "leave-approval/scenario.json": "a31141a69a8f19e27c4c259f2dc394373f6f8538338484cd5dca48c68d094e54",
+    "leave-approval/evidence.json": "0a767d76452b8e9b26234183f3682725a5c262a74151e1fcdb8754dc87096c9e",
+    "leave-approval/expected.json": "1255857323f5e5bc3709bbba0838eb41a5c25f3f0ccea21ef31a02519be276db",
+    "number-port/scenario.json": "1cee163d65df159ef5cf404f4fc6fc96dbc8d489eac0489665f3ca0aeb6ae3b9",
+    "number-port/evidence.json": "761fae1b1185fba01ecd35aa90adf94278dae4b834c1e25423977a34eb1d81d2",
+    "number-port/expected.json": "71c6b98d5217744e2f577cc71664910d43e153f1c9458e0f5846dc9c393b0082",
+    "referral-attendance/scenario.json": "1d56ba028e8e03df40a3975d68f6d154c9cac1da93f1f977a19684a23b529155",
+    "referral-attendance/evidence.json": "746c0223c70d89c5dda2474bc9abdff973e620d4a783a1eeae751c73eee1b254",
+    "referral-attendance/expected.json": "85638f8eee8a95eac88c2efb9b0f242b533a3df71225b637071c79d102c0defe",
+    "utility-disconnection/scenario.json": "0520a597784de30bd7c04c92e630c9cf8f44908e2e1429f8d1804e16742fc6d8",
+    "utility-disconnection/evidence.json": "69311b46ebeb19a202b48376b736977652cb0c2a9e8427c708a1a4eb916a28b0",
+    "utility-disconnection/expected.json": "1137c03a18e2ff6269c1865938af5a2492a048c0f01f4416a34020dac43763a9",
+    "vehicle-transfer-cancelled/scenario.json": "a19eaad891a642c120e4665322116db5dbb942aa6cac6b66bfac2bd644101740",
+    "vehicle-transfer-cancelled/evidence.json": "36e15ac01038f17cc8c36c302e1b1423f1fa09ebccbde940ccddc2838ebe61b0",
+    "vehicle-transfer-cancelled/expected.json": "bd88cbe29d633c6a22bbd98c3f4902723c0f6f6acb2c976dc5b788d068e4ce13",
+    "venue-booking/scenario.json": "a688e66110fa0256cf59d094b67898c5433295bf68559ec990bb5999f306ee9d",
+    "venue-booking/evidence.json": "871236e98a1fc351f40c114b8effa4d2a2c93034af42d5cf5f46fcc02df696ee",
+    "venue-booking/expected.json": "9a6de72e0bf3ff8b0fd33f18a0682a8612188652d347ac374bb1d59e3526cec2"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "caseId": "N5-EDU-01",
+  "records": [
+    {
+      "id": "N5E-01",
+      "caseId": "N5-EDU-01",
+      "source": {
+        "system": "sis",
+        "name": "Student information system"
+      },
+      "observedAt": "2027-03-03T02:00:00Z",
+      "content": "S-3381, CHEM201 semester 1: enrolment status withdrawn (3 Mar).",
+      "facts": {
+        "sis.enrolment": "withdrawn"
+      },
+      "provenance": {
+        "systemOfRecord": "Student information system",
+        "recordRef": "n5e-01",
+        "author": "sis-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5E-02",
+      "caseId": "N5-EDU-01",
+      "source": {
+        "system": "lms",
+        "name": "Learning management system"
+      },
+      "observedAt": "2027-03-10T06:00:00Z",
+      "content": "CHEM201 class list: S-3381 active. Lab report 1 submitted 10 Mar.",
+      "facts": {
+        "lms.participation": "active"
+      },
+      "provenance": {
+        "systemOfRecord": "Learning management system",
+        "recordRef": "n5e-02",
+        "author": "lms-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N5E-03",
+      "caseId": "N5-EDU-01",
+      "source": {
+        "system": "sis",
+        "name": "Student information system"
+      },
+      "observedAt": "2027-03-12T23:00:00Z",
+      "content": "Correction: the withdrawal of S-3381 from CHEM201 on 3 Mar was entered in error and is reversed. Status: enrolled.",
+      "facts": {
+        "sis.enrolment": "enrolled"
+      },
+      "provenance": {
+        "systemOfRecord": "Student information system",
+        "recordRef": "n5e-03",
+        "author": "sis-feed",
+        "supersedes": [
+          "N5E-01"
+        ]
+      }
+    }
+  ]
+}
