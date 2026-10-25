@@ -895,6 +895,9 @@ chooses the endpoint:
       route ever returns it.
     - Inside Speck, a token in the secret store wins over `.env`, so a token saved in the System
       view also reaches Evidence Desk's cases. `npm run configure` writes the token to both.
+    - `npm run speck` passes `.env`'s `meterless_runtime_token` (and nothing else from `.env`) to
+      Speck, so Speck's chat is authorised even when the store is empty, as after a fresh clone
+      whose `npm run setup` kept an existing `.env` and so skipped configure.
   - `METERLESS_BASE_URL` (default `http://127.0.0.1:8088/v1`). A pasted address with or without
     a scheme, `/v1`, `/v1/chat/completions`, `/v1/models` or `/healthz` is normalised to
     `<host>/v1`. A connect link (`http://<host>:<port>/connect#k=<key>`) gives both the address

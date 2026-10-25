@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import http from "node:http";
 import { test } from "node:test";
-import { speckAddress, stopRunningSpeck } from "../src/scripts/speck.js";
+import { EVIDENCE_HOME_VIEW, speckAddress, speckEnv, stopRunningSpeck } from "../src/scripts/speck.js";
 
 // A stand-in Speck in its own process: it answers /api/brains/config as Speck
 // does, and prints its port once listening.
@@ -21,6 +21,15 @@ test("the launcher reads Speck's address as Speck does", () => {
   assert.deepEqual(speckAddress({}), { host: "127.0.0.1", port: 4310 });
   assert.deepEqual(speckAddress({ SPECK_PORT: "4400", SPECK_HOST: "0.0.0.0" }), { host: "127.0.0.1", port: 4400 });
   assert.deepEqual(speckAddress({ PORT: "4401" }), { host: "127.0.0.1", port: 4401 });
+});
+
+test("Speck gets the Meterless token from .env, and nothing else from it", () => {
+  const dotEnv = "ZETARIS_PASSWORD=secret\nmeterless_runtime_token=tok-123\n";
+  const env = speckEnv({ PATH: "p" }, dotEnv);
+  assert.deepEqual(env, { PATH: "p", meterless_runtime_token: "tok-123", SPECK_HOME_VIEW: EVIDENCE_HOME_VIEW });
+  assert.equal(speckEnv({ meterless_runtime_token: "from-env" }, dotEnv).meterless_runtime_token, "from-env", "the environment wins");
+  assert.equal(speckEnv({}, null).meterless_runtime_token, undefined, "no .env, no token");
+  assert.equal(speckEnv({ SPECK_HOME_VIEW: "world" }, "").SPECK_HOME_VIEW, "world");
 });
 
 test("a Speck already running on the port is stopped, and the port is freed", async () => {

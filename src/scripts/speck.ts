@@ -1,6 +1,8 @@
 import { execFileSync, spawn } from "node:child_process";
+import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
+import { parseEnv } from "node:util";
 import { ROOT_DIR } from "../config.js";
 
 // npm run speck
@@ -21,6 +23,21 @@ export function speckAddress(env: NodeJS.ProcessEnv = process.env): { host: stri
   const port = Number(env.SPECK_PORT ?? env.PORT ?? 4310);
   const host = env.SPECK_HOST ?? "127.0.0.1";
   return { host: host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host, port: Number.isInteger(port) && port > 0 ? port : 4310 };
+}
+
+// Speck's chat reads the Meterless token from its secret store, else from the
+// meterless_runtime_token variable. npm run setup skips configure (which
+// writes the store) when .env already exists, so a fresh clone with a kept
+// .env would leave the chat unauthorized while the cases work. Only that one
+// key is passed through; the rest of .env stays out of Speck's environment,
+// and a token already set in the environment or the store still wins.
+export function speckEnv(env: NodeJS.ProcessEnv, dotEnvText: string | null): NodeJS.ProcessEnv {
+  const token = dotEnvText === null ? undefined : parseEnv(dotEnvText).meterless_runtime_token?.trim();
+  return {
+    ...env,
+    ...(token && !env.meterless_runtime_token ? { meterless_runtime_token: token } : {}),
+    SPECK_HOME_VIEW: env.SPECK_HOME_VIEW || EVIDENCE_HOME_VIEW
+  };
 }
 
 function accepting(host: string, port: number): Promise<boolean> {
@@ -89,7 +106,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(ROOT_DIR, 
   }
   const speck = spawn(process.execPath, ["dist/server.js"], {
     cwd: path.join(ROOT_DIR, "speck"),
-    env: { ...process.env, SPECK_HOME_VIEW: process.env.SPECK_HOME_VIEW || EVIDENCE_HOME_VIEW },
+    env: speckEnv(process.env, fs.existsSync(path.join(ROOT_DIR, ".env")) ? fs.readFileSync(path.join(ROOT_DIR, ".env"), "utf8") : null),
     stdio: "inherit"
   });
   for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => speck.kill(signal));
