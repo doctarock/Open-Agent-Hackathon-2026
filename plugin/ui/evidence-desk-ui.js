@@ -72,9 +72,16 @@ const host = {
 };
 
 function hostSpotlight(target) {
+  const moved = (target ?? null) !== demo.spotlit;
   demo.spotlit?.classList.remove("edk-host-spotlight");
   demo.spotlit = target ?? null;
   demo.spotlit?.classList.add("edk-host-spotlight");
+  // Something in the tab's page (the new-investigation form) is brought to
+  // the top of the view, above the panel, as the case steps do; on a phone it
+  // otherwise starts behind the panel. Speck's own overlays stay where they are.
+  if (moved && demo.spotlit?.closest(".edk-in-speck")) {
+    demo.spotlit.scrollIntoView({ block: "start", behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
 }
 
 // What the Speck-side parts describe, read from real state: each prepared

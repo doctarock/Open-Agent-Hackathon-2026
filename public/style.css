@@ -82,9 +82,11 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk h3 { font-size: 0.98rem; margin: 18px 0 6px; }
 .edk h4 { font-size: 0.9rem; margin: 12px 0 4px; color: var(--edk-muted); }
 .edk p { margin: 6px 0; }
+/* Readable line length: long rows are hard to follow on a wide or shared screen. */
+.edk p { max-width: 80ch; }
 .edk .muted { color: var(--edk-muted); }
 .edk code { font-family: ui-monospace, Consolas, monospace; font-size: 0.88em; }
-.edk .eyebrow { margin: 0 0 4px; font-size: 0.78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }
+.edk .eyebrow { margin: 0 0 4px; font-size: 0.82rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }
 
 /* Buttons: one filled primary per area, outlined secondary, quiet links. */
 .edk button {
@@ -98,8 +100,11 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
   transition: background-color .15s ease;
 }
 .edk button.primary { background: var(--edk-accent); color: var(--edk-on-accent); font-weight: 600; }
+/* Secondary buttons stay quiet, so the one filled button in an area is the obvious next step. */
+.edk button.secondary { border-color: var(--edk-border); color: var(--edk-text); }
+.edk button.secondary:hover:not(:disabled) { border-color: var(--edk-accent); }
 .edk button.secondary:hover:not(:disabled), .edk button.link:hover:not(:disabled) { background: var(--edk-accent-soft); }
-.edk button.link { padding: 2px 6px; border-color: transparent; font-size: 0.85rem; text-decoration: underline; text-underline-offset: 2px; }
+.edk button.link { padding: 2px 6px; border-color: transparent; font-size: 0.9rem; text-decoration: underline; text-underline-offset: 2px; }
 .edk button.danger { border-color: var(--edk-bad); color: var(--edk-bad); }
 .edk form button.danger { background: var(--edk-bad); color: #fff; font-weight: 600; }
 .edk button:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -110,10 +115,10 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 
 .edk .badge {
   display: inline-block;
-  padding: 0 6px;
+  padding: 1px 7px;
   border: 1px solid currentColor;
   border-radius: 4px;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -184,16 +189,16 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
   border-left-width: 4px;
   border-radius: 6px;
 }
-.edk .stages li::before { content: "Stage " counter(stage); display: block; font-size: 0.75rem; color: var(--edk-muted); }
+.edk .stages li::before { content: "Stage " counter(stage); display: block; font-size: 0.82rem; color: var(--edk-muted); }
 .edk .stages li.current { border-left-color: var(--edk-accent); background: var(--edk-accent-soft); }
 .edk .stages li.done { border-left-color: var(--edk-good); }
 .edk .stages li.upcoming { opacity: .8; }
 .edk .stage-label { display: block; font-weight: 600; }
-.edk .stage-state { display: block; font-size: 0.78rem; color: var(--edk-muted); }
-.edk .stage-description { display: block; font-size: 0.85rem; color: var(--edk-muted); margin-top: 2px; }
+.edk .stage-state { display: block; font-size: 0.82rem; color: var(--edk-muted); }
+.edk .stage-description { display: block; font-size: 0.9rem; color: var(--edk-muted); margin-top: 2px; }
 .edk .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .edk .action { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.edk .hint { margin: 0; font-size: 0.86rem; color: var(--edk-muted); }
+.edk .hint { margin: 0; font-size: 0.9rem; color: var(--edk-muted); }
 .edk .progress {
   margin: 10px 0 0;
   padding: 6px 10px;
@@ -231,7 +236,7 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 }
 .edk .tabs [role="tab"]:hover { color: var(--edk-text); background: var(--edk-accent-soft); }
 .edk .tabs [role="tab"][aria-selected="true"] { color: var(--edk-accent); border-bottom-color: var(--edk-accent); }
-.edk .tab-count { margin-left: 4px; font-size: 0.8rem; font-weight: 500; color: var(--edk-muted); }
+.edk .tab-count { margin-left: 4px; font-size: 0.86rem; font-weight: 500; color: var(--edk-muted); }
 .edk .tab-pane > .panel:last-child { margin-bottom: 0; }
 
 .edk .panel {
@@ -244,11 +249,12 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 }
 .edk .conclusion-panel { border-top: 4px solid var(--edk-accent); }
 .edk .state-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.edk .headline { font-size: 1.15rem; font-weight: 650; margin: 10px 0 4px; }
-.edk .state-meaning { color: var(--edk-muted); font-size: 0.9rem; }
+/* The answer is the largest text in the case. */
+.edk .headline { font-size: 1.6rem; line-height: 1.25; font-weight: 700; margin: 12px 0 6px; }
+.edk .state-meaning { color: var(--edk-muted); font-size: 0.95rem; }
 .edk .confidence { margin: 10px 0; }
 .edk .confidence ul { margin: 6px 0; padding-left: 20px; font-size: 0.9rem; }
-.edk meter { width: 100%; max-width: 360px; height: 14px; }
+.edk meter { width: 100%; max-width: 480px; height: 20px; }
 .edk .empty .headline { margin-top: 0; }
 
 .edk .outcome {
@@ -258,11 +264,17 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
   border-radius: 6px;
 }
 .edk .outcome.changed { border-color: var(--edk-warn); }
+/* Why this changed: the correction, the heart of the case, reads as a finding. */
+.edk #edk-why { border-width: 2px; padding: 14px 18px; }
+.edk #edk-why > h3 { color: var(--edk-warn); font-size: 1.15rem; }
+.edk #edk-why > ul:not(.refs) > li { font-size: 1.05rem; font-weight: 600; margin: 6px 0; }
+.edk #edk-why > ul:not(.refs) > li > code:first-child { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--edk-bad) 75%, transparent); text-decoration-thickness: 1.5px; }
+.edk #edk-why > ul:not(.refs) > li .meta { font-weight: normal; }
 .edk .outcome h3 { margin-top: 2px; }
 
 /* Contextual help. */
-.edk details.help { margin: 6px 0; font-size: 0.88rem; }
-.edk details.help > summary { color: var(--edk-accent); font-size: 0.85rem; }
+.edk details.help { margin: 6px 0; font-size: 0.92rem; }
+.edk details.help > summary { color: var(--edk-accent); font-size: 0.9rem; }
 .edk details.help[open] { padding: 6px 10px; border-left: 3px solid var(--edk-accent); background: var(--edk-accent-soft); border-radius: 0 6px 6px 0; }
 .edk details.help p { max-width: 80ch; }
 
@@ -273,10 +285,10 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .record-head strong { font-family: ui-monospace, Consolas, monospace; }
 .edk .record-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
 .edk .content { margin: 6px 0; }
-.edk .meta { font-size: 0.84rem; color: var(--edk-muted); overflow-wrap: anywhere; margin: 4px 0; }
-.edk .record-details > summary { font-size: 0.86rem; }
+.edk .meta { font-size: 0.9rem; color: var(--edk-muted); overflow-wrap: anywhere; margin: 4px 0; }
+.edk .record-details > summary { font-size: 0.9rem; }
 .edk .record-details[open] { padding-bottom: 4px; }
-.edk .refs li { font-size: 0.9rem; margin: 3px 0; overflow-wrap: anywhere; }
+.edk .refs li { font-size: 0.95rem; margin: 3px 0; overflow-wrap: anywhere; }
 .edk .explanations li { margin: 6px 0; }
 
 .edk .timeline li {
@@ -288,14 +300,14 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .timeline li.kind-stage { border-left-color: var(--edk-warn); }
 .edk .timeline li.kind-recomputation { border-left-color: var(--edk-warn); }
 .edk .timeline li.historical { border-left-style: dashed; color: var(--edk-muted); }
-.edk .timeline .when { font-size: 0.8rem; color: var(--edk-muted); }
+.edk .timeline .when { font-size: 0.86rem; color: var(--edk-muted); }
 .edk .timeline .title { font-weight: 600; }
-.edk .timeline .detail { font-size: 0.88rem; color: var(--edk-muted); overflow-wrap: anywhere; }
+.edk .timeline .detail { font-size: 0.92rem; color: var(--edk-muted); overflow-wrap: anywhere; }
 .edk .toggle { display: inline-block; margin: 4px 0 8px; font-size: 0.88rem; }
 
 .edk details { margin-top: 10px; }
 .edk summary { cursor: pointer; color: var(--edk-accent); }
-.edk pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; }
+.edk pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.86rem; }
 .edk .outcome.historical { color: var(--edk-muted); }
 
 .edk .trace-entry { border-top: 1px solid var(--edk-border); padding: 6px 0; margin: 0; }
@@ -346,6 +358,8 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .coach h2 { font-size: 1.05rem; }
 .edk .coach-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .edk .coach.collapsed { max-height: none; padding: 10px 14px; }
+/* display: flex above would otherwise show the closed tour as an empty box. */
+.edk .coach[hidden] { display: none; }
 .edk .coach.collapsed h2 { margin: 0; font-size: 0.95rem; }
 /* When the workspace is one column (the same 980px as .workspace), the tour
    is a bottom sheet across the width, capped so the case stays visible above. */
@@ -417,6 +431,10 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 /* Inside Speck: the tab area is narrower than a page. */
 .edk.edk-in-speck > .case-header h1 { font-size: 1.25rem; }
 
+/* Inside Speck: room at the end of the tab, so the last of the page can be
+   scrolled clear of Speck's floating message bar instead of sitting under it. */
+.edk.edk-in-speck:has(> .case-picker) { padding-bottom: 140px; }
+
 /* Inside Speck: the case picker above the page. */
 .edk .case-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 
@@ -439,7 +457,7 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk legend { padding: 0 4px; font-weight: 600; }
 .edk .add-evidence { margin: 8px 0 12px; padding: 10px 12px; border: 1px dashed var(--edk-border); border-radius: 6px; }
 .edk .new-case { max-width: 760px; }
-.edk .picker-label { align-self: center; margin: 0 2px 0 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }
+.edk .picker-label { align-self: center; margin: 0 2px 0 6px; font-size: 0.82rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--edk-muted); }
 
 /* The guided demo's panel outside a case page (plugin/ui/evidence-desk-ui.js):
    it floats over Speck's own views, placed by script around Speck's rail and
@@ -477,9 +495,9 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .cmp-sequence > li {
   counter-increment: cmp-step;
   padding: 8px 10px; border: 1px solid var(--edk-border); border-radius: var(--edk-radius);
-  background: var(--edk-accent-soft); font-size: 0.85rem; min-width: 0; overflow-wrap: anywhere;
+  background: var(--edk-accent-soft); font-size: 0.9rem; min-width: 0; overflow-wrap: anywhere;
 }
-.edk .cmp-sequence > li strong { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; }
+.edk .cmp-sequence > li strong { display: block; font-size: 0.82rem; text-transform: uppercase; letter-spacing: .04em; }
 .edk .cmp-sequence > li strong::before { content: counter(cmp-step) ". "; }
 
 .edk .cmp-findings { display: grid; gap: 10px; margin-bottom: 12px; }
@@ -517,7 +535,7 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .cmp-label { margin-top: 8px; }
 .edk .chip {
   display: inline-block; padding: 0 6px; margin: 1px 0; min-height: 0;
-  font: 600 0.8rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font: 600 0.86rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
   border: 1px solid var(--edk-border); border-radius: 4px; background: transparent; color: var(--edk-text); cursor: pointer;
 }
 .edk .chip:hover { border-color: var(--edk-accent); }
@@ -529,7 +547,7 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .table-wrap { overflow-x: auto; max-width: 100%; }
 .edk .eval-table { border-collapse: collapse; width: 100%; font-size: 0.86rem; margin: 8px 0; }
 .edk .eval-table th, .edk .eval-table td { padding: 5px 8px; border-bottom: 1px solid var(--edk-border); text-align: left; vertical-align: top; }
-.edk .eval-table thead th { font-size: 0.78rem; }
+.edk .eval-table thead th { font-size: 0.82rem; }
 .edk .eval-table tbody th { font-weight: 600; min-width: 180px; }
 .edk .eval-table td.ok { color: var(--edk-good); }
 .edk .eval-table td.bad { color: var(--edk-bad); }
