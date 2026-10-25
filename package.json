@@ -11,7 +11,8 @@
     "#speck": "./speck/dist/index.js"
   },
   "scripts": {
-    "setup": "git submodule update --init --recursive && npm ci && npm --prefix speck ci && npm run speck:patch && npm --prefix speck run build && npm run plugin:install && node dist/src/scripts/configure.js --first-run",
+    "setup": "git submodule update --init --recursive && npm ci && npm --prefix speck ci && npm run speck:patch && npm --prefix speck run build && npm run plugin:install && node dist/src/scripts/embeddings.js && node dist/src/scripts/configure.js --first-run",
+    "embeddings": "npm run build && node dist/src/scripts/embeddings.js",
     "configure": "npm run build && node dist/src/scripts/configure.js",
     "speck:patch": "node scripts/speck-patches.mjs",
     "build": "tsc -p tsconfig.json",

@@ -734,6 +734,13 @@ answer against the real service before saving it to `.env`:
    - **another Zetaris address.** It signs in and checks the tables; this is not tested beyond
      the local bundle.
 
+Before those questions, setup turns on Speck's embedding encoder (`npm run embeddings` repeats
+it). If local Ollama answers at `http://127.0.0.1:11434`, it pulls `nomic-embed-text` (about
+270 MB) if it is missing, checks one embedding, and saves the encoder in Speck's settings, so
+Speck's memory search and fact grounding use it with nothing set in the System view. If Ollama is
+not running, nothing changes and Speck keeps its built-in feature-hash encoder; the cases run the
+same either way. An encoder already saved in Speck (System view, Embeddings) is never changed.
+
 Run `npm run configure` again at any time to change these (`--model`, `--evidence` and `--yes`
 skip the questions). Secrets are typed hidden and never printed. Without a `.env`, the cases run
 on fixtures with the rule assessor. `npm test` builds and runs every test, with no credentials.
@@ -842,7 +849,8 @@ showed this as one retry.
 
 | Command | What it does |
 |---|---|
-| `npm run setup` | Fetch `speck/`, install dependencies here and in it, build Speck, install the plugin, and on a first run ask the `configure` questions |
+| `npm run setup` | Fetch `speck/`, install dependencies here and in it, build Speck, install the plugin, turn on Speck's embedding encoder if local Ollama is running (`npm run embeddings`), and on a first run ask the `configure` questions |
+| `npm run embeddings` | Turn on Speck's embedding encoder: `nomic-embed-text` on local Ollama, pulled if missing and checked with one call. Keeps an encoder already saved in Speck; without Ollama, Speck keeps its feature-hash encoder. Restart Speck to apply. |
 | `npm run configure` | Choose the model (Meterless Runtime, local Ollama, NVIDIA's API, or rules) and the evidence source (fixtures, local Zetaris, another Zetaris address); checks each against the real service and writes `.env`. `--model`, `--evidence`, `--yes` skip the questions. |
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. A Speck already running on the same port is stopped first; anything else on the port is left alone and Speck does not start. |
 | `npm run investigate -- <case>` | One case from structured input to structured output, every stage, with the execution trace as JSON Lines on stdout and in `logs/`. Sample mode by default (no `.env`, credentials or network); `--live` uses `.env`; `--output <file>` writes the result. See *Command line*. |
