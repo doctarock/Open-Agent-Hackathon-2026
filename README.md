@@ -22,6 +22,29 @@
 >   structured input to structured output on the command line, with its execution trace. No
 >   credentials or network needed. See [Command line](#command-line) and [examples/](examples/).
 
+**Contents**
+
+- [Which agent uses which model](#which-agent-uses-which-model)
+- [Speck beside a stateless baseline](#speck-beside-a-stateless-baseline)
+- [Decisive mode (experimental)](#decisive-mode-experimental)
+- [Using the interface for the first time](#using-the-interface-for-the-first-time)
+- [Inside Speck: the guided demo, Speck's views, and your own investigations](#inside-speck-the-guided-demo-specks-views-and-your-own-investigations)
+- [The scenario](#the-scenario)
+- [Architecture](#architecture)
+- [Sponsor integrations and the execution trace](#sponsor-integrations-and-the-execution-trace)
+  - [Zetaris](#zetaris) · [Meterless](#meterless) · [NVIDIA Nemotron (local)](#nvidia-nemotron-local) · [Speck](#speck) · [Cursor](#cursor) · [What the trace flags](#what-the-trace-flags)
+- [How conclusions are derived](#how-conclusions-are-derived)
+  - [Revision: current beliefs come from evidence that still counts](#revision-current-beliefs-come-from-evidence-that-still-counts)
+  - [Recovery from interrupted runs (Build 3.1)](#recovery-from-interrupted-runs-build-31)
+- [Command line](#command-line)
+- [Setup](#setup)
+- [Configuration](#configuration)
+  - [Live Zetaris (local Docker Compose bundle)](#live-zetaris-local-docker-compose-bundle) · [Model providers](#model-providers) · [Small model, small context](#small-model-small-context) · [Reasoning on or off](#reasoning-on-or-off)
+- [Evaluation](#evaluation)
+- [Tests](#tests)
+- [Security](#security)
+- [Known limits of this slice](#known-limits-of-this-slice)
+
 **The problem.** An ordinary stateless model call answers from whatever evidence it is handed.
 When a source later corrects a record (a bank returns a payment, a carrier amends a delivery
 scan), nothing ties the old conclusion to the record that has just been replaced: the call may
