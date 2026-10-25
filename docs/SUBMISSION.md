@@ -36,8 +36,10 @@ yet enough.
 Persistent state preserves corrections and exposes stale evidence; it cannot guarantee that the
 model's interpretation is sound, and persistence alone shows no measurable accuracy benefit.
 `corroborated-2` is an experimental alternative to `corroborated-1`, off by default
-(`CONCLUSION_RULE=corroborated-2`), and not validated: on new cases its own check changed no
-outcome.
+(`CONCLUSION_RULE=corroborated-2`), and not validated: its extra *establishes* judgment showed no
+independent improvement on the paired set 5 comparison, where `corroborated-1` on the same
+judgments did as well. Speck was not modified for any of the policy: Builds 4 and 5 changed only
+Evidence Desk's code, and Speck's cognition, priors, cap and threshold are unchanged.
 
 ## Demonstration: a correction to evidence
 

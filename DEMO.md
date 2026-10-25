@@ -82,89 +82,86 @@ Optionally, before the judges arrive, run `npm run compare:live` once more: the 
 delivery's panel then opens on a fresh live comparison (labelled with its time) instead of waiting
 30-60 s for one. Never present a comparison as live unless its badge says LIVE MODEL CALLS.
 
-## The script (about 3 minutes, one correction)
+## The script (about 3 minutes, one case, one correction)
 
-The demo follows one correction: the carrier amends the delivery scan the "delivered" conclusion
-rested on. Everything you point at is on the page and is a saved, real output; read what it says
-rather than predicting it.
+The demo follows the **Disputed delivery**: a carrier amends the delivery scan the "delivered"
+conclusion rested on. Read what the page says rather than predicting it. The outcomes quoted below
+are the offline ones (fixture evidence and fact rules, which give the same result every time);
+with a live model the conclusions vary between runs.
 
 **0:00 The problem (15 s).** Evidence changes after the fact. A stateless model call answers from
 whatever it is handed; nothing ties its old answer to the record that was just replaced.
 
-**0:15 One correction, two approaches (75 s).** Select **Disputed delivery**, open its **Speck vs.
-baseline** tab, and under **Other saved comparisons** open a **live** one from 2026-10-25 (badge
-LIVE MODEL CALLS, Nemotron 3 Nano 4B, Zetaris live). If the case is set to fixture evidence, the
-page says it was made with other settings; that is expected. It is the saved report, not a
-replay.
-1. **Stage 1, the original scan.** `EV-CAR-003`: "DELIVERED, left at front door". The stateless
-   call concludes *delivered*; Speck usually leans to it without concluding, because the
-   customer's "nothing arrived" (`EV-SUP-004`) counts against it.
-2. **Stage 2, the correction.** The *correction* line: `EV-CAR-005` replaces `EV-CAR-003` (GPS
-   380 m away, at No. 41 *North*). In the records list `EV-CAR-003` is struck through, *replaced
-   by EV-CAR-005*.
-3. **The stateless column:** still *concludes H-DELIVERED*, citing `EV-CAR-003`, with the badge
-   *relies on replaced record EV-CAR-003*. "Why it changed: not recorded."
-4. **The Speck column:** *Why it changed (recorded by Speck)*: `EV-CAR-003` *no longer counts*,
-   and each rebuilt belief with what it was before. The earlier beliefs are in the case's
-   **History** tab.
-5. **Why they differ**, the sentence under the columns.
+**0:15 The original evidence and the first conclusion (30 s).** Select **Disputed delivery** and
+click **Run investigation**.
+- Offline: *Leading, not established*: delivered (0.61). It rests on the carrier's scan
+  `EV-CAR-003` "DELIVERED, left at front door" (+0.17), and the customer's "nothing arrived"
+  (`EV-SUP-004`) counts against it.
+
+**0:45 The correction (30 s).** Click **Introduce prepared update**, then **Run investigation**.
+- The carrier's proof-of-delivery review `EV-CAR-005` replaces `EV-CAR-003`: the GPS fix was
+  380 m away, at No. 41 Lydiard St *North*, where the resident is holding the parcel (`EV-SUP-006`).
+- Offline: *supported*: delivered to the wrong address (0.70); delivered is rejected by
+  `EV-CAR-005`.
+- **Why this changed**: `EV-CAR-003` no longer counts, because its source replaced it.
+
+**1:15 The baseline beside Speck (50 s).** Open the case's **Speck vs. baseline** tab. Offline,
+the current comparison is deterministic, and there the rule baseline also moves to "misdelivered"
+without citing the old scan; only Speck records why. The difference is in the live model calls, so
+under **Other saved comparisons** open the **second** entry: the newest live comparison that
+completed (2026-10-25, 12:33 UTC; badge LIVE MODEL CALLS). The first entry is the sample in which
+the model's reply failed; open it too if asked. The page notes these were made with other
+settings; they are the saved reports, not replays.
+- **Stage 2:** the *correction* line, and `EV-CAR-003` struck through, *replaced by EV-CAR-005*.
+- **Stateless column:** still *concludes H-DELIVERED*, citing `EV-CAR-003`, with the badge
+  *relies on replaced record EV-CAR-003*, and "Why it changed: not recorded".
+- **Speck column:** in this sample Speck concluded "delivered" at stage 1 and concludes nothing
+  after the correction. *Why it changed (recorded by Speck)*: `EV-CAR-003` *no longer counts*,
+  and "delivered" rebuilt from its prior: was supported, 0.66.
+- **Why they differ**, under the columns: the stateless call cites `EV-CAR-003`, "which no longer
+  counts".
 
 Say the counts, not just this sample: "In the 12 live comparisons that day, the stateless call
 cited the replaced scan 12 times. Speck cited it in none of the 9 that completed. It mostly
 concluded nothing after the correction (7), and twice concluded misdelivered. In the other 3 the
 model's reply failed twice, the correction stayed unassessed, and Speck still showed 'delivered'
 on the old scan. We count those as errors, and a guard now withholds the conclusion while a
-record waits." If the sample you opened is the errored one (12:34 UTC), say so.
+record waits."
 
-**1:30 Do it by hand (40 s).** Select **Bank return** (deterministic, instant, offline).
-1. Click **Run investigation**: *supported* "Invoice INV-77 has been paid in full", resting on the
-   bank credit EV-BNK-101 and the ledger's "marked paid" EV-LDG-102.
-2. Click **Introduce prepared update**, then **Run investigation**: the bank returns the payment
-   (EV-BNK-103 replaces EV-BNK-101) and the ledger reopens the invoice (EV-LDG-104). Speck now
-   holds *supported* "Invoice INV-77 remains unpaid" at 0.66.
-3. Point to **Why this changed**: EV-BNK-101 no longer counts (its source replaced it); EV-LDG-102
-   no longer counts (the same ledger now reports *reopened*); "H-PARTIAL is no longer ruled out".
-   The earlier beliefs stay as **history**, not current.
+**2:05 The history is kept (20 s).** Back on the case: under **Why this changed** (Conclusion
+tab), "delivered" was held at 0.61 and is no longer held; the **History** tab keeps the earlier
+revisions, badged *historical: belief since replaced*; the **Evidence** tab still
+lists `EV-CAR-003`, marked *no longer counts: replaced by EV-CAR-005*. Nothing is erased.
 
-**2:10 What it does and does not show (25 s).** Open **Evaluation results**, or the README's
-*For judges* section 5.
-- **Correction handling:** the 12/12 above. Two prepared cases, six samples per build: an
-  illustration, not a rate.
-- **Accuracy: no advantage.** On five new cases locked before any run, Speck and the stateless
-  call both scored 18/30. On the Build 5 set the candidate rule scored 39/45, but the old rule on
-  the same judgments also scored 39/45, so the gain is not the rule's. It stays opt-in.
-- **Abstention cuts both ways.** Speck waits where waiting is right more often than the stateless
-  call, but it also waits where one authoritative record settles the case, and it still concludes
-  from weak or same-source agreement.
+**2:25 The sponsors, briefly (20 s).** Open **Audit**, then **Execution trace**.
+- **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
+- **Zetaris and Nemotron:** with live services, four SELECTs with query tokens and, per chunk, the
+  served model `nemotron-3-nano:4b`. Offline the trace says plainly FIXTURE FILE - NOT ZETARIS and
+  that the rule assessor (no model) judged the evidence. In that case point at the saved sponsor
+  receipts of 2026-10-25 (`eval/results/sponsors/`), not at the page.
+- Nightshift's receipt is separate and names the larger model it chose; no evaluation number came
+  from it.
 
-**2:35 The sponsors, briefly (25 s).** On **Disputed delivery**, open **Audit**, then
-**Execution trace** for a run:
-- **Zetaris:** four SELECTs on the local platform, each with rows, latency and query token.
-  (The Unified Semantic Layer is a separate, reproducible demonstration; the live path reads
-  these four tables.)
-- **Meterless:** the engine's run id and chunks, "present in the engine's history.json", and its
-  reflection pass.
-- **Nemotron:** per chunk, the served model `nemotron-3-nano:4b`, the contract, attempts and
-  latency. Nightshift's receipt is separate and names the larger models it chose.
+**2:45 The advantage and the limitation (15 s).** "What this demonstrates is evidence-aware
+revision and traceability: what each conclusion rests on, what stopped counting when the evidence
+changed, and what was believed before. It does not demonstrate better accuracy: on cases locked
+before any run, Speck and the stateless call both scored 18 of 30, Speck still concludes from weak
+or same-source agreement, and our newer rule's gain was not the rule's own."
 
-Close with: "We don't claim better accuracy. We show what each conclusion rests on, what stopped
-counting when the evidence changed, and where our own rule still gets it wrong."
+**If asked: the bank return.** It shows the same mechanism with a second kind of correction (a
+returned payment, and a ledger that restates its own "paid"), and it is where Speck lost: before
+Build 4 it stayed unresolved after the return in all 12 live samples while the stateless call was
+right in 11, because two capped model judgments could not reach Speck's threshold. Build 4 fixed it
+(6/6, marked *by corroboration*, with Speck's own confidence of about 0.45 beside it), but the
+change was designed on that case, so it is not a test of it (`docs/build-4-bank-return.md`).
 
-**If asked where Speck lost:** on the bank return's live comparisons. Open a live one from
-2026-10-25 under **Other saved comparisons** on **Bank return**. Before Build 4, Speck stayed
-unresolved after the return in all 12 live samples while the stateless call was right in 11:
-two capped model judgments could not reach Speck's threshold, and the ledger's stale "paid" still
-counted. Build 4 fixed it (6/6, marked *by corroboration*, with Speck's own confidence of about
-0.45 beside it), but the change was designed on that case, so it is not a test of it
-(`docs/build-4-bank-return.md`). Before the return, the stateless call answered "unpaid" in all 6
-Build 4 samples: an unsupported conclusion.
+**If asked: Build 5.** An opt-in rule, `corroborated-2`, asks the model whether each record
+*establishes* the explanation. On eight new locked cases it scored 39/45, but the old rule on the
+same judgments also scored 39/45, so the extra judgment showed no independent improvement.
 
-If there is time, the live disputed delivery and the extended demo below show the same behaviour
-with real Zetaris and model calls.
+### Optional: the same case with live services
 
-### Optional: the disputed delivery, live
-
-Select **Disputed delivery** (about 40 s).
+With `.env` set to Zetaris and a model (about 40 s):
 1. Point to the header:
    - **ZETARIS LIVE** at the platform's URL;
    - the Nemotron model at `127.0.0.1:11434`;
@@ -245,8 +242,9 @@ requires it.
 
 ## Fallback (no Zetaris or no Ollama)
 
-Set `EVIDENCE_MODE=fixture` and `REASONER=rules` in the repository's `.env`, delete
-the demo database and restart Speck. The bank-return case is unaffected either way.
+Run `npm run configure -- --model rules --evidence fixture` (or set `EVIDENCE_MODE=fixture` and
+`REASONER=rules` in the repository's `.env`), delete the demo database and restart Speck. The
+main script above works unchanged offline. The bank-return case is unaffected either way.
 
 The trace labels the evidence **FIXTURE FILE - NOT ZETARIS** and says "rule assessor (no
 model)". Say plainly that the live services are not running. Show the saved live report from
@@ -265,7 +263,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 | Did you modify Speck? | Only locally, for this project, through patches kept in this repository: a general `SPECK_HOME_VIEW` setting, so Speck opens on the Evidence tab (`patches/speck-home-view.patch`); removing Speck's other bundled plugins, so Evidence Desk is the only one (`patches/speck-remove-plugins.patch`); a chat component that answers questions about an investigation from the case summaries Evidence Desk publishes (`patches/speck-chat-investigations.patch`); the Meterless Runtime as a model provider (`patches/speck-meterless-provider.patch`); and a *Minimise* / *Expand* button on the chat reply (`patches/speck-response-collapse.patch`). Nothing is committed to Speck; the submodule is pinned to upstream. Evidence Desk itself is a plugin in `speck/plugins/evidence-desk/`, approved by hash in Speck's plugin allowlist. Speck's cognition is unmodified. | `npm run plugin:install`, `test/plugin.test.ts`, Speck's `src/tests/genesis-host.test.ts` |
 | Does it interfere with Speck's other work? | Each case is a worker left *waiting*, so it never holds up Speck's queue. Changes take Speck's foreground lease, so background cognition cannot overwrite a revision; we wrote a test that shows the overwrite happening without it. | `test/plugin.test.ts`, `test/speck-compat.test.ts` |
 | Is the Zetaris data real? | It is the scenario's records, seeded into a local Zetaris platform and read back through its REST API. Each record carries the platform's query token. | `npm run zetaris:check`, `npm run sponsors:verify`, `test/zetaris.test.ts` |
-| Which NVIDIA model, where? | `nemotron-3-nano:4b` on local Ollama. No hosted NVIDIA inference was used. | `npm run model:check` (served model), the trace |
+| Which NVIDIA model, where? | Every evaluation and comparison number: `nemotron-3-nano:4b` (Q4_K_M) on local Ollama. Separately, in the sponsor check through Meterless Nightshift, the runtime chose larger Nemotrons (30B on 2026-10-25; 550B and 30B on 2026-10-24); those runs produced no evaluation number. The client's direct path to NVIDIA's hosted API was not used. | `npm run model:check` (served model), the trace |
 | How do you stop the model from inventing things? | Speck validates each reply against a contract with enumerated ids, covering every pair, and retries once. Unknown ids are discarded, and deterministic decisive rules always win. Speck caps model-judged evidence at reliability 0.4. Explanation citations are checked against real record ids. | `test/nemotron.test.ts`, the trace's per-call accounting |
 | What does "by corroboration" mean? | Speck caps model-judged evidence at 0.4, so two records add at most +0.08 each and its own confidence rarely reaches 0.6 live. Since Build 4 Evidence Desk also concludes when two or more source systems support an explanation with nothing recorded against it and every rival ruled out or unsupported. Speck's own confidence is always shown beside it. Its weakness: it counts that sources agree, not how strongly. | `docs/build-4-bank-return.md` |
 | What does Meterless do here? | It runs each investigation: one bounded chunk per batch of evidence, with carryover between chunks, plus the reflection pass for the explanation. Recovery and recomputation are Evidence Desk's own code, and the trace labels them that way. | `vendor/meterless-markovian/NOTICE.md`, the trace |
@@ -288,7 +286,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 - That abstaining is always right. Speck also abstains where a conclusion was due.
 - That Speck is generally more accurate than a model call, or eliminates invented answers. The comparison shows behaviour on two cases, in both directions.
 - That live reasoning is generally better.
-- Hosted NVIDIA inference or any other NVIDIA infrastructure.
+- That any evaluation number came from a hosted or larger Nemotron, or that the client's direct NVIDIA hosted-API path was used. Nightshift's routing to larger Nemotrons is a sponsor-check receipt only.
 - That Cursor is part of the running system. It is a development tool the team reports using.
 - That Speck's trust check covers the whole plugin. It hashes only the entry module.
 - That Speck's chat answers are verified. They are written by a local model from the published

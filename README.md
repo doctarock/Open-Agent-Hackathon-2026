@@ -31,7 +31,14 @@ checkpoint, reaches the same conclusions as the persistent one. The differences 
 Speck's explicit evidence and revision state together with Evidence Desk's policy.
 
 `corroborated-2` (Build 5) is an **experimental** alternative to `corroborated-1`, off by default,
-selected with `CONCLUSION_RULE=corroborated-2`. It is not validated (see 5B).
+selected with `CONCLUSION_RULE=corroborated-2`. Its extra field, the model's judgment of whether
+each record *establishes* the explanation, did not show an independent improvement: on the paired
+set 5 comparison, `corroborated-1` scored on the same judgments did exactly as well (see 5B).
+
+Speck was not modified to get any of this. The validity and conclusion policy, including Builds 4
+and 5, is Evidence Desk's own code; Speck's cognition, priors, 0.4 reliability cap and 0.6
+threshold are upstream and unchanged. The five project-local Speck patches are interface, chat and
+provider changes (see *Speck* below).
 
 ### 3. What happens when source evidence is corrected
 
@@ -71,10 +78,14 @@ Every sample, including the errored ones: [docs/comparison.md](docs/comparison.m
 Open **Disputed delivery**, then its **Speck vs. baseline** tab.
 - **Offline** (the default settings: fixture evidence, fact rules), **Run the side-by-side
   comparison** takes a second and is deterministic.
-- **The saved live comparisons** are listed under **Other saved comparisons**: open one from
-  2026-10-25 (badge **LIVE MODEL CALLS**). The page warns that it was made with other settings
-  than the case's current ones; that is expected. Nothing is replayed or simulated: it is the
-  saved report.
+- **The saved live comparisons** are listed under **Other saved comparisons**, newest first
+  (badge **LIVE MODEL CALLS**). The first is the 2026-10-25 sample whose model reply failed; the
+  second (12:33 UTC) is the newest that completed. The page warns that they were made with other
+  settings than the case's current ones; that is expected. Nothing is replayed or simulated: each
+  is the saved report.
+- The offline comparison is not where the difference shows: with fact rules, the baseline also
+  drops the replaced scan, and only Speck records why. The replaced-scan reliance is a live-model
+  behaviour.
 - **With local Ollama and Zetaris configured** (`npm run configure`), the same button makes a new
   live comparison in 20-60 seconds and saves it.
 - **Command line:** `npm run compare` (deterministic) or `npm run compare:live`.
@@ -218,9 +229,11 @@ remaining false conclusions come from Speck's own threshold. The default stays `
 
 **It is compact.** The model that weighs the evidence is a 4-billion-parameter Nemotron.
 
-> **Note on model size.** By default, Meterless serves `nvidia/nemotron-3.5-lightning-30b-a3b`
-> through its Nightshift NVIDIA provider. Only the 4B model is required for the software to work
-> correctly. The larger models Meterless may route to are not needed.
+> **Note on model size.** With Meterless Nightshift in `meterless/auto` (the default provider
+> setting), the runtime chooses the model: in the verified run of 2026-10-25 it sent every call to
+> `nvidia/nemotron-3.5-lightning-30b-a3b` (on 2026-10-24, the 550B for stage 1). Only the 4B model
+> is required for the software to work correctly, and every evaluation and comparison number comes
+> from the local 4B, not from Nightshift.
 
 - The model runs on one consumer GPU: Nemotron 3 Nano 4B, 4-bit (Q4_K_M), 2.8 GB, all on the GPU.
 - It works in a 4,096-token window, the window Ollama gives it inside Speck and standalone alike.
@@ -239,7 +252,7 @@ remaining false conclusions come from Speck's own threshold. The default stays `
 
 | Agent (role) | Code | Model | Receipt |
 |---|---|---|---|
-| Evidence assessor: judges how each record bears on each explanation, one Meterless chunk at a time | `src/reasoning/nemotron.ts` | Nemotron. Local Ollama: `nemotron-3-nano:4b` (reasoning off). Through Meterless Nightshift (`meterless/auto`, the default), the runtime picks: in the receipt run, `nvidia/nemotron-3-ultra-550b-a55b` (stage 1) and `nvidia/nemotron-3.5-lightning-30b-a3b` (stage 2). | [Sponsor run, 2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json) (`servedModels` per call) |
+| Evidence assessor: judges how each record bears on each explanation, one Meterless chunk at a time | `src/reasoning/nemotron.ts` | Nemotron. Local Ollama: `nemotron-3-nano:4b` (reasoning off). Through Meterless Nightshift (`meterless/auto`, the default), the runtime picks: on 2026-10-25, `nvidia/nemotron-3.5-lightning-30b-a3b` for all 5 calls; on 2026-10-24, `nvidia/nemotron-3-ultra-550b-a55b` (stage 1) and the 30B (stage 2). | Sponsor runs [2026-10-25, Nightshift](eval/results/sponsors/2026-10-25T13-04-05-519Z.json), [2026-10-25, local 4B](eval/results/sponsors/2026-10-25T13-04-35-404Z.json), [2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json) (`servedModels` per call) |
 | Explanation writer: the Meterless engine's reflection pass | `src/reasoning/nemotron.ts` | The same model as the assessor | Same report |
 | Stateless baseline: the comparison's fresh call per stage, with no memory | `src/eval/systems.ts` | The same model, endpoint and temperature as the assessor | [Saved live comparisons](eval/results/comparisons/) (`nemotron-3-nano:4b`) |
 | Decisive reading (experimental, off by default) | `public/decisive.js` | The same model, with reasoning on (`NEMOTRON_DECISIVE_REASONING_EFFORT`) | [docs/comparison.md](docs/comparison.md#decisive-mode-experimental) |
@@ -663,18 +676,22 @@ API, is the default model provider (see *Model providers*).
   - how many judgments were returned, kept, neutral, already judged, discarded, or overruled
     by a rule.
 - **Not demonstrated:** the client also accepts NVIDIA's hosted API (see *Configuration*), but
-  only local Ollama was used here. No hosted NVIDIA inference or other NVIDIA infrastructure is
-  claimed.
+  that direct path was not used: this client was used only with local Ollama. The larger
+  Nemotrons that Nightshift chose are described under *Meterless*; no other NVIDIA infrastructure
+  is claimed.
 
 ### Speck
 
 - **Repository:** `speck/`, a submodule pinned to upstream Speck `8821789`: `29d5bb3` plus
   Speck's own lockfile update, which clears its `npm audit` advisories (0 vulnerabilities). This project patches
-  its working tree in four ways: the `SPECK_HOME_VIEW` interface setting
+  its working tree in five ways: the `SPECK_HOME_VIEW` interface setting
   (`patches/speck-home-view.patch`), removing Speck's other bundled plugins
   (`patches/speck-remove-plugins.patch`), the chat component that answers from published
-  case summaries (`patches/speck-chat-investigations.patch`), and the Meterless Runtime as a
-  model provider (`patches/speck-meterless-provider.patch`). Belief revision, memory and the
+  case summaries (`patches/speck-chat-investigations.patch`), the Meterless Runtime as a
+  model provider (`patches/speck-meterless-provider.patch`), and a *Minimise* / *Expand* button on
+  Speck's chat reply (`patches/speck-response-collapse.patch`). None of them touches cognition, and
+  none carries an Evidence Desk policy: Build 4 and Build 5 changed only Evidence Desk's own code.
+  Belief revision, memory and the
   event log are as upstream.
 - **Memory:** each case's memories are linked with Speck's association kinds, and a case summary
   is published as a shared memory after each run (see *Inside Speck*).
