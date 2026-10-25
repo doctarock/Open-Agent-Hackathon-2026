@@ -1,7 +1,7 @@
 # Open-Agent-Hackathon-2026 — Speck Evidence Desk
 
-> **For judges:** Evidence Desk is a **Speck plugin**. Start Speck (`npm run speck`) and open the
-> **Evidence** tab in its rail and take the guided demo. It ends on **Speck beside a stateless
+> **For judges:** Evidence Desk is a **Speck plugin**. Install (`npm run setup`), configure (`npm run configure`), start Speck (`npm run speck`), for the full experience, alternatively view the project as a standalone interface or CLI.
+
 > baseline**, a tab on each case: one click runs the same case, with the same
 > evidence and the same correction, through both, and shows what each actually did.
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
