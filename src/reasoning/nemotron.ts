@@ -316,6 +316,30 @@ export class NemotronReasoner implements Reasoner {
     };
   }
 
+  // Candidate explanations for a new investigation, from its title and
+  // question: `count` new ones, none repeating `existing` (the ones the
+  // person already wrote). Not part of a run: nothing is recorded in Speck,
+  // and the person edits or replaces them before the case is created.
+  // Why the model, through Speck's registry: the same contract validation and
+  // retry as every other call, and the same provider the case will use.
+  async suggestExplanations(input: { title: string; question: string; existing: string[]; count: number }): Promise<string[]> {
+    this.assertReady();
+    const response = await this.registry.infer({
+      processorId: NEMOTRON_PROCESSOR_ID, prompt: suggestionPrompt(input), contract: suggestionsContract,
+      // Warmer than a judgment: the point is a spread of different readings.
+      temperature: 0.4, timeoutMs: this.config.timeoutMs, maxAttempts: MAX_ATTEMPTS
+    });
+    const seen = new Set(input.existing.map((item) => item.trim().toLowerCase()));
+    const suggestions: string[] = [];
+    for (const raw of (response.structured as { explanations: unknown[] }).explanations) {
+      const statement = String(raw).replace(/\s+/g, " ").trim().slice(0, 300);
+      if (!statement || seen.has(statement.toLowerCase())) continue;
+      seen.add(statement.toLowerCase());
+      suggestions.push(statement);
+    }
+    return suggestions.slice(0, input.count);
+  }
+
   takeTrace(): ModelCallTrace | null {
     const trace = this.lastTrace;
     this.lastTrace = null;
@@ -431,6 +455,29 @@ function relationsContract(ids: string[], keys: string[]): StructuredOutputContr
     }
   };
 }
+
+function suggestionPrompt(input: { title: string; question: string; existing: string[]; count: number }): string {
+  return [
+    "An investigator is starting a case and needs competing explanations: different possible answers to its question, which the evidence will later be weighed against.",
+    "",
+    `TITLE: ${input.title}`,
+    `QUESTION: ${input.question}`,
+    ...(input.existing.length ? ["", "EXPLANATIONS ALREADY WRITTEN (do not repeat or reword these):", ...input.existing.map((item) => `- ${item}`)] : []),
+    "",
+    `Write ${input.count} new explanation${input.count === 1 ? "" : "s"}. Each one:`,
+    "- is a single plain sentence of at most 25 words stating what happened;",
+    "- could be true given only the title and question, and differs clearly from the others;",
+    "- assumes no facts that the question does not state.",
+    "explanations: the list of sentences, nothing else."
+  ].join("\n");
+}
+
+const suggestionsContract: StructuredOutputContract = {
+  name: "competing_explanations",
+  description: "Candidate explanations that compete to answer an investigation's question",
+  required: ["explanations"],
+  properties: { explanations: { type: "array", items: { type: "string" } } }
+};
 
 const explanationContract: StructuredOutputContract = {
   name: "investigation_explanation",

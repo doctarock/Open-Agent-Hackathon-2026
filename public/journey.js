@@ -88,7 +88,7 @@ export const JOURNEY = [
     label: "Part 6 of 6 · Your own investigation",
     title: "Start an investigation of your own",
     body: () => [
-      "This form starts an investigation of your own: a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases.",
+      "This form starts an investigation of your own: a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases. Once the title and question are written, Suggest explanations has the model fill in the explanations for you to edit.",
       "Once it is created, Run investigation has the local model weigh each record against each explanation (Speck caps model-judged evidence at reliability 0.4). Add evidence takes a new record, or a correction of an earlier one; run again and the conclusion is revised from the evidence that still counts.",
       "That completes the guided demo. The Guide button on any case lists every feature, and Reset demo case starts a prepared case afresh for the next person."
     ]

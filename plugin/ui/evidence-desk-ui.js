@@ -395,6 +395,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
         el("input", { type: "text", name: "explanation", maxlength: "300", value, placeholder: index === 1 ? "e.g. The laptop was returned and lost at the warehouse." : "e.g. The laptop was never sent back." })));
     };
     addExplanation(); addExplanation();
+    const suggestNote = el("p", { className: "meta", role: "status" }, "Write a title and the question, and Speck's configured model can suggest explanations to fill in. Edit or replace them before creating the investigation.");
     const error = el("p", { className: "dialog-error", role: "alert", hidden: "" });
     const form = el("form", { className: "panel new-case", novalidate: "" },
       el("h2", { id: "edk-new-case-title", tabindex: "-1" }, "Start an investigation of your own"),
@@ -403,18 +404,66 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       el("label", { className: "field" }, "Title", el("input", { type: "text", name: "title", maxlength: "120", placeholder: "e.g. Missing laptop return" })),
       el("label", { className: "field" }, "The question", el("textarea", { name: "question", rows: "2", maxlength: "600", placeholder: "e.g. The customer says they returned laptop SN-4471; the warehouse has no record of it. Was it returned?" })),
       el("fieldset", {}, el("legend", {}, "Competing explanations (2 to 5)"), explanations,
-        el("button", { type: "button", className: "link", "data-add-explanation": "" }, "Add another explanation")),
+        el("button", { type: "button", className: "link", "data-add-explanation": "" }, "Add another explanation"),
+        el("div", { className: "suggest-actions" },
+          el("button", { type: "button", className: "secondary", "data-suggest": "fill", disabled: "" }, "Suggest explanations"),
+          el("button", { type: "button", className: "secondary", "data-suggest": "another", disabled: "" }, "Suggest another")),
+        suggestNote),
       el("fieldset", {}, el("legend", {}, "First evidence (optional)"),
         el("label", { className: "field" }, "Source", el("input", { type: "text", name: "source", maxlength: "120", placeholder: "e.g. Courier pickup log" })),
         el("label", { className: "field" }, "What it says", el("textarea", { name: "content", rows: "2", maxlength: "1200", placeholder: "e.g. Pickup of a 2.1 kg parcel from the customer on 3 Oct." })),
         el("label", { className: "field" }, "When the source recorded it (optional)", el("input", { type: "date", name: "observedAt" }))),
       error,
       el("div", { className: "dialog-actions" }, el("button", { type: "submit", className: "primary" }, "Create investigation")));
+    const explanationInputs = () => [...form.querySelectorAll('[name="explanation"]')];
+    let suggesting = false;
+    // The suggest buttons need a title and a question; "Suggest explanations"
+    // fills the empty fields, "Suggest another" adds a field (up to five).
+    const updateSuggest = () => {
+      const posed = Boolean(form.querySelector('[name="title"]').value.trim() && form.querySelector('[name="question"]').value.trim());
+      const inputs = explanationInputs();
+      form.querySelector('[data-suggest="fill"]').disabled = suggesting || !posed || !inputs.some((input) => !input.value.trim());
+      form.querySelector('[data-suggest="another"]').disabled = suggesting || !posed || inputs.length >= 5;
+      form.querySelector('[data-add-explanation]').hidden = inputs.length >= 5;
+    };
+    form.addEventListener("input", updateSuggest);
     form.querySelector("[data-add-explanation]").addEventListener("click", () => {
       if (explanations.children.length < 5) addExplanation();
-      if (explanations.children.length >= 5) form.querySelector("[data-add-explanation]").hidden = true;
+      updateSuggest();
       explanations.lastElementChild.querySelector("input").focus();
     });
+    form.querySelectorAll("[data-suggest]").forEach((button) => button.addEventListener("click", async () => {
+      const another = button.dataset.suggest === "another";
+      const empty = explanationInputs().filter((input) => !input.value.trim());
+      const existing = explanationInputs().map((input) => input.value.trim()).filter(Boolean);
+      suggesting = true;
+      updateSuggest();
+      suggestNote.textContent = "Asking the model for explanations…";
+      try {
+        const response = await fetcher(`${API_BASE}/explanations/suggest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
+          title: form.querySelector('[name="title"]').value, question: form.querySelector('[name="question"]').value,
+          existing, count: another ? 1 : empty.length
+        }) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error ?? `HTTP ${response.status}`);
+        const targets = another ? [] : empty;
+        for (const suggestion of result.explanations) {
+          let input = targets.shift();
+          if (!input) {
+            if (explanationInputs().length >= 5) break;
+            addExplanation();
+            input = explanations.lastElementChild.querySelector("input");
+          }
+          input.value = suggestion;
+        }
+        suggestNote.textContent = `Suggested by ${result.model}. Edit or replace them before creating the investigation.`;
+      } catch (failure) {
+        suggestNote.textContent = `No explanations were suggested: ${failure.message}`;
+      } finally {
+        suggesting = false;
+        updateSuggest();
+      }
+    }));
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const value = (name) => form.querySelector(`[name="${name}"]`).value.trim();

@@ -10,6 +10,8 @@ import { addUserEvidence, createUserCase, listUserCases } from "../src/investiga
 import { loadScenario } from "../src/scenario.js";
 import { evaluationSummary } from "../src/compare/evaluation.js";
 import { METERLESS_TOKEN_KEY } from "../src/reasoning/meterless.js";
+import { modelConfigProblem, NemotronReasoner, providerLabel } from "../src/reasoning/nemotron.js";
+import { ReasonerNotReadyError } from "../src/investigation/records.js";
 
 // Evidence Desk as a Speck plugin. Speck loads this file (as
 // speck/plugins/evidence-desk/dist/plugin/evidence-desk-plugin.js, put there
@@ -110,6 +112,11 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
     if (!spec) throw new NotFoundError(`Unknown case "${id}"`);
     return spec;
   };
+  const settingsWithToken = async () => {
+    const settings = options.settings ?? pluginSettings(rootDir);
+    const token = await options.secret?.(METERLESS_TOKEN_KEY).catch(() => null);
+    return token ? { ...settings, [METERLESS_TOKEN_KEY]: token } : settings;
+  };
   return {
     list: () => specs().map((spec) => ({ id: spec.id, label: spec.label, kind: spec.yours ? "yours" : "prepared" })),
     // The evaluation reports and saved comparisons, read from the repository.
@@ -117,6 +124,30 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
     create(input: unknown) {
       const created = createUserCase(ownDir, input);
       return { id: created.id, label: created.label, kind: "yours" };
+    },
+    // Explanations the configured model suggests for a new investigation,
+    // before it is created: the form's title, question and the explanations
+    // already written, and how many more to suggest.
+    // Why: a person who knows the question may not yet see the readings that
+    // compete to answer it; the suggestions are only filled into the form.
+    async suggestExplanations(input: unknown) {
+      const body = (input && typeof input === "object" ? input : {}) as { title?: unknown; question?: unknown; existing?: unknown; count?: unknown };
+      const field = (value: unknown, name: string, max: number) => {
+        const trimmed = typeof value === "string" ? value.trim() : "";
+        if (!trimmed) throw new RequestError(`${name} is needed before explanations can be suggested`);
+        return trimmed.slice(0, max);
+      };
+      const title = field(body.title, "A title", 120);
+      const question = field(body.question, "The question", 600);
+      const existing = (Array.isArray(body.existing) ? body.existing : []).map((item) => String(item).trim()).filter(Boolean).slice(0, 5);
+      const count = Math.min(Number.isInteger(body.count) ? Number(body.count) : 2, 5 - existing.length);
+      if (count < 1) throw new RequestError("An investigation has at most five explanations; remove one to suggest another");
+      const config = loadConfig(await settingsWithToken(), { rootDir }).nemotron;
+      const problem = modelConfigProblem(config);
+      if (problem) throw new ReasonerNotReadyError(`${providerLabel(config)} is not configured: ${problem}`);
+      const suggestions = await new NemotronReasoner(runtime(), config).suggestExplanations({ title, question, existing, count });
+      if (!suggestions.length) throw new Error("The model suggested no explanation that differs from the ones already written; try again or write one yourself");
+      return { explanations: suggestions, model: config.model };
     },
     addEvidence(id: string, input: unknown) {
       const spec = find(id);
@@ -150,9 +181,7 @@ export function createCaseRegistry(runtime: () => SpeckRuntime, options: { rootD
       let entry = opened.get(id);
       if (!entry) {
         entry = (async () => {
-          const settings = options.settings ?? pluginSettings(rootDir);
-          const token = await options.secret?.(METERLESS_TOKEN_KEY).catch(() => null);
-          const config = caseConfig(spec, token ? { ...settings, [METERLESS_TOKEN_KEY]: token } : settings, rootDir, spec.yours ? path.dirname(ownDir) : undefined);
+          const config = caseConfig(spec, await settingsWithToken(), rootDir, spec.yours ? path.dirname(ownDir) : undefined);
           const provider = spec.yours ? new FixtureEvidenceProvider(path.join(spec.scenarioDir, "evidence.json"), config.rootDir, "Evidence you entered (stored locally, not Zetaris)") : null;
           const desk = await EvidenceDesk.attach(runtime(), config, { ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}), ...(provider ? { provider } : {}) });
           return { desk, api: deskApi(desk, config, "Speck's own database (this case is a Speck worker)") };
@@ -205,6 +234,7 @@ export function registerEvidenceDeskRoutes(app: RouteApp, cases: ReturnType<type
 // Why: a judge can try the pipeline on a case of their own, not only on the
 // prepared ones.
   app.post(`${API_BASE}/cases`, plain((req) => cases.create(req.body)));
+  app.post(`${API_BASE}/explanations/suggest`, plain((req) => cases.suggestExplanations(req.body)));
   app.post(`${API_BASE}/cases/:caseId/evidence/add`, plain((req) => cases.addEvidence(String(req.params.caseId ?? ""), req.body)));
   app.post(`${API_BASE}/cases/:caseId/delete`, plain((req) => cases.remove(String(req.params.caseId ?? ""))));
   // Each case's API (DESK_ROUTES): the operations the standalone server serves under /api.

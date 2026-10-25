@@ -298,3 +298,49 @@ test("a person deletes their investigation: it leaves the tab, Speck stops offer
     runtime.close();
   }
 });
+
+test("the model suggests explanations for a new investigation from its title and question, never repeating one already written", async () => {
+  // A stand-in OpenAI-compatible endpoint, as in nemotron.test.ts.
+  const prompts: string[] = [];
+  const model = http.createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    request.on("end", () => {
+      const parsed = JSON.parse(body);
+      prompts.push(parsed.messages.at(-1).content);
+      const explanations = ["Never sent back.", "Returned and lost at the warehouse.", "Delivered to the wrong warehouse.", "Received but scanned under another serial."];
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ model: parsed.model, choices: [{ message: { role: "assistant", content: JSON.stringify({ explanations }) } }] }));
+    });
+  }).listen(0, "127.0.0.1");
+  await new Promise((resolve) => model.once("listening", resolve));
+  const settings = {
+    NEMOTRON_BASE_URL: `http://127.0.0.1:${(model.address() as { port: number }).port}/v1`, NEMOTRON_MODEL: "test/nemotron-stand-in",
+    NEMOTRON_API_KEY_ENV: "EVIDENCE_DESK_TEST_KEY", EVIDENCE_DESK_TEST_KEY: "test-key-not-a-secret", NEMOTRON_REASONING_EFFORT: "none"
+  };
+  const runtime = new SpeckRuntime({ databasePath: path.join(tempDir(), "speck.sqlite") });
+  await runtime.initialize();
+  const app = express();
+  app.use(express.json());
+  registerEvidenceDeskRoutes(app, createCaseRegistry(() => runtime, { rootDir: ROOT_DIR, settings, userCasesDir: tempDir() }));
+  const server = http.createServer(app).listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const route = "/api/plugins/evidence-desk/explanations/suggest";
+  try {
+    assert.equal((await call(base, route, "POST", { title: "Missing laptop return", question: " " })).status, 400, "a question is needed first");
+    const suggested = await call(base, route, "POST", { title: "Missing laptop return", question: "Was laptop SN-4471 returned?", existing: ["Never sent back."], count: 2 });
+    assert.deepEqual(suggested, { status: 200, body: { explanations: ["Returned and lost at the warehouse.", "Delivered to the wrong warehouse."], model: "test/nemotron-stand-in" } });
+    assert.match(prompts[0]!, /Was laptop SN-4471 returned\?/);
+    assert.match(prompts[0]!, /do not repeat[\s\S]*- Never sent back\./);
+    assert.equal((await call(base, route, "POST", { title: "t", question: "q", existing: ["a", "b", "c", "d", "e"], count: 1 })).status, 400, "five is the most");
+    assert.equal(prompts.length, 1, "refused requests never reach the model");
+  } finally {
+    server.close();
+    model.close();
+    runtime.close();
+  }
+  // With no model configured, the request says so instead of calling anything.
+  const unconfigured = createCaseRegistry(() => runtime, { rootDir: ROOT_DIR, settings: {}, userCasesDir: tempDir() });
+  await assert.rejects(unconfigured.suggestExplanations({ title: "t", question: "q" }), /is not configured/);
+});

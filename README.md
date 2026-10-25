@@ -330,6 +330,12 @@ assessments was tried first and invented details more often.
 
 **Your own investigations.** *+ New investigation* takes a title, the question, two to five
 competing explanations (equal priors) and optionally the first evidence.
+- Once the title and question are written, *Suggest explanations* has the configured model
+  (through Speck's model registry, under a structured-output contract) fill the empty explanation
+  fields, and *Suggest another* adds one more field with a suggestion, up to five. Suggestions
+  never repeat an explanation already written, are only filled into the form to edit or replace,
+  and record nothing in Speck (`POST /api/plugins/evidence-desk/explanations/suggest`). Without a
+  configured model the form says so and nothing is called.
 - It is written as an ordinary scenario under the installed plugin's
   `data/user-cases/my-N/` and investigated by the same pipeline, as case `MY-N`.
 - *Add evidence* adds a record (source, text, optional date), or a correction of an earlier record,
