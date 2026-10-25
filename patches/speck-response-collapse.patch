@@ -1,0 +1,58 @@
+diff --git a/public/index.html b/public/index.html
+--- a/public/index.html
++++ b/public/index.html
+@@ -87,7 +87,10 @@
+ 
+   <section class="interaction-dock" aria-label="Talk to Speck">
+     <div id="responseDock" class="response-dock" aria-live="polite" hidden>
+-      <span class="eyebrow">Speck</span>
++      <div class="response-head">
++        <span class="eyebrow">Speck</span>
++        <button id="responseToggle" class="response-toggle" type="button" aria-expanded="true" aria-controls="responseText">Minimise</button>
++      </div>
+       <p id="responseText"></p>
+     </div>
+     <form id="quickComposer" class="quick-composer">
+diff --git a/public/speck.css b/public/speck.css
+--- a/public/speck.css
++++ b/public/speck.css
+@@ -303,6 +303,10 @@
+ .response-dock { max-height:180px; overflow:auto; margin:0 10px 9px; padding:13px 16px; border:1px solid rgba(117,230,220,.2); border-radius:16px; background:rgba(12,14,24,.94); box-shadow:0 16px 45px rgba(0,0,0,.35); backdrop-filter:blur(22px); }
+ .response-dock p { margin:4px 0 0; color:var(--ink); font-size:12px; line-height:1.5; white-space:pre-wrap; }
+ .response-dock.thinking p { color:var(--muted); }
++.response-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
++.response-toggle { padding:2px 4px; color:var(--muted); font-size:10px; border:0; background:none; cursor:pointer; }
++.response-toggle:hover { color:var(--ink); }
++.response-dock.collapsed { padding-top:8px; padding-bottom:8px; }
+ 
+ .glass-dialog { width: min(560px, calc(100vw - 32px)); padding: 0; color: var(--ink); border: 1px solid rgba(216,203,255,.25); border-radius: 24px; background: rgba(13,14,25,.95); box-shadow: 0 30px 100px rgba(0,0,0,.65); backdrop-filter: blur(30px); }
+ .glass-dialog::backdrop { background: rgba(3,4,8,.68); backdrop-filter: blur(7px); }
+diff --git a/public/ui/conversation.js b/public/ui/conversation.js
+--- a/public/ui/conversation.js
++++ b/public/ui/conversation.js
+@@ -71,8 +71,25 @@
+   dock.hidden = false;
+   dock.classList.toggle("thinking", thinking);
+   $("#responseText").textContent = text;
++  // A new reply always opens, so it is never missed behind a minimised box.
++  setResponseCollapsed(false);
+ }
+ 
++export function setResponseCollapsed(collapsed) {
++  $("#responseDock").classList.toggle("collapsed", collapsed);
++  $("#responseText").hidden = collapsed;
++  const toggle = $("#responseToggle");
++  toggle.setAttribute("aria-expanded", String(!collapsed));
++  toggle.textContent = collapsed ? "Expand" : "Minimise";
++}
++
++export function toggleSpeckResponse() {
++  setResponseCollapsed(!$("#responseDock").classList.contains("collapsed"));
++}
++
++// Wired here rather than in speck.js, which this project's home-view patch also changes.
++$("#responseToggle")?.addEventListener("click", toggleSpeckResponse);
++
+ export async function submitQuickPrompt(event) {
+   event.preventDefault();
+   const input = $("#quickPrompt");

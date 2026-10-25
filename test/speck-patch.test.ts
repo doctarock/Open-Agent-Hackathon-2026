@@ -46,3 +46,13 @@ test("the Meterless patch adds only the Meterless Runtime provider: its module a
   assert.deepEqual(files, ["public/ui/system.js", "src/config.ts", "src/genesis-host.ts", "src/genesis-ui/routes/config.ts", "src/index.ts",
     "src/models/meterless.ts", "src/models/providers.ts", "src/models/types.ts", "src/speck/chat.ts", "src/speck/configure.ts", "src/tests/meterless-provider.test.ts"]);
 });
+
+test("the response patch only makes Speck's chat reply box collapsible: its markup, style and toggle", () => {
+  const collapse = path.join(ROOT_DIR, "patches", "speck-response-collapse.patch");
+  git("apply", "--check", "--reverse", collapse);
+  const text = fs.readFileSync(collapse, "utf8");
+  const files = [...text.matchAll(/^diff --git a\/(\S+) b\//gm)].map((match) => match[1]).sort();
+  assert.deepEqual(files, ["public/index.html", "public/speck.css", "public/ui/conversation.js"]);
+  assert.match(text, /id="responseToggle"/);
+  assert.match(text, /setResponseCollapsed\(false\)/, "a new reply always opens");
+});

@@ -80,7 +80,7 @@ table, is the record of what was used.
 It runs inside Speck as a plugin:
 - **A case is a Speck worker** in Speck's own database, beside Speck's other work.
 - **The page is a tab** in Speck's interface, and it is the interface's home: Speck opens on it.
-- **Four project-local changes to Speck**, kept in this repository as patches in `patches/`. They
+- **Five project-local changes to Speck**, kept in this repository as patches in `patches/`. They
   are applied by `npm run setup` and never committed to Speck; the submodule stays pinned to
   upstream Speck.
   - `speck-home-view.patch`: a general `SPECK_HOME_VIEW` setting chooses the view Speck's
@@ -96,6 +96,8 @@ It runs inside Speck as a plugin:
     - the contract itself (`src/models/meterless.ts`), which Evidence Desk also uses;
     - a processor and Speck's chat path through it;
     - a Meterless panel in the System view, with the token kept in Speck's secret store.
+  - `speck-response-collapse.patch`: Speck's chat reply box gets a *Minimise* / *Expand* button.
+    A new reply always opens it again.
 
   Everything else Evidence Desk needs is Speck's existing plugin system and memory API.
 
@@ -393,7 +395,7 @@ its runtime, with routes and a tab in its interface.
 | Speck counts workers in `created` or `ready` as queued tasks, and pauses background cognition for all workers while any is queued | Each case worker moves `created → ready → waiting` through Speck's own transitions. In Speck's Task queue the cases show under **Waiting**. |
 | Speck's background embedding job can write a stale copy of an object over a concurrent revision (demonstrated in `test/speck-compat.test.ts`) | Every change to a case takes Speck's foreground lease and waits for any background job already running. The lease does not order foreground work, so a change (a run, an update, a withdrawal, a reset) is refused with HTTP 409 while another change to the same case is in progress. Background cognition then runs over the cases like any other worker. |
 | Speck's chat could select any model in its runtime registry | Nemotron goes through a private instance of Speck's `ModelRegistry` class: the same contract validation and retries, but no model is added to Speck. |
-| Speck's interface always opened on its World view, with plugin tabs after Speck's own | One of four project-local changes to Speck (see above), kept in this project as `patches/speck-home-view.patch` (applied by `npm run speck:patch`, part of `npm run setup`; never committed to Speck): `SPECK_HOME_VIEW` (default `world`) names the view the interface opens on and returns to (brand button, panel close). A plugin tab named there is placed first in the rail. `npm run speck` sets it to the Evidence tab; `SPECK_HOME_VIEW=world npm run speck` restores Speck's default. Speck's own tests cover the setting (`src/tests/genesis-host.test.ts`). |
+| Speck's interface always opened on its World view, with plugin tabs after Speck's own | One of five project-local changes to Speck (see above), kept in this project as `patches/speck-home-view.patch` (applied by `npm run speck:patch`, part of `npm run setup`; never committed to Speck): `SPECK_HOME_VIEW` (default `world`) names the view the interface opens on and returns to (brand button, panel close). A plugin tab named there is placed first in the rail. `npm run speck` sets it to the Evidence tab; `SPECK_HOME_VIEW=world npm run speck` restores Speck's default. Speck's own tests cover the setting (`src/tests/genesis-host.test.ts`). |
 
 | Concern | Owner | How it is used |
 |---|---|---|
