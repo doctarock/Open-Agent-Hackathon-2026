@@ -1,0 +1,26 @@
+{
+  "id": "stock-recount",
+  "domain": "inventory",
+  "family": null,
+  "order": "as recorded",
+  "category": "conflict, then same-source recount",
+  "description": "The warehouse system and a cycle count disagree; the count app then recounts both bins and agrees with the system. No record says it replaces another.",
+  "checkpoints": [
+    {
+      "afterStage": "first-count",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "recount",
+      "conclusion": "H-ENOUGH",
+      "notCurrent": [],
+      "unsupported": [
+        "H-SHORT"
+      ],
+      "invalidated": []
+    }
+  ]
+}

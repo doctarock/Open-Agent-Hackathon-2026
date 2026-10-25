@@ -1,0 +1,32 @@
+{
+  "id": "claim-decision-missing",
+  "domain": "insurance",
+  "family": null,
+  "order": "as recorded",
+  "category": "missing information",
+  "description": "A recommendation and the customer's expectation agree, but no decision is recorded: the deciding record is missing. The claims system then records a decline.",
+  "checkpoints": [
+    {
+      "afterStage": "recommendation",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-DECLINED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "decision",
+      "conclusion": "H-DECLINED",
+      "notCurrent": [
+        "H-APPROVED",
+        "H-PENDING"
+      ],
+      "unsupported": [
+        "H-APPROVED",
+        "H-PENDING"
+      ],
+      "invalidated": []
+    }
+  ]
+}

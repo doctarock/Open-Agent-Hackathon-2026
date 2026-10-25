@@ -1,0 +1,34 @@
+{
+  "id": "payroll-final-pay-returned",
+  "domain": "payroll",
+  "family": null,
+  "order": "as recorded",
+  "category": "corrected evidence",
+  "description": "Final pay is settled, then returned by the receiving bank (declared replacement); payroll changes its own status to unpaid without saying it replaces anything.",
+  "checkpoints": [
+    {
+      "afterStage": "paid",
+      "conclusion": "H-PAID",
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-PAID",
+        "H-PART-PAID"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "returned",
+      "conclusion": "H-NOT-PAID",
+      "notCurrent": [
+        "H-PAID"
+      ],
+      "unsupported": [
+        "H-PAID",
+        "H-PART-PAID"
+      ],
+      "invalidated": [
+        "CH1-02"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "lockedAt": "2026-10-25T11:57:28.078Z",
+  "note": "Written before any system was run on these cases and before the Build 4 policy was implemented.",
+  "files": {
+    "claim-decision-missing/scenario.json": "cd637484a6b29495021da9f780291a5350f7d488ebcd0b2acdf5de22e50e2178",
+    "claim-decision-missing/evidence.json": "69fee8824226aa5eec537ce2f5e4dbf316d5bba6a3d334a1ec7a16879d91a358",
+    "claim-decision-missing/expected.json": "702ad023a68d59916fb1026237bdb25116aed8933eeaf8568a9a31ea1f4b1801",
+    "customs-hold-lifted/scenario.json": "b89ec8f3bdc3f2cd84421981b4dd888c41c7c6030f4db901d1ef64a8b15bdb4f",
+    "customs-hold-lifted/evidence.json": "5b3d983296261ebfd5de8c4cf0376645f9c8384fbe1f0f406cfcf4bbeb29dd8a",
+    "customs-hold-lifted/expected.json": "a9efa40a53b418c1ac2c293ad13a176da349b0ba5d42464e02c0fbb1cdc39801",
+    "payroll-final-pay-returned/scenario.json": "8929772ecba2dbf43529984d5d5916af89078e4d89995c7420f6a8b0341e85d4",
+    "payroll-final-pay-returned/evidence.json": "eb7f45a71319cbfea37b091fe037f2398bd42a1d5ad650068829979c84f55aca",
+    "payroll-final-pay-returned/expected.json": "b564c201d29ce30b28e97773ba7f78e840cab2f7dd1f16b1606288f73b30d23a",
+    "refund-settlement-withdrawn/scenario.json": "d9fdc2f024f96006f3e639687a511cb40489155c679f8eaffb2ae9e2ae3255a4",
+    "refund-settlement-withdrawn/evidence.json": "2fb499418192d2961e66ba803636d540f65552ff76d8b0f420bb16d4210790f0",
+    "refund-settlement-withdrawn/expected.json": "afdb930717dc1dc1e6fdc3a1870060d5d608308be56624d4721a264f723b30e4",
+    "stock-recount/scenario.json": "708724b387df9500df6ac32f7f108b1e6eebb767f7ffbe510ec5b820f3202fba",
+    "stock-recount/evidence.json": "930fe6bbbd2b8339f3a491227e6ea3e9ce0f47d984e65c401787c15d62a7ecdf",
+    "stock-recount/expected.json": "c33c704ef1c5c07f1e9513ea4416cb6f0c11f342435a08c8c6484c5746ca1b55"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "refund-settlement-withdrawn",
+  "domain": "refunds",
+  "family": null,
+  "order": "as recorded",
+  "category": "withdrawn evidence",
+  "description": "A refund is submitted and a settlement appears; the investigator then withdraws the settlement (it was for RF-291, another customer's refund) and the customer reports nothing arrived. Nothing records whether RF-219 settled.",
+  "checkpoints": [
+    {
+      "afterStage": "settled",
+      "conclusion": "H-RECEIVED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-RECEIVED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "settlement-withdrawn",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-RECEIVED"
+      ],
+      "invalidated": [
+        "CH4-02"
+      ],
+      "withdrawBefore": [
+        {
+          "recordId": "CH4-02",
+          "reason": "The card network confirmed this settlement was for refund RF-291, another customer's."
+        }
+      ]
+    }
+  ]
+}

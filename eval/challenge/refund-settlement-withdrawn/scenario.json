@@ -1,0 +1,77 @@
+{
+  "id": "ch-refund-settlement-withdrawn",
+  "caseId": "CH-RFD-01",
+  "title": "Has refund RF-219 reached the customer?",
+  "question": "Customer C-3390 is owed refund RF-219 (AUD 240). Have they received it?",
+  "sources": {
+    "refunds": {
+      "name": "Refund platform",
+      "reliability": 0.85
+    },
+    "card": {
+      "name": "Card network settlement report",
+      "reliability": 0.95
+    },
+    "support": {
+      "name": "Support desk",
+      "reliability": 0.6
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-RECEIVED",
+      "statement": "Customer C-3390 has received refund RF-219.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "refund.status",
+          "equals": "submitted",
+          "direction": "supports",
+          "strength": 0.4
+        },
+        {
+          "fact": "card.credit",
+          "equals": "settled",
+          "direction": "supports"
+        },
+        {
+          "fact": "customer.received",
+          "equals": "false",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-RECEIVED",
+      "statement": "Customer C-3390 has not received refund RF-219.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "customer.received",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "card.credit",
+          "equals": "settled",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "settled",
+      "label": "Refund submitted and settled (12 Oct)",
+      "asOf": "2026-10-12T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "settlement-withdrawn",
+      "label": "Settlement withdrawn, customer complains (14 Oct)",
+      "asOf": "2026-10-14T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

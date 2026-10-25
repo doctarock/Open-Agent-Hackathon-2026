@@ -1,0 +1,111 @@
+{
+  "id": "ch-claim-decision-missing",
+  "caseId": "CH-CLM-01",
+  "title": "Has claim CL-4402 been approved?",
+  "question": "A storm-damage claim CL-4402 was lodged on 20 Nov. Has it been approved?",
+  "sources": {
+    "adjuster": {
+      "name": "Loss adjuster report",
+      "reliability": 0.8
+    },
+    "customer": {
+      "name": "Customer email",
+      "reliability": 0.5
+    },
+    "claims": {
+      "name": "Claims system",
+      "reliability": 0.95
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-APPROVED",
+      "statement": "Claim CL-4402 has been approved.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "adjuster.recommendation",
+          "equals": "approve",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "customer.statement",
+          "equals": "expects_approval",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "claim.decision",
+          "equals": "declined",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-DECLINED",
+      "statement": "Claim CL-4402 has been declined.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "claim.decision",
+          "equals": "declined",
+          "direction": "supports"
+        },
+        {
+          "fact": "adjuster.recommendation",
+          "equals": "approve",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    },
+    {
+      "key": "H-PENDING",
+      "statement": "Claim CL-4402 is still awaiting a decision.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "adjuster.recommendation",
+          "equals": "approve",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "customer.statement",
+          "equals": "expects_approval",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "claim.decision",
+          "equals": "declined",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-DECISION",
+      "text": "Has the claims system recorded a decision?",
+      "answeredBy": "claim.decision"
+    }
+  ],
+  "stages": [
+    {
+      "id": "recommendation",
+      "label": "Adjuster recommends, customer expects approval (2 Dec)",
+      "asOf": "2026-12-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "decision",
+      "label": "Claims system records the decision (5 Dec)",
+      "asOf": "2026-12-05T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

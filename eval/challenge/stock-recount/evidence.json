@@ -1,0 +1,81 @@
+{
+  "caseId": "CH-STK-01",
+  "records": [
+    {
+      "id": "CH5-01",
+      "caseId": "CH-STK-01",
+      "source": {
+        "system": "wms",
+        "name": "Warehouse management system"
+      },
+      "observedAt": "2026-09-01T22:00:00Z",
+      "content": "P-77 on hand: 64 units.",
+      "facts": {
+        "stock.level": "sufficient"
+      },
+      "provenance": {
+        "systemOfRecord": "Warehouse management system",
+        "recordRef": "ch5-01",
+        "author": "wms-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH5-02",
+      "caseId": "CH-STK-01",
+      "source": {
+        "system": "count",
+        "name": "Cycle count app"
+      },
+      "observedAt": "2026-09-02T03:00:00Z",
+      "content": "Cycle count P-77, bin A4: 38 units counted.",
+      "facts": {
+        "stock.level": "short"
+      },
+      "provenance": {
+        "systemOfRecord": "Cycle count app",
+        "recordRef": "ch5-02",
+        "author": "count-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH5-03",
+      "caseId": "CH-STK-01",
+      "source": {
+        "system": "count",
+        "name": "Cycle count app"
+      },
+      "observedAt": "2026-09-03T02:00:00Z",
+      "content": "Recount P-77, bin A4 and overflow bin A9: 61 units in total.",
+      "facts": {
+        "stock.level": "sufficient"
+      },
+      "provenance": {
+        "systemOfRecord": "Cycle count app",
+        "recordRef": "ch5-03",
+        "author": "count-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH5-04",
+      "caseId": "CH-STK-01",
+      "source": {
+        "system": "wms",
+        "name": "Warehouse management system"
+      },
+      "observedAt": "2026-09-03T04:00:00Z",
+      "content": "P-77 on hand: 64 units.",
+      "facts": {
+        "stock.level": "sufficient"
+      },
+      "provenance": {
+        "systemOfRecord": "Warehouse management system",
+        "recordRef": "ch5-04",
+        "author": "wms-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

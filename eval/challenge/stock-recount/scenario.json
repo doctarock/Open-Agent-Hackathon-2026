@@ -1,0 +1,67 @@
+{
+  "id": "ch-stock-recount",
+  "caseId": "CH-STK-01",
+  "title": "Is there enough of part P-77?",
+  "question": "Monday's job needs 50 units of part P-77. Is there enough in stock?",
+  "sources": {
+    "wms": {
+      "name": "Warehouse management system",
+      "reliability": 0.85
+    },
+    "count": {
+      "name": "Cycle count app",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-ENOUGH",
+      "statement": "At least 50 units of P-77 are in stock.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "stock.level",
+          "equals": "sufficient",
+          "direction": "supports"
+        },
+        {
+          "fact": "stock.level",
+          "equals": "short",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-SHORT",
+      "statement": "Fewer than 50 units of P-77 are in stock.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "stock.level",
+          "equals": "short",
+          "direction": "supports"
+        },
+        {
+          "fact": "stock.level",
+          "equals": "sufficient",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "first-count",
+      "label": "System figure and first count disagree (2 Sep)",
+      "asOf": "2026-09-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "recount",
+      "label": "Recount including the overflow bin (3 Sep)",
+      "asOf": "2026-09-03T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

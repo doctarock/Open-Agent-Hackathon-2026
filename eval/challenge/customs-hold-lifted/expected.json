@@ -1,0 +1,24 @@
+{
+  "id": "customs-hold-lifted",
+  "domain": "shipping",
+  "family": null,
+  "order": "as recorded",
+  "category": "contradictory evidence",
+  "description": "Broker and terminal disagree; the border agency that requested the hold then completes its inspection and sends release authority. The terminal's hold notice is not replaced by its source.",
+  "checkpoints": [
+    {
+      "afterStage": "conflict",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "inspection-done",
+      "conclusion": "H-RELEASED",
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    }
+  ]
+}

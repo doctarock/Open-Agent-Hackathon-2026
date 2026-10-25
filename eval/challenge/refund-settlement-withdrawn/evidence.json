@@ -1,0 +1,62 @@
+{
+  "caseId": "CH-RFD-01",
+  "records": [
+    {
+      "id": "CH4-01",
+      "caseId": "CH-RFD-01",
+      "source": {
+        "system": "refunds",
+        "name": "Refund platform"
+      },
+      "observedAt": "2026-10-10T02:00:00Z",
+      "content": "RF-219 for C-3390: AUD 240.00 refund submitted to the card network.",
+      "facts": {
+        "refund.status": "submitted"
+      },
+      "provenance": {
+        "systemOfRecord": "Refund platform",
+        "recordRef": "ch4-01",
+        "author": "refunds-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH4-02",
+      "caseId": "CH-RFD-01",
+      "source": {
+        "system": "card",
+        "name": "Card network settlement report"
+      },
+      "observedAt": "2026-10-12T03:00:00Z",
+      "content": "Settlement: AUD 240.00 credit to card ending 0912, merchant reference RF-219.",
+      "facts": {
+        "card.credit": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Card network settlement report",
+        "recordRef": "ch4-02",
+        "author": "card-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH4-03",
+      "caseId": "CH-RFD-01",
+      "source": {
+        "system": "support",
+        "name": "Support desk"
+      },
+      "observedAt": "2026-10-14T01:00:00Z",
+      "content": "Customer C-3390 says no refund has appeared on their card statement.",
+      "facts": {
+        "customer.received": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Support desk",
+        "recordRef": "ch4-03",
+        "author": "support-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

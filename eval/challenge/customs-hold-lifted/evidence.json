@@ -1,0 +1,62 @@
+{
+  "caseId": "CH-PORT-01",
+  "records": [
+    {
+      "id": "CH2-01",
+      "caseId": "CH-PORT-01",
+      "source": {
+        "system": "broker",
+        "name": "Customs broker portal"
+      },
+      "observedAt": "2026-11-02T01:00:00Z",
+      "content": "Entry E-55120 for MSKU-7731 lodged and cleared; container ready for release.",
+      "facts": {
+        "broker.entry": "cleared"
+      },
+      "provenance": {
+        "systemOfRecord": "Customs broker portal",
+        "recordRef": "ch2-01",
+        "author": "broker-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH2-02",
+      "caseId": "CH-PORT-01",
+      "source": {
+        "system": "terminal",
+        "name": "Port terminal system"
+      },
+      "observedAt": "2026-11-02T03:00:00Z",
+      "content": "MSKU-7731: status HOLD, border agency inspection requested. Not available for collection.",
+      "facts": {
+        "terminal.status": "hold"
+      },
+      "provenance": {
+        "systemOfRecord": "Port terminal system",
+        "recordRef": "ch2-02",
+        "author": "terminal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH2-03",
+      "caseId": "CH-PORT-01",
+      "source": {
+        "system": "customs",
+        "name": "Border agency notice"
+      },
+      "observedAt": "2026-11-04T02:00:00Z",
+      "content": "Inspection of MSKU-7731 completed, no further action. Release authority sent to the terminal.",
+      "facts": {
+        "customs.release": "sent"
+      },
+      "provenance": {
+        "systemOfRecord": "Border agency notice",
+        "recordRef": "ch2-03",
+        "author": "customs-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

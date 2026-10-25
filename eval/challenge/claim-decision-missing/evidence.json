@@ -1,0 +1,62 @@
+{
+  "caseId": "CH-CLM-01",
+  "records": [
+    {
+      "id": "CH3-01",
+      "caseId": "CH-CLM-01",
+      "source": {
+        "system": "adjuster",
+        "name": "Loss adjuster report"
+      },
+      "observedAt": "2026-12-01T03:00:00Z",
+      "content": "Site inspection for CL-4402 complete. Damage consistent with the reported storm. Recommendation to the claims team: approve.",
+      "facts": {
+        "adjuster.recommendation": "approve"
+      },
+      "provenance": {
+        "systemOfRecord": "Loss adjuster report",
+        "recordRef": "ch3-01",
+        "author": "adjuster-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH3-02",
+      "caseId": "CH-CLM-01",
+      "source": {
+        "system": "customer",
+        "name": "Customer email"
+      },
+      "observedAt": "2026-12-02T01:00:00Z",
+      "content": "Customer email: \"The adjuster told me my claim will be approved.\"",
+      "facts": {
+        "customer.statement": "expects_approval"
+      },
+      "provenance": {
+        "systemOfRecord": "Customer email",
+        "recordRef": "ch3-02",
+        "author": "customer-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "CH3-03",
+      "caseId": "CH-CLM-01",
+      "source": {
+        "system": "claims",
+        "name": "Claims system"
+      },
+      "observedAt": "2026-12-05T02:00:00Z",
+      "content": "CL-4402 decision: declined under exclusion 4.2 (gradual water ingress, not storm damage).",
+      "facts": {
+        "claim.decision": "declined"
+      },
+      "provenance": {
+        "systemOfRecord": "Claims system",
+        "recordRef": "ch3-03",
+        "author": "claims-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

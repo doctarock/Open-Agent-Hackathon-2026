@@ -1,0 +1,100 @@
+{
+  "id": "ch-payroll-final-pay-returned",
+  "caseId": "CH-PAY-01",
+  "title": "Was E-204's final pay paid?",
+  "question": "Employee E-204 left on 30 Sep. Has their final pay (AUD 6,180 net) been paid to them?",
+  "sources": {
+    "payroll": {
+      "name": "Payroll system",
+      "reliability": 0.9
+    },
+    "bank": {
+      "name": "Bank settlement report",
+      "reliability": 0.95
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "E-204's final pay has been paid into their account.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "final_pay.status",
+          "equals": "paid",
+          "direction": "supports"
+        },
+        {
+          "fact": "bank.settlement",
+          "equals": "credited",
+          "direction": "supports"
+        },
+        {
+          "fact": "bank.settlement",
+          "equals": "returned",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "final_pay.status",
+          "equals": "unpaid",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-PAID",
+      "statement": "E-204's final pay has not been paid to them.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "final_pay.status",
+          "equals": "unpaid",
+          "direction": "supports"
+        },
+        {
+          "fact": "bank.settlement",
+          "equals": "returned",
+          "direction": "supports"
+        },
+        {
+          "fact": "bank.settlement",
+          "equals": "credited",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "final_pay.status",
+          "equals": "paid",
+          "direction": "contradicts"
+        }
+      ]
+    },
+    {
+      "key": "H-PART-PAID",
+      "statement": "Only part of E-204's final pay has been paid.",
+      "prior": 0.33,
+      "rules": [
+        {
+          "fact": "final_pay.status",
+          "equals": "paid",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "paid",
+      "label": "Final pay run and settlement (1 Oct)",
+      "asOf": "2026-10-01T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "returned",
+      "label": "Payment returned, payroll status changed (3 Oct)",
+      "asOf": "2026-10-03T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

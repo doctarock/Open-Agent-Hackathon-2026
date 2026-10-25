@@ -1,0 +1,82 @@
+{
+  "id": "ch-customs-hold-lifted",
+  "caseId": "CH-PORT-01",
+  "title": "Has container MSKU-7731 been released?",
+  "question": "Container MSKU-7731 is needed on site. Has it been released from the port?",
+  "sources": {
+    "broker": {
+      "name": "Customs broker portal",
+      "reliability": 0.7
+    },
+    "terminal": {
+      "name": "Port terminal system",
+      "reliability": 0.9
+    },
+    "customs": {
+      "name": "Border agency notice",
+      "reliability": 0.95
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-RELEASED",
+      "statement": "MSKU-7731 has been released for collection.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "broker.entry",
+          "equals": "cleared",
+          "direction": "supports"
+        },
+        {
+          "fact": "terminal.status",
+          "equals": "hold",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "customs.release",
+          "equals": "sent",
+          "direction": "supports"
+        }
+      ]
+    },
+    {
+      "key": "H-HELD",
+      "statement": "MSKU-7731 is still held at the port.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "terminal.status",
+          "equals": "hold",
+          "direction": "supports"
+        },
+        {
+          "fact": "broker.entry",
+          "equals": "cleared",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "customs.release",
+          "equals": "sent",
+          "direction": "contradicts"
+        }
+      ]
+    }
+  ],
+  "questions": [],
+  "stages": [
+    {
+      "id": "conflict",
+      "label": "Broker and terminal disagree (2 Nov)",
+      "asOf": "2026-11-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "inspection-done",
+      "label": "Border agency completes inspection (4 Nov)",
+      "asOf": "2026-11-04T12:00:00Z",
+      "description": ""
+    }
+  ]
+}
