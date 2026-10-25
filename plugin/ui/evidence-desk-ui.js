@@ -319,7 +319,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     if (offer.hidden) return;
     offer.replaceChildren(
       el("h2", { id: "edk-demo-offer-title" }, "Take the guided demo"),
-      el("p", {}, "First, the point in one minute: a stateless baseline and Speck on the same evidence, then a correction. Then two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
+      el("p", {}, "Two investigations where the evidence changes: a disputed delivery and a bank return. Then Speck's own views of the same work: its world timeline, its memory map of how the facts are linked, and its chat. Then an investigation of your own."),
       el("p", { className: "meta" }, "Each step that asks you to act waits for the real result; nothing is scripted."),
       el("div", { className: "intro-actions" },
         el("button", { type: "button", className: "primary", "data-demo": "start" }, "Start the guided demo"),

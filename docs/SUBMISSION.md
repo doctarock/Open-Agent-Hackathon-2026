@@ -104,8 +104,7 @@ The submodule is pinned to upstream Speck.
    - A record whose assessment keeps failing can be withdrawn before assessment, without
      inventing a judgment.
 5. **It uses Speck's own views, and anyone can bring a case.**
-   - One guided demo opens on a one-minute TL;DR (the stateless baseline and Speck through one
-     correction), walks both cases, then Speck's World view (the runs' actions in time), its
+   - One guided demo walks both cases, then Speck's World view (the runs' actions in time), its
      Memory map (the case's records and assessments linked with Speck's association kinds:
      derived-from, supports, contradicts, inhibitory for a correction) and its chat, which
      answers from the published case summary.
