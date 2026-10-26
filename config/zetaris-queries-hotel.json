@@ -1,0 +1,11 @@
+{
+  "database": "EVIDENCE_DESK",
+  "columns": "id, case_id, source_system, source_name, observed_at, content, facts_json, record_ref, system_of_record, author, supersedes",
+  "sources": [
+    { "system": "pms", "table": "EVIDENCE_DESK.hotel_pms_events" },
+    { "system": "ota", "table": "EVIDENCE_DESK.hotel_ota_bookings" },
+    { "system": "locks", "table": "EVIDENCE_DESK.hotel_door_locks" },
+    { "system": "card", "table": "EVIDENCE_DESK.hotel_card_disputes" },
+    { "system": "guest", "table": "EVIDENCE_DESK.hotel_guest_messages" }
+  ]
+}

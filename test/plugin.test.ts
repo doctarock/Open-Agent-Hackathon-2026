@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { test } from "node:test";
 import { SpeckRuntime } from "#speck";
 import createEvidenceDeskPlugin, { caseConfig, CASES, createCaseRegistry, registerEvidenceDeskRoutes } from "../plugin/evidence-desk-plugin.js";
+import { ZETARIS_CASES } from "../src/evidence/zetaris-cases.js";
 import { ROOT_DIR } from "../src/config.js";
 import { installPlugin } from "../src/scripts/plugin-install.js";
 import { EVIDENCE_HOME_VIEW } from "../src/scripts/speck.js";
@@ -159,6 +160,21 @@ test("the bank-return case always runs on its fixture with the rules, whatever t
   const delivery = caseConfig(CASES.find((spec) => spec.id === "disputed-delivery")!, settings);
   assert.deepEqual([delivery.evidenceMode, delivery.reasoner], ["zetaris", "nemotron"]);
   assert.notEqual(bank.historyDir, delivery.historyDir, "each case keeps its own Meterless history");
+  // The hotel chargeback follows the settings like the delivery, but reads its own Zetaris tables.
+  const hotel = caseConfig(CASES.find((spec) => spec.id === "hotel-chargeback")!, settings);
+  assert.deepEqual([hotel.evidenceMode, hotel.reasoner], ["zetaris", "nemotron"]);
+  assert.match(hotel.zetaris.queryConfigPath, /zetaris-queries-hotel.json$/);
+  assert.match(delivery.zetaris.queryConfigPath, /zetaris-queries.json$/);
+  const tables = JSON.parse(fs.readFileSync(hotel.zetaris.queryConfigPath, "utf8")).sources.map((source: any) => source.table);
+  assert.ok(tables.every((table: string) => !JSON.parse(fs.readFileSync(delivery.zetaris.queryConfigPath, "utf8")).sources.some((source: any) => source.table === table)), "the two cases never share a table");
+  // Seeding and configure load every case that can read from Zetaris: the same cases, scenarios and tables.
+  const zetarisCases = CASES.filter((spec) => !spec.fixed && !spec.yours);
+  assert.deepEqual(ZETARIS_CASES.map((item) => item.id).sort(), zetarisCases.map((spec) => spec.id).sort());
+  for (const item of ZETARIS_CASES) {
+    const config = caseConfig(CASES.find((spec) => spec.id === item.id)!, settings);
+    const relative = (file: string) => path.relative(ROOT_DIR, file).split(path.sep).join("/");
+    assert.deepEqual([relative(config.scenarioDir), relative(config.zetaris.queryConfigPath)], [item.scenarioDir, item.queries], item.id);
+  }
 });
 
 test("the installer copies the plugin into Speck's plugins folder and approves exactly its entry module", () => {

@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { parseEnv } from "node:util";
 import { loadConfig, ROOT_DIR, updateEnvText, type AppConfig } from "../config.js";
 import { EvidenceProviderError } from "../evidence/types.js";
+import { ZETARIS_CASES } from "../evidence/zetaris-cases.js";
 import { ZetarisEvidenceProvider } from "../evidence/zetaris-provider.js";
 import { AUTO_DETECT_PORTS, autoDetectMeterless, describeMeterlessModel, EVIDENCE_DESK_METERLESS_MODEL, METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, parseConnectLink, probeMeterless, usableToken } from "../reasoning/meterless.js";
 import { plainTextCheck, providerLabel } from "../reasoning/nemotron.js";
@@ -270,15 +271,26 @@ async function configureZetaris(local: boolean): Promise<boolean> {
     fail(zetarisError(error));
     return false;
   }
-  if (await caseEvidence(config, provider)) return true;
+  if (await everyCaseEvidence()) return true;
   if (!local) {
-    fail(`the tables in config/zetaris-queries.json are not there. Seeding works only on the local Docker bundle; on another platform, create them with the columns that file lists.`);
+    fail(`the tables in ${ZETARIS_CASES.map((item) => item.queries).join(" and ")} are not all there. Seeding works only on the local Docker bundle; on another platform, create them with the columns those files list.`);
     return false;
   }
-  if (!(await yes("Load the scenario's evidence into this Zetaris now (npm run zetaris:seed)?", true))) return false;
+  if (!(await yes("Load the cases' evidence into this Zetaris now (npm run zetaris:seed)?", true))) return false;
   const seeded = spawnSync(process.execPath, [path.join(ROOT_DIR, "dist", "src", "scripts", "zetaris-seed.js")], { stdio: "inherit", env: { ...process.env, ...values } });
   if (seeded.status !== 0) { fail("seeding failed (see above)."); return false; }
-  return caseEvidence(config, new ZetarisEvidenceProvider(config.zetaris));
+  return everyCaseEvidence();
+}
+
+// Every prepared case that reads from Zetaris (src/evidence/zetaris-cases.ts),
+// each from its own tables: all of them must have their records.
+async function everyCaseEvidence(): Promise<boolean> {
+  let all = true;
+  for (const item of ZETARIS_CASES) {
+    const config = loadConfig({ ...settings(), EVIDENCE_DESK_SCENARIO: item.scenarioDir, ZETARIS_QUERY_CONFIG: item.queries });
+    if (!(await caseEvidence(config, new ZetarisEvidenceProvider(config.zetaris)))) all = false;
+  }
+  return all;
 }
 
 async function caseEvidence(config: AppConfig, provider: ZetarisEvidenceProvider): Promise<boolean> {

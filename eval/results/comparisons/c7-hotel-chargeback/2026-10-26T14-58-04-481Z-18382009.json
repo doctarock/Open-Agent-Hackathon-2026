@@ -1,0 +1,1845 @@
+{
+  "schema": "evidence-desk.comparison.v1",
+  "id": "2026-10-26T14-58-04-481Z-18382009",
+  "startedAt": "2026-10-26T14:56:17.780Z",
+  "finishedAt": "2026-10-26T14:58:04.481Z",
+  "durationMs": 106701,
+  "kind": "live",
+  "case": {
+    "caseId": "N7-HTL-01",
+    "title": "Did guest R. Lindqvist stay on 12-14 October?",
+    "question": "Did guest R. Lindqvist stay at the Harbourside Hotel on 12-14 Oct under booking BK-6620?",
+    "hypotheses": [
+      {
+        "key": "H-STAYED",
+        "statement": "R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.",
+        "prior": 0.5
+      },
+      {
+        "key": "H-NO-SHOW",
+        "statement": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "prior": 0.5
+      }
+    ]
+  },
+  "configuration": {
+    "evidence": {
+      "mode": "zetaris",
+      "label": "Zetaris Lightning (live)",
+      "target": "http://localhost:3000",
+      "ready": true,
+      "problem": null
+    },
+    "assessor": {
+      "kind": "nemotron",
+      "model": "nvidia/nemotron-3.5-bolt-e4b",
+      "endpoint": "http://127.0.0.1:8088/v1",
+      "temperature": 0.1,
+      "maxTokens": 4096,
+      "reasoningEffort": "none"
+    },
+    "speck": "Evidence Desk as built: one Speck case carried across the stages on a temporary Speck database (the case on the page is not touched). Each stage's new records are assessed and Speck's beliefs revised; a record replaced by a later one stops counting and the beliefs that rested on it are rebuilt.",
+    "stateless": "The evaluation's stateless model baseline: at each stage, one call to the same Nemotron endpoint with the question, the explanations and every visible record (its text, its facts, and \"replaces …\" where the source says so). It keeps nothing between stages.",
+    "labels": "Pre-registered labels from the case's expected.json, written before any system was run on it.",
+    "policy": "build-4 (restatement, corroborated-1)"
+  },
+  "fingerprint": "30248a5ab9689ed9",
+  "stages": [
+    {
+      "stage": {
+        "id": "booked",
+        "label": "Booking confirmed for 12-14 Oct (11 Oct)",
+        "asOf": "2026-10-11T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "YzJmYzVhOGItZDQ1OS00YmE3LWJjNDUtMjczMjA3NWMxNTBh"
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-01"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "unresolved",
+        "headline": "Unresolved: the assessed evidence does not establish any explanation.",
+        "concluded": null,
+        "route": null,
+        "tentative": null,
+        "confidence": null,
+        "reasons": [
+          "Speck's confidence in H-STAYED is 0.556, 0.044 short of its supported threshold of 0.6.",
+          "Other explanations remain too close to it to say the evidence favours it.",
+          "Not corroborated (rule corroborated-1): its support comes from one source system (ota); corroboration needs 2 different ones.",
+          "Its support from N7H-01 was judged by the model. Speck caps model-judged evidence at reliability 0.4, so each such record adds at most 0.08.",
+          "Unanswered: Was the booking's key used on the room door?"
+        ],
+        "support": [],
+        "against": [],
+        "ruledOut": [],
+        "noLongerCounted": [],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-STAYED",
+            "status": "active",
+            "confidence": 0.556
+          },
+          {
+            "key": "H-NO-SHOW",
+            "status": "proposed",
+            "confidence": 0.5
+          }
+        ],
+        "run": {
+          "runNumber": 1,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 2,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The investigation remains unresolved because while evidence confirms a confirmed booking for R. Lindqvist at the Harbourside Hotel for the specified dates, it does not verify if the stay actually occurred. The evidence from the Online Travel Agency (N7H-01) only establishes the reservation details, not the physical presence of the guest. Speck's confidence in H-STAYED is below the required threshold of 0.6, and the single source lacks necessary corroboration. A key open question is whether the booking's key was used on the room door.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": null,
+        "cited": [
+          "N7H-01"
+        ],
+        "rationale": "The evidence confirms the booking was made and confirmed, but it does not provide any record of the guest actually checking in or staying at the hotel during the specified dates.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            2368
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "first",
+          "recordsWhy": false
+        },
+        "stateless": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "first",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "booked",
+          "conclusion": null,
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED",
+            "H-NO-SHOW"
+          ],
+          "invalidated": []
+        },
+        "speck": {
+          "expected": null,
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "appropriate"
+        },
+        "stateless": {
+          "expected": null,
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "appropriate"
+        }
+      },
+      "disagreement": null
+    },
+    {
+      "stage": {
+        "id": "no-show",
+        "label": "The night audit shows no check-in; the agency records a no-show (13 Oct)",
+        "asOf": "2026-10-13T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "ZDY3NjgwOTAtYWJhMy00MmRlLWFmYzEtYzcxOTA5NWJiYTAz"
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MjA5NGFhYmMtNmViOS00YTgwLTk3MmEtYjgwOTViZjVjZjUx"
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "ZDY3NjgwOTAtYWJhMy00MmRlLWFmYzEtYzcxOTA5NWJiYTAz"
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-02",
+        "N7H-03"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "concluded": "H-NO-SHOW",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.648,
+        "reasons": [
+          "Speck holds H-NO-SHOW as supported at 0.648, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-02",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The PMS flagged the booking as a no-show on the night audit."
+          },
+          {
+            "recordId": "N7H-03",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The OTA record aligns with the hotel's no-show reporting for 12 Oct."
+          }
+        ],
+        "against": [],
+        "ruledOut": [],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed. Its judgments no longer apply: supports H-STAYED.",
+            "consequences": []
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "active",
+              "confidence": 0.556
+            },
+            "cause": "N7H-01 out of date: its source now reports ota.status=no_show (N7H-03, was confirmed)",
+            "dropped": [
+              "N7H-01 (N7H-01 out of date: its source now reports ota.status=no_show (N7H-03, was confirmed))"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-NO-SHOW",
+            "status": "supported",
+            "confidence": 0.648
+          },
+          {
+            "key": "H-STAYED",
+            "status": "weakening",
+            "confidence": 0.36
+          }
+        ],
+        "run": {
+          "runNumber": 2,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 4,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The investigation has concluded that R. Lindqvist did not stay at the Harbourside Hotel for booking BK-6620. Both the Hotel Property Management System (N7H-02) and the Online Travel Agency (N7H-03) confirm that the booking was not checked in on October 12th. These sources explicitly flagged the booking as a no-show, contradicting the hypothesis that the guest stayed. The initial OTA record (N7H-01) was superseded by the no-show confirmation in N7H-03.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": "H-NO-SHOW",
+        "cited": [
+          "N7H-02",
+          "N7H-03"
+        ],
+        "rationale": "The hotel property management system recorded that booking BK-6620 was not checked in for 12 Oct, and the OTA subsequently updated the status to no-show.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            2514
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-03"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "formed",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-03"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "formed",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "no-show",
+          "conclusion": null,
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED"
+          ],
+          "invalidated": []
+        },
+        "speck": {
+          "expected": null,
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": null,
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": null
+    },
+    {
+      "stage": {
+        "id": "late-checkin",
+        "label": "A late check-in is found, with door-lock entries (15 Oct)",
+        "asOf": "2026-10-15T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "MjU2OGYwZmMtMmEyMy00YzZhLTllYmQtMDcyZmVjMzEzYmQ0"
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": "N7H-04",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "NDBmMmVkNzctMjI1OC00NTA5LWI5OWUtZjQ3MmMyOGZlMjUz"
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "MjU2OGYwZmMtMmEyMy00YzZhLTllYmQtMDcyZmVjMzEzYmQ0"
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "NDBmMmVkNzctMjI1OC00NTA5LWI5OWUtZjQ3MmMyOGZlMjUz"
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_door_locks",
+            "queryToken": "ZGM4MWNiMmMtYTFjMi00ODE5LThjY2YtOGU0Y2VjYWY3NWE3"
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-04",
+        "N7H-05"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-02",
+          "by": "N7H-04"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "leading",
+        "headline": "Leading, not established: R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.",
+        "concluded": null,
+        "route": null,
+        "tentative": "H-STAYED",
+        "confidence": 0.58,
+        "reasons": [
+          "H-STAYED is at 0.58: above the 0.5 needed to lead, but 0.02 short of Speck's supported threshold of 0.6.",
+          "Not corroborated (rule corroborated-1): N7H-03 is recorded against it.",
+          "Its support from N7H-04, N7H-05 was judged by the model. Speck caps model-judged evidence at reliability 0.4, so each such record adds at most 0.08.",
+          "N7H-03 (Online travel agency) counts against it."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-04",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "PMS confirms BK-6620 was checked into room 412 on 12 Oct."
+          },
+          {
+            "recordId": "N7H-05",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Door lock logs show key usage across the entire stay period."
+          }
+        ],
+        "against": [
+          {
+            "recordId": "N7H-03",
+            "delta": -0.068,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The OTA confirms the hotel reported the guest as a no-show for the first night."
+          }
+        ],
+        "ruledOut": [
+          {
+            "key": "H-NO-SHOW",
+            "refutedBy": [
+              "N7H-04",
+              "N7H-05"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed. Its judgments no longer apply: supports H-STAYED.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-02",
+            "explanation": "N7H-04 replaces all of N7H-02, not only the facts it restates. No record that still counts states pms.checkin=false. Its judgments no longer apply: contradicts H-STAYED; supports H-NO-SHOW.",
+            "consequences": []
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.36
+            },
+            "cause": "N7H-02 superseded by N7H-04",
+            "dropped": [
+              "N7H-02 (N7H-02 superseded by N7H-04)"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "supported",
+              "confidence": 0.648
+            },
+            "cause": "N7H-02 superseded by N7H-04; support withheld: N7H-05 refutes H-NO-SHOW decisively",
+            "dropped": [
+              "N7H-02 (N7H-02 superseded by N7H-04)",
+              "N7H-03 (support withheld: N7H-05 refutes H-NO-SHOW decisively)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-STAYED",
+            "status": "active",
+            "confidence": 0.58
+          },
+          {
+            "key": "H-NO-SHOW",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 3,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 6,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The initial conclusion of a no-show has been overturned by subsequent evidence. The Hotel Property Management System (N7H-04) confirmed that booking BK-6620 was checked into room 412 on October 12th, replacing earlier no-show flags (N7H-02, N7H-03). This is strongly corroborated by the Door-lock audit log (N7H-05), which shows key usage across the entire stay period from October 12th to October 14th. Therefore, the evidence now supports the conclusion that R. Lindqvist stayed at the hotel.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": "H-STAYED",
+        "cited": [
+          "N7H-04",
+          "N7H-05"
+        ],
+        "rationale": "The property management system confirms a late check-in on 12 Oct (N7H-04), and the door-lock audit log shows key usage throughout the stay dates (N7H-05), overriding the initial no-show flag (N7H-02, N7H-03).",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            3024
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "late-checkin",
+          "conclusion": "H-STAYED",
+          "notCurrent": [
+            "H-NO-SHOW"
+          ],
+          "unsupported": [],
+          "invalidated": [
+            "N7H-02"
+          ]
+        },
+        "speck": {
+          "expected": "H-STAYED",
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "inappropriate"
+        },
+        "stateless": {
+          "expected": "H-STAYED",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": "Speck concludes nothing (it points to H-STAYED): Not corroborated (rule corroborated-1): N7H-03 is recorded against it; the stateless call concludes H-STAYED citing N7H-04, N7H-05."
+    },
+    {
+      "stage": {
+        "id": "dispute",
+        "label": "The guest disputes the charge (28 Oct)",
+        "asOf": "2026-10-28T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "MTg3MTVhNGUtYzJiOS00MTE1LThkMzgtMThjYTk3N2ZmZjIz"
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": "N7H-04",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "NDgzZTU5MjQtNWZiMC00NjhhLWE3MjEtOThhOWMzN2MwYjA3"
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "MTg3MTVhNGUtYzJiOS00MTE1LThkMzgtMThjYTk3N2ZmZjIz"
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "NDgzZTU5MjQtNWZiMC00NjhhLWE3MjEtOThhOWMzN2MwYjA3"
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_door_locks",
+            "queryToken": "ZWM0OTYxMzYtMTk0NS00Njg4LTlhYjktMTJkODYzYThlYWU1"
+          }
+        },
+        {
+          "id": "N7H-06",
+          "source": "Card network dispute",
+          "observedAt": "2026-10-28T01:00:00.000Z",
+          "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_card_disputes",
+            "queryToken": "MWFmYmU4NzYtNTYwZi00ODBmLWFlNzEtYjlkNDdjNTRhODRj"
+          }
+        },
+        {
+          "id": "N7H-07",
+          "source": "Guest correspondence",
+          "observedAt": "2026-10-28T03:00:00.000Z",
+          "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_guest_messages",
+            "queryToken": "ZTZjYWM5M2ItMGQxNS00NDZhLWE2OWEtMDM1ZWJhNTM3ZTU1"
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-06",
+        "N7H-07"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-02",
+          "by": "N7H-04"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "unresolved",
+        "headline": "Unresolved: the evidence points to \"R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.\" but does not yet justify it as a conclusion.",
+        "concluded": null,
+        "route": null,
+        "tentative": "H-STAYED",
+        "confidence": 0.444,
+        "reasons": [
+          "Speck's confidence in H-STAYED is 0.444, 0.156 short of its supported threshold of 0.6 and below the 0.5 needed even to call it leading.",
+          "Not corroborated (rule corroborated-1): N7H-03, N7H-06, N7H-07 are recorded against it.",
+          "Its support from N7H-04, N7H-05 was judged by the model. Speck caps model-judged evidence at reliability 0.4, so each such record adds at most 0.08.",
+          "N7H-03 (Online travel agency) counts against it.",
+          "N7H-06 (Card network dispute) counts against it.",
+          "N7H-07 (Guest correspondence) counts against it."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-04",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "PMS confirms BK-6620 was checked into room 412 on 12 Oct."
+          },
+          {
+            "recordId": "N7H-05",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Door lock logs show key usage across the entire stay period."
+          }
+        ],
+        "against": [
+          {
+            "recordId": "N7H-03",
+            "delta": -0.068,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The OTA confirms the hotel reported the guest as a no-show for the first night."
+          },
+          {
+            "recordId": "N7H-06",
+            "delta": -0.064,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The cardholder disputed the charge claiming no stay occurred."
+          },
+          {
+            "recordId": "N7H-07",
+            "delta": -0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The guest explicitly stated they never stayed at the hotel."
+          }
+        ],
+        "ruledOut": [
+          {
+            "key": "H-NO-SHOW",
+            "refutedBy": [
+              "N7H-04",
+              "N7H-05"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed. Its judgments no longer apply: supports H-STAYED.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-02",
+            "explanation": "N7H-04 replaces all of N7H-02, not only the facts it restates. No record that still counts states pms.checkin=false. Its judgments no longer apply: contradicts H-STAYED; supports H-NO-SHOW.",
+            "consequences": []
+          }
+        ],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-STAYED",
+            "status": "weakening",
+            "confidence": 0.444
+          },
+          {
+            "key": "H-NO-SHOW",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 4,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 8,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The initial assessment suggesting a no-show is contradicted by later evidence showing the guest checked in late on October 12th (N7H-04). The door-lock audit log (N7H-05) further confirms the key associated with the booking was used throughout the stay dates. Despite this, the card dispute (N7H-06) and guest correspondence (N7H-07) still claim no stay occurred. Therefore, the case remains unresolved because the conflicting evidence does not meet the required confidence threshold for a firm conclusion.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": "H-STAYED",
+        "cited": [
+          "N7H-04",
+          "N7H-05"
+        ],
+        "rationale": "The hotel property management system confirms a check-in on 12 Oct, and the door-lock audit log shows key usage across the entire stay period (12-14 Oct).",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            2519
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "dispute",
+          "conclusion": "H-STAYED",
+          "notCurrent": [
+            "H-NO-SHOW"
+          ],
+          "unsupported": [],
+          "invalidated": [
+            "N7H-02"
+          ]
+        },
+        "speck": {
+          "expected": "H-STAYED",
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "inappropriate"
+        },
+        "stateless": {
+          "expected": "H-STAYED",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": "Speck concludes nothing (it points to H-STAYED): Not corroborated (rule corroborated-1): N7H-03, N7H-06, N7H-07 are recorded against it; the stateless call concludes H-STAYED citing N7H-04, N7H-05."
+    },
+    {
+      "stage": {
+        "id": "reattributed",
+        "label": "The check-in and the key entries are found to be another guest's (2 Nov)",
+        "asOf": "2026-11-02T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "NDA0NjA3ZDEtZGUwNy00OTNmLWI0NTMtYTM2NmJiZjZiZDJj"
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MWEwZTY4YjEtOGU0My00OGNiLWI5MTAtZWY0Nzc3MzJlMjBi"
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "NDA0NjA3ZDEtZGUwNy00OTNmLWI0NTMtYTM2NmJiZjZiZDJj"
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": "N7H-10",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MWEwZTY4YjEtOGU0My00OGNiLWI5MTAtZWY0Nzc3MzJlMjBi"
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": "N7H-09",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_door_locks",
+            "queryToken": "Njg5YWNmYTMtZThmNC00NTIxLWI5NmItOGI3ZTFhNDAzYjNj"
+          }
+        },
+        {
+          "id": "N7H-06",
+          "source": "Card network dispute",
+          "observedAt": "2026-10-28T01:00:00.000Z",
+          "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_card_disputes",
+            "queryToken": "YmE3YWNkMmYtMDVhZi00MDE2LWFlYjEtYjExOThmZmE5YmVh"
+          }
+        },
+        {
+          "id": "N7H-07",
+          "source": "Guest correspondence",
+          "observedAt": "2026-10-28T03:00:00.000Z",
+          "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_guest_messages",
+            "queryToken": "NDFjNDQ5YTEtZWU4My00M2M4LWEzODAtYzY4YTk1MDllNzYz"
+          }
+        },
+        {
+          "id": "N7H-08",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-30T02:00:00.000Z",
+          "content": "Front office: dispute CB-3302 noted; the hotel's response is due by 6 Nov.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MWEwZTY4YjEtOGU0My00OGNiLWI5MTAtZWY0Nzc3MzJlMjBi"
+          }
+        },
+        {
+          "id": "N7H-09",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-11-02T01:00:00.000Z",
+          "content": "Audit correction: key K-6620 was re-encoded at 23:45 on 12 Oct for walk-in booking WK-118 in room 412; the four entries of 12-14 Oct belong to WK-118, not BK-6620. Replaces the room 412 key entries.",
+          "supersedes": [
+            "N7H-05"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_door_locks",
+            "queryToken": "Njg5YWNmYTMtZThmNC00NTIxLWI5NmItOGI3ZTFhNDAzYjNj"
+          }
+        },
+        {
+          "id": "N7H-10",
+          "source": "Hotel property management system",
+          "observedAt": "2026-11-02T02:00:00.000Z",
+          "content": "Correction: the 23:40 check-in to room 412 on 12 Oct was walk-in WK-118 (guest R. Lindgren), keyed against BK-6620 by mistake. Replaces the night-audit correction of 15 Oct.",
+          "supersedes": [
+            "N7H-04"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MWEwZTY4YjEtOGU0My00OGNiLWI5MTAtZWY0Nzc3MzJlMjBi"
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-08",
+        "N7H-09",
+        "N7H-10"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-04",
+          "by": "N7H-10"
+        },
+        {
+          "recordId": "N7H-05",
+          "by": "N7H-09"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "concluded": "H-NO-SHOW",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.928,
+        "reasons": [
+          "Speck holds H-NO-SHOW as confirmed at 0.928, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-02",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The PMS flagged the booking as a no-show on the night audit."
+          },
+          {
+            "recordId": "N7H-03",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The OTA record aligns with the hotel's no-show reporting for 12 Oct."
+          },
+          {
+            "recordId": "N7H-06",
+            "delta": 0.064,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The cardholder's dispute aligns with the no-show hypothesis."
+          },
+          {
+            "recordId": "N7H-07",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The guest's correspondence supports the claim of not staying."
+          },
+          {
+            "recordId": "N7H-09",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The audit log shows the key associated with BK-6620 was used for another booking, implying BK-6620 was not used for the stay."
+          },
+          {
+            "recordId": "N7H-10",
+            "delta": 0.068,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The check-in was incorrectly keyed to the booking, indicating no actual stay occurred under BK-6620."
+          }
+        ],
+        "against": [],
+        "ruledOut": [
+          {
+            "key": "H-STAYED",
+            "refutedBy": [
+              "N7H-02",
+              "N7H-03",
+              "N7H-06",
+              "N7H-07",
+              "N7H-09",
+              "N7H-10"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed. Its judgments no longer apply: supports H-STAYED.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-04",
+            "explanation": "N7H-10 replaces all of N7H-04, not only the facts it restates. No record that still counts states pms.checkin=true. Its judgments no longer apply: supports H-STAYED; contradicts H-NO-SHOW.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-05",
+            "explanation": "N7H-09 replaces all of N7H-05, not only the facts it restates. No record that still counts states locks.booking_key_used=true. Its judgments no longer apply: contradicts H-NO-SHOW decisively; supports H-STAYED. H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now confirmed at 0.928.",
+            "consequences": [
+              "H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now confirmed at 0.928."
+            ]
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.444
+            },
+            "cause": "N7H-05 superseded by N7H-09",
+            "dropped": [
+              "N7H-05 (N7H-05 superseded by N7H-09)"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.05
+            },
+            "cause": "N7H-05 superseded by N7H-09",
+            "dropped": [
+              "N7H-05 (N7H-05 superseded by N7H-09)"
+            ]
+          },
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.292
+            },
+            "cause": "N7H-04 superseded by N7H-10",
+            "dropped": [
+              "N7H-04 (N7H-04 superseded by N7H-10)"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "supported",
+              "confidence": 0.708
+            },
+            "cause": "N7H-04 superseded by N7H-10",
+            "dropped": [
+              "N7H-04 (N7H-04 superseded by N7H-10)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-NO-SHOW",
+            "status": "confirmed",
+            "confidence": 0.928
+          },
+          {
+            "key": "H-STAYED",
+            "status": "rejected",
+            "confidence": 0.076
+          }
+        ],
+        "run": {
+          "runNumber": 5,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 11,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The initial assumption that R. Lindqvist stayed under booking BK-6620 has been definitively overturned. Evidence N7H-09 and N7H-10 reveal that the key used for the room was actually re-encoded for a different walk-in booking, WK-118, not BK-6620. Consequently, the check-in recorded was a clerical error, meaning BK-6620 was a no-show. This conclusion is firmly established with high confidence.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": null,
+        "cited": [
+          "N7H-01",
+          "N7H-02",
+          "N7H-03",
+          "N7H-04",
+          "N7H-05",
+          "N7H-06",
+          "N7H-07",
+          "N7H-08",
+          "N7H-09",
+          "N7H-10"
+        ],
+        "rationale": "Initial evidence suggested a stay (N7H-04, N7H-05), but subsequent corrections (N7H-09, N7H-10) indicate the key usage and check-in were mistakenly linked to booking BK-6620, while guest correspondence and a card dispute claim no stay.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            5246
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-03",
+            "N7H-06",
+            "N7H-07",
+            "N7H-09",
+            "N7H-10"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "withdrawn",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "reattributed",
+          "conclusion": "H-NO-SHOW",
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED"
+          ],
+          "invalidated": [
+            "N7H-04",
+            "N7H-05"
+          ]
+        },
+        "speck": {
+          "expected": "H-NO-SHOW",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": "H-NO-SHOW",
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "inappropriate"
+        }
+      },
+      "disagreement": "Speck concludes H-NO-SHOW; the stateless call concludes nothing."
+    },
+    {
+      "stage": {
+        "id": "refunded",
+        "label": "The agency refunds the booking as a no-show (5 Nov)",
+        "asOf": "2026-11-05T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-11",
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "ZGFjNjE1MzYtMDFlOS00ZTIxLTk3NDgtZmEwNzY4NDliYjQz"
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MzE4YjllZGUtMGViMC00OTY1LTgyYWMtZmI2ZmUwZTNkMTA4"
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-11",
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "ZGFjNjE1MzYtMDFlOS00ZTIxLTk3NDgtZmEwNzY4NDliYjQz"
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": "N7H-10",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MzE4YjllZGUtMGViMC00OTY1LTgyYWMtZmI2ZmUwZTNkMTA4"
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": "N7H-09",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_door_locks",
+            "queryToken": "NjQ2ZGZkZDYtODY2Ni00ODg5LTlkY2YtZGUyYTA0YjczNWEz"
+          }
+        },
+        {
+          "id": "N7H-06",
+          "source": "Card network dispute",
+          "observedAt": "2026-10-28T01:00:00.000Z",
+          "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_card_disputes",
+            "queryToken": "MDk4MjA0MDgtYmViNS00MDE4LWI0NGItZWE1ZDk5MzlkMGYw"
+          }
+        },
+        {
+          "id": "N7H-07",
+          "source": "Guest correspondence",
+          "observedAt": "2026-10-28T03:00:00.000Z",
+          "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_guest_messages",
+            "queryToken": "ZTZkZjQ3MTctZGNjNS00ZDAzLTgwNjQtMTZjOTAyZTQxZmYy"
+          }
+        },
+        {
+          "id": "N7H-08",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-30T02:00:00.000Z",
+          "content": "Front office: dispute CB-3302 noted; the hotel's response is due by 6 Nov.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MzE4YjllZGUtMGViMC00OTY1LTgyYWMtZmI2ZmUwZTNkMTA4"
+          }
+        },
+        {
+          "id": "N7H-09",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-11-02T01:00:00.000Z",
+          "content": "Audit correction: key K-6620 was re-encoded at 23:45 on 12 Oct for walk-in booking WK-118 in room 412; the four entries of 12-14 Oct belong to WK-118, not BK-6620. Replaces the room 412 key entries.",
+          "supersedes": [
+            "N7H-05"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_door_locks",
+            "queryToken": "NjQ2ZGZkZDYtODY2Ni00ODg5LTlkY2YtZGUyYTA0YjczNWEz"
+          }
+        },
+        {
+          "id": "N7H-10",
+          "source": "Hotel property management system",
+          "observedAt": "2026-11-02T02:00:00.000Z",
+          "content": "Correction: the 23:40 check-in to room 412 on 12 Oct was walk-in WK-118 (guest R. Lindgren), keyed against BK-6620 by mistake. Replaces the night-audit correction of 15 Oct.",
+          "supersedes": [
+            "N7H-04"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_pms_events",
+            "queryToken": "MzE4YjllZGUtMGViMC00OTY1LTgyYWMtZmI2ZmUwZTNkMTA4"
+          }
+        },
+        {
+          "id": "N7H-11",
+          "source": "Online travel agency",
+          "observedAt": "2026-11-05T01:00:00.000Z",
+          "content": "Booking BK-6620: refunded to the guest as a no-show; the hotel accepts dispute CB-3302.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.hotel_ota_bookings",
+            "queryToken": "ZGFjNjE1MzYtMDFlOS00ZTIxLTk3NDgtZmEwNzY4NDliYjQz"
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-11"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-04",
+          "by": "N7H-10"
+        },
+        {
+          "recordId": "N7H-05",
+          "by": "N7H-09"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "concluded": "H-NO-SHOW",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.932,
+        "reasons": [
+          "Speck holds H-NO-SHOW as confirmed at 0.932, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-02",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The PMS flagged the booking as a no-show on the night audit."
+          },
+          {
+            "recordId": "N7H-06",
+            "delta": 0.064,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The cardholder's dispute aligns with the no-show hypothesis."
+          },
+          {
+            "recordId": "N7H-07",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The guest's correspondence supports the claim of not staying."
+          },
+          {
+            "recordId": "N7H-09",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The audit log shows the key associated with BK-6620 was used for another booking, implying BK-6620 was not used for the stay."
+          },
+          {
+            "recordId": "N7H-10",
+            "delta": 0.068,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The check-in was incorrectly keyed to the booking, indicating no actual stay occurred under BK-6620."
+          },
+          {
+            "recordId": "N7H-11",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The OTA status explicitly confirms the booking was refunded due to a no-show."
+          }
+        ],
+        "against": [],
+        "ruledOut": [
+          {
+            "key": "H-STAYED",
+            "refutedBy": [
+              "N7H-02",
+              "N7H-06",
+              "N7H-07",
+              "N7H-09",
+              "N7H-10",
+              "N7H-11"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → refunded_no_show in N7H-11), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed. Its judgments no longer apply: supports H-STAYED.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-03",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-03 (ota.status: no_show → refunded_no_show in N7H-11), so N7H-03 no longer describes the current state. No record that still counts states ota.status=no_show. Its judgments no longer apply: contradicts H-STAYED; supports H-NO-SHOW.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-04",
+            "explanation": "N7H-10 replaces all of N7H-04, not only the facts it restates. No record that still counts states pms.checkin=true. Its judgments no longer apply: supports H-STAYED; contradicts H-NO-SHOW.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-05",
+            "explanation": "N7H-09 replaces all of N7H-05, not only the facts it restates. No record that still counts states locks.booking_key_used=true. Its judgments no longer apply: contradicts H-NO-SHOW decisively; supports H-STAYED. H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now confirmed at 0.932.",
+            "consequences": [
+              "H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now confirmed at 0.932."
+            ]
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.076
+            },
+            "cause": "N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show)",
+            "dropped": [
+              "N7H-03 (N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show))"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "confirmed",
+              "confidence": 0.928
+            },
+            "cause": "N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show)",
+            "dropped": [
+              "N7H-03 (N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show))"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-NO-SHOW",
+            "status": "confirmed",
+            "confidence": 0.932
+          },
+          {
+            "key": "H-STAYED",
+            "status": "rejected",
+            "confidence": 0.072
+          }
+        ],
+        "run": {
+          "runNumber": 6,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 13,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The initial assumption that R. Lindqvist stayed under booking BK-6620 has been definitively refuted. Evidence N7H-11 confirms that booking BK-6620 was refunded specifically as a no-show by the online travel agency. Furthermore, subsequent evidence N7H-09 and N7H-10 clarified that the room key usage and check-in records were mistakenly linked to BK-6620 and actually belonged to a walk-in guest, WK-118. Therefore, the conclusion is that R. Lindqvist did not stay at the hotel.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": null,
+        "cited": [
+          "N7H-01",
+          "N7H-02",
+          "N7H-03",
+          "N7H-04",
+          "N7H-05",
+          "N7H-06",
+          "N7H-07",
+          "N7H-08",
+          "N7H-09",
+          "N7H-10",
+          "N7H-11"
+        ],
+        "rationale": "Initial evidence suggested a no-show (N7H-02, N7H-03), but subsequent corrections (N7H-09, N7H-10) revealed the room usage was for a different booking (WK-118), and the final status is a refund due to the guest's claim (N7H-11), meaning the evidence does not confirm the guest stayed under BK-6620.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            5992
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-06",
+            "N7H-07",
+            "N7H-09",
+            "N7H-10",
+            "N7H-11"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "still none",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "refunded",
+          "conclusion": "H-NO-SHOW",
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED"
+          ],
+          "invalidated": [
+            "N7H-04",
+            "N7H-05"
+          ]
+        },
+        "speck": {
+          "expected": "H-NO-SHOW",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": "H-NO-SHOW",
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "inappropriate"
+        }
+      },
+      "disagreement": "Speck concludes H-NO-SHOW; the stateless call concludes nothing."
+    }
+  ],
+  "notes": [
+    "Both approaches saw the same records at every stage, the same question and explanations, and the same assessor configuration.",
+    "Speck counts a conclusion only when it holds it as supported; a leading or pointed-to explanation is tentative. The stateless baseline has no such threshold beyond answering \"unresolved\" (model) or a tie or non-positive score (rules).",
+    "Differences come from Speck's explicit evidence and revision state and its conclusion policy (thresholds, decisive refutation, supersession), not from persistence alone: the evaluation's speck-fresh system, which rebuilds from scratch each time, reaches the same conclusions as speck-desk.",
+    "Live: model judgments vary between runs. This is one sample, not a rate. Speck calls the model per evidence chunk plus once for its explanation; the baseline calls it once per stage, so call counts and latency are not like for like.",
+    "Speck caps model-judged evidence at reliability 0.4, so Speck's own confidence rarely reaches its 0.6 threshold live. Since Build 4 Evidence Desk can still conclude by corroboration (two or more source systems agree, nothing recorded against, every rival ruled out or unsupported); each such conclusion is marked, with Speck's own confidence beside it."
+  ]
+}

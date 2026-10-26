@@ -23,15 +23,15 @@ if (live) loadDotEnv();
 
 
 const cases = [
-  // Set 7's hotel chargeback, the demo's first case; fixture evidence only.
-  { id: "hotel-chargeback", scenarioDir: "eval/challenge-7/hotel-chargeback", fixtureOnly: true },
+  // Set 7's hotel chargeback, the demo's first case; read from its own Zetaris tables when live.
+  { id: "hotel-chargeback", scenarioDir: "eval/challenge-7/hotel-chargeback", fixtureOnly: false, zetarisQueries: "config/zetaris-queries-hotel.json" },
   // The bank return's evidence exists only as a fixture file.
   { id: "bank-return", scenarioDir: "eval/scenarios/correction-supersedes", fixtureOnly: true },
   { id: "disputed-delivery", scenarioDir: "fixtures/scenarios/disputed-delivery", fixtureOnly: false }
 ];
 
-function configFor(scenarioDir: string, fixtureOnly: boolean): AppConfig {
-  const env = live ? { ...process.env, ...(fixtureOnly ? { EVIDENCE_MODE: "fixture" } : {}) } : {};
+function configFor(scenarioDir: string, fixtureOnly: boolean, zetarisQueries?: string): AppConfig {
+  const env = live ? { ...process.env, ...(fixtureOnly ? { EVIDENCE_MODE: "fixture" } : {}), ...(zetarisQueries ? { ZETARIS_QUERY_CONFIG: zetarisQueries } : {}) } : {};
   return loadConfig({ ...env, EVIDENCE_DESK_SCENARIO: scenarioDir });
 }
 
@@ -47,7 +47,7 @@ if (live) {
 let failed = false;
 if (only && !cases.some((item) => item.id === only)) throw new Error(`--only must be one of ${cases.map((item) => item.id).join(", ")}`);
 for (const item of cases.filter((candidate) => !only || candidate.id === only)) {
-  const config = configFor(item.scenarioDir, item.fixtureOnly);
+  const config = configFor(item.scenarioDir, item.fixtureOnly, "zetarisQueries" in item ? item.zetarisQueries : undefined);
   if (live) config.reasoner = "nemotron";
   const provider = createEvidenceProvider(config);
   console.log(`\n${item.id}: ${provider.describe().label}; assessor ${config.reasoner}${config.reasoner === "nemotron" ? ` (${config.nemotron.model} @ ${config.nemotron.baseUrl})` : ""}`);

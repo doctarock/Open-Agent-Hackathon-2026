@@ -59,8 +59,10 @@ const ASSETS: Record<string, { file: string; type: string }> = {
 // approaches part most clearly, in every mode measured: once a check-in and
 // door-lock entries are re-attributed to another guest, Speck follows the
 // night audit's no-show back while the stateless side keeps the stay or
-// loses the thread. Its evidence exists only as a fixture; the assessor
-// follows the plugin's settings, so it is live when a model is configured.
+// loses the thread. Like the disputed delivery it follows the plugin's
+// settings: its records are read from Zetaris (its own five tables, seeded
+// from the case's fixture by npm run zetaris:seed with its query config) when
+// EVIDENCE_MODE=zetaris, and the assessor is the configured model.
 // The disputed delivery follows the plugin's
 // settings (live Zetaris and Nemotron, or fixtures); the bank return is the
 // held-out correction case and always runs on its fixture with the rules.
@@ -72,11 +74,14 @@ export interface CaseSpec {
   label: string;
   scenarioDir: string;
   fixed?: { evidenceMode: "fixture"; reasoner?: "rules" };
+  // The Zetaris tables its evidence is read from, when the evidence mode is
+  // zetaris (otherwise config/zetaris-queries.json, the disputed delivery's).
+  zetarisQueries?: string;
   // An investigation a person created from the tab (src/investigation/user-cases.ts).
   yours?: boolean;
 }
 export const CASES: CaseSpec[] = [
-  { id: "hotel-chargeback", label: "Hotel chargeback", scenarioDir: "eval/challenge-7/hotel-chargeback", fixed: { evidenceMode: "fixture" } },
+  { id: "hotel-chargeback", label: "Hotel chargeback", scenarioDir: "eval/challenge-7/hotel-chargeback", zetarisQueries: "config/zetaris-queries-hotel.json" },
   { id: "disputed-delivery", label: "Disputed delivery", scenarioDir: "fixtures/scenarios/disputed-delivery" },
   { id: "bank-return", label: "Bank return", scenarioDir: "eval/scenarios/correction-supersedes", fixed: { evidenceMode: "fixture", reasoner: "rules" } }
 ];
@@ -90,7 +95,7 @@ export function pluginSettings(rootDir = ROOT_DIR): NodeJS.ProcessEnv {
 // dataRoot: where the case's own data folder goes (a person's investigations
 // keep it beside their cases folder, which by default is the same data/).
 export function caseConfig(spec: CaseSpec, settings: NodeJS.ProcessEnv, rootDir = ROOT_DIR, dataRoot = path.join(rootDir, "data")): CaseConfig {
-  const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir,
+  const env = { ...settings, EVIDENCE_DESK_SCENARIO: spec.scenarioDir, ...(spec.zetarisQueries ? { ZETARIS_QUERY_CONFIG: spec.zetarisQueries } : {}),
     ...(spec.fixed ? { EVIDENCE_MODE: spec.fixed.evidenceMode, ...(spec.fixed.reasoner ? { REASONER: spec.fixed.reasoner } : {}) } : {}) };
   const dataDir = path.join(dataRoot, spec.id);
   // The case lives in Speck's own database, and Speck serves it: the

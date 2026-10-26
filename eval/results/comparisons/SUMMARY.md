@@ -227,6 +227,116 @@ Policy: build-4 (restatement, corroborated-1). 3 sample(s), 2026-10-26T14:36 to 
 
 </details>
 
+## Did guest R. Lindqvist stay on 12-14 October?: live, Nemotron nvidia/nemotron-3.5-bolt-e4b, evidence Zetaris live
+
+Policy: build-4 (restatement, corroborated-1). 3 sample(s), 2026-10-26T14:56 to 2026-10-26T15:00 UTC.
+
+**Booking confirmed for 12-14 Oct (11 Oct)** (label: no conclusion justified)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 3 | nothing 3 |
+| Matches label | 3/3 (100%) | 3/3 (100%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 0/3 (0%) |
+| Abstained (right) | 3/3 (100%) | 3/3 (100%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 0/3 (0%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The night audit shows no check-in; the agency records a no-show (13 Oct)** (label: no conclusion justified)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 3 | H-NO-SHOW 3 |
+| Matches label | 0/3 (0%) | 0/3 (0%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 0/3 (0%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**A late check-in is found, with door-lock entries (15 Oct)** (label: H-STAYED)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 3 | H-STAYED 3 |
+| Matches label | 0/3 (0%) | 3/3 (100%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 3/3 (100%) | 0/3 (0%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | 0/3 (0%) | 3/3 (100%) |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The guest disputes the charge (28 Oct)** (label: H-STAYED)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 3 | H-STAYED 3 |
+| Matches label | 0/3 (0%) | 3/3 (100%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 3/3 (100%) | 0/3 (0%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The check-in and the key entries are found to be another guest's (2 Nov)** (label: H-NO-SHOW)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 3 | nothing 3 |
+| Matches label | 3/3 (100%) | 0/3 (0%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 3/3 (100%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | 3/3 (100%) | 0/3 (0%) |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The agency refunds the booking as a no-show (5 Nov)** (label: H-NO-SHOW)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 3 | nothing 3 |
+| Matches label | 3/3 (100%) | 0/3 (0%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 3/3 (100%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+<details><summary>Every sample</summary>
+
+| Sample | Models served | Booking confirmed for 12-14 Oct (11 Oct) | The night audit shows no check-in; the agency records a no-show (13 Oct) | A late check-in is found, with door-lock entries (15 Oct) | The guest disputes the charge (28 Oct) | The check-in and the key entries are found to be another guest's (2 Nov) | The agency refunds the booking as a no-show (5 Nov) |
+|---|---|---|---|---|---|---|---|
+| `2026-10-26T14-56-17-571Z-42b61885` | nvidia/nemotron-3.5-bolt-e4b | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S nothing (~H-STAYED 0.58); B H-STAYED | S nothing (~H-STAYED 0.444); B H-STAYED | S H-NO-SHOW; B nothing | S H-NO-SHOW; B nothing |
+| `2026-10-26T14-58-04-481Z-18382009` | nvidia/nemotron-3.5-bolt-e4b | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S nothing (~H-STAYED 0.58); B H-STAYED | S nothing (~H-STAYED 0.444); B H-STAYED | S H-NO-SHOW; B nothing | S H-NO-SHOW; B nothing |
+| `2026-10-26T15-00-00-675Z-d6ce1984` | nvidia/nemotron-3.5-bolt-e4b | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S nothing (~H-STAYED 0.58); B H-STAYED | S nothing (~H-STAYED 0.444); B H-STAYED | S H-NO-SHOW; B nothing | S H-NO-SHOW; B nothing |
+
+</details>
+
 ## Disputed delivery of order ORD-1042: deterministic, deterministic rules, evidence fixture file
 
 Policy: build-4 (restatement, corroborated-1). 1 sample(s), 2026-10-25T13:01 to 2026-10-25T13:01 UTC.
