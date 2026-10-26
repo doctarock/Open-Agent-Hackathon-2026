@@ -63,6 +63,7 @@
 - [Tests](#tests)
 - [Security](#security)
 - [Known limits of this slice](#known-limits-of-this-slice)
+- [Conclusion](#conclusion)
 
 **The problem.** An ordinary stateless model call answers from whatever evidence it is handed.
 When a source later corrects a record (a bank returns a payment, a carrier amends a delivery
@@ -1693,3 +1694,23 @@ from a security review of this repository's code (Speck is reviewed separately).
   customer's complaint against delivery.
 - A ruled-out explanation's "refuted by" list shows every record Speck counted against it, not
   only the decisive one. The timeline marks which revision was decisive.
+
+## Conclusion
+
+The project is investigating a real question: can persistent cognitive state make small language
+models more reliable, and under what conditions?
+
+This experiment's results suggest a nuanced answer:
+- **Correction handling:** promising evidence that persistent, revision-aware state helps. On the
+  disputed delivery, the stateless call cited the carrier's replaced scan in 12/12 live
+  comparisons; Speck cited it in none of the 9 that completed, and recorded why its conclusion
+  changed ([docs/comparison.md](docs/comparison.md)).
+- **General conclusion accuracy:** no demonstrated improvement on the locked challenge set:
+  Speck and the stateless call both scored 18/30
+  ([docs/build-4-bank-return.md](docs/build-4-bank-return.md), section 5c).
+- **Decision policy:** changing a rule did not independently explain the apparent gain in the
+  newer experiment. On set 5, `corroborated-2` scored 39/45, and the old rule applied to the same
+  judgments also scored 39/45 ([docs/build-5-corroboration.md](docs/build-5-corroboration.md),
+  section 6a).
+- **Remaining limitations:** Speck can still abstain when it should conclude, or draw conclusions
+  from weakly corroborated evidence (see *Known limits of this slice*).
