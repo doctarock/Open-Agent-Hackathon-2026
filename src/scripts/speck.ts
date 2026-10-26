@@ -15,6 +15,9 @@ import { ROOT_DIR } from "../config.js";
 //
 // A Speck already listening on the same address is stopped first, so the new
 // one can start. Anything else on that port is left alone, and nothing starts.
+//
+// Once the new Speck answers, its address opens in the default browser;
+// SPECK_OPEN_BROWSER=0 leaves the browser alone.
 
 export const EVIDENCE_HOME_VIEW = "plugin:evidence-desk:evidence";
 
@@ -96,6 +99,28 @@ export async function stopRunningSpeck(host: string, port: number, log: (line: s
   throw new Error(`The Speck on ${where} (process ${pid}) did not stop within 15 s. Stop it (Ctrl+C in its terminal) and try again.`);
 }
 
+export function shouldOpenBrowser(env: NodeJS.ProcessEnv = process.env): boolean {
+  return !/^(0|false|no|off)$/i.test(env.SPECK_OPEN_BROWSER?.trim() ?? "");
+}
+
+// Opens the address in the default browser with the platform's own opener.
+function openBrowser(url: string): void {
+  const [command, args] = process.platform === "win32" ? ["cmd", ["/c", "start", "", url]]
+    : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
+  spawn(command, args, { stdio: "ignore", detached: true, windowsHide: true }).on("error", () => {}).unref();
+}
+
+// Waits for the Speck it started to answer (up to 2 min), then opens it.
+async function openWhenReady(host: string, port: number, speck: { exitCode: number | null }): Promise<void> {
+  for (let waited = 0; waited < 120_000 && speck.exitCode === null; waited += 500) {
+    if (await isSpeck(host, port)) {
+      openBrowser(`http://${host.includes(":") ? `[${host}]` : host}:${port}/`);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(ROOT_DIR, "dist", "src", "scripts", "speck.js")) {
   const { host, port } = speckAddress();
   try {
@@ -111,4 +136,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(ROOT_DIR, 
   });
   for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => speck.kill(signal));
   speck.on("exit", (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
+  if (shouldOpenBrowser()) void openWhenReady(host, port, speck);
 }

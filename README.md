@@ -966,7 +966,7 @@ showed this as one retry.
 | `npm run setup` | Fetch `speck/`, install dependencies here and in it, build Speck, install the plugin, turn on Speck's embedding encoder if local Ollama is running (`npm run embeddings`), and on a first run ask the `configure` questions |
 | `npm run embeddings` | Turn on Speck's embedding encoder: `nomic-embed-text` on local Ollama, pulled if missing and checked with one call. Keeps an encoder already saved in Speck; without Ollama, Speck keeps its feature-hash encoder. Restart Speck to apply. |
 | `npm run configure` | Choose the model (Meterless Runtime, local Ollama, NVIDIA's API, or rules) and the evidence source (fixtures, local Zetaris, another Zetaris address); checks each against the real service and writes `.env`. `--model`, `--evidence`, `--yes` skip the questions. |
-| `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. A Speck already running on the same port is stopped first; anything else on the port is left alone and Speck does not start. |
+| `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. A Speck already running on the same port is stopped first; anything else on the port is left alone and Speck does not start. Once Speck answers, it opens in the default browser (`SPECK_OPEN_BROWSER=0` to skip). |
 | `npm run investigate -- <case>` | One case from structured input to structured output, every stage, with the execution trace as JSON Lines on stdout and in `logs/`. Sample mode by default (no `.env`, credentials or network); `--live` uses `.env`; `--output <file>` writes the result. See *Command line*. |
 | `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
 | `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
@@ -1563,7 +1563,8 @@ What these runs show:
     only plugin module, approves exactly its hash, and keeps `.env` and case data on reinstall.
 - **Speck launcher** (`test/speck-launcher.test.ts`): `npm run speck` reads Speck's port and host
   as Speck does; a Speck already on the port (a stand-in in its own process) is stopped and the
-  port freed; a server on the port that is not Speck is left running and nothing starts.
+  port freed; a server on the port that is not Speck is left running and nothing starts;
+  `SPECK_OPEN_BROWSER=0` (or false/no/off) turns off opening the browser.
 - **Correction chains** (`test/correction-chains.test.ts`):
   - a replacement of a replacement, read both ways;
   - withdrawal of a replacement;

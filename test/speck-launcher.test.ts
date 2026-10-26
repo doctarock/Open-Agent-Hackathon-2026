@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import http from "node:http";
 import { test } from "node:test";
-import { EVIDENCE_HOME_VIEW, speckAddress, speckEnv, stopRunningSpeck } from "../src/scripts/speck.js";
+import { EVIDENCE_HOME_VIEW, shouldOpenBrowser, speckAddress, speckEnv, stopRunningSpeck } from "../src/scripts/speck.js";
 
 // A stand-in Speck in its own process: it answers /api/brains/config as Speck
 // does, and prints its port once listening.
@@ -30,6 +30,12 @@ test("Speck gets the Meterless token from .env, and nothing else from it", () =>
   assert.equal(speckEnv({ meterless_runtime_token: "from-env" }, dotEnv).meterless_runtime_token, "from-env", "the environment wins");
   assert.equal(speckEnv({}, null).meterless_runtime_token, undefined, "no .env, no token");
   assert.equal(speckEnv({ SPECK_HOME_VIEW: "world" }, "").SPECK_HOME_VIEW, "world");
+});
+
+test("the launcher opens a browser unless SPECK_OPEN_BROWSER turns it off", () => {
+  assert.equal(shouldOpenBrowser({}), true);
+  assert.equal(shouldOpenBrowser({ SPECK_OPEN_BROWSER: "1" }), true);
+  for (const off of ["0", "false", "No", " off "]) assert.equal(shouldOpenBrowser({ SPECK_OPEN_BROWSER: off }), false, off);
 });
 
 test("a Speck already running on the port is stopped, and the port is freed", async () => {
