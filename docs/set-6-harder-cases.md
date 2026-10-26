@@ -126,6 +126,12 @@ What that one repeat (4B, 22 checkpoint-samples per system) showed, as observati
   in one run, over the engine's chunk budget (8 chunks of 2 records), so records stay pending and
   it abstains at every `permit-long` checkpoint after the first. The persistent system assesses
   only each stage's new records and is not affected.
+  **Fixed afterwards** (`runUntilAssessed`, `src/eval/systems.ts`): both Speck systems now run again at a
+  checkpoint while the engine stopped at its budget and the last run assessed something, as an
+  investigator presses Run again; an errored run is not retried. Test: `test/run-budget.test.ts`
+  (on this case the rebuilt system now reaches the persistent one's conclusions at every
+  checkpoint). Every deterministic suite was re-run with the fix: all 282 checkpoint outcomes are
+  unchanged.
 - Speck's failures were the known ones: abstaining where one record settles the case (`refund@paid`,
   `repair@in-repair`, `prescription@dispensed`), its own threshold concluding "approved" from the
   lagging portal's records (`permit@approval-withdrawn`), and abstaining where corroboration was

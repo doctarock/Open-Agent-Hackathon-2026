@@ -109,6 +109,23 @@ export function caseConfig(item: EvalCase, reasoner: ReasonerChoice, conclusionR
   });
 }
 
+// One run assesses at most the engine's chunk budget (8 chunks of 2 records);
+// what it cannot reach stays pending for the next run, as on the case page,
+// where the investigator presses Run again. Why the harness does the same: a
+// checkpoint with more new records than one run takes (or the rebuilt system,
+// which assesses everything visible at once) would otherwise be scored on a
+// half-assessed case. It runs again only while the engine stopped at its
+// budget ("max-chunks") and the last run assessed something; an errored run
+// is not retried, so failures are scored as before.
+const MAX_RUNS_PER_CHECKPOINT = 10;
+export async function runUntilAssessed(desk: EvidenceDesk): Promise<RunSnapshot> {
+  let run = await desk.run();
+  for (let runs = 1; runs < MAX_RUNS_PER_CHECKPOINT && run.execution.status === "max-chunks" && run.unprocessed.length && run.assessed.length; runs += 1) {
+    run = await desk.run();
+  }
+  return run;
+}
+
 // Which corroboration rule a Speck system concludes with, and which others
 // are scored on the same runs. Under corroborated-1 the system keeps its
 // Build 4 name, so its reports compare with earlier ones.
@@ -225,7 +242,7 @@ export function speckDesk(reasoner: ReasonerChoice, choice: RuleChoice = {}): Ev
           while (desk.currentStage().id !== checkpoint.afterStage) await desk.introduceNextUpdate();
           try {
             for (const withdrawal of checkpoint.withdrawBefore ?? []) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
-            const run = await desk.run();
+            const run = await runUntilAssessed(desk);
             const visible = await visibleIds(desk);
             const influencing = speckInfluencing(desk);
             checkpoints.push(speckOutcome(checkpoint.afterStage, desk.conclusionFromSpeck(), run, visible, influencing));
@@ -244,7 +261,7 @@ export function speckDesk(reasoner: ReasonerChoice, choice: RuleChoice = {}): Ev
 }
 
 // The same Speck pipeline with no carried state: a new database for every
-// checkpoint, given all evidence visible by then in one run. It separates
+// checkpoint, given all evidence visible by then. It separates
 // what persistence contributes from what Speck's revision policy does.
 export function speckFresh(reasoner: ReasonerChoice, choice: RuleChoice = {}): EvalSystem {
   const rule = choice.rule ?? "corroborated-1";
@@ -261,8 +278,9 @@ export function speckFresh(reasoner: ReasonerChoice, choice: RuleChoice = {}): E
         const desk = await EvidenceDesk.open(config, deskOptions(item, config, reasoner));
         try {
           while (desk.currentStage().id !== checkpoint.afterStage) await desk.introduceNextUpdate();
-          const run = await desk.run();
-          // Everything is assessed at once, then every withdrawal so far applied.
+          const run = await runUntilAssessed(desk);
+          // Everything is assessed first (over as many runs as the engine's
+          // budget needs), then every withdrawal so far applied.
           for (const withdrawal of withdrawnBy(item, index)) await desk.withdrawRecord(withdrawal.recordId, withdrawal.reason);
           const visible = await visibleIds(desk);
           const influencing = speckInfluencing(desk);
