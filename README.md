@@ -1,185 +1,39 @@
 # Open-Agent-Hackathon-2026 — Speck Evidence Desk
 
-Evidence Desk is a **Speck plugin** for investigations whose evidence is corrected after the
-fact. Track: Reasoning Architecture. The section below answers a judge's first questions in
-order, each with where to check it; everything after it is reference.
+> **For judges:** Evidence Desk is a **Speck plugin**. Install (`npm run setup`), start Speck (`npm run speck`) for the full experience, alternatively view the project as a standalone interface or CLI (explained below), (`npm run configure`) if you need to change settings.
 
-## For judges: the first five minutes
-
-### 1. The problem
-
-An ordinary stateless model call answers from whatever evidence it is handed. When a source later
-corrects a record (a bank returns a payment, a carrier amends a delivery scan), nothing ties the
-old conclusion to the record that has just been replaced: the call may keep the old answer, may
-keep citing the replaced record, and cannot say what changed or why.
-
-### 2. What Speck contributes, and what it does not
-
-Four layers, each solving a different problem:
-
-| Layer | What it does here | What it does not do | Code |
-|---|---|---|---|
-| **Language model** (Nemotron) | Interprets each record: does it support or contradict each explanation. Also writes the explanation text. | Guarantee that its reading is sound. Speck caps model-judged evidence at reliability 0.4, and deterministic decisive rules override it. | `src/reasoning/nemotron.ts` |
-| **Speck** (persistent state) | Holds the case as a worker: the evidence ledger, competing explanations and its belief in each, every revision and the history of earlier beliefs. Revises beliefs with its own rule (decisive refutation, the 0.4 cap). | Decide what a record means; that is the model's or a fact rule's judgment. | `speck/` (cognition unmodified) |
-| **Evidence Desk** (validity and conclusion policy) | Decides which records still count (a declared replacement, a source restating its own facts, a withdrawal), rebuilds the beliefs that rested on a record that stopped counting, and decides whether to conclude: Speck's own threshold (0.6), or rule `corroborated-1` (two or more source systems agree, nothing against, every rival ruled out or unsupported). Otherwise it abstains and says why. | Make a weak model judgment strong. | `src/investigation/` (`basis.ts`, `reconcile.ts`, `conclusion.ts`) |
-| **Stateless baseline** | One fresh call per stage to the same model, with the same records, question and settings, and no memory. | Say what changed since its previous answer, or why. | `src/eval/systems.ts` |
-
-Persistent state can keep a correction's effect and expose evidence that has gone stale; it cannot
-guarantee that the model read a record correctly. Persistence alone made no measurable accuracy
-difference: the evaluation's `speck-fresh` system, which rebuilds from scratch at every
-checkpoint, reaches the same conclusions as the persistent one. The differences below come from
-Speck's explicit evidence and revision state together with Evidence Desk's policy.
-
-`corroborated-2` (Build 5) is an **experimental** alternative to `corroborated-1`, off by default,
-selected with `CONCLUSION_RULE=corroborated-2`. Its extra field, the model's judgment of whether
-each record *establishes* the explanation, did not show an independent improvement: on the paired
-set 5 comparison, `corroborated-1` scored on the same judgments did exactly as well (see 5B).
-
-Speck was not modified to get any of this. The validity and conclusion policy, including Builds 4
-and 5, is Evidence Desk's own code; Speck's cognition, priors, 0.4 reliability cap and 0.6
-threshold are upstream and unchanged. The five project-local Speck patches are interface, chat and
-provider changes (see *Speck* below).
-
-### 3. What happens when source evidence is corrected
-
-The disputed delivery (`DISPUTE-1042`, evidence read live from Zetaris):
-
-1. **The original scan.** The carrier's tracking says `EV-CAR-003` "DELIVERED, left at front
-   door", supporting *delivered*; the customer (`EV-SUP-004`) says nothing arrived.
-2. **The correction.** The carrier's proof-of-delivery review `EV-CAR-005` replaces `EV-CAR-003`:
-   the GPS fix was 380 m away, at No. 41 Lydiard St *North*, and the resident there is holding the
-   parcel (`EV-SUP-006`).
-3. **The stateless baseline** kept "delivered" and cited the replaced scan `EV-CAR-003` as support
-   in **12 of 12** live comparisons on 2026-10-25 (6 beside Build 3, 6 beside Build 4), and 6 of 6
-   in the earlier samples of 2026-10-23.
-4. **Speck** stops counting `EV-CAR-003`, rebuilds the beliefs that rested on it, and keeps the
-   earlier belief as history. Of the same 12 live samples:
-   - 9 completed. None cited `EV-CAR-003`, and all 9 recorded why the conclusion changed. 2
-     concluded "misdelivered" (by corroboration); 7 concluded nothing.
-   - 3 errored. The model's reply for the correction failed Speck's contract twice, the
-     correction stayed unassessed, and Speck's state still presented "delivered" on the replaced
-     scan. They are counted as errors. A guard added after these runs now withholds any
-     conclusion while a record waits to be assessed
-     ([build-4-bank-return.md, section 6](docs/build-4-bank-return.md)).
-
-   So Speck mostly avoided the replaced scan by withdrawing its conclusion, not by reaching
-   another one.
-5. **The page shows it.** In the case's **Speck vs. baseline** tab, each stage lists the records
-   both saw, with the replaced one struck through and marked *replaced by EV-CAR-005*. Beside it:
-   the baseline's answer, its citations and a *relies on replaced record* badge where it applies;
-   Speck's evidence for and against, *no longer counts*, and each rebuilt belief with what it was
-   before. Earlier beliefs are in the case's **History** tab.
-
-Every sample, including the errored ones: [docs/comparison.md](docs/comparison.md) and
-[eval/results/comparisons/SUMMARY.md](eval/results/comparisons/SUMMARY.md).
-
-### 4. Compare the two yourself
-
-Open **Disputed delivery**, then its **Speck vs. baseline** tab.
-- **Offline** (the default settings: fixture evidence, fact rules), **Run the side-by-side
-  comparison** takes a second and is deterministic.
-- **The saved live comparisons** are listed under **Other saved comparisons**, newest first
-  (badge **LIVE MODEL CALLS**). The first is the 2026-10-25 sample whose model reply failed; the
-  second (12:33 UTC) is the newest that completed. The page warns that they were made with other
-  settings than the case's current ones; that is expected. Nothing is replayed or simulated: each
-  is the saved report.
-- The offline comparison is not where the difference shows: with fact rules, the baseline also
-  drops the replaced scan, and only Speck records why. The replaced-scan reliance is a live-model
-  behaviour.
-- **With local Ollama and Zetaris configured** (`npm run configure`), the same button makes a new
-  live comparison in 20-60 seconds and saves it.
-- **Command line:** `npm run compare` (deterministic) or `npm run compare:live`.
-
-The **Bank return** case shows the same mechanism with deterministic rules, step by step by hand:
-run, introduce the correction, run again, and read *Why this changed*.
-
-### 5. What the evaluation demonstrated
-
-Three separate claims, never pooled. Every live number comes from local `nemotron-3-nano:4b`
-(reasoning off, temperature 0.1); none came through Nightshift. Counts are over these cases only.
-
-**A. Correction and revision behaviour.** Section 3 above: the baseline cited the replaced scan in
-12/12 live delivery comparisons on 2026-10-25; Speck in none of the 9 that completed, with 3
-errors. Two prepared cases, six samples per build: an illustration of behaviour, not a rate. With
-the model's reasoning on, the stateless baseline did much better on the labelled checkpoints
-(35/48 against 19/48), so this is a property of the small model with reasoning off, not of
-stateless calls in general (see *Reasoning on or off*).
-
-**B. General conclusion accuracy: no advantage is claimed.**
-- On five challenge cases written and locked before any run (Build 4; 30 checkpoint-samples per
-  system), Speck and the stateless baseline both scored **18/30**.
-- On set 5 (eight new locked cases, Build 5; 45 checkpoint-samples per system), the candidate
-  `corroborated-2` scored **39/45**, but `corroborated-1` applied to the candidate's own
-  judgments also scored **39/45**. The gain over Build 4's own runs (37/45) therefore cannot be
-  attributed to the successor rule: it came with the changed prompt, or with sampling. The
-  stateless call scored 27/45 there, almost entirely because it never abstained; the set was
-  written by the rule's author.
-- Full record: [docs/build-5-corroboration.md](docs/build-5-corroboration.md), section 6.
-
-**C. Abstention and unsupported conclusions.** Speck can avoid an unsupported conclusion by
-abstaining, but abstaining is not inherently correct, and Speck also over-concludes.
-- Where the label says to wait, the stateless call concluded anyway: 12/12 checkpoint-samples on
-  the Build 4 challenge cases, 15/18 on set 5. Speck concluded there in 3/12, and in 8/18
-  (`corroborated-1`) or 6/18 (`corroborated-2`).
-- Speck also abstains where a conclusion was due: 8/18 on the Build 4 challenge cases, against 0/18
-  for the stateless call, which is better where one authoritative record settles the case.
-- Speck over-concludes from weak or correlated evidence: `corroborated-1` concluded from weak
-  agreement in 6 checkpoint-samples (`missing-evidence`, the claim case), and on set 5 all 6 of
-  `corroborated-2`'s remaining false conclusions came from Speck's own threshold, reached from one
-  source's two records (prior 0.5 to 0.644).
-
-### 6. Sponsor technologies, and where
-
-| Sponsor | Where it is used | Verified |
-|---|---|---|
-| **Zetaris** | The live evidence: one SELECT per source table (4 per run) through the local platform's REST API (`src/evidence/zetaris-provider.ts`). The Unified Semantic Layer is a separate, reproducible demonstration, not the live path. All data is this repository's sample data. | Query tokens on every assessed record |
-| **Meterless** Markovian engine | Runs each investigation as bounded chunks with carryover, plus a reflection pass (`vendor/meterless-markovian/`, unmodified; `src/investigation/run.ts`) | Runs matched in the engine's own `history.json` |
-| **Meterless** Nightshift | The default model provider (`src/reasoning/meterless.ts`). In `meterless/auto` it chose 30B and 550B Nemotrons; no evaluation or comparison number used it. | The served model named in each response |
-| **NVIDIA Nemotron** | The evidence assessor, the explanation writer and the stateless baseline. Every evaluation number: local `nemotron-3-nano:4b` (4B, 4-bit, one consumer GPU). | Served model reported on every call |
-| **Speck** | The host (a plugin and a tab) and the persistent case state: evidence, beliefs, revisions, history. Cognition unmodified; five project-local patches in `patches/`. | Every belief revision in Speck's event log appears in the trace once |
-| **Cursor** | A development tool the team reports using. Not a runtime component. | Not verifiable from a run |
-
-`npm run sponsors:verify` checks each one in a real run and reports NOT OBSERVED rather than
-simulating a missing service. Each claim is checked against a receipt in
-[docs/sponsor-audit.md](docs/sponsor-audit.md); the receipts of 2026-10-25 are
-[local 4B](eval/results/sponsors/2026-10-25T13-04-35-404Z.json) and
-[through Nightshift](eval/results/sponsors/2026-10-25T13-04-05-519Z.json).
-
-### 7. Run the demo
-
-Node.js 22+ and git:
-
-```bash
-npm run setup    # fetch speck/, install, build Speck, install the plugin; asks for a model and an evidence source
-npm run speck    # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-```
-
-Choose **No model** and **fixture files** at setup to run fully offline; the saved live
-comparisons still open. Then take **Start the guided demo** on the Evidence tab, or follow the
-3-minute script in [DEMO.md](DEMO.md). `npm test` runs 174 tests with no credentials or network.
-One case on the command line, offline:
-`npm run investigate -- examples/payment-correction-chain/input.json` (see [Command line](#command-line)).
-`npm run configure` changes the settings later.
-
-**Further reading**
-- [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
-- [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
-  and every saved result.
-- [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
-  live, what changed, and the before-and-after evaluation, including where it got worse.
-- [docs/build-5-corroboration.md](docs/build-5-corroboration.md): a pre-registered successor to
-  the corroboration rule, tested on eight new locked cases, with what it did and did not show.
-- [docs/sponsor-audit.md](docs/sponsor-audit.md): each sponsor claim checked against a receipt;
-  [Verifying the sponsors yourself](docs/SUBMISSION.md#verifying-the-sponsors-yourself).
-- [Which agent uses which model](#which-agent-uses-which-model): one table.
-- **Reading the code:** each source file in `src/` and `plugin/` opens with its role and a
-  *Why it is built this way* list, and the decisions inside it are marked with `Why:` comments.
-  [src/investigation/](src/investigation/) is the core; start with `desk.ts`.
+> Open the **Evidence** tab and take the guided demo. It ends on **Speck beside a stateless
+> baseline**, a tab on each case: one click runs the same case, with the same
+> evidence and the same correction, through both, and shows what each actually did.
+> - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
+> - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
+>   live, what changed, and the before-and-after evaluation, including where it got worse.
+> - [docs/build-5-corroboration.md](docs/build-5-corroboration.md): a pre-registered successor to
+>   the corroboration rule, tested on eight new locked cases, with what it did and did not show.
+> - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
+>   and every saved result; [eval/results/comparisons/SUMMARY.md](eval/results/comparisons/SUMMARY.md)
+>   counts every saved sample.
+> - [docs/sponsor-audit.md](docs/sponsor-audit.md): each sponsor claim checked against a receipt.
+> - [DEMO.md](DEMO.md): the 3-minute walkthrough and slide outline.
+> - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
+>   could not observe. It needs local Zetaris and a Meterless Runtime. For what it needs and how
+>   to read it, see [Verifying the sponsors yourself](docs/SUBMISSION.md#verifying-the-sponsors-yourself).
+>   **Receipt log:** the saved reports of the 2026-10-25 runs, with their traces and the model
+>   that served every call: local 4B
+>   [eval/results/sponsors/2026-10-25T13-04-35-404Z.json](eval/results/sponsors/2026-10-25T13-04-35-404Z.json),
+>   through Nightshift
+>   [eval/results/sponsors/2026-10-25T13-04-05-519Z.json](eval/results/sponsors/2026-10-25T13-04-05-519Z.json)
+>   (earlier: [2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json)).
+> - [Which agent uses which model](#which-agent-uses-which-model): one table.
+> - **Reading the code:** each source file in `src/` and `plugin/` opens with its role and a
+>   *Why it is built this way* list, and the decisions inside it are marked with `Why:` comments.
+>   [src/investigation/](src/investigation/) is the core; start with `desk.ts`.
+> - `npm run investigate -- examples/payment-correction-chain/input.json`: one case from
+>   structured input to structured output on the command line, with its execution trace. No
+>   credentials or network needed. See [Command line](#command-line) and [examples/](examples/).
 
 **Contents**
 
-- [For judges: the first five minutes](#for-judges-the-first-five-minutes)
-- [Build 4 and Build 5 in brief](#build-4-and-build-5-in-brief)
 - [Which agent uses which model](#which-agent-uses-which-model)
 - [Speck beside a stateless baseline](#speck-beside-a-stateless-baseline)
 - [Decisive mode (experimental)](#decisive-mode-experimental)
@@ -201,7 +55,26 @@ One case on the command line, offline:
 - [Security](#security)
 - [Known limits of this slice](#known-limits-of-this-slice)
 
-## Build 4 and Build 5 in brief
+**The problem.** An ordinary stateless model call answers from whatever evidence it is handed.
+When a source later corrects a record (a bank returns a payment, a carrier amends a delivery
+scan), nothing ties the old conclusion to the record that has just been replaced: the call may
+keep the old answer, may keep citing the replaced record, and cannot say what changed or why.
+
+**The approach.** Evidence Desk keeps the case in Speck as explicit state: the evidence ledger,
+the competing explanations and Speck's belief in each, the judgment behind every adjustment, and
+every revision. When a later record contradicts or replaces an earlier claim, it:
+- revises what it believes, from the evidence that still counts;
+- says which evidence caused the revision;
+- keeps the old belief on record as history, rather than presenting both claims side by side.
+
+**The proof.** The side-by-side comparison, a reproducible test suite, and labelled evaluation
+results, kept apart by kind (deterministic fixtures, live model samples). In live samples on the
+disputed delivery, the stateless model call kept "delivered" after the carrier's correction and
+cited the replaced scan as support, while Speck revised and recorded why (see
+[docs/comparison.md](docs/comparison.md) for every sample, including the ones that favour the
+baseline). The evaluation finds no measurable accuracy difference between keeping beliefs across
+runs and recomputing them from scratch. What Evidence Desk adds is traceability: an auditable
+record of which evidence each conclusion rests on, and how and why it changed.
 
 **Build 4 (2026-10-25).** Live, Speck had failed the bank return after the return in every
 sample (0/12) while the stateless call was right 11/12. The cause was arithmetic, not the model:
