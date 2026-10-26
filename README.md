@@ -18,6 +18,11 @@
 >   or same-source agreement. With Bolt E4B the stateless call is ahead on both locked sets
 >   (21/30 and 42/45, against Speck's 18/30 and 36/45). See
 >   [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
+> - **Across models:** each model change made the stateless call better on every suite; Speck's
+>   accuracy stayed where its conclusion policy holds it. On set 7, written to test conflicting
+>   receipts over time, the better model's stateless call fell from 93% to 60% and still concluded
+>   wrongly where corrections were themselves corrected; Speck never did, but abstained too often
+>   to match the label more. See [Results across models](#results-across-models).
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
 >   live, what changed, and the before-and-after evaluation, including where it got worse.
@@ -71,6 +76,7 @@
 - [Tests](#tests)
 - [Security](#security)
 - [Known limits of this slice](#known-limits-of-this-slice)
+- [Results across models](#results-across-models)
 - [Conclusion](#conclusion)
 
 **The problem.** An ordinary stateless model call answers from whatever evidence it is handed.
@@ -1450,7 +1456,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 175 tests with no network access beyond localhost and no credentials (175/175 passing on 2026-10-26):
+`npm test` runs 178 tests with no network access beyond localhost and no credentials (178/178 passing on 2026-10-26):
 
 - **Build 5** (`test/build5.test.ts`): rule `corroborated-2` beside `corroborated-1`: strong independent, weak, non-establishing, duplicated, conflicting, missing-strength, never-asked, withdrawn and superseded support; the bank return and the two Build 4 false positives replayed; a failed model call; the model contract under each rule; set 5's lock.
 
@@ -1748,6 +1754,46 @@ from a security review of this repository's code (Speck is reviewed separately).
 - A ruled-out explanation's "refuted by" list shows every record Speck counted against it, not
   only the decisive one. The timeline marks which revision was decisive.
 
+## Results across models
+
+Every suite was run on two models with the same rules, prompts and labels: Nemotron 3 Nano 4B
+(local, until 2026-10-25) and Nemotron 3.5 Bolt E4B (through Nightshift, from 2026-10-26), three
+repeats each, never pooled. Set 7 was written and locked afterwards, to test what the earlier
+suites did not: receipts from five or six sources that conflict over six or seven stages, with
+corrections that are themselves corrected
+([docs/set-7-conflicting-receipts.md](docs/set-7-conflicting-receipts.md)).
+
+| Matches the label | 4B: Speck | 4B: stateless | Bolt: Speck | Bolt: stateless |
+|---|---|---|---|---|
+| Held-out + regression cases (48) | 40 | 18 | 42 | 42 |
+| Build 4 locked challenge cases (30) | 18 | 18 | 18 | 21 |
+| Set 5, locked (45) | 37 | 27 | 36 | 42 |
+| **Set 7, conflicting receipts over time, locked (75)** | 32 | 35 | 33 | 45 |
+
+| Errors of commission on set 7 | 4B: Speck | 4B: stateless | Bolt: Speck | Bolt: stateless |
+|---|---|---|---|---|
+| Concluded where waiting was right (of 18) | 9 | 18 | 9 | 12 |
+| Concluded the wrong explanation (of 57 where one was due) | 0 | 20 | 0 | 3 |
+| Leaned on a replaced record (of 48) | 0 | 38 | 0 | 9 |
+
+- **The stateless call improves with the model; Speck does not need to.** From the 4B to Bolt the
+  stateless call's matches rose on every suite and its errors of commission fell (20 to 3 wrong
+  conclusions, 38 to 9 replaced records on set 7). Speck's matches barely moved (32 to 33 on set 7),
+  and it made none of those errors on either model: when it concludes, it is never the wrong
+  explanation and never rests on replaced evidence.
+- **On the earlier suites the gap closed or reversed; set 7 found where it reopens.** With
+  conflicting receipts over time, Bolt's stateless call fell from 93% (set 5) to 60%. Its wrong
+  conclusions were where a correction was itself corrected: a vendor's voiding notice corrected
+  back, a cleared part that does not reinstate a withdrawn release, a re-attributed check-in.
+- **But Speck did not turn that into accuracy.** It abstained in 33-34 of 57 set-7
+  checkpoint-samples where a conclusion was due (its corroboration rule needs nothing recorded
+  against, and its own threshold is hard to reach with capped model judgments), and it concluded
+  from a relayed report and, by its own threshold, while two loggers disagreed. So on set 7 the
+  stateless call still matched the label more often on both models.
+- One author, four set-7 cases, two models, three repeats each: an illustration of how the errors
+  move, not a general result. Set 6, an earlier attempt aimed at context size, was abandoned after
+  one run ([docs/set-6-harder-cases.md](docs/set-6-harder-cases.md)).
+
 ## Conclusion
 
 The project is investigating a real question: can persistent cognitive state make small language
@@ -1771,4 +1817,6 @@ This experiment's results suggest a nuanced answer:
   section 6a). With Bolt E4B, `corroborated-2` did worse than the old rule (34/45 against 36/45),
   losing 8 correct conclusions.
 - **Remaining limitations:** Speck can still abstain when it should conclude, or draw conclusions
-  from weakly corroborated evidence (see *Known limits of this slice*).
+  from weakly corroborated evidence (see *Known limits of this slice*). On set 7 that abstention
+  cost it more than the stateless call's errors cost it (33 against 45 of 75 matches on Bolt),
+  although Speck never concluded the wrong explanation there (see *Results across models*).

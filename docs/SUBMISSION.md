@@ -105,6 +105,27 @@ labels and repeats; every suite had been seen, so this is a re-evaluation, not a
 | ... concluded where abstaining was right | 3/18 | 9/18 | 3/18 |
 | ... correct where a conclusion was due | 27/27 | 27/27 | 19/27 |
 
+**Across models, and set 7** (conflicting receipts over time, locked before any run;
+[set-7-conflicting-receipts.md](set-7-conflicting-receipts.md)):
+
+| Matches the label | 4B: Speck | 4B: stateless | Bolt: Speck | Bolt: stateless |
+|---|---|---|---|---|
+| Held-out + regression cases (48) | 40 | 18 | 42 | 42 |
+| Build 4 locked challenge cases (30) | 18 | 18 | 18 | 21 |
+| Set 5, locked (45) | 37 | 27 | 36 | 42 |
+| **Set 7, conflicting receipts over time, locked (75)** | 32 | 35 | 33 | 45 |
+
+| Errors of commission on set 7 | 4B: Speck | 4B: stateless | Bolt: Speck | Bolt: stateless |
+|---|---|---|---|---|
+| Concluded where waiting was right (of 18) | 9 | 18 | 9 | 12 |
+| Concluded the wrong explanation (of 57 where one was due) | 0 | 20 | 0 | 3 |
+| Leaned on a replaced record (of 48) | 0 | 38 | 0 | 9 |
+
+The stateless call improves with the model and Speck's accuracy does not move. On set 7 the better
+model's stateless call fell to 60% and still concluded wrongly where a correction was itself
+corrected, which Speck never did; but Speck abstained in 33-34 of 57 checkpoint-samples where a
+conclusion was due, so the stateless call matched the label more often on both models.
+
 In the first table, "0/4 (2 errors)" and "0/5 (1 error)" count the samples that completed. In
 the 3 errored samples the model's reply for the correction failed Speck's contract twice, the
 correction stayed unassessed, and Speck's state still presented "delivered" on the replaced scan;
@@ -296,7 +317,7 @@ These are counts over these cases only, not general accuracy.
 | Correction regression cases (8) | 4/8 | 8/8; replaced or withdrawn evidence never used as support (5/5) | 8/8 (5/5) |
 | Cross-domain suite (27) | | 15/27; same records in another order, identical: 0/2 | 19/27, 0 unsupported; 2/2 |
 | Challenge cases, locked before any run (10) | | 6/10 | 7/10 (stateless rule baseline 5/10) |
-| Tests | 29 | 147 | 157 (175 now) |
+| Tests | 29 | 147 | 157 (178 now) |
 
 The live results (3 repeats per suite) are in the proof tables above and, per checkpoint, in
 [build-4-bank-return.md](build-4-bank-return.md).
@@ -306,7 +327,7 @@ The live results (3 repeats per suite) are in the proof tables above and, per ch
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 175 tests, no credentials or network needed
+npm test                 # 178 tests, no credentials or network needed
 npm run investigate -- examples/payment-correction-chain/input.json   # one case, JSON in, JSON + trace out, offline
 npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups
