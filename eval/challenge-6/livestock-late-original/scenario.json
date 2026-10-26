@@ -1,0 +1,106 @@
+{
+  "id": "c6-livestock-late-original",
+  "caseId": "N6-LVS-01",
+  "title": "Where are the 40 cattle of movement MV-882?",
+  "question": "Movement MV-882 sent 40 cattle from property PIC 3NBKT118 on 12 Nov. Are they at the Dubbo saleyards or the Dubbo feedlot?",
+  "sources": {
+    "registry": {
+      "name": "Livestock traceability register",
+      "reliability": 0.95
+    },
+    "feedlot": {
+      "name": "Feedlot intake system",
+      "reliability": 0.85
+    },
+    "saleyard": {
+      "name": "Saleyard receivals",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-SALEYARD",
+      "statement": "The 40 cattle of movement MV-882 are at the Dubbo saleyards.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "registry.destination",
+          "equals": "saleyard",
+          "direction": "supports"
+        },
+        {
+          "fact": "saleyard.received",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "saleyard.received",
+          "equals": "false",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "registry.destination",
+          "equals": "feedlot",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "feedlot.received",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-FEEDLOT",
+      "statement": "The 40 cattle of movement MV-882 are at the Dubbo feedlot.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "registry.destination",
+          "equals": "feedlot",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "feedlot.received",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "registry.destination",
+          "equals": "saleyard",
+          "direction": "contradicts"
+        },
+        {
+          "fact": "saleyard.received",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-INTAKE",
+      "text": "Has the feedlot recorded the intake?",
+      "answeredBy": "feedlot.received"
+    }
+  ],
+  "stages": [
+    {
+      "id": "correction",
+      "label": "The register corrects the destination; the saleyards report nothing received (14 Nov)",
+      "asOf": "2026-11-14T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "late-original",
+      "label": "The original movement record syncs late; the feedlot reports the intake (15 Nov)",
+      "asOf": "2026-11-15T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

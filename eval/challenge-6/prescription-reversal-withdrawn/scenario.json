@@ -1,0 +1,93 @@
+{
+  "id": "c6-prescription-reversal-withdrawn",
+  "caseId": "N6-RX-01",
+  "title": "Was prescription RX-3390 dispensed?",
+  "question": "Was prescription RX-3390 (atorvastatin 40 mg) dispensed to patient P-2214?",
+  "sources": {
+    "pharmacy": {
+      "name": "Pharmacy dispensing system",
+      "reliability": 0.9
+    },
+    "patient": {
+      "name": "Patient app",
+      "reliability": 0.6
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-DISPENSED",
+      "statement": "Prescription RX-3390 was dispensed to the patient.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "pharmacy.dispensed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "patient.collected",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "pharmacy.dispensed",
+          "equals": "false",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-DISPENSED",
+      "statement": "Prescription RX-3390 was not dispensed to the patient.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "pharmacy.dispensed",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "pharmacy.dispensed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "patient.collected",
+          "equals": "true",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-DISPENSED",
+      "text": "What does the dispensing system record?",
+      "answeredBy": "pharmacy.dispensed"
+    }
+  ],
+  "stages": [
+    {
+      "id": "dispensed",
+      "label": "Dispensed and marked collected (6 Nov)",
+      "asOf": "2026-11-06T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "reversed",
+      "label": "The dispense is reversed (7 Nov)",
+      "asOf": "2026-11-07T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "reversal-withdrawn",
+      "label": "The reversal is found to be another patient's (10 Nov)",
+      "asOf": "2026-11-10T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

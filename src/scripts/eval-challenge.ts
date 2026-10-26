@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CONCLUSION_RULES, loadConfig, loadDotEnv, ROOT_DIR, type ConclusionRule } from "../config.js";
-import { CHALLENGE5_DIR, CHALLENGE_DIR, loadEvalCases } from "../eval/cases.js";
+import { CHALLENGE5_DIR, CHALLENGE6_DIR, CHALLENGE_DIR, loadEvalCases } from "../eval/cases.js";
 import { verifyLock } from "../eval/cross-domain.js";
 import { runEvaluation, systemsFor, type EvalMode } from "../eval/harness.js";
 import { printReport } from "../eval/print.js";
@@ -11,6 +11,7 @@ import { modelConfigProblem } from "../reasoning/nemotron.js";
 // npm run eval:challenge                         deterministic (fact rules, no model)
 // npm run eval:challenge -- --live [--repeats N]  the configured Nemotron endpoint
 //   --set 5            the Build 5 set (eval/challenge-5/) instead of Build 4's
+//   --set 6            set 6, the harder cases (eval/challenge-6/)
 //   --rule <rule>      the corroboration rule (default corroborated-1)
 //   --out <dir>        live: the directory for the repeats, under eval/results/experiments/
 //
@@ -24,12 +25,15 @@ import { modelConfigProblem } from "../reasoning/nemotron.js";
 const option = (name: string) => { const index = process.argv.indexOf(`--${name}`); return index >= 0 ? process.argv[index + 1] : undefined; };
 const mode: EvalMode = process.argv.includes("--live") ? "live" : "fixture";
 const repeats = mode === "live" && option("repeats") ? Math.max(1, Number(option("repeats")) || 1) : 1;
-const set5 = option("set") === "5";
+const set = option("set") ?? null;
+if (set !== null && set !== "5" && set !== "6") throw new Error("--set must be 5 or 6");
+const set5 = set === "5";
+const named = set ? ` (set ${set})` : "";
 const rule = (option("rule") ?? "corroborated-1") as ConclusionRule;
 if (!CONCLUSION_RULES.includes(rule)) throw new Error(`--rule must be one of ${CONCLUSION_RULES.join(", ")}`);
-const casesDir = set5 ? CHALLENGE5_DIR : CHALLENGE_DIR;
+const casesDir = set === "6" ? CHALLENGE6_DIR : set5 ? CHALLENGE5_DIR : CHALLENGE_DIR;
 const lock = verifyLock(casesDir, path.join(casesDir, "expectations.lock.json"));
-console.log(`Challenge cases${set5 ? " (set 5)" : ""}: ${lock.files} files verified against the lock written ${lock.lockedAt}. Rule ${rule}.`);
+console.log(`Challenge cases${named}: ${lock.files} files verified against the lock written ${lock.lockedAt}. Rule ${rule}.`);
 
 let nemotron;
 if (mode === "live") {
@@ -43,12 +47,12 @@ if (mode === "live") {
   console.log(`Live, ${repeats} repeat(s), against ${nemotron.model} @ ${nemotron.baseUrl} (provider ${nemotron.provider}, reasoning effort ${nemotron.reasoningEffort || "default"})`);
 }
 
-const group = set5 ? "challenge-5" : "challenge";
+const group = set ? `challenge-${set}` : "challenge";
 const dir = path.join(ROOT_DIR, "eval", "results", "experiments", group, option("out") ?? new Date().toISOString().replace(/[:.]/g, "-"));
 for (let repeat = 1; repeat <= repeats; repeat++) {
   const began = Date.now();
   const report = await runEvaluation(mode, loadEvalCases(casesDir), systemsFor(mode, nemotron, rule), (message) => { if (mode === "live") console.log(`  ${message}`); });
-  printReport(report, `challenge cases${set5 ? " (set 5)" : ""}${repeats > 1 ? `, repeat ${repeat}/${repeats}` : ""}`);
+  printReport(report, `challenge cases${named}${repeats > 1 ? `, repeat ${repeat}/${repeats}` : ""}`);
   const content = `${JSON.stringify({ generatedAt: new Date().toISOString(), group, rule, lock, repeat, wallMs: Date.now() - began, ...(nemotron ? { model: { provider: nemotron.provider, model: nemotron.model, endpoint: nemotron.baseUrl, reasoningEffort: nemotron.reasoningEffort || null, maxTokens: nemotron.maxTokens } } : {}), ...report }, null, 1)}\n`;
   const out = mode === "live" ? path.join(dir, `r${repeat}.json`) : path.join(ROOT_DIR, "eval", "results", `${group}-fixture${rule === "corroborated-1" ? "" : `-${rule}`}.json`);
   if (mode === "live") {

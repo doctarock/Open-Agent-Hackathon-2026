@@ -1,0 +1,70 @@
+{
+  "id": "c6-refund-single-authority",
+  "caseId": "N6-TAX-01",
+  "title": "Has the 2025-26 tax refund been paid?",
+  "question": "Has taxpayer T-44817's 2025-26 income tax refund of AUD 2,140 been paid?",
+  "sources": {
+    "taxoffice": {
+      "name": "Tax office account",
+      "reliability": 0.95
+    },
+    "taxpayer": {
+      "name": "Taxpayer correspondence",
+      "reliability": 0.5
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-PAID",
+      "statement": "The 2025-26 refund has been paid to the taxpayer.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "taxoffice.refund",
+          "equals": "paid",
+          "direction": "supports"
+        },
+        {
+          "fact": "taxoffice.refund",
+          "equals": "approved",
+          "direction": "supports",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-PAID",
+      "statement": "The 2025-26 refund has not been paid to the taxpayer.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "taxoffice.refund",
+          "equals": "paid",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-REFUND",
+      "text": "What does the tax office record for the refund?",
+      "answeredBy": "taxoffice.refund"
+    }
+  ],
+  "stages": [
+    {
+      "id": "approved",
+      "label": "Return processed, refund approved (20 Jul)",
+      "asOf": "2026-07-20T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "paid",
+      "label": "Refund paid (4 Aug)",
+      "asOf": "2026-08-04T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "refund-single-authority",
+  "family": null,
+  "order": "as recorded",
+  "domain": "tax refunds",
+  "category": "control: one authoritative record settles the case",
+  "description": "The tax office approves the refund, then records the payment with its reference. An approval is not a payment; the payment record alone settles the case.",
+  "checkpoints": [
+    {
+      "afterStage": "approved",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-NOT-PAID"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "paid",
+      "conclusion": "H-PAID",
+      "notCurrent": [
+        "H-NOT-PAID"
+      ],
+      "unsupported": [
+        "H-NOT-PAID"
+      ],
+      "invalidated": []
+    }
+  ]
+}

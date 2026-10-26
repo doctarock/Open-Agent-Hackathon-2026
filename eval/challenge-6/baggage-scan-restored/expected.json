@@ -1,0 +1,43 @@
+{
+  "id": "baggage-scan-restored",
+  "family": null,
+  "order": "as recorded",
+  "domain": "airline baggage",
+  "category": "a correction chain that restores the original",
+  "description": "The arrival scan is voided as another bag's, then the void is reversed, so the original scan counts again. A careful investigator does not conclude while the scan is voided and the only other record is one search that did not find the bag.",
+  "checkpoints": [
+    {
+      "afterStage": "arrived",
+      "conclusion": "H-ARRIVED",
+      "notCurrent": [
+        "H-NOT-ARRIVED"
+      ],
+      "unsupported": [
+        "H-NOT-ARRIVED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "scan-voided",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": [
+        "N6B-02"
+      ]
+    },
+    {
+      "afterStage": "void-reversed",
+      "conclusion": "H-ARRIVED",
+      "notCurrent": [
+        "H-NOT-ARRIVED"
+      ],
+      "unsupported": [
+        "H-NOT-ARRIVED"
+      ],
+      "invalidated": [
+        "N6B-03"
+      ]
+    }
+  ]
+}

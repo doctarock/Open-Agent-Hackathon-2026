@@ -1,0 +1,27 @@
+{
+  "lockedAt": "2026-10-26T08:01:38.100Z",
+  "note": "Written before any system, model or deterministic, was run on these cases. Pre-registration: docs/set-6-harder-cases.md.",
+  "files": {
+    "baggage-scan-restored/scenario.json": "9bd7438b4cdd4c9a7796d3c23eec6180abd4922c8d096c1cd50555fe1b048538",
+    "baggage-scan-restored/evidence.json": "056f053e29713bce67d9babf1cb8198a11c66741d8aacacbae5fc041220f994b",
+    "baggage-scan-restored/expected.json": "a474b02271606e5f16bd4d62f84551012a62b89e96d3ea41a80d7089eb0cf5b3",
+    "licence-status-flips/scenario.json": "0b96c9a91bec123c37808b6ad2983545dcf91e2cfad8791ba4e810e1d4077294",
+    "licence-status-flips/evidence.json": "797f55b2e338df5768af3db6c08fac6bef30fa6dabb34eea72cca9683462dc50",
+    "licence-status-flips/expected.json": "c3a4f344498d700ec0733cfdb784cb7750bdcf18f8d18d47eda87141342e90ab",
+    "livestock-late-original/scenario.json": "2a191cc70c06da0250f868c682877120c1c445bf50ef99e81d4f8b6bbb96fbcf",
+    "livestock-late-original/evidence.json": "cf4200f298ae56806ab177a460c8a82ed8a3f79bcaf62bfd9276eef2d89301d2",
+    "livestock-late-original/expected.json": "b29eb55717fa7c3f644ae0b69a10c19773d652e34e3ef4fad65d4afc24008d9f",
+    "permit-long/scenario.json": "2332f4020bbbcf6f30a4904d7af031e730ed69edd9150859ea0476c4190a2319",
+    "permit-long/evidence.json": "6e76dc5be59a896dc4faef93ad8baa03b1e400f0b7ec0f9b597ea5254096793e",
+    "permit-long/expected.json": "3d15b8ae2f60aad11f027661b6ed5a30990f9c4c56af4b242a74cd61077b87b6",
+    "prescription-reversal-withdrawn/scenario.json": "b23a2e85a9e901f43291eb0a861769e8a522b9b58c2ea948e0e0dfd9689a396f",
+    "prescription-reversal-withdrawn/evidence.json": "69afd3540c54e49cafb11bfa93355d0b988f815444c471d542d6289ac66c561f",
+    "prescription-reversal-withdrawn/expected.json": "23537f39d660279adf4fead027704505d01000945458fa2d878e19a93fe7e7aa",
+    "refund-single-authority/scenario.json": "248798da3a0ea392432dad23f16c659a739b8cb330e4c6c1c7e07695f8636732",
+    "refund-single-authority/evidence.json": "70fb4cbfff8189f08c254e5778329d815844cc6c2d61e0b46d3b73aacef98e22",
+    "refund-single-authority/expected.json": "801be613088d454f1eedcc68066be5a4fd480407b9441dab0cedefb22de039e3",
+    "repair-two-sources/scenario.json": "31b811f6bc3ad903573f97ea51abacd8f1961c05e260171da8612e1a184a0f68",
+    "repair-two-sources/evidence.json": "eb701087ae2f0ee0274889ae72e70aed0ce7762f7e51930dc5917e4752679ab7",
+    "repair-two-sources/expected.json": "4be3cb002416eb771defd3e584a53290498805bef639e67309df5818a779fd40"
+  }
+}

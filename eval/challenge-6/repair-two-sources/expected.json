@@ -1,0 +1,32 @@
+{
+  "id": "repair-two-sources",
+  "family": null,
+  "order": "as recorded",
+  "domain": "warranty repairs",
+  "category": "control: independent agreement, no corrections",
+  "description": "The workshop has the laptop in repair; then it closes the job and dispatches it, and the courier records delivery signed by the customer.",
+  "checkpoints": [
+    {
+      "afterStage": "in-repair",
+      "conclusion": "H-NOT-RETURNED",
+      "notCurrent": [
+        "H-RETURNED"
+      ],
+      "unsupported": [
+        "H-RETURNED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "returned",
+      "conclusion": "H-RETURNED",
+      "notCurrent": [
+        "H-NOT-RETURNED"
+      ],
+      "unsupported": [
+        "H-NOT-RETURNED"
+      ],
+      "invalidated": []
+    }
+  ]
+}

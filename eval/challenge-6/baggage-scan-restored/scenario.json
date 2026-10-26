@@ -1,0 +1,99 @@
+{
+  "id": "c6-baggage-scan-restored",
+  "caseId": "N6-BAG-01",
+  "title": "Has bag 0081 457 3 arrived in Sydney?",
+  "question": "Passenger Okafor's checked bag (tag 0081 457 3) flew Melbourne to Sydney on 3 Nov. Has it arrived in Sydney?",
+  "sources": {
+    "tracking": {
+      "name": "Airline baggage tracking",
+      "reliability": 0.9
+    },
+    "handler": {
+      "name": "Ground handler log",
+      "reliability": 0.75
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-ARRIVED",
+      "statement": "Bag 0081 457 3 has arrived in Sydney.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "tracking.arrival",
+          "equals": "scanned",
+          "direction": "supports"
+        },
+        {
+          "fact": "tracking.loaded",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "handler.bag_found",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "handler.bag_found",
+          "equals": "false",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-ARRIVED",
+      "statement": "Bag 0081 457 3 has not arrived in Sydney.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "handler.bag_found",
+          "equals": "false",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "tracking.arrival",
+          "equals": "scanned",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "handler.bag_found",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-FOUND",
+      "text": "Has the ground handler found the bag?",
+      "answeredBy": "handler.bag_found"
+    }
+  ],
+  "stages": [
+    {
+      "id": "arrived",
+      "label": "Loaded and scanned on arrival (3 Nov)",
+      "asOf": "2026-11-03T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "scan-voided",
+      "label": "The arrival scan is voided; the handler's search finds nothing (4 Nov)",
+      "asOf": "2026-11-04T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "void-reversed",
+      "label": "The void is reversed; the bag is located (5 Nov)",
+      "asOf": "2026-11-05T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

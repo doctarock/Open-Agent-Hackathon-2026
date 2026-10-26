@@ -1,0 +1,123 @@
+{
+  "caseId": "N6-BAG-01",
+  "records": [
+    {
+      "id": "N6B-01",
+      "caseId": "N6-BAG-01",
+      "source": {
+        "system": "tracking",
+        "name": "Airline baggage tracking"
+      },
+      "observedAt": "2026-11-03T01:10:00Z",
+      "content": "Bag tag 0081 457 3 (passenger Okafor, PNR K7TQ2B): loaded on QF412 MEL-SYD, container AKE 1123.",
+      "facts": {
+        "tracking.loaded": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline baggage tracking",
+        "recordRef": "n6b-01",
+        "author": "tracking-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6B-02",
+      "caseId": "N6-BAG-01",
+      "source": {
+        "system": "tracking",
+        "name": "Airline baggage tracking"
+      },
+      "observedAt": "2026-11-03T03:05:00Z",
+      "content": "Bag tag 0081 457 3: arrival scan at SYD domestic, belt 4, 14:05 AEDT.",
+      "facts": {
+        "tracking.arrival": "scanned"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline baggage tracking",
+        "recordRef": "n6b-02",
+        "author": "tracking-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6B-03",
+      "caseId": "N6-BAG-01",
+      "source": {
+        "system": "tracking",
+        "name": "Airline baggage tracking"
+      },
+      "observedAt": "2026-11-04T00:30:00Z",
+      "content": "The arrival scan of 3 Nov 14:05 for tag 0081 457 3 is voided: the reader logged tag 0081 457 2, another passenger's bag. Replaces that scan.",
+      "facts": {
+        "tracking.scan_void": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline baggage tracking",
+        "recordRef": "n6b-03",
+        "author": "tracking-feed",
+        "supersedes": [
+          "N6B-02"
+        ]
+      }
+    },
+    {
+      "id": "N6B-04",
+      "caseId": "N6-BAG-01",
+      "source": {
+        "system": "handler",
+        "name": "Ground handler log"
+      },
+      "observedAt": "2026-11-04T02:00:00Z",
+      "content": "SYD arrivals hall and belt 4 searched for tag 0081 457 3: not found. Passenger's missing-bag report lodged.",
+      "facts": {
+        "handler.bag_found": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Ground handler log",
+        "recordRef": "n6b-04",
+        "author": "handler-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6B-05",
+      "caseId": "N6-BAG-01",
+      "source": {
+        "system": "tracking",
+        "name": "Airline baggage tracking"
+      },
+      "observedAt": "2026-11-05T00:40:00Z",
+      "content": "The void of 4 Nov is reversed: a manual tag read confirmed that the 3 Nov 14:05 arrival scan was tag 0081 457 3. The original arrival scan stands. Replaces the void.",
+      "facts": {
+        "tracking.void_reversed": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline baggage tracking",
+        "recordRef": "n6b-05",
+        "author": "tracking-feed",
+        "supersedes": [
+          "N6B-03"
+        ]
+      }
+    },
+    {
+      "id": "N6B-06",
+      "caseId": "N6-BAG-01",
+      "source": {
+        "system": "handler",
+        "name": "Ground handler log"
+      },
+      "observedAt": "2026-11-05T01:30:00Z",
+      "content": "Tag 0081 457 3 located in the SYD oversize baggage area, held for collection.",
+      "facts": {
+        "handler.bag_found": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Ground handler log",
+        "recordRef": "n6b-06",
+        "author": "handler-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

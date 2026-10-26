@@ -1,0 +1,62 @@
+{
+  "caseId": "N6-WAR-01",
+  "records": [
+    {
+      "id": "N6W-01",
+      "caseId": "N6-WAR-01",
+      "source": {
+        "system": "workshop",
+        "name": "Service workshop"
+      },
+      "observedAt": "2026-10-08T02:00:00Z",
+      "content": "Job W-4410: laptop received from A. Ruiz, keyboard fault confirmed, repair in progress.",
+      "facts": {
+        "workshop.job": "in_progress"
+      },
+      "provenance": {
+        "systemOfRecord": "Service workshop",
+        "recordRef": "n6w-01",
+        "author": "workshop-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6W-02",
+      "caseId": "N6-WAR-01",
+      "source": {
+        "system": "workshop",
+        "name": "Service workshop"
+      },
+      "observedAt": "2026-10-15T03:00:00Z",
+      "content": "Job W-4410: repair complete; closed and dispatched by courier, consignment C-88120.",
+      "facts": {
+        "workshop.job": "closed_dispatched"
+      },
+      "provenance": {
+        "systemOfRecord": "Service workshop",
+        "recordRef": "n6w-02",
+        "author": "workshop-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6W-03",
+      "caseId": "N6-WAR-01",
+      "source": {
+        "system": "courier",
+        "name": "Return courier"
+      },
+      "observedAt": "2026-10-16T05:00:00Z",
+      "content": "Consignment C-88120 delivered to the customer's address; signed for by A. Ruiz.",
+      "facts": {
+        "courier.delivered": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Return courier",
+        "recordRef": "n6w-03",
+        "author": "courier-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

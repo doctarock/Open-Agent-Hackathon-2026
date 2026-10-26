@@ -1,0 +1,49 @@
+{
+  "id": "prescription-reversal-withdrawn",
+  "family": null,
+  "order": "as recorded",
+  "domain": "pharmacy",
+  "category": "a withdrawn correction restores the original",
+  "description": "The pharmacy reverses the dispense, conflicting with the patient app's collection; the investigator then withdraws the reversal (it was keyed against the wrong script), so the dispense record counts again.",
+  "checkpoints": [
+    {
+      "afterStage": "dispensed",
+      "conclusion": "H-DISPENSED",
+      "notCurrent": [
+        "H-NOT-DISPENSED"
+      ],
+      "unsupported": [
+        "H-NOT-DISPENSED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "reversed",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": [
+        "N6R-01"
+      ]
+    },
+    {
+      "afterStage": "reversal-withdrawn",
+      "conclusion": "H-DISPENSED",
+      "notCurrent": [
+        "H-NOT-DISPENSED"
+      ],
+      "unsupported": [
+        "H-NOT-DISPENSED"
+      ],
+      "invalidated": [
+        "N6R-03"
+      ],
+      "withdrawBefore": [
+        {
+          "recordId": "N6R-03",
+          "reason": "The reversal was keyed against RX-3390 in error; it belonged to RX-3309, another patient's script."
+        }
+      ]
+    }
+  ]
+}

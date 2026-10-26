@@ -1,0 +1,62 @@
+{
+  "caseId": "N6-TAX-01",
+  "records": [
+    {
+      "id": "N6T-01",
+      "caseId": "N6-TAX-01",
+      "source": {
+        "system": "taxpayer",
+        "name": "Taxpayer correspondence"
+      },
+      "observedAt": "2026-07-18T03:00:00Z",
+      "content": "Taxpayer T-44817: return lodged; asking when the refund will arrive.",
+      "facts": {
+        "taxpayer.query": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Taxpayer correspondence",
+        "recordRef": "n6t-01",
+        "author": "taxpayer-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6T-02",
+      "caseId": "N6-TAX-01",
+      "source": {
+        "system": "taxoffice",
+        "name": "Tax office account"
+      },
+      "observedAt": "2026-07-20T02:00:00Z",
+      "content": "2025-26 return processed: refund of AUD 2,140 approved for payment.",
+      "facts": {
+        "taxoffice.refund": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Tax office account",
+        "recordRef": "n6t-02",
+        "author": "taxoffice-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6T-03",
+      "caseId": "N6-TAX-01",
+      "source": {
+        "system": "taxoffice",
+        "name": "Tax office account"
+      },
+      "observedAt": "2026-08-04T01:00:00Z",
+      "content": "Refund of AUD 2,140 paid by EFT on 3 Aug to the nominated account (BSB 062-000, account ending 4471), payment reference R-55190.",
+      "facts": {
+        "taxoffice.refund": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Tax office account",
+        "recordRef": "n6t-03",
+        "author": "taxoffice-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

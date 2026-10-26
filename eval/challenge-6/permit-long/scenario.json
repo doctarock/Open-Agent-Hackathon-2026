@@ -1,0 +1,127 @@
+{
+  "id": "c6-permit-long",
+  "caseId": "N6-PMT-01",
+  "title": "Has building application BA-5521 been approved?",
+  "question": "Has building application BA-5521 (a two-storey dwelling at 14 Wren St) been approved or refused?",
+  "sources": {
+    "council": {
+      "name": "Council planning register",
+      "reliability": 0.95
+    },
+    "portal": {
+      "name": "Permit portal status feed",
+      "reliability": 0.6
+    },
+    "applicant": {
+      "name": "Applicant correspondence",
+      "reliability": 0.5
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-APPROVED",
+      "statement": "Building application BA-5521 has been approved.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "council.determination",
+          "equals": "approved",
+          "direction": "supports"
+        },
+        {
+          "fact": "portal.status",
+          "equals": "approved",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "council.determination",
+          "equals": "refused",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "portal.status",
+          "equals": "refused",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    },
+    {
+      "key": "H-REFUSED",
+      "statement": "Building application BA-5521 has been refused.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "council.determination",
+          "equals": "refused",
+          "direction": "supports"
+        },
+        {
+          "fact": "portal.status",
+          "equals": "refused",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "council.determination",
+          "equals": "approved",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "portal.status",
+          "equals": "approved",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-DETERMINATION",
+      "text": "What has the council determined?",
+      "answeredBy": "council.determination"
+    }
+  ],
+  "stages": [
+    {
+      "id": "lodged",
+      "label": "Lodged and under assessment (to 15 Sep)",
+      "asOf": "2026-09-15T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "approved",
+      "label": "Consent granted (to 29 Sep)",
+      "asOf": "2026-09-29T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "approval-withdrawn",
+      "label": "The consent is withdrawn as issued in error; the portal still shows it (to 6 Oct)",
+      "asOf": "2026-10-06T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "refused",
+      "label": "Refused (to 20 Oct)",
+      "asOf": "2026-10-20T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "review-lodged",
+      "label": "A review of the refusal is lodged (to 3 Nov)",
+      "asOf": "2026-11-03T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "review-pending",
+      "label": "The review awaits the panel (to 17 Nov)",
+      "asOf": "2026-11-17T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

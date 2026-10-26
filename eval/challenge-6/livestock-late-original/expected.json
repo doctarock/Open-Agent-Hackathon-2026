@@ -1,0 +1,32 @@
+{
+  "id": "livestock-late-original",
+  "family": null,
+  "order": "as recorded",
+  "domain": "livestock traceability",
+  "category": "a correction that arrives before the record it replaces",
+  "description": "The register's correction of movement MV-882 arrives before the original movement record, which syncs a day later still naming the saleyards. A careful investigator applies the correction to the late record, and concludes only once the feedlot records the intake.",
+  "checkpoints": [
+    {
+      "afterStage": "correction",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-SALEYARD"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "late-original",
+      "conclusion": "H-FEEDLOT",
+      "notCurrent": [
+        "H-SALEYARD"
+      ],
+      "unsupported": [
+        "H-SALEYARD"
+      ],
+      "invalidated": [
+        "N6V-03"
+      ]
+    }
+  ]
+}

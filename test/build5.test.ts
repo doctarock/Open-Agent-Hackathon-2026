@@ -366,3 +366,16 @@ test("set 5 is locked and loads apart from every other suite", async () => {
   const others = ["scenarios", "regression", "cross-domain", "challenge"].flatMap((dir) => fs.readdirSync(path.join(ROOT_DIR, "eval", dir)));
   assert.ok(cases.every((item) => !others.includes(item.id)));
 });
+
+test("set 6 is locked and loads apart from every other suite", async () => {
+  const { verifyLock } = await import("../src/eval/cross-domain.js");
+  const { CHALLENGE6_DIR, loadEvalCases, leakage } = await import("../src/eval/cases.js");
+  const lock = verifyLock(CHALLENGE6_DIR, path.join(CHALLENGE6_DIR, "expectations.lock.json"));
+  assert.equal(lock.files, 21);
+  const cases = loadEvalCases(CHALLENGE6_DIR);
+  assert.deepEqual(leakage(cases), []);
+  const labels = cases.flatMap((item) => item.checkpoints.map((checkpoint) => checkpoint.conclusion));
+  assert.deepEqual([labels.length, labels.filter((label) => label === null).length], [22, 6]);
+  const others = ["scenarios", "regression", "cross-domain", "challenge", "challenge-5"].flatMap((dir) => fs.readdirSync(path.join(ROOT_DIR, "eval", dir)));
+  assert.ok(cases.every((item) => !others.includes(item.id)));
+});

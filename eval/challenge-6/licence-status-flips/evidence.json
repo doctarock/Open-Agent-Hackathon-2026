@@ -1,0 +1,138 @@
+{
+  "caseId": "N6-LIC-01",
+  "records": [
+    {
+      "id": "N6L-01",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "licensing",
+        "name": "Licence server"
+      },
+      "observedAt": "2026-11-02T01:00:00Z",
+      "content": "Licence L-7781 (Hartley Design, 25 seats): status ACTIVE, term to 30 Jun 2027.",
+      "facts": {
+        "licence.status": "active"
+      },
+      "provenance": {
+        "systemOfRecord": "Licence server",
+        "recordRef": "n6l-01",
+        "author": "licensing-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6L-02",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "billing",
+        "name": "Billing system"
+      },
+      "observedAt": "2026-11-02T02:00:00Z",
+      "content": "Invoice INV-L7781-11 for licence L-7781: paid in full.",
+      "facts": {
+        "billing.invoice": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Billing system",
+        "recordRef": "n6l-02",
+        "author": "billing-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6L-03",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "billing",
+        "name": "Billing system"
+      },
+      "observedAt": "2026-11-08T23:00:00Z",
+      "content": "Invoice INV-L7781-12 for licence L-7781: overdue by 14 days; second reminder sent.",
+      "facts": {
+        "billing.invoice": "overdue"
+      },
+      "provenance": {
+        "systemOfRecord": "Billing system",
+        "recordRef": "n6l-03",
+        "author": "billing-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6L-04",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "licensing",
+        "name": "Licence server"
+      },
+      "observedAt": "2026-11-09T01:00:00Z",
+      "content": "Licence L-7781: status SUSPENDED for non-payment (automatic suspension after 14 days overdue).",
+      "facts": {
+        "licence.status": "suspended"
+      },
+      "provenance": {
+        "systemOfRecord": "Licence server",
+        "recordRef": "n6l-04",
+        "author": "licensing-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6L-05",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "billing",
+        "name": "Billing system"
+      },
+      "observedAt": "2026-11-11T22:00:00Z",
+      "content": "Invoice INV-L7781-12 for licence L-7781: paid in full; account in good standing.",
+      "facts": {
+        "billing.invoice": "paid"
+      },
+      "provenance": {
+        "systemOfRecord": "Billing system",
+        "recordRef": "n6l-05",
+        "author": "billing-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6L-06",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "licensing",
+        "name": "Licence server"
+      },
+      "observedAt": "2026-11-12T01:00:00Z",
+      "content": "Licence L-7781: status ACTIVE (suspension lifted after payment).",
+      "facts": {
+        "licence.status": "active"
+      },
+      "provenance": {
+        "systemOfRecord": "Licence server",
+        "recordRef": "n6l-06",
+        "author": "licensing-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6L-07",
+      "caseId": "N6-LIC-01",
+      "source": {
+        "system": "licensing",
+        "name": "Licence server"
+      },
+      "observedAt": "2026-11-20T03:00:00Z",
+      "content": "Licence L-7781: status REVOKED. The licence key was published in a public code repository and is revoked under the security policy; a new licence must be issued.",
+      "facts": {
+        "licence.status": "revoked"
+      },
+      "provenance": {
+        "systemOfRecord": "Licence server",
+        "recordRef": "n6l-07",
+        "author": "licensing-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

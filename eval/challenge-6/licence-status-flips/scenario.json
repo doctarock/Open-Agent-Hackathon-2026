@@ -1,0 +1,110 @@
+{
+  "id": "c6-licence-status-flips",
+  "caseId": "N6-LIC-01",
+  "title": "Is licence L-7781 active?",
+  "question": "Is Hartley Design's software licence L-7781 currently active?",
+  "sources": {
+    "licensing": {
+      "name": "Licence server",
+      "reliability": 0.95
+    },
+    "billing": {
+      "name": "Billing system",
+      "reliability": 0.9
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-ACTIVE",
+      "statement": "Licence L-7781 is currently active.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "licence.status",
+          "equals": "active",
+          "direction": "supports"
+        },
+        {
+          "fact": "billing.invoice",
+          "equals": "paid",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "licence.status",
+          "equals": "suspended",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "licence.status",
+          "equals": "revoked",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-INACTIVE",
+      "statement": "Licence L-7781 is not currently active (suspended or revoked).",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "licence.status",
+          "equals": "suspended",
+          "direction": "supports"
+        },
+        {
+          "fact": "licence.status",
+          "equals": "revoked",
+          "direction": "supports"
+        },
+        {
+          "fact": "billing.invoice",
+          "equals": "overdue",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "licence.status",
+          "equals": "active",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-STATUS",
+      "text": "What status does the licence server report?",
+      "answeredBy": "licence.status"
+    }
+  ],
+  "stages": [
+    {
+      "id": "active",
+      "label": "Licence active, invoice paid (2 Nov)",
+      "asOf": "2026-11-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "suspended",
+      "label": "Invoice overdue; licence suspended (9 Nov)",
+      "asOf": "2026-11-09T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "reinstated",
+      "label": "Invoice paid; licence reinstated (12 Nov)",
+      "asOf": "2026-11-12T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "revoked",
+      "label": "Licence revoked under the security policy (20 Nov)",
+      "asOf": "2026-11-20T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

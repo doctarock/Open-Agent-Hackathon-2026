@@ -55,6 +55,12 @@ export interface CheckpointOutcome {
   // scored; model baseline: what it cited, since nothing else is observable).
   influencing?: string[];
   visibleEvidence: string[];
+  // The stateless model baseline's one prompt at this checkpoint: its length in
+  // characters, and the prompt tokens the endpoint reported for the last
+  // attempt. Why both: Ollama silently truncates a prompt longer than its
+  // window and then reports the truncated count, so only the length shows the
+  // overflow. Measurement only; nothing is scored on it.
+  prompt?: { chars: number; tokens: number | null };
   // Speck systems with a model: whether the explanation matched Speck's state.
   explanationAgrees: boolean | null;
   executionStatus: string | null;
@@ -360,7 +366,7 @@ export function statelessRules(): EvalSystem {
   };
 }
 
-const baselineContract = (keys: string[]): StructuredOutputContract => ({
+export const baselineContract = (keys: string[]): StructuredOutputContract => ({
   name: "case_conclusion",
   required: ["conclusion", "cited_evidence", "rationale"],
   properties: {
@@ -385,6 +391,7 @@ export interface StatelessModelAnswer {
   error: string | null;
   attempts: number;
   valid: number;
+  prompt: { chars: number; tokens: number | null };
 }
 
 export async function statelessModelAnswer(processor: NemotronProcessor, config: NemotronConfig, scenario: Scenario, records: readonly EvidenceRecord[]): Promise<StatelessModelAnswer> {
@@ -394,22 +401,24 @@ export async function statelessModelAnswer(processor: NemotronProcessor, config:
   let lastError = "";
   let attempts = 0;
   let valid = 0;
+  const measured: { chars: number; tokens: number | null } = { chars: prompt.length, tokens: null };
   for (let attempt = 1; attempt <= 2 && !parsed; attempt += 1) {
     attempts += 1;
     try {
       const completion = await processor.infer({ prompt, temperature: 0.1, timeoutMs: config.timeoutMs, contract });
+      measured.tokens = completion.inputTokens ?? null;
       parsed = parseModelCompletion(completion.text, contract).structured;
       valid += 1;
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
     }
   }
-  if (!parsed) return { conclusion: null, cited: [], rationale: null, error: `model: ${lastError}`, attempts, valid };
+  if (!parsed) return { conclusion: null, cited: [], rationale: null, error: `model: ${lastError}`, attempts, valid, prompt: measured };
   return {
     conclusion: parsed.conclusion === "unresolved" ? null : String(parsed.conclusion),
     cited: (parsed.cited_evidence as unknown[]).map(String),
     rationale: typeof parsed.rationale === "string" ? parsed.rationale : null,
-    error: null, attempts, valid
+    error: null, attempts, valid, prompt: measured
   };
 }
 
@@ -445,7 +454,7 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
           stage: checkpoint.afterStage, error: null, conclusion, tentative: null,
           presentedAsCurrent: conclusion ? [conclusion] : [], citations: cited, supportCitations: conclusion ? cited : [], presentedSupport: conclusion ? cited : [],
           influencing: [...new Set(cited)].sort(),
-          visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null
+          visibleEvidence: records.map((record) => record.id), explanationAgrees: null, executionStatus: null, prompt: answer.prompt
         });
       }
       return { checkpoints, model: { httpCalls: [...processor.calls], contractAttempts: attempts, contractValid: valid, servedModels: [...processor.servedModels] } };
@@ -453,7 +462,7 @@ export function statelessModel(config: NemotronConfig): EvalSystem {
   };
 }
 
-function baselinePrompt(scenario: Scenario, records: readonly EvidenceRecord[], contract: StructuredOutputContract): string {
+export function baselinePrompt(scenario: Scenario, records: readonly EvidenceRecord[], contract: StructuredOutputContract): string {
   return [
     `QUESTION: ${scenario.question}`,
     "",

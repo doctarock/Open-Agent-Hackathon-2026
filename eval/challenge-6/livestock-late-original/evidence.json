@@ -1,0 +1,83 @@
+{
+  "caseId": "N6-LVS-01",
+  "records": [
+    {
+      "id": "N6V-01",
+      "caseId": "N6-LVS-01",
+      "source": {
+        "system": "registry",
+        "name": "Livestock traceability register"
+      },
+      "observedAt": "2026-11-14T03:00:00Z",
+      "content": "Correction to movement MV-882 (40 head from PIC 3NBKT118, 12 Nov): the destination is the Dubbo feedlot (PIC 3NDFL002), not the Dubbo saleyards. Replaces the movement record MV-882.",
+      "facts": {
+        "registry.destination": "feedlot"
+      },
+      "provenance": {
+        "systemOfRecord": "Livestock traceability register",
+        "recordRef": "n6v-01",
+        "author": "registry-feed",
+        "supersedes": [
+          "N6V-03"
+        ]
+      }
+    },
+    {
+      "id": "N6V-02",
+      "caseId": "N6-LVS-01",
+      "source": {
+        "system": "saleyard",
+        "name": "Saleyard receivals"
+      },
+      "observedAt": "2026-11-14T05:00:00Z",
+      "content": "Dubbo saleyards receivals, 12-14 Nov: no consignment from PIC 3NBKT118.",
+      "facts": {
+        "saleyard.received": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Saleyard receivals",
+        "recordRef": "n6v-02",
+        "author": "saleyard-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6V-03",
+      "caseId": "N6-LVS-01",
+      "source": {
+        "system": "registry",
+        "name": "Livestock traceability register"
+      },
+      "observedAt": "2026-11-15T02:00:00Z",
+      "content": "Movement MV-882, recorded by the vendor on 12 Nov and synchronised late: 40 head from PIC 3NBKT118 to the Dubbo saleyards (PIC 3NDSY001).",
+      "facts": {
+        "registry.destination": "saleyard"
+      },
+      "provenance": {
+        "systemOfRecord": "Livestock traceability register",
+        "recordRef": "n6v-03",
+        "author": "registry-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6V-04",
+      "caseId": "N6-LVS-01",
+      "source": {
+        "system": "feedlot",
+        "name": "Feedlot intake system"
+      },
+      "observedAt": "2026-11-15T04:00:00Z",
+      "content": "Intake of 40 head from PIC 3NBKT118 on 12 Nov, pen 14; NLIS tags read 40 of 40.",
+      "facts": {
+        "feedlot.received": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Feedlot intake system",
+        "recordRef": "n6v-04",
+        "author": "feedlot-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

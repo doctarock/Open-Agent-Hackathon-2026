@@ -1,0 +1,52 @@
+{
+  "id": "licence-status-flips",
+  "family": null,
+  "order": "as recorded",
+  "domain": "software licensing",
+  "category": "repeated restatements by the system of record",
+  "description": "The licence server reports four statuses in turn without saying any record replaces another; the billing system restates its invoice status twice. The latest status from the licence server decides; a paid invoice does not make a revoked licence active.",
+  "checkpoints": [
+    {
+      "afterStage": "active",
+      "conclusion": "H-ACTIVE",
+      "notCurrent": [
+        "H-INACTIVE"
+      ],
+      "unsupported": [
+        "H-INACTIVE"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "suspended",
+      "conclusion": "H-INACTIVE",
+      "notCurrent": [
+        "H-ACTIVE"
+      ],
+      "unsupported": [
+        "H-ACTIVE"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "reinstated",
+      "conclusion": "H-ACTIVE",
+      "notCurrent": [
+        "H-INACTIVE"
+      ],
+      "unsupported": [
+        "H-INACTIVE"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "revoked",
+      "conclusion": "H-INACTIVE",
+      "notCurrent": [
+        "H-ACTIVE"
+      ],
+      "unsupported": [],
+      "invalidated": []
+    }
+  ]
+}

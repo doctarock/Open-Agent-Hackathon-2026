@@ -1,0 +1,82 @@
+{
+  "id": "c6-repair-two-sources",
+  "caseId": "N6-WAR-01",
+  "title": "Has the repaired laptop been returned?",
+  "question": "Has customer A. Ruiz's laptop, under warranty repair job W-4410, been returned to the customer?",
+  "sources": {
+    "workshop": {
+      "name": "Service workshop",
+      "reliability": 0.9
+    },
+    "courier": {
+      "name": "Return courier",
+      "reliability": 0.85
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-RETURNED",
+      "statement": "The repaired laptop has been returned to the customer.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "courier.delivered",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "workshop.job",
+          "equals": "closed_dispatched",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "workshop.job",
+          "equals": "in_progress",
+          "direction": "contradicts",
+          "strength": 0.5
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-RETURNED",
+      "statement": "The laptop has not yet been returned to the customer.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "workshop.job",
+          "equals": "in_progress",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "courier.delivered",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-DELIVERED",
+      "text": "Has the courier delivered it?",
+      "answeredBy": "courier.delivered"
+    }
+  ],
+  "stages": [
+    {
+      "id": "in-repair",
+      "label": "Received and in repair (10 Oct)",
+      "asOf": "2026-10-10T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "returned",
+      "label": "Dispatched and delivered (17 Oct)",
+      "asOf": "2026-10-17T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "id": "permit-long",
+  "family": null,
+  "order": "as recorded",
+  "domain": "building permits",
+  "category": "a long record stream with a buried correction and a lagging feed",
+  "description": "72 records over six stages, most of them routine. The consent is withdrawn as issued in error in one record among many, while the permit portal, whose resynchronisation the council has suspended, keeps reporting it as approved; the application is later refused, and a review of the refusal is lodged while the determination stands.",
+  "checkpoints": [
+    {
+      "afterStage": "lodged",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-APPROVED",
+        "H-REFUSED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "approved",
+      "conclusion": "H-APPROVED",
+      "notCurrent": [
+        "H-REFUSED"
+      ],
+      "unsupported": [
+        "H-REFUSED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "approval-withdrawn",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-REFUSED"
+      ],
+      "invalidated": [
+        "N6P-13"
+      ]
+    },
+    {
+      "afterStage": "refused",
+      "conclusion": "H-REFUSED",
+      "notCurrent": [
+        "H-APPROVED"
+      ],
+      "unsupported": [
+        "H-APPROVED"
+      ],
+      "invalidated": [
+        "N6P-13"
+      ]
+    },
+    {
+      "afterStage": "review-lodged",
+      "conclusion": "H-REFUSED",
+      "notCurrent": [
+        "H-APPROVED"
+      ],
+      "unsupported": [
+        "H-APPROVED"
+      ],
+      "invalidated": [
+        "N6P-13"
+      ]
+    },
+    {
+      "afterStage": "review-pending",
+      "conclusion": "H-REFUSED",
+      "notCurrent": [
+        "H-APPROVED"
+      ],
+      "unsupported": [
+        "H-APPROVED"
+      ],
+      "invalidated": [
+        "N6P-13"
+      ]
+    }
+  ]
+}

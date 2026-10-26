@@ -1,0 +1,1375 @@
+{
+  "caseId": "N6-PMT-01",
+  "records": [
+    {
+      "id": "N6P-01",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-01T01:00:00Z",
+      "content": "BA-5521 lodged: two-storey dwelling at 14 Wren St, applicant Marsh Building Pty Ltd. Assessment fee AUD 3,412 received.",
+      "facts": {
+        "council.step": "lodged"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-01",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-02",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-09-01T04:00:00Z",
+      "content": "Applicant: confirming lodgement of BA-5521 and asking for the expected assessment time.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-02",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-03",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-03T02:00:00Z",
+      "content": "BA-5521: referred to the heritage officer (the street is in a character area); response due in ten working days.",
+      "facts": {
+        "council.step": "referral"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-03",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-04",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-04T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Under assessment. Assessment officer J. Pham. Queue position 21 of 61. The next review is weekly.",
+      "facts": {
+        "portal.status": "under_assessment"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-04",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-05",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-07T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Under assessment. Assessment officer J. Pham. Queue position 19 of 61. The next review is weekly.",
+      "facts": {
+        "portal.status": "under_assessment"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-05",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-06",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-09T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Under assessment. Assessment officer J. Pham. Queue position 17 of 61. The next review is weekly.",
+      "facts": {
+        "portal.status": "under_assessment"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-06",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-07",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-11T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Under assessment. Assessment officer J. Pham. Queue position 16 of 61. The next review is weekly.",
+      "facts": {
+        "portal.status": "under_assessment"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-07",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-08",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-14T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Under assessment. Assessment officer J. Pham. Queue position 14 of 61. The next review is weekly.",
+      "facts": {
+        "portal.status": "under_assessment"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-08",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-09",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-08T03:00:00Z",
+      "content": "BA-5521: neighbour notification period closed; three submissions received (overshadowing, height, parking).",
+      "facts": {
+        "council.step": "notification_closed"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-09",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-10",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-09-10T05:00:00Z",
+      "content": "Applicant: asking whether the three neighbour submissions need a formal response before determination.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-10",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-11",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-12T02:00:00Z",
+      "content": "BA-5521: heritage officer's response received; no objection to the facade, comments on roof form.",
+      "facts": {
+        "council.step": "referral_returned"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-11",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-12",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-09-14T06:00:00Z",
+      "content": "Applicant: supplying revised roof-form drawings in response to the heritage officer's comments.",
+      "facts": {
+        "applicant.message": "documents"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-12",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-13",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-22T03:00:00Z",
+      "content": "Development consent granted: determination D-1180 for BA-5521 (14 Wren St), with 41 conditions.",
+      "facts": {
+        "council.determination": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-13",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-14",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-22T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-14",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-15",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-24T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-15",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-16",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-26T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-16",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-17",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-28T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-17",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-18",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-09-23T04:00:00Z",
+      "content": "Applicant: thanking the council for determination D-1180 and asking when a construction certificate can be lodged.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-18",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-19",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-24T02:00:00Z",
+      "content": "BA-5521: conditions schedule sent to the applicant with determination D-1180.",
+      "facts": {
+        "council.step": "conditions_sent"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-19",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-20",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-09-25T05:00:00Z",
+      "content": "Applicant: booking the surveyor for set-out on 13 Oct, subject to the construction certificate.",
+      "facts": {
+        "applicant.message": "planning"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-20",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-21",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-26T03:00:00Z",
+      "content": "BA-5521: file transferred from J. Pham to the duty planner while the officer is on leave.",
+      "facts": {
+        "council.step": "reassigned"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-21",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-22",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-09-28T06:00:00Z",
+      "content": "Applicant: asking whether the 41 conditions can be met by a staged construction certificate.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-22",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-23",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-29T01:00:00Z",
+      "content": "Planning register maintenance: weekly batch of determinations exported to the state planning portal.",
+      "facts": {
+        "council.step": "export"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-23",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-24",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-09-30T02:00:00Z",
+      "content": "Register note: the weekly portal resynchronisation is suspended until the system upgrade on 12 Oct; until then the permit portal keeps showing statuses as at 29 Sep.",
+      "facts": {
+        "council.step": "portal_note"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-24",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-25",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-09-30T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-25",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-26",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-02T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-26",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-27",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-04T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-27",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-28",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-05T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Approved (determination D-1180). Conditions of consent are available to download. Construction certificate not yet issued.",
+      "facts": {
+        "portal.status": "approved"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-28",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-29",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-01T04:00:00Z",
+      "content": "Applicant: the portal still shows approval; asking the council to confirm the construction certificate pathway.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-29",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-30",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-02T01:00:00Z",
+      "content": "BA-5521: duty planner reviewing the file at the applicant's request.",
+      "facts": {
+        "council.step": "review"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-30",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-31",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-03T03:00:00Z",
+      "content": "Determination D-1180 was issued in error against BA-5521: it belongs to BA-5512 (14 Wren Lane). It is withdrawn for BA-5521, which remains under assessment. Replaces the consent record of 22 Sep for BA-5521.",
+      "facts": {
+        "council.determination": "under_assessment"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-31",
+        "author": "council-feed",
+        "supersedes": [
+          "N6P-13"
+        ]
+      }
+    },
+    {
+      "id": "N6P-32",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-04T05:00:00Z",
+      "content": "Applicant: asking for written confirmation of the correction and the new timeframe for BA-5521.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-32",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-33",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-05T02:00:00Z",
+      "content": "BA-5521: returned to J. Pham; assessment report in preparation.",
+      "facts": {
+        "council.step": "reassigned"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-33",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-34",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-06T03:00:00Z",
+      "content": "Applicant: cancelling the surveyor booking of 13 Oct.",
+      "facts": {
+        "applicant.message": "planning"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-34",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-35",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-12T04:00:00Z",
+      "content": "Register note: system upgrade complete; the permit portal has been resynchronised with the planning register.",
+      "facts": {
+        "council.step": "portal_note"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-35",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-36",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-15T03:00:00Z",
+      "content": "BA-5521 refused: determination D-1204. The dwelling exceeds the 9.5 m height limit by 1.1 m; the overshadowing submission is upheld.",
+      "facts": {
+        "council.determination": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-36",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-37",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-15T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Reasons for refusal are available to download. Review or appeal periods apply.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-37",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-38",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-17T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Reasons for refusal are available to download. Review or appeal periods apply.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-38",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-39",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-19T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Reasons for refusal are available to download. Review or appeal periods apply.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-39",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-40",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-16T04:00:00Z",
+      "content": "Applicant: acknowledging the refusal of BA-5521 and asking about the review process.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-40",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-41",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-17T02:00:00Z",
+      "content": "BA-5521: notice of determination D-1204 sent to the three submitters.",
+      "facts": {
+        "council.step": "submitters_notified"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-41",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-42",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-18T05:00:00Z",
+      "content": "Applicant: instructing an architect to redesign the roof to meet the height limit.",
+      "facts": {
+        "applicant.message": "planning"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-42",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-43",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-19T06:00:00Z",
+      "content": "Applicant: requesting a pre-lodgement meeting for a revised application.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-43",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-44",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-20T01:00:00Z",
+      "content": "Planning register maintenance: weekly batch of determinations exported to the state planning portal.",
+      "facts": {
+        "council.step": "export"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-44",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-45",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-21T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 lodged. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-45",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-46",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-24T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 lodged. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-46",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-47",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-27T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 lodged. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-47",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-48",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-10-30T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 lodged. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-48",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-49",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-11-02T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 lodged. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-49",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-50",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-22T03:00:00Z",
+      "content": "Review application R-77 lodged against determination D-1204 (BA-5521); review fee AUD 1,706 received. The determination stands unless the review panel decides otherwise.",
+      "facts": {
+        "council.step": "review_lodged"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-50",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-51",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-24T04:00:00Z",
+      "content": "Applicant: lodging review R-77 with an architect's statement on the roof redesign and a shadow diagram for 9 am, noon and 3 pm on 21 June.",
+      "facts": {
+        "applicant.message": "documents"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-51",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-52",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-26T05:00:00Z",
+      "content": "R-77: acknowledgement sent to the applicant; review panel to be convened within 28 days. The three original submitters are notified of the review.",
+      "facts": {
+        "council.step": "review_acknowledged"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-52",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-53",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-28T06:00:00Z",
+      "content": "Applicant: asking whether amended plans can be considered in the review or need a fresh application.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-53",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-54",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-30T07:00:00Z",
+      "content": "R-77: duty planner's advice to the applicant: minor amendments may be considered in the review; a change of building envelope needs a fresh application.",
+      "facts": {
+        "council.step": "review_advice"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-54",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-55",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-11-01T03:00:00Z",
+      "content": "Applicant: confirming the roof redesign keeps the building envelope and asking for it to be considered within review R-77.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-55",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-56",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-11-03T04:00:00Z",
+      "content": "R-77: one further submission received from a submitter, maintaining the overshadowing objection.",
+      "facts": {
+        "council.step": "review_submission"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-56",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-57",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-10-22T05:00:00Z",
+      "content": "Applicant: requesting a copy of the further submission received for review R-77.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-57",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-58",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-10-24T06:00:00Z",
+      "content": "Planning register maintenance: weekly batch of determinations exported to the state planning portal; no change to BA-5521.",
+      "facts": {
+        "council.step": "export"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-58",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-59",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-11-04T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 awaiting the panel. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-59",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-60",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-11-07T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 awaiting the panel. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-60",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-61",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-11-10T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 awaiting the panel. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-61",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-62",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-11-13T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 awaiting the panel. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-62",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-63",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "portal",
+        "name": "Permit portal status feed"
+      },
+      "observedAt": "2026-11-16T22:00:00Z",
+      "content": "Status check for BA-5521 (14 Wren St, two-storey dwelling): Refused (determination D-1204). Review R-77 awaiting the panel. Reasons for refusal are available to download. The determination stands while the review is pending.",
+      "facts": {
+        "portal.status": "refused"
+      },
+      "provenance": {
+        "systemOfRecord": "Permit portal status feed",
+        "recordRef": "n6p-63",
+        "author": "portal-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-64",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-11-05T03:00:00Z",
+      "content": "Applicant: asking the council to confirm the date of the review panel meeting for R-77.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-64",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-65",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-11-07T04:00:00Z",
+      "content": "Review application R-77 lodged against determination D-1204 (BA-5521); review fee AUD 1,706 received. The determination stands unless the review panel decides otherwise.",
+      "facts": {
+        "council.step": "review_lodged"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-65",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-66",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-11-09T05:00:00Z",
+      "content": "Applicant: lodging review R-77 with an architect's statement on the roof redesign and a shadow diagram for 9 am, noon and 3 pm on 21 June.",
+      "facts": {
+        "applicant.message": "documents"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-66",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-67",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-11-11T06:00:00Z",
+      "content": "R-77: acknowledgement sent to the applicant; review panel to be convened within 28 days. The three original submitters are notified of the review.",
+      "facts": {
+        "council.step": "review_acknowledged"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-67",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-68",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-11-13T07:00:00Z",
+      "content": "Applicant: asking whether amended plans can be considered in the review or need a fresh application.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-68",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-69",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-11-15T03:00:00Z",
+      "content": "R-77: duty planner's advice to the applicant: minor amendments may be considered in the review; a change of building envelope needs a fresh application.",
+      "facts": {
+        "council.step": "review_advice"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-69",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-70",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-11-17T04:00:00Z",
+      "content": "Applicant: confirming the roof redesign keeps the building envelope and asking for it to be considered within review R-77.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-70",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-71",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "council",
+        "name": "Council planning register"
+      },
+      "observedAt": "2026-11-05T05:00:00Z",
+      "content": "R-77: one further submission received from a submitter, maintaining the overshadowing objection.",
+      "facts": {
+        "council.step": "review_submission"
+      },
+      "provenance": {
+        "systemOfRecord": "Council planning register",
+        "recordRef": "n6p-71",
+        "author": "council-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N6P-72",
+      "caseId": "N6-PMT-01",
+      "source": {
+        "system": "applicant",
+        "name": "Applicant correspondence"
+      },
+      "observedAt": "2026-11-07T06:00:00Z",
+      "content": "Applicant: requesting a copy of the further submission received for review R-77.",
+      "facts": {
+        "applicant.message": "query"
+      },
+      "provenance": {
+        "systemOfRecord": "Applicant correspondence",
+        "recordRef": "n6p-72",
+        "author": "applicant-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

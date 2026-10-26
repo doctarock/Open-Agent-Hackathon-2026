@@ -28,6 +28,8 @@ export interface CheckpointScore {
   staleSupport: string[];
   explanationAgrees: boolean | null;
   executionStatus: string | null;
+  // The stateless model baseline's prompt size (CheckpointOutcome.prompt).
+  prompt?: { chars: number; tokens: number | null };
 }
 
 export interface SystemScore {
@@ -90,7 +92,8 @@ export function scoreSystem(system: string, results: Array<{ item: EvalCase; res
         presentedRefuted: outcome.presentedAsCurrent.filter((key) => label.notCurrent.includes(key)),
         staleSupport: outcome.presentedSupport.filter((id) => (label.invalidated ?? []).includes(id)),
         explanationAgrees: outcome.explanationAgrees,
-        executionStatus: outcome.executionStatus
+        executionStatus: outcome.executionStatus,
+        ...(outcome.prompt ? { prompt: outcome.prompt } : {})
       });
     });
   }
