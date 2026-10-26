@@ -78,6 +78,35 @@ the stateless call still does not have is a record of what changed: Speck said w
 stopped counting and which beliefs were rebuilt (6/6), the stateless call cannot (0/6). The 4B
 results below stand as recorded; they show the same comparison on a weaker reading.
 
+## Hotel chargeback (set 7)
+
+The guided demo opens on this comparison. Set 7's `hotel-chargeback` (labels locked before any
+run; [set-7-conflicting-receipts.md](set-7-conflicting-receipts.md)): a no-show is reported and
+relayed, corrected by a late check-in and door-lock entries, disputed, then reinstated when both
+the check-in and the key entries turn out to be a walk-in guest's (`N7H-10` and `N7H-09` replace
+`N7H-04` and `N7H-05`, so the night audit `N7H-02` counts again). Saved on 2026-10-26 with
+Evidence Desk as of Build 5 (rule `corroborated-1`): 1 deterministic comparison, and 6 live with
+`nvidia/nemotron-3.5-bolt-e4b` through Nightshift, 3 on the case's fixture and 3 with its
+evidence read live from its own five Zetaris tables. The six live samples came out the same at
+every stage; none was discarded and none errored.
+
+| Stage (label) | Stateless, fact rules | Speck, fact rules | Stateless, Bolt (6) | Speck, Bolt (6) |
+|---|---|---|---|---|
+| Booked (abstain) | abstains | abstains | abstains 6/6 | abstains 6/6 |
+| No-show (abstain) | "no-show" | "no-show", supported | "no-show" 6/6 | "no-show" 6/6, supported 0.648 |
+| Late check-in (stayed) | "stayed" | "stayed", supported | "stayed" 6/6 | abstains 6/6, leading "stayed" 0.58 |
+| Dispute (stayed) | "stayed" | abstains, leading "stayed" | "stayed" 6/6 | abstains 6/6, unresolved 0.444 |
+| Re-attributed (no-show) | "stayed", **on the replaced `N7H-04`, `N7H-05`** | **"no-show"**, supported | abstains ("unresolved") 6/6 | **"no-show" 6/6**, supported 0.92-0.93 |
+| Refunded (no-show) | "stayed", on the replaced records | "no-show" | abstains 6/6 | "no-show" 6/6 |
+
+**What these support.** Where a correction is itself undone, the approaches part: Speck stops
+counting the two replaced records, the night audit counts again, and it concludes "no-show" and
+says why; the stateless call either keeps the stay on the replaced records (fact rules) or cannot
+decide (Bolt). The same holds in the evaluation's runs (fact rules, and 3 repeats on each of the
+4B and Bolt). The table also shows Speck's costs on this case: it counts the agency's relay of the
+hotel's report as a second source at the no-show, and it holds back at the late check-in (live)
+and the dispute where the stateless call is right. One case, written by the project's author.
+
 ## Results, Build 4 (2026-10-25)
 
 Every saved comparison, counted per case, Evidence Desk policy, evidence source and model, is in
@@ -240,8 +269,9 @@ cross-domain suites, live with several samples, and new labelled cases written f
 ## Reproduce
 
 ```bash
-npm run compare        # deterministic: both prepared cases, fixtures and fact rules, no model
-npm run compare:live   # with .env: the Nemotron endpoint, and Zetaris for the disputed delivery
+npm run compare        # deterministic: the three prepared cases, fixtures and fact rules, no model
+npm run compare:live   # with .env: the Nemotron endpoint, and Zetaris for the hotel chargeback and the disputed delivery
+npm run compare:live -- --only hotel-chargeback   # one case
 ```
 
 Or press **Run the side-by-side comparison** on a case page. The page shows the newest comparison

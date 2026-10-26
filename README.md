@@ -14,10 +14,10 @@
 >   Nemotron 3.5 Bolt E4B, the model since 2026-10-26, the stateless call did not cite it (0/6):
 >   both reached "misdelivered", and only Speck recorded why. Every sample:
 >   [docs/comparison.md](docs/comparison.md), [docs/bolt-e4b.md](docs/bolt-e4b.md).
-> - **What the evaluation shows, as three separate claims:** correction handling as above (two
->   cases, an illustration, not a rate); no general accuracy advantage (18/30 for both on the
->   locked Build 4 cases; on set 5, `corroborated-2`'s 39/45 equals the old rule on the same
->   judgments); and Speck abstains more, which is sometimes wrong, and still concludes from weak
+> - **What the evaluation shows, as three separate claims:** correction handling as above and on
+>   the hotel chargeback (a few cases, an illustration, not a rate); no general accuracy advantage
+>   (18/30 for both on the locked Build 4 cases; on set 5, `corroborated-2`'s 39/45 equals the old
+>   rule on the same judgments); and Speck abstains more, which is sometimes wrong, and still concludes from weak
 >   or same-source agreement. With Bolt E4B the stateless call is ahead on both locked sets
 >   (21/30 and 42/45, against Speck's 18/30 and 36/45). See
 >   [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
@@ -67,7 +67,7 @@
 - [The scenario](#the-scenario)
 - [Architecture](#architecture)
 - [Sponsor integrations and the execution trace](#sponsor-integrations-and-the-execution-trace)
-  - [Zetaris](#zetaris) · [Meterless](#meterless) · [NVIDIA Nemotron (local)](#nvidia-nemotron-local) · [Speck](#speck) · [Cursor](#cursor) · [What the trace flags](#what-the-trace-flags)
+  - [Zetaris](#zetaris) · [Meterless](#meterless) · [NVIDIA Nemotron](#nvidia-nemotron) · [Speck](#speck) · [Cursor](#cursor) · [What the trace flags](#what-the-trace-flags)
 - [How conclusions are derived](#how-conclusions-are-derived)
   - [Revision: current beliefs come from evidence that still counts](#revision-current-beliefs-come-from-evidence-that-still-counts)
   - [Recovery from interrupted runs (Build 3.1)](#recovery-from-interrupted-runs-build-31)
@@ -95,9 +95,13 @@ every revision. When a later record contradicts or replaces an earlier claim, it
 - keeps the old belief on record as history, rather than presenting both claims side by side.
 
 **The proof.** The side-by-side comparison, a reproducible test suite, and labelled evaluation
-results, kept apart by kind (deterministic fixtures, live model samples). In live samples on the
+results, kept apart by kind (deterministic fixtures, live model samples). On the hotel chargeback,
+once the check-in and door-lock entries are re-attributed to another guest, Speck concluded
+"no-show" in every run measured, and the stateless call never did: it kept "stayed" on the
+replaced records (fact rules, Nano 4B) or could not decide (Bolt E4B). With the 4B, on the
 disputed delivery, the stateless model call kept "delivered" after the carrier's correction and
-cited the replaced scan as support, while Speck revised and recorded why (see
+cited the replaced scan as support, while Speck revised and recorded why; with Bolt E4B both
+reached the corrected answer there, and only Speck recorded why (see
 [docs/comparison.md](docs/comparison.md) for every sample, including the ones that favour the
 baseline). The evaluation finds no measurable accuracy difference between keeping beliefs across
 runs and recomputing them from scratch. What Evidence Desk adds is traceability: an auditable
@@ -291,7 +295,7 @@ The page explains itself; no walkthrough from a developer is needed.
   The guided tour and the Guide's *Show me* open the tab that holds what they point at.
 - **A first-run introduction** says what Evidence Desk is for and offers one action, *Start the
   guided investigation*. It can be dismissed, and is not shown again to the same browser. Inside
-  Speck it is on both prepared cases (not on your own investigations), and its button starts the
+  Speck it is on each prepared case (not on your own investigations), and its button starts the
   full guided demo; it is hidden while the guided demo is running, and *Reset demo case* shows it
   again.
 - **The guided investigation** works on the real case, using the page's own buttons:
@@ -354,7 +358,8 @@ Inside Speck the Evidence tab runs one **guided demo** across the prepared cases
 prepared case's introduction offers it (*Start the guided investigation* or *Explore on my own*),
 and the *Start the guided demo* button at the end of the case picker starts or resumes it.
 
-1. **Hotel chargeback** (set 7's case; the configured model, or the fact rules): the case and its
+1. **Hotel chargeback** (set 7's case; the configured evidence source and assessor, as for the
+   disputed delivery): the case and its
    explanations, then straight to **Speck beside a stateless baseline**, which runs all six stages
    both ways. Its findings describe every correction, including the re-attribution where the two
    part.
@@ -470,6 +475,27 @@ With the deterministic rule assessor the outcome is:
 3. **Run 2:** H-DELIVERED is **rejected**, decisively, by `EV-CAR-005`. *Supported:*
    H-MISDELIVERED (0.70). The timeline shows the revision and the record responsible.
 
+### The hotel chargeback (the demo's first case)
+
+Case `N7-HTL-01` (`eval/challenge-7/hotel-chargeback/`, one of set 7's four locked cases): did
+guest R. Lindqvist stay at the Harbourside Hotel on 12-14 October under booking BK-6620? Eleven
+records from five source systems (property management, the travel agency, door locks, the card
+network, the guest) arrive over six stages. Two explanations, `H-STAYED` and `H-NO-SHOW`, each at
+a 0.5 prior.
+
+| Stage | Records | Label |
+|---|---|---|
+| Booked | `N7H-01` the booking | abstain |
+| No-show | `N7H-02` night audit: not checked in; `N7H-03` the agency relays the hotel's no-show | abstain (the relay is not a second source, and the stay is not over) |
+| Late check-in | `N7H-04` corrects the night audit (supersedes `N7H-02`): checked in 23:40; `N7H-05` the booking's key used four times | stayed |
+| Dispute | `N7H-06` chargeback; `N7H-07` the guest: "I never stayed" | stayed |
+| Re-attributed | `N7H-09` and `N7H-10`: the key and the check-in were walk-in WK-118's (supersede `N7H-05`, `N7H-04`); `N7H-08` the dispute noted | no-show (the night audit `N7H-02` counts again) |
+| Refunded | `N7H-11` the agency refunds as a no-show | no-show |
+
+The labels were locked before any system ran on the case. Results per run:
+[docs/set-7-conflicting-receipts.md](docs/set-7-conflicting-receipts.md) and
+[docs/comparison.md](docs/comparison.md#hotel-chargeback-set-7).
+
 ## Architecture
 
 ```
@@ -515,7 +541,7 @@ its runtime, with routes and a tab in its interface.
 | Concern | Owner | How it is used |
 |---|---|---|
 | Cognition | **Speck** (`speck/`, imported as `#speck`; its cognition is unmodified) | The case is a Speck worker. Hypotheses come from `proposeHypothesis`. Evidence goes into the ledger through `recordEvidence`, which caps reliability for model-judged evidence. The relations that currently take effect are applied through `reviseHypothesesFromEvidence`, which runs Speck's belief revision with decisive refutation. When invalidated evidence makes that necessary, a hypothesis is replaced and the relations are replayed (see *Revision* below). Withdrawals use `withdrawEvidence`. Ranking uses `rankHypotheses`. The released evidence stage is held with `setWorldState`, and each run's outcome is saved as episodic memory through `recordMemory`. The timeline is Speck's event log (`belief.revised`, `evidence.recorded`, …). Model calls go through Speck's model registry, which validates contracts and retries. All of this persists in one Speck SQLite database. |
-| Federated evidence | **Zetaris** | `EvidenceProvider` interface with a fixture implementation and a live Zetaris adapter (`src/evidence/zetaris-provider.ts`). The adapter uses the platform's REST API (`/api/auth/login`, then `/api/proxy/query/sql/start`) with one SELECT per source table, configured in `config/zetaris-queries.json`. `EVIDENCE_MODE` selects the mode explicitly, and there is never a fallback. Every record carries its retrieval mode, table and Zetaris query token. |
+| Federated evidence | **Zetaris** | `EvidenceProvider` interface with a fixture implementation and a live Zetaris adapter (`src/evidence/zetaris-provider.ts`). The adapter uses the platform's REST API (`/api/auth/login`, then `/api/proxy/query/sql/start`) with one SELECT per source table, configured per case in `config/zetaris-queries.json` (the disputed delivery) and `config/zetaris-queries-hotel.json` (the hotel chargeback). `EVIDENCE_MODE` selects the mode explicitly, and there is never a fallback. Every record carries its retrieval mode, table and Zetaris query token. |
 | Execution | **Meterless** Markovian engine | The Apache-2.0 reference implementation, vendored unmodified at `vendor/meterless-markovian/` (pinned commit and hashes are in its `NOTICE.md`). Each run is a `Markovian.run`. The injected generator assesses one bounded batch of new evidence per chunk and ends each chunk with a `[STATE_CHECKPOINT]` carryover block, or `[TASK_COMPLETE]` on the last one. `maxChunks` caps the run. Run history goes to `data/meterless/history.json`. Progress events stream to the UI. In Nemotron mode, the reflection pass produces the model's explanation. |
 | Reasoning model | **NVIDIA Nemotron** | `src/reasoning/nemotron.ts`: a model processor for any OpenAI-compatible chat endpoint, called through a private instance of Speck's `ModelRegistry` (Speck's contract validation and retries, without adding a model to Speck's own runtime). The model judges how each evidence item bears on each hypothesis, and decisive rules still take precedence. Speck records model-judged evidence as `model`-provenance and caps its reliability at 0.4. The explanation's citations are checked against the real evidence ids. The model name the endpoint reports serving is recorded with every run. |
 
@@ -538,18 +564,22 @@ recovery after an interrupted run, withdrawals and recomputations.
 
 - **Code:** `src/evidence/zetaris-provider.ts`.
 - **What it does:** logs in (`/api/auth/login`), then sends one SELECT per source table through
-  `/api/proxy/query/sql/start` (tables in `config/zetaris-queries.json`). Each record carries the
-  table and Zetaris query token it came from.
+  `/api/proxy/query/sql/start`. Each live case has its own tables: the disputed delivery's four
+  in `config/zetaris-queries.json`, the hotel chargeback's five in
+  `config/zetaris-queries-hotel.json`; no table is shared. Each record carries the table and
+  Zetaris query token it came from.
 - **Shown in the trace:** every SELECT of the run, including tables that returned no rows, with
   row count, measured latency and query token.
 - **Fixture mode is unmistakable.** It is labelled FIXTURE FILE - NOT ZETARIS in the header, on
   every record and in the trace, and the trace says no Zetaris query was made. There is never a
   fallback: if Zetaris fails, the API returns 502 and nothing is recorded.
 - **Verified:**
-  - against a local Zetaris platform (`npm run zetaris:check`, and live runs on 2026-10-22 and
-    2026-10-25: 4 SELECTs per run, 6 records, each with its query token);
+  - against a local Zetaris platform (`npm run zetaris:check`, and live runs of the disputed
+    delivery on 2026-10-22, 2026-10-25 and 2026-10-26: 4 SELECTs per run, 6 records, each with its
+    query token). The hotel chargeback's 11 records, read back from its five tables, equal its
+    fixture in content, facts, sources and replacements (live comparisons of 2026-10-26);
   - in tests, through a stand-in HTTP layer that exercises the real adapter.
-- **The live path reads these four Lightning tables, not the Unified Semantic Layer.** The USL
+- **The live path reads these Lightning tables, not the Unified Semantic Layer.** The USL
   (`npm run zetaris:usl`) and its data-quality rule are real and were re-run on 2026-10-25
   (`eval/results/sponsors/2026-10-25-zetaris-usl.md`), as a separate demonstration. All of this
   is the repository's sample data, not business data. See
@@ -576,7 +606,7 @@ API, is the default model provider (see *Model providers*).
 - **Not Meterless:** Meterless does not do Evidence Desk's recovery, reconciliation or
   withdrawal, and the trace does not attribute them to it.
 
-### NVIDIA Nemotron (local)
+### NVIDIA Nemotron
 
 - **Code:** `src/reasoning/nemotron.ts`, an OpenAI-compatible chat client registered as a
   processor in Speck's model registry.
@@ -601,7 +631,8 @@ API, is the default model provider (see *Model providers*).
   - how many judgments were returned, kept, neutral, already judged, discarded, or overruled
     by a rule.
 - **Not demonstrated:** the client also accepts NVIDIA's hosted API (see *Configuration*), but
-  that direct path was not used: this client was used only with local Ollama. The larger
+  that direct path was not used: this client was used only with local Ollama and through
+  Meterless Nightshift. The larger
   Nemotrons that Nightshift chose are described under *Meterless*; no other NVIDIA infrastructure
   is claimed.
 
@@ -873,9 +904,10 @@ on fixtures with the rule assessor. `npm test` builds and runs every test, with 
 - **Changing Evidence Desk's code.** Run `npm run plugin:install` again, then restart Speck.
 
 The tab offers three cases:
-- **Hotel chargeback** (set 7's `hotel-chargeback`) runs on its fixture with the configured
-  assessor: the model when one is set, otherwise the fact rules.
-- **Disputed delivery** follows the plugin's settings (live Zetaris and Nemotron, or fixtures).
+- **Hotel chargeback** (set 7's `hotel-chargeback`) follows the plugin's settings: its evidence
+  from Zetaris (its own five tables) or its fixture (`EVIDENCE_MODE`), weighed by the model or the
+  fact rules (`REASONER`).
+- **Disputed delivery** follows the plugin's settings the same way (its own four tables).
 - **Bank return** always runs on its fixture with the rule assessor.
 
 **Standalone fallback.** `npm start` serves the same page on http://127.0.0.1:4320, outside
@@ -918,7 +950,7 @@ Then read the **Conclusion** tab and the revision timeline in the **History** ta
 - After the update, run 2 is *supported* H-MISDELIVERED (0.70).
 - "Why this changed" shows that EV-CAR-003 no longer counts.
 
-**Bank return** (the held-out `correction-supersedes` case). It's the second case in the
+**Bank return** (the held-out `correction-supersedes` case). It's the third case in the
 Evidence tab. On the standalone server, give it its own database so it doesn't share the
 disputed-delivery case:
 
@@ -934,25 +966,26 @@ EVIDENCE_DESK_SCENARIO=eval/scenarios/correction-supersedes EVIDENCE_DESK_DB=ban
 To try withdrawal, press **Withdraw** on a record and give a reason. Withdrawing EV-SUP-006 in the
 disputed-delivery case moves H-MISDELIVERED from supported 0.70 to leading 0.58.
 
-**Sponsor demo (live Zetaris and local Nemotron).** These steps need the local Zetaris platform
-and Ollama running.
+**Sponsor demo (live Zetaris and Nemotron).** These steps need the local Zetaris platform and a
+Meterless Runtime (or Ollama) running.
 1. Check both services:
    ```bash
    npm run zetaris:check
    npm run model:check
    ```
    `zetaris:check` should report 6 records for DISPUTE-1042. `model:check` should print the
-   served model, e.g. `nemotron-3-nano:4b`.
-2. Choose them with `npm run configure -- --model ollama --evidence zetaris-local` (or set
-   `EVIDENCE_MODE=zetaris`, `REASONER=nemotron` and `MODEL_PROVIDER=ollama` in `.env`).
+   served model, `nvidia/nemotron-3.5-bolt-e4b` through Nightshift (or, on Ollama,
+   `nemotron-3-nano:4b`).
+2. Choose them with `npm run configure -- --model meterless --evidence zetaris-local` (or
+   `--model ollama`; or set `EVIDENCE_MODE=zetaris`, `REASONER=nemotron` and `MODEL_PROVIDER` in
+   `.env`).
    Then run `npm run speck` and open the Evidence tab's Disputed delivery case. (Standalone:
    `npm start`, after `npm run db:reset` for a clean case.)
 3. Check the header and records:
    - the header shows **ZETARIS LIVE**, the Nemotron model and endpoint, and the Meterless
      engine and commit;
    - every record is labelled **Zetaris live**, with its table and query token.
-4. Run, introduce the update, and run again. Each run takes tens of seconds on a small local
-   model.
+4. Run, introduce the update, and run again. Each run takes tens of seconds.
 5. Open the **Audit** tab's **Execution trace**. The latest run shows:
    - each SELECT with its query token;
    - the Meterless run id, confirmed in the engine's `history.json`;
@@ -978,7 +1011,7 @@ showed this as one retry.
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. A Speck already running on the same port is stopped first; anything else on the port is left alone and Speck does not start. Once Speck answers, it opens in the default browser (`SPECK_OPEN_BROWSER=0` to skip). |
 | `npm run investigate -- <case>` | One case from structured input to structured output, every stage, with the execution trace as JSON Lines on stdout and in `logs/`. Sample mode by default (no `.env`, credentials or network); `--live` uses `.env`; `--output <file>` writes the result. See *Command line*. |
 | `npm run compare` | Speck beside the stateless baseline on the prepared cases (`-- --only <case>` for one), deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
-| `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
+| `npm run compare:live` | The same with the settings in `.env`: the configured model provider for every case, and, with `EVIDENCE_MODE=zetaris`, Zetaris for the hotel chargeback and the disputed delivery (the bank return has only its fixture). Exits 2 if no usable model is configured. |
 | `npm run eval:reasoning` | The live evaluation on local Ollama with the model's reasoning off and on (three repeats each, alternated); writes each report and a `summary.md` to `eval/results/experiments/reasoning/<time>/`, never `live.json`. Needs the 16K model: `ollama create nemotron-3-nano-4b-ctx16k -f config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile`. `-- --summarize <dir>` re-summarises a folder. |
 | `npm run eval:cross-domain` | The separate cross-domain suite (`eval/cross-domain/`): logistics, payment reversals, procurement; refuses to run if its locked expectations changed. Findings: `docs/cross-domain-evaluation.md` |
 | `npm run plugin:install` | Build, then (re)install the plugin into `speck/plugins/evidence-desk/` and approve its entry hash in Speck's allowlist. Keeps the case data; the plugin reads the repository's `.env`. Restart Speck afterwards. |
@@ -987,7 +1020,7 @@ showed this as one retry.
 | `npm run dev` | Build, then start with restart on changes in `dist/` (run `npx tsc -w` alongside) |
 | `npm test` | Build and run every test in `dist/test/` |
 | `npm run db:reset` | Delete Evidence Desk's Speck database and Meterless history. Stop the server first. |
-| `npm run zetaris:seed` | Load the scenario's evidence into a local Zetaris platform (see below) |
+| `npm run zetaris:seed` | Load the live cases' evidence into a local Zetaris platform, each case into its own tables (see below) |
 | `npm run zetaris:check` | Exercise the live Zetaris path: login, probe query, case evidence |
 | `npm run zetaris:usl` | Build and check the Zetaris Unified Semantic Layer over a warehouse and a carrier source, with a data-quality rule (separate from the live path). See `zetaris/usl/README.md` and `docs/zetaris-usl-reflection.md` |
 | `npm run model:check` | One plain-text call to the configured model provider (for a Meterless Runtime, after checking its status and routing modes); prints the model it reports serving |
@@ -1014,15 +1047,23 @@ writes. `.env.example` lists them with placeholders. There are no credential def
 1. Start the platform and confirm it with its own `./verify.sh`.
 2. Set `EVIDENCE_MODE=zetaris`, `ZETARIS_BASE_URL` (the web interface, e.g.
    `http://localhost:3000`), `ZETARIS_USERNAME`, and `ZETARIS_PASSWORD`.
-3. Run `npm run zetaris:seed`. It copies the scenario's records into the driver container as
-   one JSON file per row and registers one Lightning file-store table per source system
-   (`EVIDENCE_DESK.order_events`, `warehouse_scans`, `carrier_events`, `support_messages`),
-   using the platform's documented `CREATE LIGHTNING DATABASE` / `FILESTORE TABLE` DDL.
+3. Run `npm run zetaris:seed`. For each prepared case that reads from Zetaris
+   (`src/evidence/zetaris-cases.ts`), it copies the case's records into the driver container as
+   one JSON file per row and registers one Lightning file-store table per source system, using
+   the platform's documented `CREATE LIGHTNING DATABASE` / `FILESTORE TABLE` DDL:
+   - the disputed delivery: `EVIDENCE_DESK.order_events`, `warehouse_scans`, `carrier_events`,
+     `support_messages`;
+   - the hotel chargeback: `EVIDENCE_DESK.hotel_pms_events`, `hotel_ota_bookings`,
+     `hotel_door_locks`, `hotel_card_disputes`, `hotel_guest_messages`.
+
+   With `EVIDENCE_DESK_SCENARIO` (and `ZETARIS_QUERY_CONFIG`) set, it seeds only that case.
+   `npm run configure`, choosing Zetaris, checks every case's records and offers to seed.
 4. Run `npm run zetaris:check`, then `npm start`.
 
-The seeded rows originate from this repository's fixture file. Live mode really does read them
-back through Zetaris, which is what the UI labels show. To investigate other data, point
-`config/zetaris-queries.json` at tables with the same columns.
+The seeded rows originate from this repository's fixture files. Live mode really does read them
+back through Zetaris, which is what the UI labels show. To investigate other data, point a query
+config (`ZETARIS_QUERY_CONFIG`, default `config/zetaris-queries.json`) at tables with the same
+columns.
 
 If Zetaris is unreachable, rejects the login, or lacks a table, the API returns HTTP 502 and
 the page shows the error, the server's message and what to do. No run is recorded and no
@@ -1237,6 +1278,7 @@ npm run eval:live   # same cases with the configured Nemotron endpoint (exits 2 
 npm run eval:cross-domain   # the separate cross-domain suite (logistics, payments, procurement)
 npm run eval:challenge      # the Build 4 challenge cases, locked before any run (add -- --live)
 npm run eval:challenge -- --set 5   # the Build 5 set (eval/challenge-5/); add --rule corroborated-2, --live
+npm run eval:challenge -- --set 7   # set 7, conflicting receipts over time (eval/challenge-7/); add --live
 npm run compare:summary     # every saved side-by-side comparison, counted, to eval/results/comparisons/SUMMARY.md
 ```
 
@@ -1478,7 +1520,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 178 tests with no network access beyond localhost and no credentials (178/178 passing on 2026-10-26):
+`npm test` runs 180 tests with no network access beyond localhost and no credentials (180/180 passing on 2026-10-27):
 
 - **Build 5** (`test/build5.test.ts`): rule `corroborated-2` beside `corroborated-1`: strong independent, weak, non-establishing, duplicated, conflicting, missing-strength, never-asked, withdrawn and superseded support; the bank return and the two Build 4 false positives replayed; a failed model call; the model contract under each rule; set 5's lock.
 
@@ -1567,7 +1609,9 @@ What these runs show:
   - the case worker is left `waiting`, and an unrelated Speck worker is untouched;
   - bad requests give 400, an unknown case 404, and the tab's assets are served;
   - cases survive a Speck restart on the same database, as the same worker;
-  - the bank-return case always runs on its fixture with the rules, whatever the settings;
+  - the bank-return case always runs on its fixture with the rules, whatever the settings; the
+    hotel chargeback and the disputed delivery follow them, each with its own Zetaris tables,
+    which agree with `npm run zetaris:seed`'s list and are never shared;
   - the installer copies the plugin, points `#speck` at Speck's own build, makes the entry the
     only plugin module, approves exactly its hash, and keeps `.env` and case data on reinstall.
 - **Speck launcher** (`test/speck-launcher.test.ts`): `npm run speck` reads Speck's port and host
@@ -1643,7 +1687,7 @@ from a security review of this repository's code (Speck is reviewed separately).
 - Comparison, case and record ids are looked up among known ones, never used as file paths.
   Static files are confined to `public/`.
 - The Zetaris case id is checked against `^[A-Za-z0-9_-]+$` before it goes into a SELECT; table
-  and column names come from `config/zetaris-queries.json`, not from requests.
+  and column names come from the query configs in `config/`, not from requests.
 - The page builds dynamic content as text nodes; its only `innerHTML` is the static template.
 - A person's own investigation has length limits on every field, dated records, and corrections
   that must name an earlier record of the same investigation.
@@ -1677,18 +1721,19 @@ from a security review of this repository's code (Speck is reviewed separately).
 - **Restatement assumes one entity per fact key.** A source reporting the same fact for two different items in one case would wrongly make one out of date. No current case does this.
 
 - **The side-by-side comparison is three cases.** Six live samples per model of the delivery and
-  the bank return, and three with Bolt E4B of the hotel chargeback, show behaviour on these cases,
+  the bank return, and six with Bolt E4B of the hotel chargeback (three on its fixture, three
+  read from Zetaris, identical in outcome), show behaviour on these cases,
   in both directions; they are not rates and no significance is claimed.
   The difference between the columns reflects Speck's whole policy (thresholds, decisive rules,
   supersession, the 0.4 cap), not persistence alone. The bank return's evidence exists only as a
   fixture, so its live comparison uses the model but not Zetaris. Inside Speck the panel polls
   for progress (about once a second); it reports the stage and step, not a percentage.
 
-- **Speck's chat answers are written by a local model.** The investigations component gives it
+- **Speck's chat answers are written by a model.** The investigations component gives it
   only the published case summaries and tells it to answer from them, which removed the invented
   details seen without it, but the wording is still the model's: check it against the case page.
   The guided demo's chat step completes on any reply.
-- **Live runs of a person's own investigation can stop early.** With the local model, about one
+- **Live runs of a person's own investigation can stop early.** With the local 4B, about one
   run in three of a correction errored in testing; its records stay pending and the next run
   retries them, as the page says.
 
@@ -1708,8 +1753,8 @@ from a security review of this repository's code (Speck is reviewed separately).
     gains an `evidence-desk` entry and `plugins/evidence-desk/` is untracked.
   - The installed plugin imports Speck by absolute file URL (so Speck's own tests, which copy
     `plugins/` elsewhere, still load it). Reinstall if the repository moves.
-  - The tab offers two fixed cases (disputed delivery and bank return) and the user's own
-    investigations. Other scenarios open only on the standalone page.
+  - The tab offers three prepared cases (hotel chargeback, disputed delivery and bank return)
+    and the user's own investigations. Other scenarios open only on the standalone page.
   - The Speck tab has no live progress stream; it refreshes when an action finishes. The
     standalone page (`npm start`) keeps its server-sent events.
 
@@ -1830,7 +1875,9 @@ This experiment's results suggest a nuanced answer:
   changed ([docs/comparison.md](docs/comparison.md)). That was the 4B. With Bolt E4B the stateless
   call no longer cited it (0/6); Speck still kept withdrawn or replaced evidence out of its support
   more consistently (15/15 against 12/15 held-out checkpoint-samples), and only Speck recorded why
-  ([docs/bolt-e4b.md](docs/bolt-e4b.md)).
+  ([docs/bolt-e4b.md](docs/bolt-e4b.md)). On set 7's hotel chargeback, where a correction is
+  itself undone, Speck followed the chain back to "no-show" in every run on both models, and the
+  stateless call did not ([docs/set-7-conflicting-receipts.md](docs/set-7-conflicting-receipts.md)).
 - **General conclusion accuracy:** no demonstrated improvement on the locked challenge set:
   Speck and the stateless call both scored 18/30
   ([docs/build-4-bank-return.md](docs/build-4-bank-return.md), section 5c). With Bolt E4B the

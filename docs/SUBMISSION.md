@@ -49,18 +49,22 @@ check-in and door-lock entries, disputed by the guest, and finally reinstated wh
 check-in and the key entries turn out to be a walk-in guest's. At that re-attribution and after,
 Speck concludes "no-show" and shows which records stopped counting; the stateless side keeps
 "stayed" on the replaced records (fact rules, Nano 4B) or cannot decide (Bolt E4B), in every run
-measured (the evaluation's 3 repeats per model, and 3 saved live comparisons with Bolt). The same
-panel shows where Speck does worse: both fall for the relayed no-show, and Speck holds back at the
-dispute where the stateless call is right.
+measured (the fact rules, the evaluation's 3 repeats per model, and 6 saved live comparisons with
+Bolt, 3 of them with the evidence read live from the case's own Zetaris tables). The same panel
+shows where Speck does worse: both fall for the relayed no-show (fact rules and Bolt; the 4B's
+stateless call said "stayed" from the start), and Speck holds back at the dispute where the
+stateless call is right.
 
-Then a correction by hand, on the disputed delivery, in the case's **Speck vs. baseline** tab:
+Then a correction by hand, on the disputed delivery (its **Speck vs. baseline** tab holds the
+saved comparisons):
 1. The carrier's scan `EV-CAR-003` says "delivered", supporting *delivered*.
 2. The carrier's proof-of-delivery review `EV-CAR-005` replaces it: the parcel went to No. 41
    *North*, where the resident is holding it.
-3. The stateless baseline keeps "delivered" and cites `EV-CAR-003`: 12/12 live comparisons on
-   2026-10-25.
+3. With the 4B, the stateless baseline kept "delivered" and cited `EV-CAR-003`: 12/12 live
+   comparisons on 2026-10-25. With Bolt E4B it did not (0/6): both reached "misdelivered".
 4. Speck stops counting `EV-CAR-003`, rebuilds the beliefs that rested on it and keeps the old
-   belief as history: in all 9 of those 12 samples that completed (3 errored; see Proof).
+   belief as history: in all 9 of those 12 4B samples that completed (3 errored; see Proof), and
+   in 6/6 with Bolt, the only side to record why.
 5. The panel shows each stage's records with the replaced one struck through, both answers and
    citations, a *relies on replaced record* badge, and Speck's *no longer counts* and rebuilt
    beliefs with what they were before.
@@ -188,8 +192,9 @@ often than a stateless call, which is right in some cases and wrong in others (c
 
 ## What it is
 
-Evidence Desk investigates a case whose evidence conflicts and changes over time: a disputed
-delivery, or a payment the bank later reverses. When a source corrects or retracts a record, the
+Evidence Desk investigates a case whose evidence conflicts and changes over time: a hotel
+chargeback whose no-show is disproved and then reinstated, a disputed delivery, or a payment the
+bank later reverses. When a source corrects or retracts a record, the
 current conclusion is recomputed from the evidence that still counts. The page says which
 record changed the conclusion, which of its facts and judgments went with it, and what the
 system believed before.
@@ -211,8 +216,9 @@ The submodule is pinned to upstream Speck.
 ## What is worth a judge's time
 
 0. **Speck beside a stateless baseline, on the same evidence.** One click on a case page; the
-   bank return is deterministic and instant, the disputed delivery makes real Nemotron and Zetaris
-   calls. Saved comparisons are listed with their date and configuration, and counted under
+   hotel chargeback is where they part most clearly, the bank return is deterministic and
+   instant, and the hotel chargeback and the disputed delivery make real Nemotron and Zetaris
+   calls when configured. Saved comparisons are listed with their date and configuration, and counted under
    **Evaluation results**, beside every evaluation report and each case's checkpoints.
 1. **Corrections actually retract their effect.**
    - Build 2 kept a reversed payment's −0.19 in its belief state, and stalled at 0.47 on the
@@ -249,7 +255,7 @@ The submodule is pinned to upstream Speck.
      derived-from, supports, contradicts, inhibitory for a correction) and its chat, which
      answers from the published case summary.
    - It ends on the form for an investigation of the judge's own: a question, competing
-     explanations and free-text evidence, weighed by the local model, with corrections.
+     explanations and free-text evidence, weighed by the configured model, with corrections.
 
 ## Sponsor technologies, as verified in a real run
 
@@ -260,7 +266,8 @@ one. It was re-run on 2026-10-25 in both configurations, local Nemotron 4B
 (`...2026-10-25T13-04-05-519Z.json`), and on 2026-10-26 through Nightshift with the pinned Bolt
 E4B (`...2026-10-26T07-05-56-787Z.json`, every sponsor OBSERVED); [sponsor-audit.md](sponsor-audit.md)
 checks every claim below against those receipts, and states what is not verified. Two points a judge should know:
-- **The live investigation reads four Zetaris Lightning tables, not the USL.** The Unified
+- **The live investigation reads Zetaris Lightning tables, not the USL**: the disputed
+  delivery's four and the hotel chargeback's five, never shared. The Unified
   Semantic Layer and its data-quality rule are real and re-run on 2026-10-25, but as a separate
   demonstration. All Zetaris data is this repository's sample data.
 - **Which model produced which number.** Every number before 2026-10-26 comes from the local 4B.
@@ -271,7 +278,7 @@ Its runs on 2026-10-22 (model on local Ollama) and 2026-10-24 (model through Nig
 
 | Sponsor | What it does in Evidence Desk | Observed in the live run |
 |---|---|---|
-| **Zetaris** | Federated evidence: login, then one SELECT per source table through the platform's REST API (`src/evidence/zetaris-provider.ts`). | 4 SELECTs per run against the local platform. Every assessed record carried one of that run's query tokens. |
+| **Zetaris** | Federated evidence: login, then one SELECT per source table through the platform's REST API (`src/evidence/zetaris-provider.ts`). | 4 SELECTs per run against the local platform (the disputed delivery, which `sponsors:verify` runs). Every assessed record carried one of that run's query tokens. The hotel chargeback reads its own five tables (5 SELECTs per run; 3 live comparisons of 2026-10-26, outside `sponsors:verify`). |
 | **Meterless Markovian** | Execution engine: the Markovian reference engine (`@meterless/markovian-reference@0.1.0`, commit `1742dec`, vendored unmodified) runs each investigation as bounded chunks with carryover, plus a reflection pass for the explanation. | Run ids, status and chunk counts matched the engine's own `history.json`. Runs are matched by id and the engine's timestamp, because the engine restarts its ids in each process. |
 | **Meterless Nightshift** | Model provider, the default: Meterless's HTTP API (OpenAI-compatible, provider contract v4) routes each assessor call to a model (`src/reasoning/meterless.ts`, contract in `speck/src/models/meterless.ts`). | Observed 2026-10-24 (`npm run sponsors:verify`, routing mode `meterless/auto`): all 5 model calls of the two-stage run went to Nightshift's `/v1/chat/completions` and were answered. Each response named the model that served it: `nvidia/nemotron-3-ultra-550b-a55b` for stage 1, `nvidia/nemotron-3.5-lightning-30b-a3b` for stage 2. That is larger than the local 4B model the Nemotron row below describes. In the same run, Zetaris, the Markovian engine, Nemotron and Speck were all OBSERVED. On 2026-10-26, with `METERLESS_MODEL=nvidia/nemotron-3.5-bolt-e4b` (a pinned model), all 5 calls were answered and each response named `nvidia/nemotron-3.5-bolt-e4b`; every sponsor OBSERVED. |
 | **NVIDIA Nemotron** | Judges how each record bears on each hypothesis, and writes the explanation (`src/reasoning/nemotron.ts`). Every reply is validated by Speck's contract and retried once; decisive rules override it; Speck caps its evidence at 0.4. | Since 2026-10-26: `nvidia/nemotron-3.5-bolt-e4b`, served by NVIDIA through Nightshift, named by the endpoint on every call; 0 contract rejections in the sponsor run. Before: `nemotron-3-nano:4b` on local Ollama (4B, 4-bit, 2.8 GB, on one GPU, in a 4,096-token window), reported by the endpoint on every call. Prompts stay at about 900-1,900 tokens, the same in a case's second stage as its first, because the case's state is in Speck rather than the prompt (measured 2026-10-24; README, *Small model, small context*). All model-judged evidence was at reliability ≤ 0.4. Retries were visible: in one run a contract rejection, in another an empty reply. |
@@ -329,7 +336,7 @@ These are counts over these cases only, not general accuracy.
 | Correction regression cases (8) | 4/8 | 8/8; replaced or withdrawn evidence never used as support (5/5) | 8/8 (5/5) |
 | Cross-domain suite (27) | | 15/27; same records in another order, identical: 0/2 | 19/27, 0 unsupported; 2/2 |
 | Challenge cases, locked before any run (10) | | 6/10 | 7/10 (stateless rule baseline 5/10) |
-| Tests | 29 | 147 | 157 (178 now) |
+| Tests | 29 | 147 | 157 (180 now) |
 
 The live results (3 repeats per suite) are in the proof tables above and, per checkpoint, in
 [build-4-bank-return.md](build-4-bank-return.md).
@@ -339,7 +346,7 @@ The live results (3 repeats per suite) are in the proof tables above and, per ch
 ```bash
 git submodule update --init --recursive && npm run setup   # builds Speck and installs the plugin
 npm run speck            # Speck at http://127.0.0.1:4310, opening on the Evidence tab
-npm test                 # 178 tests, no credentials or network needed
+npm test                 # 180 tests, no credentials or network needed
 npm run investigate -- examples/payment-correction-chain/input.json   # one case, JSON in, JSON + trace out, offline
 npm run compare          # Speck beside the stateless baseline, deterministic (compare:live with .env)
 npm run eval             # deterministic evaluation, both groups
@@ -353,9 +360,11 @@ history are in [build-3-revision.md](build-3-revision.md).
 
 ## Known limits
 
-- **One investigation scenario.** The fact rules are hand-written.
+- **Three prepared cases.** The demo's cases are a set 7 case, the development scenario and a
+  held-out case; the fact rules are hand-written.
 - **Few cases.** Seven held-out cases, three regression cases, ten cross-domain cases, five Build 4
-  challenge cases and eight Build 5 cases; live results are three repeats of one small local model.
+  challenge cases, eight Build 5 cases and four set 7 cases; live results are three repeats on each
+  of two small models (the local 4B, then Bolt E4B through Nightshift), never pooled.
 - **Corroboration over-concludes.** `corroborated-1` counts that two sources agree, not whether the
   records establish anything; it concluded from weak agreement in 6 live checkpoint-samples. The
   model's strengths cannot separate weak from strong (0.6-1.0 for everything). The Build 5
@@ -381,7 +390,7 @@ history are in [build-3-revision.md](build-3-revision.md).
   server has no login and refuses requests from other sites and rebound domains. Error messages
   are shown on the page, and evidence text is not yet delimited in the model prompt; both are
   deliberate for now (README, *Security*).
-- **Speck's chat is a small local model.** It answers from the published summary, but its
+- **Speck's chat is a small model.** It answers from the published summary, but its
   wording is the model's; the case page is the record. A person's own investigation can only be
   weighed by the model, and a live run of it sometimes stops early, leaving records pending to
   retry.

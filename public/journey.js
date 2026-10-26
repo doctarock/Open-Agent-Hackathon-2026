@@ -47,14 +47,14 @@ export const JOURNEY = [
     finishLabel: "Next: what the evaluation found"
   },
   {
-    // Why here: the two cases are illustrations; this is the measurement, read
+    // Why here: the three cases are illustrations; this is the measurement, read
     // from the registered experiment reports (src/compare/evaluation.ts).
     id: "results",
     kind: "results",
     label: "Part 4 of 8 · What the evaluation found",
     title: "What the measured results show",
     body: () => [
-      "The two cases you just ran are illustrations. This page is the measurement: the same cases, rules and labels run on two models, three times each, read from the experiment reports in the repository.",
+      "The three cases you just ran are illustrations. This page is the measurement: the same cases, rules and labels run on two models, three times each, read from the experiment reports in the repository.",
       "The table at the top, Results across models, reads in three steps:",
       [
         "The stateless call improves with the model. On the earlier suites the better model's stateless call matches the label as often as Speck, or more often.",
@@ -105,7 +105,7 @@ export const JOURNEY = [
     body: () => [
       "After each run, Evidence Desk publishes the case's state to Speck as a summary memory. Speck's chat reads those summaries when a question names an investigation, and answers only from them.",
       `A question is ready in the message bar: "${SUGGESTED_QUESTION}" Press Send, or ask your own.`,
-      "A local model writes the answer, so check it against the case pages: it should match the conclusion, the records and the correction."
+      "A model writes the answer, so check it against the case pages: it should match the conclusion, the records and the correction."
     ],
     after: () => [
       "Speck answered. Compare it with the bank return's conclusion and its \"why it changed\" section.",
@@ -119,7 +119,7 @@ export const JOURNEY = [
     title: "Start an investigation of your own",
     body: () => [
       "This form starts an investigation of your own: a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases. Once the title and question are written, Suggest explanations has the model fill in the explanations for you to edit.",
-      "Once it is created, Run investigation has the local model weigh each record against each explanation (Speck caps model-judged evidence at reliability 0.4). Add evidence takes a new record, or a correction of an earlier one; run again and the conclusion is revised from the evidence that still counts.",
+      "Once it is created, Run investigation has the configured model weigh each record against each explanation (Speck caps model-judged evidence at reliability 0.4). Add evidence takes a new record, or a correction of an earlier one; run again and the conclusion is revised from the evidence that still counts.",
       "That completes the guided demo. The Guide button on any case lists every feature, and Reset demo case starts a prepared case afresh for the next person."
     ]
   }

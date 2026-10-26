@@ -45,7 +45,18 @@ Every assessed record carried one of that run's query tokens (checked by the ver
 visible per record in the trace and on the case page). `npm run zetaris:check` also returned the
 same 6 records on 2026-10-25.
 
-**Which returned records contribute.** All six are assessed. The record that decides the case is
+**The hotel chargeback's own tables** (added 2026-10-26, after these sponsor runs).
+The demo's first case reads five tables of its own, never shared with the delivery's
+(`config/zetaris-queries-hotel.json`): `EVIDENCE_DESK.hotel_pms_events` (4 rows),
+`hotel_ota_bookings` (3), `hotel_door_locks` (2), `hotel_card_disputes` (1) and
+`hotel_guest_messages` (1), 11 records for case `N7-HTL-01`, 5 SELECTs per run. Read back through
+the adapter they equal the case's fixture in content, facts, sources and replacements (only the
+timestamp format differs, the same instant). Receipts: the 3 live comparisons with evidence mode
+`zetaris` in `eval/results/comparisons/c7-hotel-chargeback/` (2026-10-26T14:56, 14:58, 15:00
+UTC). `npm run sponsors:verify` still runs the disputed delivery, so its verdicts do not cover
+this case.
+
+**Which returned records contribute.** All six of the delivery's are assessed. The record that decides the case is
 the carrier's proof-of-delivery review `EV-CAR-005` (`carrier_events`), which replaces the
 "delivered" scan `EV-CAR-003` from the same table. The trace lists, per run, each record's table,
 query token, the judgments made on it and the belief revisions it caused.
@@ -55,7 +66,7 @@ report `eval/results/sponsors/2026-10-25-zetaris-usl.md`) onboards a warehouse C
 JSON source, compiles and activates `lightning.metastore.evidence_desk.delivery_usl`, and queries
 it: 3 rows, equal to the two source queries, all 3 scenario records found, the correction link
 preserved. Evidence Desk's own Zetaris adapter read the same 3 rows from the USL with a query
-token. **The live investigation does not use the USL**: it reads the four `EVIDENCE_DESK` tables
+token. **The live investigation does not use the USL**: it reads the `EVIDENCE_DESK` tables
 above. The USL is a reproducible demonstration beside the live path, not part of it.
 
 **The data-quality rule is configured and exercised.** `evidence_id_present`
@@ -96,8 +107,9 @@ it: **`nvidia/nemotron-3.5-lightning-30b-a3b`** (all 5). The earlier receipt
 for stage 1 and the 30B for stage 2.
 
 These larger models are what Nightshift chose in `meterless/auto` mode. They are **not** the local
-4B model, and no evaluation or comparison number in this repository was produced through
-Nightshift. With `MODEL_PROVIDER=ollama` the verifier correctly reports Nightshift NOT OBSERVED
+4B model, and no evaluation or comparison number came from a routing mode. Until 2026-10-25 no
+number was produced through Nightshift at all; since 2026-10-26 every live number is, with the
+pinned Bolt E4B (section *2026-10-26: Bolt E4B through Nightshift*). With `MODEL_PROVIDER=ollama` the verifier correctly reports Nightshift NOT OBSERVED
 (run 13:04:35Z, exit 1: "model calls went to http://127.0.0.1:11434/v1, not through Nightshift").
 
 ## NVIDIA Nemotron
