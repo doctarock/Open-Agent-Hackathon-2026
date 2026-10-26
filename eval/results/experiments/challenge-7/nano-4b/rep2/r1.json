@@ -1,0 +1,1753 @@
+{
+ "generatedAt": "2026-10-26T09:23:44.064Z",
+ "group": "challenge-7",
+ "rule": "corroborated-1",
+ "lock": {
+  "lockedAt": "2026-10-26T08:26:29.633Z",
+  "files": 12
+ },
+ "repeat": 1,
+ "wallMs": 1060717,
+ "model": {
+  "provider": "ollama",
+  "model": "nemotron-3-nano:4b",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "reasoningEffort": "none",
+  "maxTokens": 4096
+ },
+ "mode": "live",
+ "cases": [
+  {
+   "id": "aircraft-release",
+   "category": "a withdrawn release; a cleared part does not reinstate it",
+   "checkpoints": 7
+  },
+  {
+   "id": "cold-chain-excursion",
+   "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+   "checkpoints": 6
+  },
+  {
+   "id": "hotel-chargeback",
+   "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+   "checkpoints": 6
+  },
+  {
+   "id": "property-settlement",
+   "category": "a reversed settlement, a stale source, then a second settlement",
+   "checkpoints": 6
+  }
+ ],
+ "systems": [
+  {
+   "system": "speck-desk/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "defect",
+     "expected": "H-GROUNDED",
+     "concluded": "H-GROUNDED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "repaired",
+     "expected": "H-RELEASED",
+     "concluded": "H-RELEASED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "part-notice",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RELEASED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "release-withdrawn",
+     "expected": "H-GROUNDED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-GROUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "notice-retracted",
+     "expected": "H-GROUNDED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-GROUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "new-release",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "directive",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "arrival",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-INTACT",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "second-logger",
+     "expected": null,
+     "concluded": "H-INTACT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "logger-voided",
+     "expected": "H-INTACT",
+     "concluded": "H-INTACT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "notice-corrected",
+     "expected": null,
+     "concluded": "H-INTACT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "probe-and-power",
+     "expected": "H-EXCURSION",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "qa-ruling",
+     "expected": "H-EXCURSION",
+     "concluded": "H-EXCURSION",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "booked",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-STAYED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "no-show",
+     "expected": null,
+     "concluded": "H-NO-SHOW",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "late-checkin",
+     "expected": "H-STAYED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-STAYED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "dispute",
+     "expected": "H-STAYED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-STAYED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "reattributed",
+     "expected": "H-NO-SHOW",
+     "concluded": "H-NO-SHOW",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "refunded",
+     "expected": "H-NO-SHOW",
+     "concluded": "H-NO-SHOW",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "booked",
+     "expected": "H-NOT-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-SETTLED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "settled",
+     "expected": "H-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "reversed",
+     "expected": "H-NOT-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-SETTLED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "agent-update",
+     "expected": "H-NOT-SETTLED",
+     "concluded": "H-NOT-SETTLED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "resettled",
+     "expected": "H-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "registered",
+     "expected": "H-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 11,
+     "of": 25,
+     "rate": 0.44
+    },
+    "validCitations": {
+     "count": 135,
+     "of": 135,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 11,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 10,
+     "of": 10,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 16,
+     "of": 16,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 3,
+     "of": 6,
+     "rate": 0.5
+    },
+    "overAbstention": {
+     "count": 11,
+     "of": 19,
+     "rate": 0.579
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 16,
+     "of": 25,
+     "rate": 0.64
+    },
+    "model": {
+     "httpCalls": 59,
+     "answered": {
+      "count": 59,
+      "of": 59,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 58,
+      "of": 59,
+      "rate": 0.983
+     },
+     "latencyMs": {
+      "mean": 3517,
+      "median": 2605,
+      "max": 36101
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "defect",
+     "expected": "H-GROUNDED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "repaired",
+     "expected": "H-RELEASED",
+     "concluded": "H-RELEASED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "part-notice",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RELEASED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "release-withdrawn",
+     "expected": "H-GROUNDED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-GROUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "notice-retracted",
+     "expected": "H-GROUNDED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-GROUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "new-release",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "directive",
+     "expected": "H-RELEASED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-GROUNDED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "arrival",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-INTACT",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "second-logger",
+     "expected": null,
+     "concluded": "H-INTACT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "logger-voided",
+     "expected": "H-INTACT",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": "errored"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "notice-corrected",
+     "expected": null,
+     "concluded": "H-INTACT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "probe-and-power",
+     "expected": "H-EXCURSION",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": "errored"
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "qa-ruling",
+     "expected": "H-EXCURSION",
+     "concluded": "H-EXCURSION",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "booked",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-STAYED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "no-show",
+     "expected": null,
+     "concluded": "H-NO-SHOW",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "late-checkin",
+     "expected": "H-STAYED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": "errored"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "dispute",
+     "expected": "H-STAYED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-STAYED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "reattributed",
+     "expected": "H-NO-SHOW",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": "errored"
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "refunded",
+     "expected": "H-NO-SHOW",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": "errored"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "booked",
+     "expected": "H-NOT-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-SETTLED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "settled",
+     "expected": "H-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "reversed",
+     "expected": "H-NOT-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-SETTLED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "agent-update",
+     "expected": "H-NOT-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-SETTLED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "resettled",
+     "expected": "H-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "registered",
+     "expected": "H-SETTLED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 6,
+     "of": 25,
+     "rate": 0.24
+    },
+    "validCitations": {
+     "count": 100,
+     "of": 100,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 6,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 10,
+     "of": 10,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 16,
+     "of": 16,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 3,
+     "of": 6,
+     "rate": 0.5
+    },
+    "overAbstention": {
+     "count": 16,
+     "of": 19,
+     "rate": 0.842
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 16,
+     "of": 20,
+     "rate": 0.8
+    },
+    "model": {
+     "httpCalls": 114,
+     "answered": {
+      "count": 114,
+      "of": 114,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 100,
+      "of": 114,
+      "rate": 0.877
+     },
+     "latencyMs": {
+      "mean": 7230,
+      "median": 3239,
+      "max": 36640
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "baseline-stateless/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "defect",
+     "expected": "H-GROUNDED",
+     "concluded": "H-GROUNDED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1155,
+      "tokens": 403
+     }
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "repaired",
+     "expected": "H-RELEASED",
+     "concluded": "H-RELEASED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1771,
+      "tokens": 655
+     }
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "part-notice",
+     "expected": null,
+     "concluded": "H-RELEASED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2047,
+      "tokens": 760
+     }
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "release-withdrawn",
+     "expected": "H-GROUNDED",
+     "concluded": "H-GROUNDED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2647,
+      "tokens": 1008
+     }
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "notice-retracted",
+     "expected": "H-GROUNDED",
+     "concluded": "H-RELEASED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-RELEASED"
+     ],
+     "staleSupport": [
+      "N7A-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2931,
+      "tokens": 1127
+     }
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "new-release",
+     "expected": "H-RELEASED",
+     "concluded": "H-RELEASED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7A-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3343,
+      "tokens": 1282
+     }
+    },
+    {
+     "caseId": "aircraft-release",
+     "category": "a withdrawn release; a cleared part does not reinstate it",
+     "stage": "directive",
+     "expected": "H-RELEASED",
+     "concluded": "H-RELEASED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7A-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3813,
+      "tokens": 1463
+     }
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "arrival",
+     "expected": null,
+     "concluded": "H-EXCURSION",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1451,
+      "tokens": 582
+     }
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "second-logger",
+     "expected": null,
+     "concluded": "H-EXCURSION",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1842,
+      "tokens": 757
+     }
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "logger-voided",
+     "expected": "H-INTACT",
+     "concluded": "H-EXCURSION",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7C-02"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2189,
+      "tokens": 887
+     }
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "notice-corrected",
+     "expected": null,
+     "concluded": "H-EXCURSION",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7C-06"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2467,
+      "tokens": 998
+     }
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "probe-and-power",
+     "expected": "H-EXCURSION",
+     "concluded": "H-EXCURSION",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7C-06"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3225,
+      "tokens": 1309
+     }
+    },
+    {
+     "caseId": "cold-chain-excursion",
+     "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+     "stage": "qa-ruling",
+     "expected": "H-EXCURSION",
+     "concluded": "H-EXCURSION",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7C-06"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3802,
+      "tokens": 1513
+     }
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "booked",
+     "expected": null,
+     "concluded": "H-STAYED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1049,
+      "tokens": 389
+     }
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "no-show",
+     "expected": null,
+     "concluded": "H-STAYED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1412,
+      "tokens": 550
+     }
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "late-checkin",
+     "expected": "H-STAYED",
+     "concluded": "H-STAYED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1924,
+      "tokens": 793
+     }
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "dispute",
+     "expected": "H-STAYED",
+     "concluded": "H-STAYED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2326,
+      "tokens": 963
+     }
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "reattributed",
+     "expected": "H-NO-SHOW",
+     "concluded": "H-STAYED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7H-04",
+      "N7H-05"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3154,
+      "tokens": 1320
+     }
+    },
+    {
+     "caseId": "hotel-chargeback",
+     "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+     "stage": "refunded",
+     "expected": "H-NO-SHOW",
+     "concluded": "H-STAYED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7H-04",
+      "N7H-05"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3354,
+      "tokens": 1409
+     }
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "booked",
+     "expected": "H-NOT-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1404,
+      "tokens": 522
+     }
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "settled",
+     "expected": "H-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1993,
+      "tokens": 756
+     }
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "reversed",
+     "expected": "H-NOT-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-SETTLED"
+     ],
+     "staleSupport": [
+      "N7S-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2559,
+      "tokens": 966
+     }
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "agent-update",
+     "expected": "H-NOT-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-SETTLED"
+     ],
+     "staleSupport": [
+      "N7S-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2975,
+      "tokens": 1126
+     }
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "resettled",
+     "expected": "H-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7S-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3618,
+      "tokens": 1389
+     }
+    },
+    {
+     "caseId": "property-settlement",
+     "category": "a reversed settlement, a stale source, then a second settlement",
+     "stage": "registered",
+     "expected": "H-SETTLED",
+     "concluded": "H-SETTLED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N7S-04"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3803,
+      "tokens": 1467
+     }
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 12,
+     "of": 25,
+     "rate": 0.48
+    },
+    "validCitations": {
+     "count": 98,
+     "of": 98,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 6,
+     "of": 25,
+     "rate": 0.24
+    },
+    "correctionHandling": {
+     "count": 7,
+     "of": 10,
+     "rate": 0.7
+    },
+    "invalidatedExcluded": {
+     "count": 3,
+     "of": 16,
+     "rate": 0.188
+    },
+    "appropriateAbstention": {
+     "count": 0,
+     "of": 6,
+     "rate": 0
+    },
+    "overAbstention": {
+     "count": 0,
+     "of": 19,
+     "rate": 0
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "model": {
+     "httpCalls": 25,
+     "answered": {
+      "count": 25,
+      "of": 25,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 25,
+      "of": 25,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 1074,
+      "median": 1048,
+      "max": 1612
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  }
+ ],
+ "differences": [
+  "All model-backed systems use the same Nemotron endpoint, model, temperature (0.1), reasoning effort and output budget, and at most two attempts per structured reply.",
+  "Speck systems call the model once per evidence chunk (relation judgments) plus once for the explanation; the baseline calls it once per checkpoint with all visible evidence. Call counts and latencies are therefore not like for like.",
+  "Speck systems also apply the scenario's decisive fact rules and Speck's 0.4 reliability cap on model-judged evidence; the baseline sees the same facts in its prompt but has no rules, so differences cannot be attributed to persistence alone.",
+  "The baseline is told to answer \"unresolved\" when nothing is established; Speck systems abstain through Speck's thresholds. Only Speck systems produce an explanation, so explanation agreement exists only for them.",
+  "Evidence comes from the held-out fixture files in both modes; the provider-failure case uses the real Zetaris adapter against an unreachable port."
+ ]
+}

@@ -106,3 +106,76 @@ fails), its caution is not what separates them here. Either result is reported t
 ## 6. Results
 
 (Added after the runs, below this line.)
+
+Run 2026-10-26 08:27-10:19 UTC as registered: 3 repeats per model, alternated, no errors, none
+discarded. Reports: `eval/results/experiments/challenge-7/{nano-4b,bolt-e4b}/rep1-3/`; deterministic:
+`eval/results/challenge-7-fixture.json`. 75 checkpoint-samples per system and model.
+
+### 6a. Totals
+
+| | Speck, 4B | Speck rebuilt, 4B | Stateless, 4B | Speck, Bolt | Speck rebuilt, Bolt | Stateless, Bolt |
+|---|---|---|---|---|---|---|
+| Matches the label | 32/75 | 26/75 | 35/75 | 33/75 | 31/75 | **45/75** |
+| Concluded where abstaining was right | 9/18 | 9/18 | **18/18** | 9/18 | 9/18 | 12/18 |
+| Correct where a conclusion was due | 23/57 | 17/57 | 35/57 | 24/57 | 22/57 | 39/57 |
+| Concluded the wrong explanation where one was due | **0/57** | 0/57 | 20/57 | **0/57** | 0/57 | 3/57 |
+| Unsupported conclusions | 0/32 | 0/26 | 18/73 | 0/33 | 0/31 | 0/54 |
+| Replaced evidence kept out of support | **48/48** | 48/48 | 10/48 | **48/48** | 48/48 | 39/48 |
+| Model replies valid | 174/179 | 345/378 | 75/75 | 174/174 | 381/381 | 75/75 |
+
+Deterministic (fact rules, no model): Speck 17/25, Speck rebuilt 17/25, the rule baseline 18/25.
+
+### 6b. The predictions
+
+| | Prediction | Result | |
+|---|---|---|---|
+| P1 | Bolt stateless below 85% | 45/75 (60%; 93% on set 5) | **met** |
+| P2 | 4B stateless below 60% | 35/75 (47%) | met |
+| P3 | Speck abstains rightly in at least 12/18, the stateless call in fewer | Speck 9/18 on both models; stateless 0/18 (4B), 6/18 (Bolt) | **not met** (Speck fewer than 12) |
+| P4 | Speck keeps replaced evidence out at least as often | 48/48 against 10/48 (4B) and 39/48 (Bolt) | met |
+| P5 | Speck concludes "no-show" at `hotel@no-show` (predicted loss) | 3/3 on both models | met (a loss) |
+| P6 | Speck's correct-where-due below the stateless call's on Bolt (predicted cost) | 24/57 against 39/57 | met (a cost) |
+| P7 | No overall accuracy claim | the stateless call matches the label more often on both models | |
+
+### 6c. Where each approach failed
+
+- **The stateless call's errors are errors of commission, and they are the ones state is for.**
+  - On the 4B: it concluded at all 18 checkpoint-samples where waiting was right, concluded the
+    wrong explanation in 20 of 57 where one was due, and leaned on a replaced record in 38 of 48.
+  - On Bolt these fall but do not vanish. Its wrong conclusions are at the corrected corrections:
+    `cold-chain@notice-corrected` ("excursion" while the loggers conflict again, 3/3),
+    `aircraft@notice-retracted` ("released" because the part was cleared, though the release was
+    still withdrawn, 3/3), and both loggers' first readings (`arrival`, `second-logger`, 3/3 each).
+    It abstained at `hotel@reattributed` and `@refunded` (6/6) rather than following the chain back
+    to the night audit's no-show, and leaned on a replaced record in 9 of 48.
+- **Speck's errors are errors of omission, plus its own threshold.**
+  - It never concluded the wrong explanation (0/57, both models), never leaned on a replaced record
+    (48/48) and made no unsupported conclusion.
+  - But it abstained in 33-34 of 57 checkpoint-samples where a conclusion was due: every
+    `aircraft` checkpoint after the withdrawal, `cold-chain@probe-and-power`, `property@booked`,
+    `@reversed`, `@resettled`, `@registered`, and `hotel@late-checkin`, `@dispute`. These are the conflicts P6 predicted:
+    `corroborated-1` needs nothing recorded against the conclusion, and Speck's own threshold is
+    hard to reach with judgments capped at 0.4.
+  - Its false conclusions were `hotel@no-show` (the predicted dependent-source corroboration, P5)
+    and "intact" at `cold-chain@second-logger` and `@notice-corrected` (3/3 each, both models), by
+    **Speck's own threshold** (route `speck-threshold`): at prior 0.5, two supporting records from two
+    sources clear 0.6 even with the pallet-face logger counting against. This is the threshold
+    weakness found in Build 5.
+- **The model hardly changes Speck** (32/75 and 33/75): its outcomes are set by its policy. It
+  changes the stateless call a great deal (35/75 to 45/75, wrong conclusions 20 to 3, replaced
+  evidence leaned on 38 to 9).
+
+### 6d. What this shows, and does not
+
+- These cases found a limit of the stateless call on the better model (P1): with conflicting
+  receipts over time, Bolt's stateless call fell from 93% on set 5 to 60%, and its failures are at
+  the checkpoints where a correction was itself corrected or a cleared fact did not undo a
+  withdrawal.
+- Speck did not turn that into accuracy. It avoided every one of those errors of commission, but by
+  abstaining far too often; on both models the stateless call matched the label more often. What
+  Speck offers on these cases is that when it concludes, it is never the wrong explanation and never
+  rests on replaced evidence (0/57, 48/48), and its abstentions say what is missing.
+- The rebuilt-each-time system was within the engine's budget on every checkpoint here (15 records
+  or fewer), so its differences from the persistent one come from separate model calls, not from
+  pending records.
+- One locked set, written by the project's author, four cases, three repeats per model.
