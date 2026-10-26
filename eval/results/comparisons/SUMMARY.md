@@ -147,6 +147,55 @@ Policy: build-4 (restatement, corroborated-1). 6 sample(s), 2026-10-25T12:30 to 
 
 </details>
 
+## Disputed delivery of order ORD-1042: live, Nemotron nvidia/nemotron-3.5-bolt-e4b, evidence Zetaris live
+
+Policy: build-4 (restatement, corroborated-1). 6 sample(s), 2026-10-26T05:35 to 2026-10-26T05:42 UTC.
+
+**Initial evidence (14 Oct)** (no label)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 6 | nothing 6 |
+| Matches label | – | – |
+| Unsupported conclusion | – | – |
+| Abstained (due) | – | – |
+| Abstained (right) | – | – |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/6 (0%) | 0/6 (0%) |
+| Support includes an out-of-date record | 0/6 (0%) | 0/6 (0%) |
+| Recorded why it changed | 0/6 (0%) | 0/6 (0%) |
+| By corroboration | 0/6 (0%) | – |
+| Errors | 0/6 (0%) | 0/6 (0%) |
+
+**Carrier proof-of-delivery review (16 Oct)** (no label)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-MISDELIVERED 6 | H-MISDELIVERED 6 |
+| Matches label | – | – |
+| Unsupported conclusion | – | – |
+| Abstained (due) | – | – |
+| Abstained (right) | – | – |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/6 (0%) | 0/6 (0%) |
+| Support includes an out-of-date record | 0/6 (0%) | 0/6 (0%) |
+| Recorded why it changed | 6/6 (100%) | 0/6 (0%) |
+| By corroboration | 6/6 (100%) | – |
+| Errors | 0/6 (0%) | 0/6 (0%) |
+
+<details><summary>Every sample</summary>
+
+| Sample | Models served | Initial evidence (14 Oct) | Carrier proof-of-delivery review (16 Oct) |
+|---|---|---|---|
+| `2026-10-26T05-35-07-716Z-415291dc` | nvidia/nemotron-3.5-bolt-e4b | S nothing (~H-DELIVERED 0.54); B nothing | S H-MISDELIVERED [corroborated]; B H-MISDELIVERED |
+| `2026-10-26T05-37-15-019Z-17e2890f` | nvidia/nemotron-3.5-bolt-e4b | S nothing (~H-DELIVERED 0.54); B nothing | S H-MISDELIVERED [corroborated]; B H-MISDELIVERED |
+| `2026-10-26T05-38-38-299Z-1d37b20a` | nvidia/nemotron-3.5-bolt-e4b | S nothing (~H-DELIVERED 0.54); B nothing | S H-MISDELIVERED [corroborated]; B H-MISDELIVERED |
+| `2026-10-26T05-39-53-944Z-4c508fbc` | nvidia/nemotron-3.5-bolt-e4b | S nothing (~H-DELIVERED 0.54); B nothing | S H-MISDELIVERED [corroborated]; B H-MISDELIVERED |
+| `2026-10-26T05-41-09-199Z-a375b401` | nvidia/nemotron-3.5-bolt-e4b | S nothing (~H-DELIVERED 0.54); B nothing | S H-MISDELIVERED [corroborated]; B H-MISDELIVERED |
+| `2026-10-26T05-42-26-109Z-bc564587` | nvidia/nemotron-3.5-bolt-e4b | S nothing (~H-DELIVERED 0.54); B nothing | S H-MISDELIVERED [corroborated]; B H-MISDELIVERED |
+
+</details>
+
 ## Disputed delivery of order ORD-1042: live, Nemotron nemotron-3-nano:4b, evidence Zetaris live
 
 Policy: build-3 (declared replacement only, Speck's threshold only). 12 sample(s), 2026-10-23T06:55 to 2026-10-25T12:12 UTC.
@@ -337,6 +386,55 @@ Policy: build-4 (restatement, corroborated-1). 6 sample(s), 2026-10-25T12:30 to 
 | `2026-10-25T12-32-36-964Z-5f4a89c7` | nemotron-3-nano:4b | S H-PAID; B H-UNPAID | S H-UNPAID [corroborated]; B H-UNPAID |
 | `2026-10-25T12-33-11-816Z-9e98cd7e` | nemotron-3-nano:4b | S H-PAID; B H-UNPAID | S H-UNPAID [corroborated]; B H-UNPAID |
 | `2026-10-25T12-33-49-061Z-98073f9f` | nemotron-3-nano:4b | S H-PAID; B H-UNPAID | S H-UNPAID [corroborated]; B H-UNPAID |
+
+</details>
+
+## Was invoice INV-77 paid?: live, Nemotron nvidia/nemotron-3.5-bolt-e4b, evidence fixture file
+
+Policy: build-4 (restatement, corroborated-1). 6 sample(s), 2026-10-26T05:34 to 2026-10-26T05:41 UTC.
+
+**Payment received (5 Sep)** (label: H-PAID)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-PAID 6 | H-PAID 6 |
+| Matches label | 6/6 (100%) | 6/6 (100%) |
+| Unsupported conclusion | 0/6 (0%) | 0/6 (0%) |
+| Abstained (due) | 0/6 (0%) | 0/6 (0%) |
+| Abstained (right) | 0/6 (0%) | 0/6 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/6 (0%) | 0/6 (0%) |
+| Support includes an out-of-date record | 0/6 (0%) | 0/6 (0%) |
+| Recorded why it changed | 0/6 (0%) | 0/6 (0%) |
+| By corroboration | 0/6 (0%) | – |
+| Errors | 0/6 (0%) | 0/6 (0%) |
+
+**Bank return (9 Sep)** (label: H-UNPAID)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-UNPAID 6 | H-UNPAID 6 |
+| Matches label | 6/6 (100%) | 6/6 (100%) |
+| Unsupported conclusion | 0/6 (0%) | 0/6 (0%) |
+| Abstained (due) | 0/6 (0%) | 0/6 (0%) |
+| Abstained (right) | 0/6 (0%) | 0/6 (0%) |
+| Followed a labelled change | 6/6 (100%) | 6/6 (100%) |
+| Support includes a replaced record | 0/6 (0%) | 0/6 (0%) |
+| Support includes an out-of-date record | 0/6 (0%) | 0/6 (0%) |
+| Recorded why it changed | 6/6 (100%) | 0/6 (0%) |
+| By corroboration | 6/6 (100%) | – |
+| Errors | 0/6 (0%) | 0/6 (0%) |
+
+<details><summary>Every sample</summary>
+
+| Sample | Models served | Payment received (5 Sep) | Bank return (9 Sep) |
+|---|---|---|---|
+| `2026-10-26T05-34-20-401Z-c8d9bab3` | nvidia/nemotron-3.5-bolt-e4b | S H-PAID; B H-PAID | S H-UNPAID [corroborated]; B H-UNPAID |
+| `2026-10-26T05-36-26-543Z-43c9813e` | nvidia/nemotron-3.5-bolt-e4b | S H-PAID; B H-PAID | S H-UNPAID [corroborated]; B H-UNPAID |
+| `2026-10-26T05-37-52-010Z-1571c4ce` | nvidia/nemotron-3.5-bolt-e4b | S H-PAID; B H-PAID | S H-UNPAID [corroborated]; B H-UNPAID |
+| `2026-10-26T05-39-08-886Z-134cdbb1` | nvidia/nemotron-3.5-bolt-e4b | S H-PAID; B H-PAID | S H-UNPAID [corroborated]; B H-UNPAID |
+| `2026-10-26T05-40-24-852Z-e830aa7a` | nvidia/nemotron-3.5-bolt-e4b | S H-PAID; B H-PAID | S H-UNPAID [corroborated]; B H-UNPAID |
+| `2026-10-26T05-41-39-212Z-90a3cc2e` | nvidia/nemotron-3.5-bolt-e4b | S H-PAID; B H-PAID | S H-UNPAID [corroborated]; B H-UNPAID |
 
 </details>
 

@@ -51,6 +51,33 @@ and revision state *and* its conclusion policy (thresholds, decisive refutation,
 the 0.4 cap), not from persistence alone. The evaluation's `speck-fresh` system, which rebuilds
 from scratch at every checkpoint, reaches the same conclusions as the persistent one.
 
+## Results, Nemotron 3.5 Bolt E4B (2026-10-26)
+
+Live: `nvidia/nemotron-3.5-bolt-e4b`, served by NVIDIA through Meterless Nightshift and asked
+for by name, reasoning off, temperature 0.1, both sides; every response named that model. Six
+samples per case, run back to back with Evidence Desk as of Build 5 (rule `corroborated-1`).
+None was discarded. Four earlier comparisons, made before Evidence Desk stopped asking Nightshift
+for JSON mode, are kept apart and uncounted
+(`eval/results/experiments/bolt-e4b/2026-10-26-before-json-mode-fix/`; why in
+[bolt-e4b.md](bolt-e4b.md)). The disputed delivery's evidence was read live from Zetaris.
+
+| Live, 6 samples each | Stateless | Speck |
+|---|---|---|
+| Delivery, initial evidence: concluded | nothing 6/6 | nothing 6/6 (leading "delivered", 0.54) |
+| Delivery, after the correction: concluded | "misdelivered" 6/6 | "misdelivered" 6/6, by corroboration |
+| ... cites the replaced scan `EV-CAR-003` | **0/6** | 0/6 |
+| ... recorded why its conclusion changed | 0/6 | 6/6 |
+| Bank return, before the return (label: paid): matches | 6/6 | 6/6 |
+| Bank return, after the return (label: unpaid): matches | 6/6 | 6/6, by corroboration |
+| Errors | 0/12 | 0/12 |
+
+**What these support.** With Bolt the correction is no longer where the answers part: the
+stateless call dropped the replaced scan and the replaced bank credit on its own, every time, and
+no longer called the invoice unpaid before the return. Both reached the labelled answers. What
+the stateless call still does not have is a record of what changed: Speck said which record
+stopped counting and which beliefs were rebuilt (6/6), the stateless call cannot (0/6). The 4B
+results below stand as recorded; they show the same comparison on a weaker reading.
+
 ## Results, Build 4 (2026-10-25)
 
 Every saved comparison, counted per case, Evidence Desk policy, evidence source and model, is in

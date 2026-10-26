@@ -16,22 +16,25 @@ the test or command that backs it.
 
 ## Before the judges arrive (5 minutes)
 
-Start the local Zetaris platform and Ollama. Then, from the repository root:
+Start the local Zetaris platform and the Meterless Runtime (Nightshift). Then, from the repository
+root:
 
 ```bash
 npm run sponsors:verify    # runs a real live investigation on throwaway storage; prints OBSERVED or NOT OBSERVED per sponsor
 ```
 
-Expect **OBSERVED** for Zetaris, the Meterless engine, NVIDIA Nemotron and Speck. With the local
-model (`MODEL_PROVIDER=ollama`) Meterless Nightshift is reported **NOT OBSERVED**, because the
-calls went to Ollama, and the exit code is 1; that is correct. With a Meterless Runtime configured,
-all five are OBSERVED and it exits 0 (receipts of both, 2026-10-25, in `eval/results/sponsors/`).
+Expect **OBSERVED** for all five: Zetaris, the Meterless engine, Meterless Nightshift, NVIDIA
+Nemotron and Speck, and exit code 0 (receipt of 2026-10-26, Bolt E4B through Nightshift, in
+`eval/results/sponsors/`). With the older local model (`MODEL_PROVIDER=ollama`) Nightshift is
+reported **NOT OBSERVED**, because the calls went to Ollama, and the exit code is 1; that is
+correct (receipt of 2026-10-25).
 If Zetaris or Nemotron shows NOT OBSERVED, use the fallback at the end. Do not present the live
 case.
 
 The disputed-delivery case reads its settings from the repository's `.env`. It must set
 `EVIDENCE_MODE=zetaris` and `REASONER=nemotron`, with the model provider you will show:
-`npm run configure -- --model ollama --evidence zetaris-local` sets and checks all three.
+`npm run configure -- --model meterless --evidence zetaris-local` sets and checks them, choosing
+`nvidia/nemotron-3.5-bolt-e4b`, and points Speck's chat at the same model.
 
 Make sure the installed plugin is current, then start Speck on a fresh demo database, so the
 cases start empty and your everyday Speck database is not touched. The path is relative to
@@ -49,7 +52,9 @@ npm run plugin:install
 $env:SPECK_DB_PATH="data/demo-speck.sqlite"; npm run speck
 ```
 
-For the *Talk to Speck* step, Speck's chat needs a model. In Speck's **System** view, add the
+For the *Talk to Speck* step, Speck's chat needs a model. `npm run configure` with the Meterless
+Runtime sets it to Bolt E4B; the chat has not been rehearsed with Bolt, so check it once before the
+judges arrive. The earlier set-up, by hand in Speck's **System** view, was the
 local Nemotron Nano 9B on Ollama (`hf.co/bartowski/nvidia_NVIDIA-Nemotron-Nano-9B-v2-GGUF:Q4_K_M`
 at `http://127.0.0.1:11434`) as a processor and assign it to Speck's roles, then restart Speck.
 Speck keeps this in `speck/data/genesis-runtime/model-processors.json` (not committed). Without
@@ -107,11 +112,16 @@ click **Run investigation**.
 
 **1:15 The baseline beside Speck (50 s).** Open the case's **Speck vs. baseline** tab. Offline,
 the current comparison is deterministic, and there the rule baseline also moves to "misdelivered"
-without citing the old scan; only Speck records why. The difference is in the live model calls, so
-under **Other saved comparisons** open the **second** entry: the newest live comparison that
-completed (2026-10-25, 12:33 UTC; badge LIVE MODEL CALLS). The first entry is the sample in which
-the model's reply failed; open it too if asked. The page notes these were made with other
-settings; they are the saved reports, not replays.
+without citing the old scan; only Speck records why. Under **Other saved comparisons** (newest
+first, each with its model and badge LIVE MODEL CALLS) are two kinds of live sample:
+- **Bolt E4B, 2026-10-26** (the six newest; the current model): both approaches reach
+  "misdelivered" and neither cites the replaced scan. Only Speck records why. Open one first.
+- **Nemotron 3 Nano 4B, 2026-10-25** (below them): the weaker model's stateless call kept
+  "delivered" on the replaced scan. Open the newest 4B one that completed (12:33 UTC); the 4B
+  entry above it is the sample in which the model's reply failed.
+
+The page notes these were made with other settings; they are the saved reports, not replays. On
+the 4B sample:
 - **Stage 2:** the *correction* line, and `EV-CAR-003` struck through, *replaced by EV-CAR-005*.
 - **Stateless column:** still *concludes H-DELIVERED*, citing `EV-CAR-003`, with the badge
   *relies on replaced record EV-CAR-003*, and "Why it changed: not recorded".
@@ -121,12 +131,12 @@ settings; they are the saved reports, not replays.
 - **Why they differ**, under the columns: the stateless call cites `EV-CAR-003`, "which no longer
   counts".
 
-Say the counts, not just this sample: "In the 12 live comparisons that day, the stateless call
-cited the replaced scan 12 times. Speck cited it in none of the 9 that completed. It mostly
-concluded nothing after the correction (7), and twice concluded misdelivered. In the other 3 the
-model's reply failed twice, the correction stayed unassessed, and Speck still showed 'delivered'
-on the old scan. We count those as errors, and a guard now withholds the conclusion while a
-record waits."
+Say the counts, not just this sample: "With the 4B, in the 12 live comparisons of 2026-10-25, the
+stateless call cited the replaced scan 12 times; Speck in none of the 9 that completed (3 errored).
+With Bolt E4B, the stateless call cited it in none of 6: a stronger reading fixed that on its own.
+What stays is that Speck records which record stopped counting and why, and keeps withdrawn
+evidence out of its support every time; the Bolt baseline did not, in 3 of 15 held-out
+checkpoint-samples."
 
 **2:05 The history is kept (20 s).** Back on the case: under **Why this changed** (Conclusion
 tab), "delivered" was held at 0.61 and is no longer held; the **History** tab keeps the earlier
@@ -135,18 +145,18 @@ lists `EV-CAR-003`, marked *no longer counts: replaced by EV-CAR-005*. Nothing i
 
 **2:25 The sponsors, briefly (20 s).** Open **Audit**, then **Execution trace**.
 - **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
-- **Zetaris and Nemotron:** with live services, four SELECTs with query tokens and, per chunk, the
-  served model `nemotron-3-nano:4b`. Offline the trace says plainly FIXTURE FILE - NOT ZETARIS and
-  that the rule assessor (no model) judged the evidence. In that case point at the saved sponsor
-  receipts of 2026-10-25 (`eval/results/sponsors/`), not at the page.
-- Nightshift's receipt is separate and names the larger model it chose; no evaluation number came
-  from it.
+- **Zetaris, Nightshift and Nemotron:** with live services, four SELECTs with query tokens and,
+  per chunk, the served model `nvidia/nemotron-3.5-bolt-e4b`, reached through Nightshift. Offline
+  the trace says plainly FIXTURE FILE - NOT ZETARIS and that the rule assessor (no model) judged
+  the evidence. In that case point at the saved sponsor receipt of 2026-10-26
+  (`eval/results/sponsors/`), not at the page.
 
 **2:45 The advantage and the limitation (15 s).** "What this demonstrates is evidence-aware
 revision and traceability: what each conclusion rests on, what stopped counting when the evidence
 changed, and what was believed before. It does not demonstrate better accuracy: on cases locked
-before any run, Speck and the stateless call both scored 18 of 30, Speck still concludes from weak
-or same-source agreement, and our newer rule's gain was not the rule's own."
+before any run, Speck and the stateless call both scored 18 of 30 with the 4B, and with Bolt E4B the
+stateless call is ahead; Speck still concludes from weak or same-source agreement, and our newer
+rule's gain was not the rule's own."
 
 **If asked: the bank return.** It shows the same mechanism with a second kind of correction (a
 returned payment, and a ledger that restates its own "paid"), and it is where Speck lost: before
@@ -157,14 +167,16 @@ change was designed on that case, so it is not a test of it (`docs/build-4-bank-
 
 **If asked: Build 5.** An opt-in rule, `corroborated-2`, asks the model whether each record
 *establishes* the explanation. On eight new locked cases it scored 39/45, but the old rule on the
-same judgments also scored 39/45, so the extra judgment showed no independent improvement.
+same judgments also scored 39/45, so the extra judgment showed no independent improvement. With
+Bolt E4B it did worse (34/45, losing 8 correct conclusions).
 
 ### Optional: the same case with live services
 
 With `.env` set to Zetaris and a model (about 40 s):
 1. Point to the header:
    - **ZETARIS LIVE** at the platform's URL;
-   - the Nemotron model at `127.0.0.1:11434`;
+   - the Nemotron model and where it is served (`nvidia/nemotron-3.5-bolt-e4b` through Nightshift
+     at `127.0.0.1:8088`, or a local Ollama model at `127.0.0.1:11434`);
    - the Meterless engine and its commit.
 
    Every record is labelled **Zetaris live**, with its table and query token.
@@ -221,9 +233,11 @@ a service is off.
    each judgment and its confidence change, every revision. Corrections rebuild the beliefs that
    rested on the replaced record; the old ones stay as history.
 3. **Side by side, live** (a screenshot of the disputed delivery's comparison panel). Same records,
-   same model: on 2026-10-25 the stateless call kept "delivered" and cited the replaced scan in
-   12 of 12 samples; Speck dropped it and recorded why in all 9 that completed (3 errored, and
-   are shown as errors).
+   same model. With the 4B on 2026-10-25 the stateless call kept "delivered" and cited the
+   replaced scan in 12 of 12 samples; Speck dropped it and recorded why in all 9 that completed (3
+   errored, and are shown as errors). With Bolt E4B on 2026-10-26 both reached "misdelivered" (6
+   of 6) and only Speck recorded why: a stronger model fixed the baseline's reading, not its
+   missing record of what changed.
 4. **Where Speck lost, and what changed** (the bank return): before Build 4 it stayed unresolved
    after the return in all 12 live samples (the baseline: 11 of 12), because two capped model
    judgments could not reach its threshold and the ledger's stale "paid" still counted. Build 4:
@@ -232,7 +246,7 @@ a service is off.
 5. **Proof.** Deterministic evaluation (held-out, regression, cross-domain), the tests (including
    a crash at every Speck write), saved comparisons; persistence alone shows no accuracy gain.
 6. **Sponsors, as verified.** Zetaris (live SELECTs with query tokens), Meterless (engine runs
-   matched in its history), local Nemotron (served model on every call), Speck (host, state,
+   matched in its history), Nightshift (Bolt E4B, named in every response), Nemotron (served model on every call), Speck (host, state,
    world view, memory map, chat); Cursor as a development tool.
 7. **Impact.** Defensible decisions in investigations whose evidence changes: what a decision
    rested on, what was corrected, and what was believed before.
@@ -263,12 +277,12 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 | Did you modify Speck? | Only locally, for this project, through patches kept in this repository: a general `SPECK_HOME_VIEW` setting, so Speck opens on the Evidence tab (`patches/speck-home-view.patch`); removing Speck's other bundled plugins, so Evidence Desk is the only one (`patches/speck-remove-plugins.patch`); a chat component that answers questions about an investigation from the case summaries Evidence Desk publishes (`patches/speck-chat-investigations.patch`); the Meterless Runtime as a model provider (`patches/speck-meterless-provider.patch`); and a *Minimise* / *Expand* button on the chat reply (`patches/speck-response-collapse.patch`). Nothing is committed to Speck; the submodule is pinned to upstream. Evidence Desk itself is a plugin in `speck/plugins/evidence-desk/`, approved by hash in Speck's plugin allowlist. Speck's cognition is unmodified. | `npm run plugin:install`, `test/plugin.test.ts`, Speck's `src/tests/genesis-host.test.ts` |
 | Does it interfere with Speck's other work? | Each case is a worker left *waiting*, so it never holds up Speck's queue. Changes take Speck's foreground lease, so background cognition cannot overwrite a revision; we wrote a test that shows the overwrite happening without it. | `test/plugin.test.ts`, `test/speck-compat.test.ts` |
 | Is the Zetaris data real? | It is the scenario's records, seeded into a local Zetaris platform and read back through its REST API. Each record carries the platform's query token. | `npm run zetaris:check`, `npm run sponsors:verify`, `test/zetaris.test.ts` |
-| Which NVIDIA model, where? | Every evaluation and comparison number: `nemotron-3-nano:4b` (Q4_K_M) on local Ollama. Separately, in the sponsor check through Meterless Nightshift, the runtime chose larger Nemotrons (30B on 2026-10-25; 550B and 30B on 2026-10-24); those runs produced no evaluation number. The client's direct path to NVIDIA's hosted API was not used. | `npm run model:check` (served model), the trace |
+| Which NVIDIA model, where? | Since 2026-10-26: `nvidia/nemotron-3.5-bolt-e4b`, served by NVIDIA and reached through Meterless Nightshift by name, for the assessor, the baseline and Speck's chat. Every number before that: `nemotron-3-nano:4b` (Q4_K_M) on local Ollama. The two are reported separately. In `meterless/auto` the runtime chose larger Nemotrons (30B, 550B); those runs produced no evaluation number. The client's direct path to NVIDIA's hosted API was not used. | `npm run model:check` (served model), the trace |
 | How do you stop the model from inventing things? | Speck validates each reply against a contract with enumerated ids, covering every pair, and retries once. Unknown ids are discarded, and deterministic decisive rules always win. Speck caps model-judged evidence at reliability 0.4. Explanation citations are checked against real record ids. | `test/nemotron.test.ts`, the trace's per-call accounting |
 | What does "by corroboration" mean? | Speck caps model-judged evidence at 0.4, so two records add at most +0.08 each and its own confidence rarely reaches 0.6 live. Since Build 4 Evidence Desk also concludes when two or more source systems support an explanation with nothing recorded against it and every rival ruled out or unsupported. Speck's own confidence is always shown beside it. Its weakness: it counts that sources agree, not how strongly. | `docs/build-4-bank-return.md` |
 | What does Meterless do here? | It runs each investigation: one bounded chunk per batch of evidence, with carryover between chunks, plus the reflection pass for the explanation. Recovery and recomputation are Evidence Desk's own code, and the trace labels them that way. | `vendor/meterless-markovian/NOTICE.md`, the trace |
 | What if the process crashes mid-run? | Judgments are saved per chunk before evidence enters Speck, and beliefs are reconciled on restart. A test kills the process at every write, and again during recovery, and checks the outcome is the same as an uninterrupted run. | `test/interruption.test.ts`, `test/recovery.test.ts` |
-| Is it better than a plain LLM? | Not in accuracy, on our evidence. Live, on five new cases locked before any run, Speck and the stateless call both scored 18/30, with opposite errors: the stateless call never abstained (wrong at all 12 checkpoint-samples where waiting was right) and Speck abstained where one authoritative record settled the case. The stateless call cited the replaced delivery scan in all 12 live comparisons of 2026-10-25; Speck in none of the 9 that completed (in the 3 that errored, its unassessed state still rested on it). Few cases, one small model, three repeats: not a general result. | `docs/build-4-bank-return.md`, `docs/comparison.md` |
+| Is it better than a plain LLM? | Not in accuracy, on our evidence. Live, on five new cases locked before any run, Speck and the stateless call both scored 18/30, with opposite errors: the stateless call never abstained (wrong at all 12 checkpoint-samples where waiting was right) and Speck abstained where one authoritative record settled the case. The 4B stateless call cited the replaced delivery scan in all 12 live comparisons of 2026-10-25; Speck in none of the 9 that completed (in the 3 that errored, its unassessed state still rested on it). With Bolt E4B the stateless call did not cite it (0/6) and is ahead on both locked sets (21/30 and 42/45, against 18/30 and 36/45). Few cases, small models, three repeats: not a general result. | `docs/build-4-bank-return.md`, `docs/comparison.md`, `docs/bolt-e4b.md` |
 | What did Build 5 change? | An opt-in successor rule, `corroborated-2`, pre-registered and tested on eight new locked cases. It met its criteria narrowly, but the old rule scored on the same judgments did as well, so the gain came with the changed prompt. Most remaining false conclusions there are Speck's own threshold concluding from one source's two records. On those cases Speck matched the label more often than the stateless call (37-39/45 against 27/45), mostly because the stateless call never abstains; the cases are the rule author's own. | `docs/build-5-corroboration.md` |
 | Did persistence help? | No measurable accuracy difference from recomputing from scratch. | README, *Evaluation* |
 | Can Speck's chat be trusted about a case? | It is given only the case summaries Evidence Desk published, and told to answer from them; without that, a small model invented details. The wording is still the model's, so the case page is the record. | Speck's `src/tests/investigations-component.test.ts`, `test/memory-links.test.ts` |
@@ -281,7 +295,10 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 - That Build 5's rule is a validated improvement. It met its pre-registered criteria narrowly, and on the new cases its own check changed no outcome.
 - That a conclusion "by corroboration" is Speck's own judgment. Speck's confidence is below its threshold; Evidence Desk's rule concluded.
 - That the live investigation queries the Zetaris USL. It reads four Lightning tables; the USL is a separate demonstration on sample data.
-- That Nightshift's models produced any evaluation number. All of them come from the local 4B model.
+- That a routing-mode model (`meterless/auto`'s 30B or 550B) produced any evaluation number. Before
+  2026-10-26 they come from the local 4B; from 2026-10-26, from Bolt E4B asked for by name.
+- That the stateless call still cites the replaced scan. That was the 4B; with Bolt it did not.
+- That Bolt E4B runs on the device. It is served by NVIDIA through Nightshift.
 - That Speck never relied on a replaced record. In 3 errored live samples its unassessed state still did; say "none of the 9 that completed".
 - That abstaining is always right. Speck also abstains where a conclusion was due.
 - That Speck is generally more accurate than a model call, or eliminates invented answers. The comparison shows behaviour on two cases, in both directions.

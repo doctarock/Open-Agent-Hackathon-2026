@@ -1,0 +1,564 @@
+{
+  "schema": "evidence-desk.comparison.v1",
+  "id": "2026-10-26T05-39-53-944Z-4c508fbc",
+  "startedAt": "2026-10-26T05:39:08.889Z",
+  "finishedAt": "2026-10-26T05:39:53.944Z",
+  "durationMs": 45055,
+  "kind": "live",
+  "case": {
+    "caseId": "DISPUTE-1042",
+    "title": "Disputed delivery of order ORD-1042",
+    "question": "The customer says order ORD-1042 never arrived, but carrier tracking says it was delivered. What happened to the parcel?",
+    "hypotheses": [
+      {
+        "key": "H-DELIVERED",
+        "statement": "The carrier delivered the parcel to the customer's address; any loss happened after delivery.",
+        "prior": 0.5
+      },
+      {
+        "key": "H-MISDELIVERED",
+        "statement": "The carrier delivered the parcel to the wrong address.",
+        "prior": 0.35
+      },
+      {
+        "key": "H-NOT-SHIPPED",
+        "statement": "The parcel never left the warehouse.",
+        "prior": 0.15
+      }
+    ]
+  },
+  "configuration": {
+    "evidence": {
+      "mode": "zetaris",
+      "label": "Zetaris Lightning (live)",
+      "target": "http://localhost:3000",
+      "ready": true,
+      "problem": null
+    },
+    "assessor": {
+      "kind": "nemotron",
+      "model": "nvidia/nemotron-3.5-bolt-e4b",
+      "endpoint": "http://127.0.0.1:8088/v1",
+      "temperature": 0.1,
+      "maxTokens": 4096,
+      "reasoningEffort": "none"
+    },
+    "speck": "Evidence Desk as built: one Speck case carried across the stages on a temporary Speck database (the case on the page is not touched). Each stage's new records are assessed and Speck's beliefs revised; a record replaced by a later one stops counting and the beliefs that rested on it are rebuilt.",
+    "stateless": "The evaluation's stateless model baseline: at each stage, one call to the same Nemotron endpoint with the question, the explanations and every visible record (its text, its facts, and \"replaces …\" where the source says so). It keeps nothing between stages.",
+    "labels": "No pre-registered labels: this case is not an evaluation case.",
+    "policy": "build-4 (restatement, corroborated-1)"
+  },
+  "fingerprint": "e4f51ea57dde7eea",
+  "stages": [
+    {
+      "stage": {
+        "id": "initial",
+        "label": "Initial evidence (14 Oct)",
+        "asOf": "2026-10-14T00:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "EV-OMS-001",
+          "source": "Shopfront order system",
+          "observedAt": "2026-10-10T02:14:00.000Z",
+          "content": "Order ORD-1042 placed by customer C-7731: 1 x espresso grinder, ship to 41 Lydiard St South, Ballarat VIC 3350. Paid AUD 389.00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.order_events",
+            "queryToken": "Yzk4YTc2ODctMzJmMy00YmNjLWFkMGUtOTg1MzNmMDAwMDMw"
+          }
+        },
+        {
+          "id": "EV-WMS-002",
+          "source": "Warehouse management system",
+          "observedAt": "2026-10-11T23:40:00.000Z",
+          "content": "Parcel PCL-88412 for ORD-1042 packed, weighed 3.2 kg, and scanned onto carrier manifest MAN-5521 at dock 3.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.warehouse_scans",
+            "queryToken": "NDhjZjg2ODUtYWJlYy00NjkwLTk2ZGEtNjc1MjkzNDc4N2Yy"
+          }
+        },
+        {
+          "id": "EV-CAR-003",
+          "source": "Carrier tracking API",
+          "observedAt": "2026-10-13T03:02:00.000Z",
+          "content": "Tracking PCL-88412: DELIVERED 14:02 AEDT 13 Oct. Left at front door. Driver D-219.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.carrier_events",
+            "queryToken": "YzhhZmM2ZWQtODFhNC00OGFjLTkxYzQtMWJkMTM3MjY0ZDEx"
+          }
+        },
+        {
+          "id": "EV-SUP-004",
+          "source": "Customer support inbox",
+          "observedAt": "2026-10-13T22:30:00.000Z",
+          "content": "Customer C-7731: \"Tracking says it was delivered yesterday but nothing arrived. I was home all afternoon and nobody knocked.\"",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.support_messages",
+            "queryToken": "NmMyZDYxODEtNzc0NC00ZTZlLTk1ZmQtZGM4ZWYxNGYyMjBi"
+          }
+        }
+      ],
+      "arrived": [
+        "EV-OMS-001",
+        "EV-WMS-002",
+        "EV-CAR-003",
+        "EV-SUP-004"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "leading",
+        "headline": "Leading, not established: The carrier delivered the parcel to the customer's address; any loss happened after delivery.",
+        "concluded": null,
+        "route": null,
+        "tentative": "H-DELIVERED",
+        "confidence": 0.54,
+        "reasons": [
+          "H-DELIVERED is at 0.54: above the 0.5 needed to lead, but 0.06 short of Speck's supported threshold of 0.6.",
+          "Not corroborated (rule corroborated-1): EV-SUP-004 is recorded against it; H-MISDELIVERED still has support of its own.",
+          "Its support from EV-WMS-002, EV-CAR-003 was judged by the model. Speck caps model-judged evidence at reliability 0.4, so each such record adds at most 0.08.",
+          "EV-SUP-004 (Customer support inbox) counts against it.",
+          "Unanswered: Was the parcel left at the correct address? Where is the parcel now? Has the customer now received the parcel or a replacement?"
+        ],
+        "support": [
+          {
+            "recordId": "EV-WMS-002",
+            "delta": 0.032,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The parcel was handed to the carrier, making delivery possible."
+          },
+          {
+            "recordId": "EV-CAR-003",
+            "delta": 0.064,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Tracking explicitly records the parcel as delivered to the address."
+          }
+        ],
+        "against": [
+          {
+            "recordId": "EV-SUP-004",
+            "delta": -0.056,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Customer states they were home and did not receive the parcel."
+          }
+        ],
+        "ruledOut": [
+          {
+            "key": "H-NOT-SHIPPED",
+            "refutedBy": [
+              "EV-WMS-002",
+              "EV-CAR-003"
+            ]
+          }
+        ],
+        "noLongerCounted": [],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-DELIVERED",
+            "status": "weakening",
+            "confidence": 0.54
+          },
+          {
+            "key": "H-MISDELIVERED",
+            "status": "active",
+            "confidence": 0.43
+          },
+          {
+            "key": "H-NOT-SHIPPED",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 1,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 3,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The investigation is unresolved because carrier tracking (EV-CAR-003) confirms the parcel was delivered to the front door, while the customer (EV-SUP-004) reports no delivery despite being home. Warehouse records (EV-WMS-002) confirm the parcel was shipped, ruling out non-shipment. H-DELIVERED is the leading hypothesis (confidence 0.54), but it is not established because the customer's report directly contradicts the tracking, leaving the parcel's actual location unverified.",
+          "agrees": false,
+          "problems": [
+            "It concludes \"unresolved\"; Speck's conclusion is \"H-DELIVERED\"."
+          ],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": null,
+        "cited": [
+          "EV-OMS-001",
+          "EV-WMS-002",
+          "EV-CAR-003",
+          "EV-SUP-004"
+        ],
+        "rationale": "Warehouse records confirm shipment (EV-WMS-002) and carrier tracking confirms delivery (EV-CAR-003), but the customer reports non-receipt despite the delivery confirmation (EV-SUP-004), creating a conflict that cannot be resolved with the available data.",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            2768
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [
+            "EV-WMS-002",
+            "EV-CAR-003"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "first",
+          "recordsWhy": false
+        },
+        "stateless": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "first",
+          "recordsWhy": false
+        }
+      },
+      "label": null,
+      "disagreement": null
+    },
+    {
+      "stage": {
+        "id": "carrier-correction",
+        "label": "Carrier proof-of-delivery review (16 Oct)",
+        "asOf": "2026-10-16T00:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "EV-OMS-001",
+          "source": "Shopfront order system",
+          "observedAt": "2026-10-10T02:14:00.000Z",
+          "content": "Order ORD-1042 placed by customer C-7731: 1 x espresso grinder, ship to 41 Lydiard St South, Ballarat VIC 3350. Paid AUD 389.00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.order_events",
+            "queryToken": "OGQ4MmQ3YWMtY2E4Mi00M2ZjLTk1NDgtMTM3MGI5MzY1ZGM2"
+          }
+        },
+        {
+          "id": "EV-WMS-002",
+          "source": "Warehouse management system",
+          "observedAt": "2026-10-11T23:40:00.000Z",
+          "content": "Parcel PCL-88412 for ORD-1042 packed, weighed 3.2 kg, and scanned onto carrier manifest MAN-5521 at dock 3.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.warehouse_scans",
+            "queryToken": "ZGZkM2QzMTktMDIxZC00MTFhLTg1YjgtZmM1NjJlNDQ3Zjc2"
+          }
+        },
+        {
+          "id": "EV-CAR-003",
+          "source": "Carrier tracking API",
+          "observedAt": "2026-10-13T03:02:00.000Z",
+          "content": "Tracking PCL-88412: DELIVERED 14:02 AEDT 13 Oct. Left at front door. Driver D-219.",
+          "supersedes": [],
+          "replacedBy": "EV-CAR-005",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.carrier_events",
+            "queryToken": "NDIwNjgxMGEtMDNjYi00MTRlLTkwZDQtZTRlYzRkYWU3MmU5"
+          }
+        },
+        {
+          "id": "EV-SUP-004",
+          "source": "Customer support inbox",
+          "observedAt": "2026-10-13T22:30:00.000Z",
+          "content": "Customer C-7731: \"Tracking says it was delivered yesterday but nothing arrived. I was home all afternoon and nobody knocked.\"",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.support_messages",
+            "queryToken": "YmU4MzMwYzEtNzVjYi00MzljLTlmOWEtMjlhMTdiY2ExZThi"
+          }
+        },
+        {
+          "id": "EV-CAR-005",
+          "source": "Carrier tracking API",
+          "observedAt": "2026-10-15T05:20:00.000Z",
+          "content": "Proof-of-delivery review for PCL-88412: delivery GPS fix recorded 380 m from the ship-to address, at 41 Lydiard St North. Delivery scan amended to 'delivered to incorrect address'.",
+          "supersedes": [
+            "EV-CAR-003"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.carrier_events",
+            "queryToken": "NDIwNjgxMGEtMDNjYi00MTRlLTkwZDQtZTRlYzRkYWU3MmU5"
+          }
+        },
+        {
+          "id": "EV-SUP-006",
+          "source": "Customer support inbox",
+          "observedAt": "2026-10-15T23:05:00.000Z",
+          "content": "Resident of 41 Lydiard St North called: a parcel addressed to 41 Lydiard St South arrived on 13 Oct and they are holding it for collection.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "zetaris",
+            "location": "EVIDENCE_DESK.support_messages",
+            "queryToken": "YmU4MzMwYzEtNzVjYi00MzljLTlmOWEtMjlhMTdiY2ExZThi"
+          }
+        }
+      ],
+      "arrived": [
+        "EV-CAR-005",
+        "EV-SUP-006"
+      ],
+      "replaced": [
+        {
+          "recordId": "EV-CAR-003",
+          "by": "EV-CAR-005"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "The carrier delivered the parcel to the wrong address.",
+        "concluded": "H-MISDELIVERED",
+        "route": "corroboration",
+        "tentative": null,
+        "confidence": 0.578,
+        "reasons": [
+          "Speck holds H-MISDELIVERED as active at 0.578, 0.022 short of its supported threshold of 0.6; Speck itself has not established it.",
+          "Concluded by corroboration (rule corroborated-1): EV-WMS-002, EV-SUP-004, EV-CAR-005, EV-SUP-006 from 3 different sources (wms, support, carrier) support it, no record that still counts is against it, and every other explanation is ruled out or has no support.",
+          "The gap is Speck's cap on model-judged evidence: EV-WMS-002, EV-SUP-004, EV-CAR-005, EV-SUP-006 were judged by the model, so each adds at most 0.08."
+        ],
+        "support": [
+          {
+            "recordId": "EV-WMS-002",
+            "delta": 0.032,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "The parcel entered the carrier network, where misdelivery can occur."
+          },
+          {
+            "recordId": "EV-SUP-004",
+            "delta": 0.048,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Customer's non-receipt while home suggests delivery elsewhere."
+          },
+          {
+            "recordId": "EV-CAR-005",
+            "delta": 0.076,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Carrier data confirms delivery to the wrong address with GPS confirmation."
+          },
+          {
+            "recordId": "EV-SUP-006",
+            "delta": 0.072,
+            "basis": "model",
+            "decisive": false,
+            "rationale": "Resident holds the parcel addressed to the correct street but wrong suffix."
+          }
+        ],
+        "against": [],
+        "ruledOut": [
+          {
+            "key": "H-NOT-SHIPPED",
+            "refutedBy": [
+              "EV-WMS-002",
+              "EV-CAR-005",
+              "EV-SUP-006"
+            ]
+          },
+          {
+            "key": "H-DELIVERED",
+            "refutedBy": [
+              "EV-SUP-004",
+              "EV-CAR-005",
+              "EV-SUP-006"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "EV-CAR-003",
+            "explanation": "EV-CAR-005 replaces all of EV-CAR-003, not only the facts it restates. No record that still counts states carrier.status=delivered, carrier.driver=D-219. Its judgments no longer apply: supports H-DELIVERED; contradicts H-NOT-SHIPPED.",
+            "consequences": []
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-DELIVERED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.54
+            },
+            "cause": "support withheld: EV-CAR-005 refutes H-DELIVERED decisively; EV-CAR-003 superseded by EV-CAR-005",
+            "dropped": [
+              "EV-WMS-002 (support withheld: EV-CAR-005 refutes H-DELIVERED decisively)",
+              "EV-CAR-003 (EV-CAR-003 superseded by EV-CAR-005)"
+            ]
+          },
+          {
+            "key": "H-NOT-SHIPPED",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.05
+            },
+            "cause": "EV-CAR-003 superseded by EV-CAR-005",
+            "dropped": [
+              "EV-CAR-003 (EV-CAR-003 superseded by EV-CAR-005)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-MISDELIVERED",
+            "status": "active",
+            "confidence": 0.578
+          },
+          {
+            "key": "H-NOT-SHIPPED",
+            "status": "rejected",
+            "confidence": 0.05
+          },
+          {
+            "key": "H-DELIVERED",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 2,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": 5,
+          "modelFailures": 0,
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        },
+        "explanation": {
+          "text": "The investigation has concluded that the parcel was misdelivered, not that it was lost or never shipped. The initial tracking record (EV-CAR-003) was superseded by EV-CAR-005, which shows the GPS delivery fix was at 41 Lydiard St North, not the intended 41 Lydiard St South. This is confirmed by EV-SUP-006, where a resident at the incorrect address holds a parcel addressed to the correct street but wrong suffix. Therefore, H-MISDELIVERED is the established conclusion.",
+          "agrees": true,
+          "problems": [],
+          "invalidCitations": []
+        }
+      },
+      "stateless": {
+        "method": "nemotron",
+        "error": null,
+        "concluded": "H-MISDELIVERED",
+        "cited": [
+          "EV-CAR-005",
+          "EV-SUP-006",
+          "EV-WMS-002",
+          "EV-SUP-004"
+        ],
+        "rationale": "Warehouse records confirm shipment (EV-WMS-002), but carrier proof-of-delivery (EV-CAR-005) shows delivery 380m away at 41 Lydiard St North, and a resident confirms holding the parcel intended for 41 Lydiard St South (EV-SUP-006).",
+        "scores": null,
+        "counted": null,
+        "model": {
+          "attempts": 1,
+          "valid": 1,
+          "latencyMs": [
+            3260
+          ],
+          "servedModels": [
+            "nvidia/nemotron-3.5-bolt-e4b"
+          ]
+        }
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-WMS-002",
+            "EV-SUP-004",
+            "EV-CAR-005",
+            "EV-SUP-006"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "EV-CAR-005",
+            "EV-SUP-006",
+            "EV-WMS-002",
+            "EV-SUP-004"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "formed",
+          "recordsWhy": false
+        }
+      },
+      "label": null,
+      "disagreement": null
+    }
+  ],
+  "notes": [
+    "Both approaches saw the same records at every stage, the same question and explanations, and the same assessor configuration.",
+    "Speck counts a conclusion only when it holds it as supported; a leading or pointed-to explanation is tentative. The stateless baseline has no such threshold beyond answering \"unresolved\" (model) or a tie or non-positive score (rules).",
+    "Differences come from Speck's explicit evidence and revision state and its conclusion policy (thresholds, decisive refutation, supersession), not from persistence alone: the evaluation's speck-fresh system, which rebuilds from scratch each time, reaches the same conclusions as speck-desk.",
+    "Live: model judgments vary between runs. This is one sample, not a rate. Speck calls the model per evidence chunk plus once for its explanation; the baseline calls it once per stage, so call counts and latency are not like for like.",
+    "Speck caps model-judged evidence at reliability 0.4, so Speck's own confidence rarely reaches its 0.6 threshold live. Since Build 4 Evidence Desk can still conclude by corroboration (two or more source systems agree, nothing recorded against, every rival ruled out or unsupported); each such conclusion is marked, with Speck's own confidence beside it."
+  ]
+}

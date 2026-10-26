@@ -1,19 +1,21 @@
-# Sponsor evidence audit (2026-10-25)
+# Sponsor evidence audit (2026-10-25, with the 2026-10-26 model change)
 
 Each sponsor claim in the README and `docs/SUBMISSION.md` checked against the code and against an
-execution record made on 2026-10-25. Every receipt named here is tracked in git. Where something
+execution record made on 2026-10-25, and, for the switch to Nemotron 3.5 Bolt E4B, on 2026-10-26
+(section *2026-10-26: Bolt E4B through Nightshift*). Every receipt named here is tracked in git. Where something
 could not be verified, it says so.
 
 Three kinds of run are kept apart:
 - **Deterministic tests** (`npm test`, `npm run eval`, `npm run compare`): fixture evidence and
   fact rules. No model and no sponsor service.
-- **Local model experiments**: `nemotron-3-nano:4b` on this laptop's GPU (below). Every
-  evaluation and comparison number in this repository comes from these, or from deterministic
-  runs.
+- **Live model experiments**: until 2026-10-25, `nemotron-3-nano:4b` on this laptop's GPU
+  (below); on 2026-10-26, `nvidia/nemotron-3.5-bolt-e4b`, served by NVIDIA through Meterless
+  Nightshift and asked for by name. Every evaluation and comparison number comes from one of
+  these, labelled with its model, or from deterministic runs. The two models are never pooled.
 - **Sponsor-integration verification** (`npm run sponsors:verify`): one two-stage live
   investigation per configuration, checked against each sponsor's own records. When it routes
-  through Meterless Nightshift, the runtime chooses the model; those runs are never used for
-  evaluation numbers.
+  through Meterless Nightshift in a routing mode (`meterless/auto`), the runtime chooses the
+  model; those runs are never used for evaluation numbers.
 
 ## Summary
 
@@ -21,8 +23,8 @@ Three kinds of run are kept apart:
 |---|---|---|---|
 | Zetaris | The live investigation reads its evidence through Zetaris; the USL and its data-quality rule exist and run | `eval/results/sponsors/2026-10-25T13-04-05-519Z.json`, `...13-04-35-404Z.json`, `2026-10-25-zetaris-usl.md` | **The live investigation does not read the USL.** All Zetaris data is sample data |
 | Meterless engine | Real runs, chunks, carryover and the reflection pass, matched in the engine's own history | the two sponsor receipts | Recovery and recomputation are Evidence Desk's code, not the engine's |
-| Meterless Nightshift | Model calls routed and answered through the runtime; served model named | `2026-10-25T13-04-05-519Z.json` | Only `meterless/auto` was run; never used for evaluation numbers |
-| NVIDIA Nemotron | The local 4B model, its quantisation, runtime and request settings; every evaluation call | `2026-10-25T13-04-35-404Z.json`, every live report under `eval/results/experiments/` and `eval/results/comparisons/` | NVIDIA's hosted API was not used |
+| Meterless Nightshift | Model calls routed and answered through the runtime; served model named. Since 2026-10-26 the provider of every live number, with the pinned Bolt E4B | `2026-10-25T13-04-05-519Z.json` (`meterless/auto`), `2026-10-26T07-05-56-787Z.json` (pinned) | The `meterless/auto` runs produced no evaluation number |
+| NVIDIA Nemotron | The local 4B model, its quantisation, runtime and request settings, for every live number until 2026-10-25; Bolt E4B through Nightshift from 2026-10-26 | `2026-10-25T13-04-35-404Z.json`, `2026-10-26T07-05-56-787Z.json`, every live report under `eval/results/experiments/` and `eval/results/comparisons/` | The client's direct path to NVIDIA's hosted API was not used; Bolt E4B's size and weights are the provider's, not measured here |
 | Speck | Host, belief state, every revision traced | both sponsor receipts, the test suite | |
 | Cursor | Nothing | none | The repository contains no Cursor configuration and no commit attributes work to it. "The team reports using it" is the team's statement, not verified |
 
@@ -100,7 +102,8 @@ Nightshift. With `MODEL_PROVIDER=ollama` the verifier correctly reports Nightshi
 
 ## NVIDIA Nemotron
 
-**The local model behind every live number**, as reported by the Ollama runtime on 2026-10-25:
+**The local model behind every live number until 2026-10-25**, as reported by the Ollama runtime
+on 2026-10-25:
 
 | | |
 |---|---|
@@ -128,6 +131,27 @@ with model provenance, all at reliability ≤ 0.4.
   `corroborated-1` concluded from in `missing-evidence` and the claim case.
 
 Not used: NVIDIA's hosted API (the client supports it), any other NVIDIA infrastructure.
+
+## 2026-10-26: Bolt E4B through Nightshift
+
+Run 2026-10-26T07:05:56Z (`npm run sponsors:verify` with `.env`: `MODEL_PROVIDER=meterless`,
+`METERLESS_MODEL=nvidia/nemotron-3.5-bolt-e4b`, Zetaris live), receipt
+`eval/results/sponsors/2026-10-26T07-05-56-787Z.json`: every sponsor OBSERVED, exit 0.
+- **Nightshift:** 5 HTTP requests in 5 model calls to `http://127.0.0.1:8088/v1/chat/completions`,
+  sent as `meterless-app` `evidence-desk`, all answered; every response named
+  `nvidia/nemotron-3.5-bolt-e4b`. A pinned model is asked for by name, so the runtime does not
+  choose; the response still names what served it.
+- **Nemotron:** 5 attempts, 0 contract rejections, 0 transport failures; 5 evidence objects in
+  Speck with model provenance, all at reliability 0.4 or below.
+- **Zetaris, the Meterless engine and Speck:** as before (engine runs `run-1` with 2 chunks and
+  `run-2` with 1, found in the engine's history; 7 and 8 belief revisions, all in the trace).
+- **Where the model runs:** Bolt E4B is served by NVIDIA, reached through the local Nightshift
+  runtime 1.2.7. The calls leave this machine; only this repository's sample data is sent. The
+  on-device Bolt E4B that Nightshift also lists was not run (its local lane was not ready).
+- **What changed in Evidence Desk to allow it:** a model the runtime lists by name is accepted as
+  a pinned model (Speck's Meterless contract, `patches/speck-meterless-provider.patch`; Speck's
+  cognition unchanged), and structured requests through Nightshift are sent without JSON mode
+  (`docs/bolt-e4b.md`, section 1).
 
 ## Speck
 

@@ -7,18 +7,24 @@
 > evidence and the same correction, through both, and shows what each actually did.
 > - **The correction, side by side:** on 2026-10-25 the stateless call kept "delivered" and cited
 >   the carrier's replaced scan in 12/12 live comparisons; Speck cited it in none of the 9 that
->   completed (in the 3 that errored, the correction stayed unassessed). Every sample:
->   [docs/comparison.md](docs/comparison.md).
+>   completed (in the 3 that errored, the correction stayed unassessed). That was the 4B. With
+>   Nemotron 3.5 Bolt E4B, the model since 2026-10-26, the stateless call did not cite it (0/6):
+>   both reached "misdelivered", and only Speck recorded why. Every sample:
+>   [docs/comparison.md](docs/comparison.md), [docs/bolt-e4b.md](docs/bolt-e4b.md).
 > - **What the evaluation shows, as three separate claims:** correction handling as above (two
 >   cases, an illustration, not a rate); no general accuracy advantage (18/30 for both on the
 >   locked Build 4 cases; on set 5, `corroborated-2`'s 39/45 equals the old rule on the same
 >   judgments); and Speck abstains more, which is sometimes wrong, and still concludes from weak
->   or same-source agreement. See [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
+>   or same-source agreement. With Bolt E4B the stateless call is ahead on both locked sets
+>   (21/30 and 42/45, against Speck's 18/30 and 36/45). See
+>   [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
 >   live, what changed, and the before-and-after evaluation, including where it got worse.
 > - [docs/build-5-corroboration.md](docs/build-5-corroboration.md): a pre-registered successor to
 >   the corroboration rule, tested on eight new locked cases, with what it did and did not show.
+> - [docs/bolt-e4b.md](docs/bolt-e4b.md): the switch to Nemotron 3.5 Bolt E4B through Meterless
+>   Nightshift, and every suite re-run on it, beside the 4B results.
 > - [docs/comparison.md](docs/comparison.md): the side-by-side comparison, how it is made fair,
 >   and every saved result; [eval/results/comparisons/SUMMARY.md](eval/results/comparisons/SUMMARY.md)
 >   counts every saved sample.
@@ -27,8 +33,10 @@
 > - `npm run sponsors:verify`: checks each sponsor technology in a real run, and reports what it
 >   could not observe. It needs local Zetaris and a Meterless Runtime. For what it needs and how
 >   to read it, see [Verifying the sponsors yourself](docs/SUBMISSION.md#verifying-the-sponsors-yourself).
->   **Receipt log:** the saved reports of the 2026-10-25 runs, with their traces and the model
->   that served every call: local 4B
+>   **Receipt log:** the saved reports, with their traces and the model that served every call:
+>   Bolt E4B through Nightshift (the current default)
+>   [eval/results/sponsors/2026-10-26T07-05-56-787Z.json](eval/results/sponsors/2026-10-26T07-05-56-787Z.json);
+>   on 2026-10-25, local 4B
 >   [eval/results/sponsors/2026-10-25T13-04-35-404Z.json](eval/results/sponsors/2026-10-25T13-04-35-404Z.json),
 >   through Nightshift
 >   [eval/results/sponsors/2026-10-25T13-04-05-519Z.json](eval/results/sponsors/2026-10-25T13-04-05-519Z.json)
@@ -110,17 +118,31 @@ remaining false conclusions come from Speck's own threshold. The default stays `
 `CONCLUSION_RULE=corroborated-2` selects the candidate. Full record:
 [docs/build-5-corroboration.md](docs/build-5-corroboration.md).
 
-**It is compact.** The model that weighs the evidence is a 4-billion-parameter Nemotron.
+**Model change (2026-10-26).** The assessor, the stateless baseline and Speck's chat now use
+Nemotron 3.5 Bolt E4B (`nvidia/nemotron-3.5-bolt-e4b`), served by NVIDIA through Meterless
+Nightshift, in place of the local Nemotron 3 Nano 4B and Nano 9B. Every suite was re-run on it with
+the same rules, labels and repeats. The stateless call's errors mostly went with the 4B: it no
+longer cited the replaced scan (0/6), made almost no unsupported conclusions, and is ahead of Speck
+on both locked sets (21/30 against 18/30; 42/45 against 36/45). Speck's own accuracy did not move.
+What still separates them is evidence handling: Speck kept withdrawn or replaced evidence out of its
+support in every sample, the stateless call did not in 3 of 15 held-out checkpoint-samples, and
+only Speck records why a conclusion changed. `corroborated-2` did worse on Bolt (19/27 correct where
+a conclusion was due) and stays experimental. Full record: [docs/bolt-e4b.md](docs/bolt-e4b.md).
 
-> **Note on model size.** With Meterless Nightshift in `meterless/auto` (the default provider
-> setting), the runtime chooses the model: in the verified run of 2026-10-25 it sent every call to
-> `nvidia/nemotron-3.5-lightning-30b-a3b` (on 2026-10-24, the 550B for stage 1). Only the 4B model
-> is required for the software to work correctly, and every evaluation and comparison number comes
-> from the local 4B, not from Nightshift.
+**It is compact.** The model that weighs the evidence is small. Since 2026-10-26 it is Nemotron 3.5
+Bolt E4B, asked for by name through Nightshift (a pinned model), so every call goes to that one
+model and the response names it. These calls leave the machine; only this repository's sample data
+is sent. Every result before that date came from Nemotron 3 Nano 4B on this machine, described
+below. The two models' results are never pooled.
 
-- The model runs on one consumer GPU: Nemotron 3 Nano 4B, 4-bit (Q4_K_M), 2.8 GB, all on the GPU.
-- It works in a 4,096-token window, the window Ollama gives it inside Speck and standalone alike.
-  The model could take 262,144 tokens, but nothing here needs more.
+> **Note on model size.** In `meterless/auto` the runtime chooses the model: in the verified runs
+> of 2026-10-24 and 2026-10-25 it chose 30B and 550B Nemotrons. Pinning Bolt E4B avoids that. No
+> evaluation or comparison number came from a routing mode.
+
+- Until 2026-10-26 the model ran on one consumer GPU: Nemotron 3 Nano 4B, 4-bit (Q4_K_M), 2.8 GB,
+  all on the GPU.
+- The 4B worked in a 4,096-token window, the window Ollama gives it inside Speck and standalone
+  alike. Bolt E4B accepts 65,536 tokens (the runtime's figure); nothing here needs more than 4,096.
 - Prompts stay small because the case's state lives in Speck, not in the prompt:
   - the Meterless engine splits each run into chunks of at most 4,000 tokens, carrying at most
     512 tokens from one chunk to the next;
@@ -135,11 +157,11 @@ remaining false conclusions come from Speck's own threshold. The default stays `
 
 | Agent (role) | Code | Model | Receipt |
 |---|---|---|---|
-| Evidence assessor: judges how each record bears on each explanation, one Meterless chunk at a time | `src/reasoning/nemotron.ts` | Nemotron. Local Ollama: `nemotron-3-nano:4b` (reasoning off). Through Meterless Nightshift (`meterless/auto`, the default), the runtime picks: on 2026-10-25, `nvidia/nemotron-3.5-lightning-30b-a3b` for all 5 calls; on 2026-10-24, `nvidia/nemotron-3-ultra-550b-a55b` (stage 1) and the 30B (stage 2). | Sponsor runs [2026-10-25, Nightshift](eval/results/sponsors/2026-10-25T13-04-05-519Z.json), [2026-10-25, local 4B](eval/results/sponsors/2026-10-25T13-04-35-404Z.json), [2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json) (`servedModels` per call) |
+| Evidence assessor: judges how each record bears on each explanation, one Meterless chunk at a time | `src/reasoning/nemotron.ts` | Nemotron. Since 2026-10-26 (the default): `nvidia/nemotron-3.5-bolt-e4b` through Meterless Nightshift, pinned, reasoning off; receipt [2026-10-26](eval/results/sponsors/2026-10-26T07-05-56-787Z.json). Before: local Ollama `nemotron-3-nano:4b` (reasoning off). In `meterless/auto`, the runtime picks: on 2026-10-25, `nvidia/nemotron-3.5-lightning-30b-a3b` for all 5 calls; on 2026-10-24, `nvidia/nemotron-3-ultra-550b-a55b` (stage 1) and the 30B (stage 2). | Sponsor runs [2026-10-25, Nightshift](eval/results/sponsors/2026-10-25T13-04-05-519Z.json), [2026-10-25, local 4B](eval/results/sponsors/2026-10-25T13-04-35-404Z.json), [2026-10-24](eval/results/sponsors/2026-10-24T02-14-08-828Z.json) (`servedModels` per call) |
 | Explanation writer: the Meterless engine's reflection pass | `src/reasoning/nemotron.ts` | The same model as the assessor | Same report |
-| Stateless baseline: the comparison's fresh call per stage, with no memory | `src/eval/systems.ts` | The same model, endpoint and temperature as the assessor | [Saved live comparisons](eval/results/comparisons/) (`nemotron-3-nano:4b`) |
+| Stateless baseline: the comparison's fresh call per stage, with no memory | `src/eval/systems.ts` | The same model, endpoint and temperature as the assessor | [Saved live comparisons](eval/results/comparisons/) (`nemotron-3-nano:4b` until 2026-10-25, `nvidia/nemotron-3.5-bolt-e4b` from 2026-10-26) |
 | Decisive reading (experimental, off by default) | `public/decisive.js` | The same model, with reasoning on (`NEMOTRON_DECISIVE_REASONING_EFFORT`) | [docs/comparison.md](docs/comparison.md#decisive-mode-experimental) |
-| Speck's chat (*Talk to Speck*) | `patches/speck-chat-investigations.patch` | Set in Speck's System view. Used here: Nemotron Nano 9B v2 on Ollama (`hf.co/bartowski/nvidia_NVIDIA-Nemotron-Nano-9B-v2-GGUF:Q4_K_M`), or a Meterless Runtime | One rehearsal, not saved |
+| Speck's chat (*Talk to Speck*) | `patches/speck-chat-investigations.patch` | Set in Speck's System view, or by `npm run configure`. Since 2026-10-26: `nvidia/nemotron-3.5-bolt-e4b` through Meterless Nightshift. Before: Nemotron Nano 9B v2 on Ollama (`hf.co/bartowski/nvidia_NVIDIA-Nemotron-Nano-9B-v2-GGUF:Q4_K_M`) | One rehearsal with the 9B, not saved; not yet rehearsed with Bolt |
 | Rule assessor (sample mode, the bank return) | `src/reasoning/rules.ts` | None: deterministic rules | [eval/results/](eval/results/) |
 
 Every live run records the model name the endpoint reported serving, so the trace, not this
@@ -370,8 +392,10 @@ offers to point it at the same Meterless Runtime as the assessor. Speck saves th
 `speck/data/genesis-runtime/model-processors.json`, which is runtime data and not committed;
 restart Speck after changing it.
 
-The local alternative used here is Nemotron Nano 9B through Ollama. The 4B model used for
-assessments was tried first and invented details more often.
+Since 2026-10-26 the chat uses the same model as the assessor, Nemotron 3.5 Bolt E4B through
+Nightshift, set by `npm run configure`. Before that it was Nemotron Nano 9B through Ollama: the 4B
+model then used for assessments was tried first and invented details more often. The chat has not
+yet been rehearsed with Bolt.
 
 **Your own investigations.** *+ New investigation* takes a title, the question, two to five
 competing explanations (equal priors) and optionally the first evidence.
@@ -539,9 +563,10 @@ API, is the default model provider (see *Model providers*).
 
 - **Code:** `src/reasoning/nemotron.ts`, an OpenAI-compatible chat client registered as a
   processor in Speck's model registry.
-- **Verified with:** `nemotron-3-nano:4b` served by **local Ollama** (`npm run model:check`
-  confirms the served model). The trace records, for every call, the model name the endpoint
-  reported.
+- **Verified with:** `nvidia/nemotron-3.5-bolt-e4b` through Meterless Nightshift since
+  2026-10-26 (receipt `eval/results/sponsors/2026-10-26T07-05-56-787Z.json`), and before that
+  `nemotron-3-nano:4b` served by **local Ollama** (`npm run model:check` confirms the served
+  model). The trace records, for every call, the model name the endpoint reported.
 - **How judgments are constrained and validated:**
   - Speck validates each reply against a contract with enumerated evidence ids and hypothesis
     keys, covering every required (evidence, hypothesis) pair.
@@ -991,8 +1016,9 @@ chooses the endpoint:
 - **Meterless Runtime (`meterless`, the default).** Meterless Runtime 1.4, provider contract v4.
   - **What it is.** Nightshift, Meterless's HTTP API: a separate program, by default on port
     8088, that routes each call to a model. Start it before configuring.
-  - **Model identity.** Every call sends the routing mode (`meterless/auto` and so on) as the
-    model, and the trace records the model each response names. `npm run sponsors:verify`
+  - **Model identity.** Every call sends `METERLESS_MODEL` as the model: by default the pinned
+    `nvidia/nemotron-3.5-bolt-e4b`, or a routing mode (`meterless/auto` and so on). The trace
+    records the model each response names. `npm run sponsors:verify`
     reports Nightshift as OBSERVED only when:
     - every model call of the run went to it and was answered;
     - each response named the model that served it, not just the routing mode echoed back.
@@ -1021,10 +1047,16 @@ chooses the endpoint:
     and the token; `npm run configure` reads it and never prints it.
   - `meterless_runtime_token`: the token the runtime writes to `<stateDir>/proxy-token`. It is
     sent as `Authorization: Bearer` on every call; the placeholder `rt-local` counts as no token.
-  - `METERLESS_MODEL` (default `meterless/auto`): a routing mode, not a model:
+  - `METERLESS_MODEL` (default `nvidia/nemotron-3.5-bolt-e4b`): a pinned model or a routing mode:
+    - a model the runtime lists by name (`<provider>/<model>`), which must be a Nemotron for the
+      assessor; `npm run configure` lists the runtime's Nemotron models;
     - `meterless/<disposition>`: `auto`, `fast`, `deep`, `cheap`, `local` or `fusion`;
     - `meterless/<class>`, or `meterless/<class>.<disposition>`;
     - any other `meterless/*` id the runtime lists is kept.
+  - Structured requests through Nightshift are sent without JSON mode: its `json_object` check
+    rejects (HTTP 502) an answer that opens with the `>> action` line the Meterless engine's chunk
+    prompt asks for, which Bolt E4B writes before the JSON. Speck's contract check takes the JSON
+    that follows and validates it (see [docs/bolt-e4b.md](docs/bolt-e4b.md)).
   - Every request carries `meterless-app`: `evidence-desk` for the assessor, `speck` for Speck's
     chat. Chat requests also carry `meterless-scope: user`. Calls time out after 180 s (`NEMOTRON_TIMEOUT_MS`), because a
     model load can take minutes.
@@ -1053,15 +1085,15 @@ chooses the endpoint:
     - the second stage's chunk and explanation went to `nvidia/nemotron-3.5-lightning-30b-a3b`.
 
     Calls took 10-52 s each, and none was rejected by the contract check. `auto` chose much
-    larger models than the 4B one *It is compact* describes; that description is of local
-    Ollama. Use `METERLESS_MODEL=meterless/local` to keep calls on the device.
-  - **Only the 4B is required.** By default, Meterless serves
-    `nvidia/nemotron-3.5-lightning-30b-a3b` through its Nightshift NVIDIA provider. Evidence
-    Desk works correctly with the 4B Nemotron alone; the larger models are not required.
-  - The runtime chooses the model for each call. The trace records the model it reports serving.
+    larger models than the 4B. On 2026-10-26, with the pinned Bolt E4B, the same check reported
+    every sponsor OBSERVED again, each of 5 responses naming `nvidia/nemotron-3.5-bolt-e4b`.
+  - **No large model is required.** Evidence Desk works with a small Nemotron: the 4B on local
+    Ollama, or Bolt E4B through Nightshift. Use `METERLESS_MODEL=meterless/local` to keep calls
+    on the device.
+  - In a routing mode the runtime chooses the model for each call. The trace records the model it reports serving.
     `npm run sponsors:verify` still requires that model to be Nemotron before it reports Nemotron
     as used.
-- **Nemotron on local Ollama (`ollama`; the configuration used and verified here):**
+- **Nemotron on local Ollama (`ollama`; the configuration of every result before 2026-10-26):**
   - `NEMOTRON_MODEL` set to a local Nemotron tag (verified with `nemotron-3-nano:4b`); the base
     URL defaults to `http://127.0.0.1:11434/v1`;
   - `NEMOTRON_REASONING_EFFORT=none`. With reasoning on, the model's reasoning trace uses up the
@@ -1080,7 +1112,9 @@ the endpoint returned.
 
 ### Small model, small context
 
-The assessor runs on **Nemotron 3 Nano 4B**, served by local Ollama:
+These measurements were taken on the 4B, before the switch to Bolt E4B on 2026-10-26. The prompts
+are the same with Bolt; its token counts were not measured. Until then the assessor ran on
+**Nemotron 3 Nano 4B**, served by local Ollama:
 - 4.0B parameters, quantised to 4 bits (Q4_K_M), 2.8 GB, entirely on the GPU;
 - a **4,096-token context window**, which is Ollama's default when a client sends no context size
   and is what `ollama ps` reports. Evidence Desk sends none, so the window is the same inside Speck
@@ -1113,8 +1147,8 @@ Measured on 2026-10-24: the disputed delivery's two stages, fixture evidence,
   kind of inconsistency a small model shows (see *Known limits of this slice*). Both runs still
   completed: *leading* H-DELIVERED, then *leading* H-MISDELIVERED.
 
-Speck's own chat uses a separate model, the 9B Nemotron Nano, with a 16,384-token window (see
-*Inside Speck*).
+Speck's own chat then used a separate model, the 9B Nemotron Nano, with a 16,384-token window; it
+now uses Bolt E4B (see *Inside Speck*).
 
 ### Reasoning on or off
 
@@ -1204,7 +1238,7 @@ reasoning off, 3 repeats, run back to back on 2026-10-25):
 The live gains are on cases seen during development (the bank return was the case the change
 was designed on). On the new challenge cases Build 4 is no better than Build 3.
 
-**Build 5, set 5 (eight new cases locked before any run), live, 3 repeats, 2026-10-26**
+**Build 5, set 5 (eight new cases locked before any run), live, local `nemotron-3-nano:4b`, 3 repeats, 2026-10-26**
 ([docs/build-5-corroboration.md](docs/build-5-corroboration.md), section 6):
 
 | | Speck, `corroborated-1` (Build 4) | Speck, `corroborated-2` | `corroborated-1` on the candidate's own judgments | Stateless |
@@ -1213,11 +1247,28 @@ was designed on). On the new challenge cases Build 4 is no better than Build 3.
 | Concluded where abstaining was right | 8/18 | 6/18 | 6/18 | 15/18 |
 | Correct where a conclusion was due | 27/27 | 27/27 | 27/27 | 27/27 |
 
+**The same suites on Nemotron 3.5 Bolt E4B** (through Meterless Nightshift, reasoning off, 3
+repeats, 2026-10-26; every suite already seen, so a re-evaluation on another model, not a test;
+[docs/bolt-e4b.md](docs/bolt-e4b.md)):
+
+| Bolt E4B | Speck, `corroborated-1` | Speck, `corroborated-2` | Stateless |
+|---|---|---|---|
+| Held-out + regression: matches label | 42/48 | | 42/48 |
+| ... withdrawn or replaced evidence kept out of support | 15/15 | | 12/15 |
+| ... unsupported conclusions | 0/24 | | 0/36 |
+| Build 4 challenge cases: matches label | 18/30 | | 21/30 |
+| ... concluded where abstaining was right | 3/12 | | 9/12 |
+| Set 5: matches label | 36/45 | 34/45 | 42/45 |
+| ... concluded where abstaining was right | 9/18 | 3/18 | 3/18 |
+| ... correct where a conclusion was due | 27/27 | 19/27 | 27/27 |
+| Delivery comparison, after the correction: cites the replaced scan | 0/6 | | 0/6 |
+
 Deterministically the two rules are identical on every suite. The Build 4 experiment folders
 are `eval/results/experiments/reasoning/2026-10-25-*` and
 `eval/results/experiments/challenge/2026-10-25-*`; Build 5's are
-`eval/results/experiments/challenge-5/2026-10-26-*` and the `2026-10-26-build5-candidate`
-folders beside Build 4's. The tables further below are the Build 3 results as first reported.
+`eval/results/experiments/challenge-5/2026-10-26-{reference,candidate}` and the
+`2026-10-26-build5-candidate` folders beside Build 4's; Bolt E4B's are the `2026-10-26-bolt-e4b*`
+folders. The tables further below are the Build 3 results as first reported.
 
 The cross-domain suite is reported apart from the two groups below. Its labels were locked
 before its first run. Its findings, including two defects it exposed, are in
@@ -1399,7 +1450,7 @@ What these runs show:
 
 ## Tests
 
-`npm test` runs 174 tests with no network access beyond localhost and no credentials (174/174 passing on 2026-10-26):
+`npm test` runs 175 tests with no network access beyond localhost and no credentials (175/175 passing on 2026-10-26):
 
 - **Build 5** (`test/build5.test.ts`): rule `corroborated-2` beside `corroborated-1`: strong independent, weak, non-establishing, duplicated, conflicting, missing-strength, never-asked, withdrawn and superseded support; the bank return and the two Build 4 false positives replayed; a failed model call; the model contract under each rule; set 5's lock.
 
@@ -1643,8 +1694,10 @@ from a security review of this repository's code (Speck is reviewed separately).
   them; Nemotron mode uses only the decisive ones.
 - Zetaris paging beyond 1000 rows per table is not implemented. The adapter fails rather than
   truncate.
-- Small local models are inconsistent. With `nemotron-3-nano:4b`, the first attempt sometimes
-  loops until it hits the token cap, and Speck's retry usually recovers. A failed batch is
+- Small models are inconsistent. With `nemotron-3-nano:4b`, the first attempt sometimes
+  loops until it hits the token cap, and Speck's retry usually recovers. Bolt E4B follows the
+  Meterless engine's instruction to log `>> action` before its JSON, which is why Nightshift is not
+  asked for JSON mode. A failed batch is
   recorded as an errored run and its records stay pending.
 - The model's explanation is checked against Speck's state using its *declared* conclusion,
   declared firmness and citations, not by reading its prose. If it disagrees, or is out of date,
@@ -1704,13 +1757,18 @@ This experiment's results suggest a nuanced answer:
 - **Correction handling:** promising evidence that persistent, revision-aware state helps. On the
   disputed delivery, the stateless call cited the carrier's replaced scan in 12/12 live
   comparisons; Speck cited it in none of the 9 that completed, and recorded why its conclusion
-  changed ([docs/comparison.md](docs/comparison.md)).
+  changed ([docs/comparison.md](docs/comparison.md)). That was the 4B. With Bolt E4B the stateless
+  call no longer cited it (0/6); Speck still kept withdrawn or replaced evidence out of its support
+  more consistently (15/15 against 12/15 held-out checkpoint-samples), and only Speck recorded why
+  ([docs/bolt-e4b.md](docs/bolt-e4b.md)).
 - **General conclusion accuracy:** no demonstrated improvement on the locked challenge set:
   Speck and the stateless call both scored 18/30
-  ([docs/build-4-bank-return.md](docs/build-4-bank-return.md), section 5c).
+  ([docs/build-4-bank-return.md](docs/build-4-bank-return.md), section 5c). With Bolt E4B the
+  stateless call is ahead (21/30 against 18/30, and 42/45 against 36/45 on set 5).
 - **Decision policy:** changing a rule did not independently explain the apparent gain in the
   newer experiment. On set 5, `corroborated-2` scored 39/45, and the old rule applied to the same
   judgments also scored 39/45 ([docs/build-5-corroboration.md](docs/build-5-corroboration.md),
-  section 6a).
+  section 6a). With Bolt E4B, `corroborated-2` did worse than the old rule (34/45 against 36/45),
+  losing 8 correct conclusions.
 - **Remaining limitations:** Speck can still abstain when it should conclude, or draw conclusions
   from weakly corroborated evidence (see *Known limits of this slice*).
