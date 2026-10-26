@@ -1,5 +1,10 @@
 # Challenge cases, set 6: harder cases for the stateless baseline
 
+**Abandoned after one of its six runs (2026-10-26):** the set aimed at context size, which tests
+the prompt window rather than reasoning. Its one saved report and what it showed are in
+[docs/set-6-harder-cases.md](../../docs/set-6-harder-cases.md), section 6. The cases stay locked
+and seen; set 7 replaces it.
+
 Seven cases written to find the limits of a stateless model call, with two controls where keeping
 state should not help. In domains no earlier suite uses: airline baggage, software licensing,
 building permits, pharmacy, livestock traceability, tax refunds, warranty repairs. Reported apart

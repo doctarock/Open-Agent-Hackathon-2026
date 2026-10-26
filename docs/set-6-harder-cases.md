@@ -103,3 +103,32 @@ more accurate. That result is reported the same way.
 ## 6. Results
 
 (Added after the runs, below this line.)
+
+**Set 6 was abandoned after one of its six runs (2026-10-26).** After the first repeat on the 4B,
+the owner judged that the set aimed at the wrong limit: context size tests the prompt window, not
+reasoning, and the intended test is a scenario with more conflicting receipts over time. The
+runs were stopped; the second (Bolt, repeat 1) was killed before it saved anything. No prediction
+is scored, because the registered protocol (3 repeats per model) was not completed. The one
+saved report is kept: `eval/results/experiments/challenge-6/nano-4b/rep1/r1.json`. The cases stay
+locked and seen; set 7 is new, with its own lock.
+
+What that one repeat (4B, 22 checkpoint-samples per system) showed, as observations only:
+- Speck 15/22, Speck rebuilt each time 11/22, stateless 14/22 (3 errors: the model's replies for
+  the prescription case failed the contract twice). Withdrawn or replaced evidence kept out of
+  support: Speck 9/9, stateless 8/9.
+- **The prompt did overflow, earlier than estimated.** The 4B's tokenizer gives about 2.8
+  characters per token, not the 4 assumed in P4. From `permit-long@refused` (11,435 characters)
+  the reported prompt tokens stop at 2,050 while the prompt keeps growing to 19,041 characters:
+  Ollama truncated it. The stateless call still answered "refused" at all three truncated
+  checkpoints, because the latest records survived the cut. So in this sample context size was
+  not where the stateless call failed.
+- **Speck rebuilt each time is not a fair system on a long case**: it assesses every visible record
+  in one run, over the engine's chunk budget (8 chunks of 2 records), so records stay pending and
+  it abstains at every `permit-long` checkpoint after the first. The persistent system assesses
+  only each stage's new records and is not affected.
+- Speck's failures were the known ones: abstaining where one record settles the case (`refund@paid`,
+  `repair@in-repair`, `prescription@dispensed`), its own threshold concluding "approved" from the
+  lagging portal's records (`permit@approval-withdrawn`), and abstaining where corroboration was
+  weak (`baggage@void-reversed`, `licence@revoked`). The stateless call's were concluding where it
+  should wait (4 of 6: `baggage@scan-voided`, `livestock@correction`, `permit@approval-withdrawn`,
+  `refund@approved`).

@@ -1,0 +1,1574 @@
+{
+ "generatedAt": "2026-10-26T08:14:12.078Z",
+ "group": "challenge-6",
+ "rule": "corroborated-1",
+ "lock": {
+  "lockedAt": "2026-10-26T08:01:38.100Z",
+  "files": 21
+ },
+ "repeat": 1,
+ "wallMs": 672633,
+ "model": {
+  "provider": "ollama",
+  "model": "nemotron-3-nano:4b",
+  "endpoint": "http://127.0.0.1:11434/v1",
+  "reasoningEffort": "none",
+  "maxTokens": 4096
+ },
+ "mode": "live",
+ "cases": [
+  {
+   "id": "baggage-scan-restored",
+   "category": "a correction chain that restores the original",
+   "checkpoints": 3
+  },
+  {
+   "id": "licence-status-flips",
+   "category": "repeated restatements by the system of record",
+   "checkpoints": 4
+  },
+  {
+   "id": "livestock-late-original",
+   "category": "a correction that arrives before the record it replaces",
+   "checkpoints": 2
+  },
+  {
+   "id": "permit-long",
+   "category": "a long record stream with a buried correction and a lagging feed",
+   "checkpoints": 6
+  },
+  {
+   "id": "prescription-reversal-withdrawn",
+   "category": "a withdrawn correction restores the original",
+   "checkpoints": 3
+  },
+  {
+   "id": "refund-single-authority",
+   "category": "control: one authoritative record settles the case",
+   "checkpoints": 2
+  },
+  {
+   "id": "repair-two-sources",
+   "category": "control: independent agreement, no corrections",
+   "checkpoints": 2
+  }
+ ],
+ "systems": [
+  {
+   "system": "speck-desk/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "arrived",
+     "expected": "H-ARRIVED",
+     "concluded": "H-ARRIVED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "scan-voided",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-ARRIVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "void-reversed",
+     "expected": "H-ARRIVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-ARRIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "active",
+     "expected": "H-ACTIVE",
+     "concluded": "H-ACTIVE",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "suspended",
+     "expected": "H-INACTIVE",
+     "concluded": "H-INACTIVE",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "reinstated",
+     "expected": "H-ACTIVE",
+     "concluded": "H-ACTIVE",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "revoked",
+     "expected": "H-INACTIVE",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-INACTIVE",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "livestock-late-original",
+     "category": "a correction that arrives before the record it replaces",
+     "stage": "correction",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "livestock-late-original",
+     "category": "a correction that arrives before the record it replaces",
+     "stage": "late-original",
+     "expected": "H-FEEDLOT",
+     "concluded": "H-FEEDLOT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "lodged",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "approved",
+     "expected": "H-APPROVED",
+     "concluded": "H-APPROVED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "approval-withdrawn",
+     "expected": null,
+     "concluded": "H-APPROVED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [
+      "N6P-9",
+      "N6P-8",
+      "N6P-7",
+      "N6P-6",
+      "N6P-5",
+      "N6P-4",
+      "N6P-3",
+      "N6P-2",
+      "N6P-1"
+     ],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "refused",
+     "expected": "H-REFUSED",
+     "concluded": "H-REFUSED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "review-lodged",
+     "expected": "H-REFUSED",
+     "concluded": "H-REFUSED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "review-pending",
+     "expected": "H-REFUSED",
+     "concluded": "H-REFUSED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "dispensed",
+     "expected": "H-DISPENSED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "reversed",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-DISPENSED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "reversal-withdrawn",
+     "expected": "H-DISPENSED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-single-authority",
+     "category": "control: one authoritative record settles the case",
+     "stage": "approved",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-single-authority",
+     "category": "control: one authoritative record settles the case",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-PAID",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "repair-two-sources",
+     "category": "control: independent agreement, no corrections",
+     "stage": "in-repair",
+     "expected": "H-NOT-RETURNED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "repair-two-sources",
+     "category": "control: independent agreement, no corrections",
+     "stage": "returned",
+     "expected": "H-RETURNED",
+     "concluded": "H-RETURNED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 15,
+     "of": 22,
+     "rate": 0.682
+    },
+    "validCitations": {
+     "count": 128,
+     "of": 137,
+     "rate": 0.934
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 11,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 16,
+     "of": 16,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 9,
+     "of": 9,
+     "rate": 1
+    },
+    "appropriateAbstention": {
+     "count": 5,
+     "of": 6,
+     "rate": 0.833
+    },
+    "overAbstention": {
+     "count": 6,
+     "of": 16,
+     "rate": 0.375
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 15,
+     "of": 22,
+     "rate": 0.682
+    },
+    "model": {
+     "httpCalls": 75,
+     "answered": {
+      "count": 75,
+      "of": 75,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 75,
+      "of": 75,
+      "rate": 1
+     },
+     "latencyMs": {
+      "mean": 2913,
+      "median": 2882,
+      "max": 8374
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "speck-fresh/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "arrived",
+     "expected": "H-ARRIVED",
+     "concluded": "H-ARRIVED",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "scan-voided",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-NOT-ARRIVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "void-reversed",
+     "expected": "H-ARRIVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-ARRIVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "active",
+     "expected": "H-ACTIVE",
+     "concluded": "H-ACTIVE",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "suspended",
+     "expected": "H-INACTIVE",
+     "concluded": "H-INACTIVE",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "reinstated",
+     "expected": "H-ACTIVE",
+     "concluded": "H-ACTIVE",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "revoked",
+     "expected": "H-INACTIVE",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-INACTIVE",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "livestock-late-original",
+     "category": "a correction that arrives before the record it replaces",
+     "stage": "correction",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "livestock-late-original",
+     "category": "a correction that arrives before the record it replaces",
+     "stage": "late-original",
+     "expected": "H-FEEDLOT",
+     "concluded": "H-FEEDLOT",
+     "route": "speck-threshold",
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "lodged",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "approved",
+     "expected": "H-APPROVED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": "max-chunks"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "approval-withdrawn",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N6P-13"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": "max-chunks"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "refused",
+     "expected": "H-REFUSED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-APPROVED"
+     ],
+     "staleSupport": [
+      "N6P-13"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": "max-chunks"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "review-lodged",
+     "expected": "H-REFUSED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-APPROVED"
+     ],
+     "staleSupport": [
+      "N6P-13"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": "max-chunks"
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "review-pending",
+     "expected": "H-REFUSED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-APPROVED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [
+      "H-APPROVED"
+     ],
+     "staleSupport": [
+      "N6P-13"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": "max-chunks"
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "dispensed",
+     "expected": "H-DISPENSED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "reversed",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "reversal-withdrawn",
+     "expected": "H-DISPENSED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-single-authority",
+     "category": "control: one authoritative record settles the case",
+     "stage": "approved",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "refund-single-authority",
+     "category": "control: one authoritative record settles the case",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-PAID",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": false,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "repair-two-sources",
+     "category": "control: independent agreement, no corrections",
+     "stage": "in-repair",
+     "expected": "H-NOT-RETURNED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    },
+    {
+     "caseId": "repair-two-sources",
+     "category": "control: independent agreement, no corrections",
+     "stage": "returned",
+     "expected": "H-RETURNED",
+     "concluded": null,
+     "route": null,
+     "tentative": "H-RETURNED",
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": true,
+     "executionStatus": "completed"
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 11,
+     "of": 22,
+     "rate": 0.5
+    },
+    "validCitations": {
+     "count": 63,
+     "of": 63,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 0,
+     "of": 5,
+     "rate": 0
+    },
+    "correctionHandling": {
+     "count": 13,
+     "of": 16,
+     "rate": 0.813
+    },
+    "invalidatedExcluded": {
+     "count": 5,
+     "of": 9,
+     "rate": 0.556
+    },
+    "appropriateAbstention": {
+     "count": 6,
+     "of": 6,
+     "rate": 1
+    },
+    "overAbstention": {
+     "count": 11,
+     "of": 16,
+     "rate": 0.688
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 11,
+     "of": 17,
+     "rate": 0.647
+    },
+    "model": {
+     "httpCalls": 97,
+     "answered": {
+      "count": 97,
+      "of": 97,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 93,
+      "of": 97,
+      "rate": 0.959
+     },
+     "latencyMs": {
+      "mean": 4389,
+      "median": 3193,
+      "max": 36143
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  },
+  {
+   "system": "baseline-stateless/nemotron",
+   "checkpoints": [
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "arrived",
+     "expected": "H-ARRIVED",
+     "concluded": "H-ARRIVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1190,
+      "tokens": 485
+     }
+    },
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "scan-voided",
+     "expected": null,
+     "concluded": "H-ARRIVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [
+      "N6B-02"
+     ],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1674,
+      "tokens": 696
+     }
+    },
+    {
+     "caseId": "baggage-scan-restored",
+     "category": "a correction chain that restores the original",
+     "stage": "void-reversed",
+     "expected": "H-ARRIVED",
+     "concluded": "H-ARRIVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2156,
+      "tokens": 892
+     }
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "active",
+     "expected": "H-ACTIVE",
+     "concluded": "H-ACTIVE",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1095,
+      "tokens": 415
+     }
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "suspended",
+     "expected": "H-INACTIVE",
+     "concluded": "H-INACTIVE",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1478,
+      "tokens": 586
+     }
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "reinstated",
+     "expected": "H-ACTIVE",
+     "concluded": "H-ACTIVE",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1823,
+      "tokens": 741
+     }
+    },
+    {
+     "caseId": "licence-status-flips",
+     "category": "repeated restatements by the system of record",
+     "stage": "revoked",
+     "expected": "H-INACTIVE",
+     "concluded": "H-INACTIVE",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 2086,
+      "tokens": 835
+     }
+    },
+    {
+     "caseId": "livestock-late-original",
+     "category": "a correction that arrives before the record it replaces",
+     "stage": "correction",
+     "expected": null,
+     "concluded": "H-FEEDLOT",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1348,
+      "tokens": 505
+     }
+    },
+    {
+     "caseId": "livestock-late-original",
+     "category": "a correction that arrives before the record it replaces",
+     "stage": "late-original",
+     "expected": "H-FEEDLOT",
+     "concluded": "H-FEEDLOT",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1798,
+      "tokens": 705
+     }
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "lodged",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 3714,
+      "tokens": 1340
+     }
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "approved",
+     "expected": "H-APPROVED",
+     "concluded": "H-APPROVED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 6362,
+      "tokens": 2287
+     }
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "approval-withdrawn",
+     "expected": null,
+     "concluded": "H-REFUSED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": true,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 9131,
+      "tokens": 3285
+     }
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "refused",
+     "expected": "H-REFUSED",
+     "concluded": "H-REFUSED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 11435,
+      "tokens": 2050
+     }
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "review-lodged",
+     "expected": "H-REFUSED",
+     "concluded": "H-REFUSED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 15224,
+      "tokens": 2050
+     }
+    },
+    {
+     "caseId": "permit-long",
+     "category": "a long record stream with a buried correction and a lagging feed",
+     "stage": "review-pending",
+     "expected": "H-REFUSED",
+     "concluded": "H-REFUSED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 19041,
+      "tokens": 2050
+     }
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "dispensed",
+     "expected": "H-DISPENSED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": "error: model: conclusion must be exactly one of \"H-DISPENSED\", \"H-NOT-DISPENSED\", \"unresolved\"",
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "reversed",
+     "expected": null,
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": "error: model: conclusion must be exactly one of \"H-DISPENSED\", \"H-NOT-DISPENSED\", \"unresolved\"",
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "prescription-reversal-withdrawn",
+     "category": "a withdrawn correction restores the original",
+     "stage": "reversal-withdrawn",
+     "expected": "H-DISPENSED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": "error: model: conclusion must be exactly one of \"H-DISPENSED\", \"H-NOT-DISPENSED\", \"unresolved\"",
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null
+    },
+    {
+     "caseId": "refund-single-authority",
+     "category": "control: one authoritative record settles the case",
+     "stage": "approved",
+     "expected": null,
+     "concluded": "H-PAID",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1124,
+      "tokens": 433
+     }
+    },
+    {
+     "caseId": "refund-single-authority",
+     "category": "control: one authoritative record settles the case",
+     "stage": "paid",
+     "expected": "H-PAID",
+     "concluded": "H-PAID",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1357,
+      "tokens": 541
+     }
+    },
+    {
+     "caseId": "repair-two-sources",
+     "category": "control: independent agreement, no corrections",
+     "stage": "in-repair",
+     "expected": "H-NOT-RETURNED",
+     "concluded": null,
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": false,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1017,
+      "tokens": 335
+     }
+    },
+    {
+     "caseId": "repair-two-sources",
+     "category": "control: independent agreement, no corrections",
+     "stage": "returned",
+     "expected": "H-RETURNED",
+     "concluded": "H-RETURNED",
+     "route": null,
+     "tentative": null,
+     "error": null,
+     "correct": true,
+     "unsupportedClaim": false,
+     "invalidCitations": [],
+     "forbiddenCited": [],
+     "presentedRefuted": [],
+     "staleSupport": [],
+     "explanationAgrees": null,
+     "executionStatus": null,
+     "prompt": {
+      "chars": 1393,
+      "tokens": 496
+     }
+    }
+   ],
+   "metrics": {
+    "correctness": {
+     "count": 14,
+     "of": 22,
+     "rate": 0.636
+    },
+    "validCitations": {
+     "count": 73,
+     "of": 73,
+     "rate": 1
+    },
+    "unsupportedClaims": {
+     "count": 1,
+     "of": 17,
+     "rate": 0.059
+    },
+    "correctionHandling": {
+     "count": 16,
+     "of": 16,
+     "rate": 1
+    },
+    "invalidatedExcluded": {
+     "count": 8,
+     "of": 9,
+     "rate": 0.889
+    },
+    "appropriateAbstention": {
+     "count": 1,
+     "of": 6,
+     "rate": 0.167
+    },
+    "overAbstention": {
+     "count": 3,
+     "of": 16,
+     "rate": 0.188
+    },
+    "failureSurfaced": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "explanationAgreement": {
+     "count": 0,
+     "of": 0,
+     "rate": null
+    },
+    "model": {
+     "httpCalls": 25,
+     "answered": {
+      "count": 25,
+      "of": 25,
+      "rate": 1
+     },
+     "contractValid": {
+      "count": 19,
+      "of": 25,
+      "rate": 0.76
+     },
+     "latencyMs": {
+      "mean": 1016,
+      "median": 858,
+      "max": 1950
+     },
+     "servedModels": [
+      "nemotron-3-nano:4b"
+     ]
+    }
+   }
+  }
+ ],
+ "differences": [
+  "All model-backed systems use the same Nemotron endpoint, model, temperature (0.1), reasoning effort and output budget, and at most two attempts per structured reply.",
+  "Speck systems call the model once per evidence chunk (relation judgments) plus once for the explanation; the baseline calls it once per checkpoint with all visible evidence. Call counts and latencies are therefore not like for like.",
+  "Speck systems also apply the scenario's decisive fact rules and Speck's 0.4 reliability cap on model-judged evidence; the baseline sees the same facts in its prompt but has no rules, so differences cannot be attributed to persistence alone.",
+  "The baseline is told to answer \"unresolved\" when nothing is established; Speck systems abstain through Speck's thresholds. Only Speck systems produce an explanation, so explanation agreement exists only for them.",
+  "Evidence comes from the held-out fixture files in both modes; the provider-failure case uses the real Zetaris adapter against an unreachable port."
+ ]
+}
