@@ -1,0 +1,273 @@
+{
+  "caseId": "N7-SET-01",
+  "records": [
+    {
+      "id": "N7S-01",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "platform",
+        "name": "Electronic settlement platform"
+      },
+      "observedAt": "2026-09-01T01:00:00Z",
+      "content": "Workspace W-2290 (22 Ibis Court): settlement booked for 4 Sep at 14:00; all parties signed.",
+      "facts": {
+        "platform.status": "booked"
+      },
+      "provenance": {
+        "systemOfRecord": "Electronic settlement platform",
+        "recordRef": "n7s-01",
+        "author": "platform-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-02",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "bank",
+        "name": "Buyer's lender"
+      },
+      "observedAt": "2026-09-01T02:00:00Z",
+      "content": "Loan L-551 for L. and K. Moreau: approved; funds of AUD 812,000 scheduled for settlement on 4 Sep.",
+      "facts": {
+        "bank.funds": "scheduled"
+      },
+      "provenance": {
+        "systemOfRecord": "Buyer's lender",
+        "recordRef": "n7s-02",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-03",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "registry",
+        "name": "Land titles registry"
+      },
+      "observedAt": "2026-09-01T03:00:00Z",
+      "content": "Title search, 22 Ibis Court: registered owner E. Calder (the seller).",
+      "facts": {
+        "registry.owner": "seller"
+      },
+      "provenance": {
+        "systemOfRecord": "Land titles registry",
+        "recordRef": "n7s-03",
+        "author": "registry-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-04",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "platform",
+        "name": "Electronic settlement platform"
+      },
+      "observedAt": "2026-09-04T04:06:00Z",
+      "content": "Workspace W-2290: settlement completed at 14:06; funds exchanged; transfer AX-1129 lodged with the registry.",
+      "facts": {
+        "platform.status": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Electronic settlement platform",
+        "recordRef": "n7s-04",
+        "author": "platform-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-05",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "solicitor",
+        "name": "Seller's solicitor"
+      },
+      "observedAt": "2026-09-04T05:00:00Z",
+      "content": "Seller's solicitor: settlement effected this afternoon; discharge of the seller's mortgage to follow.",
+      "facts": {
+        "solicitor.reports": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Seller's solicitor",
+        "recordRef": "n7s-05",
+        "author": "solicitor-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-06",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "agent",
+        "name": "Selling agent"
+      },
+      "observedAt": "2026-09-04T06:00:00Z",
+      "content": "Selling agent: settled; keys released to the buyers.",
+      "facts": {
+        "agent.reports": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Selling agent",
+        "recordRef": "n7s-06",
+        "author": "agent-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-07",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "bank",
+        "name": "Buyer's lender"
+      },
+      "observedAt": "2026-09-05T00:30:00Z",
+      "content": "Loan L-551: funds were not released. A fraud hold was placed at 13:58 on 4 Sep, before settlement, after a change to the buyers' contact details.",
+      "facts": {
+        "bank.funds": "held"
+      },
+      "provenance": {
+        "systemOfRecord": "Buyer's lender",
+        "recordRef": "n7s-07",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-08",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "platform",
+        "name": "Electronic settlement platform"
+      },
+      "observedAt": "2026-09-05T01:00:00Z",
+      "content": "Workspace W-2290: the settlement of 4 Sep is reversed because the lender's funds were not received; transfer AX-1129 is withdrawn from the registry. Replaces the settlement record of 4 Sep.",
+      "facts": {
+        "platform.status": "reversed"
+      },
+      "provenance": {
+        "systemOfRecord": "Electronic settlement platform",
+        "recordRef": "n7s-08",
+        "author": "platform-feed",
+        "supersedes": [
+          "N7S-04"
+        ]
+      }
+    },
+    {
+      "id": "N7S-09",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "agent",
+        "name": "Selling agent"
+      },
+      "observedAt": "2026-09-08T02:00:00Z",
+      "content": "Selling agent: the buyers are moving in this weekend; settlement is all done.",
+      "facts": {
+        "agent.reports": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Selling agent",
+        "recordRef": "n7s-09",
+        "author": "agent-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-10",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "solicitor",
+        "name": "Seller's solicitor"
+      },
+      "observedAt": "2026-09-08T03:00:00Z",
+      "content": "Seller's solicitor: we are waiting for the buyers' lender to give a new settlement time; the keys have been returned to the agent.",
+      "facts": {
+        "solicitor.reports": "pending"
+      },
+      "provenance": {
+        "systemOfRecord": "Seller's solicitor",
+        "recordRef": "n7s-10",
+        "author": "solicitor-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-11",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "bank",
+        "name": "Buyer's lender"
+      },
+      "observedAt": "2026-09-11T00:40:00Z",
+      "content": "Loan L-551: fraud hold cleared after identity checks; funds of AUD 812,000 released for settlement on 11 Sep.",
+      "facts": {
+        "bank.funds": "released"
+      },
+      "provenance": {
+        "systemOfRecord": "Buyer's lender",
+        "recordRef": "n7s-11",
+        "author": "bank-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-12",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "platform",
+        "name": "Electronic settlement platform"
+      },
+      "observedAt": "2026-09-11T01:02:00Z",
+      "content": "Workspace W-2290: settlement completed on 11 Sep at 11:02; funds exchanged; transfer AX-1131 lodged with the registry.",
+      "facts": {
+        "platform.status": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Electronic settlement platform",
+        "recordRef": "n7s-12",
+        "author": "platform-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-13",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "solicitor",
+        "name": "Seller's solicitor"
+      },
+      "observedAt": "2026-09-11T03:00:00Z",
+      "content": "Seller's solicitor: settlement effected today; the seller's mortgage has been discharged.",
+      "facts": {
+        "solicitor.reports": "settled"
+      },
+      "provenance": {
+        "systemOfRecord": "Seller's solicitor",
+        "recordRef": "n7s-13",
+        "author": "solicitor-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7S-14",
+      "caseId": "N7-SET-01",
+      "source": {
+        "system": "registry",
+        "name": "Land titles registry"
+      },
+      "observedAt": "2026-09-15T01:00:00Z",
+      "content": "Transfer AX-1131 registered: 22 Ibis Court, registered owners L. and K. Moreau.",
+      "facts": {
+        "registry.owner": "buyer"
+      },
+      "provenance": {
+        "systemOfRecord": "Land titles registry",
+        "recordRef": "n7s-14",
+        "author": "registry-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

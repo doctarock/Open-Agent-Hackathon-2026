@@ -58,6 +58,9 @@ export const CHALLENGE5_DIR = path.join(ROOT_DIR, "eval", "challenge-5");
 // Set 6: harder cases for the stateless baseline, with controls
 // (eval/challenge-6/README.md, docs/set-6-harder-cases.md), reported apart again.
 export const CHALLENGE6_DIR = path.join(ROOT_DIR, "eval", "challenge-6");
+// Set 7: few rich cases with conflicting receipts over time (eval/challenge-7/README.md,
+// docs/set-7-conflicting-receipts.md), reported apart again.
+export const CHALLENGE7_DIR = path.join(ROOT_DIR, "eval", "challenge-7");
 export const DEV_FIXTURES_DIR = path.join(ROOT_DIR, "fixtures", "scenarios");
 
 export function loadEvalCases(dir = EVAL_DIR): EvalCase[] {

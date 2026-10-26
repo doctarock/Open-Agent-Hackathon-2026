@@ -1,0 +1,74 @@
+{
+  "id": "property-settlement",
+  "family": null,
+  "order": "as recorded",
+  "domain": "property conveyancing",
+  "category": "a reversed settlement, a stale source, then a second settlement",
+  "description": "The platform records settlement, then reverses it because the lender's funds were held; the agent keeps reporting settlement from stale information while the seller's solicitor reports the delay. A second settlement completes (a new record, restating the platform's status, not a reinstatement of the first) and the registry records the buyers.",
+  "checkpoints": [
+    {
+      "afterStage": "booked",
+      "conclusion": "H-NOT-SETTLED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-SETTLED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "settled",
+      "conclusion": "H-SETTLED",
+      "notCurrent": [
+        "H-NOT-SETTLED"
+      ],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "reversed",
+      "conclusion": "H-NOT-SETTLED",
+      "notCurrent": [
+        "H-SETTLED"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7S-04"
+      ]
+    },
+    {
+      "afterStage": "agent-update",
+      "conclusion": "H-NOT-SETTLED",
+      "notCurrent": [
+        "H-SETTLED"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7S-04"
+      ]
+    },
+    {
+      "afterStage": "resettled",
+      "conclusion": "H-SETTLED",
+      "notCurrent": [
+        "H-NOT-SETTLED"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7S-04"
+      ]
+    },
+    {
+      "afterStage": "registered",
+      "conclusion": "H-SETTLED",
+      "notCurrent": [
+        "H-NOT-SETTLED"
+      ],
+      "unsupported": [
+        "H-NOT-SETTLED"
+      ],
+      "invalidated": [
+        "N7S-04"
+      ]
+    }
+  ]
+}

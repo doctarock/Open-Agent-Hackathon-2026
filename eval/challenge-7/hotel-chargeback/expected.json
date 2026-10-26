@@ -1,0 +1,75 @@
+{
+  "id": "hotel-chargeback",
+  "family": null,
+  "order": "as recorded",
+  "domain": "hospitality payments",
+  "category": "a dependent report, a late check-in, a dispute, then a re-attribution that restores the original",
+  "description": "The night audit flags a no-show and the agency relays the hotel's report, so the two are one source, not two. A late check-in and door-lock entries then show a stay, which the guest's dispute does not outweigh. Both the check-in and the key entries are then re-attributed to a walk-in guest with a similar name, so the night audit's no-show counts again.",
+  "checkpoints": [
+    {
+      "afterStage": "booked",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-STAYED",
+        "H-NO-SHOW"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "no-show",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [
+        "H-STAYED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "late-checkin",
+      "conclusion": "H-STAYED",
+      "notCurrent": [
+        "H-NO-SHOW"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7H-02"
+      ]
+    },
+    {
+      "afterStage": "dispute",
+      "conclusion": "H-STAYED",
+      "notCurrent": [
+        "H-NO-SHOW"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7H-02"
+      ]
+    },
+    {
+      "afterStage": "reattributed",
+      "conclusion": "H-NO-SHOW",
+      "notCurrent": [],
+      "unsupported": [
+        "H-STAYED"
+      ],
+      "invalidated": [
+        "N7H-04",
+        "N7H-05"
+      ]
+    },
+    {
+      "afterStage": "refunded",
+      "conclusion": "H-NO-SHOW",
+      "notCurrent": [],
+      "unsupported": [
+        "H-STAYED"
+      ],
+      "invalidated": [
+        "N7H-04",
+        "N7H-05"
+      ]
+    }
+  ]
+}

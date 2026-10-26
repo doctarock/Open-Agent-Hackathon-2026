@@ -1,0 +1,176 @@
+{
+  "id": "c7-property-settlement",
+  "caseId": "N7-SET-01",
+  "title": "Has the sale of 22 Ibis Court settled?",
+  "question": "Has the sale of 22 Ibis Court settled, with the purchase price paid and the transfer lodged for the buyers, L. and K. Moreau?",
+  "sources": {
+    "platform": {
+      "name": "Electronic settlement platform",
+      "reliability": 0.9
+    },
+    "registry": {
+      "name": "Land titles registry",
+      "reliability": 0.95
+    },
+    "bank": {
+      "name": "Buyer's lender",
+      "reliability": 0.85
+    },
+    "solicitor": {
+      "name": "Seller's solicitor",
+      "reliability": 0.7
+    },
+    "agent": {
+      "name": "Selling agent",
+      "reliability": 0.5
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-SETTLED",
+      "statement": "The sale of 22 Ibis Court has settled.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "platform.status",
+          "equals": "settled",
+          "direction": "supports"
+        },
+        {
+          "fact": "registry.owner",
+          "equals": "buyer",
+          "direction": "supports"
+        },
+        {
+          "fact": "bank.funds",
+          "equals": "released",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "solicitor.reports",
+          "equals": "settled",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "agent.reports",
+          "equals": "settled",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "bank.funds",
+          "equals": "held",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "registry.owner",
+          "equals": "seller",
+          "direction": "contradicts",
+          "strength": 0.3
+        },
+        {
+          "fact": "platform.status",
+          "equals": "reversed",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-NOT-SETTLED",
+      "statement": "The sale of 22 Ibis Court has not settled.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "platform.status",
+          "equals": "reversed",
+          "direction": "supports"
+        },
+        {
+          "fact": "platform.status",
+          "equals": "booked",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "bank.funds",
+          "equals": "held",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "solicitor.reports",
+          "equals": "pending",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "registry.owner",
+          "equals": "seller",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "platform.status",
+          "equals": "settled",
+          "direction": "contradicts",
+          "decisive": true
+        },
+        {
+          "fact": "registry.owner",
+          "equals": "buyer",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-REGISTERED",
+      "text": "Has the registry recorded the buyers as owners?",
+      "answeredBy": "registry.owner"
+    }
+  ],
+  "stages": [
+    {
+      "id": "booked",
+      "label": "Settlement booked for 4 Sep (1 Sep)",
+      "asOf": "2026-09-01T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "settled",
+      "label": "The platform records settlement (4 Sep)",
+      "asOf": "2026-09-04T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "reversed",
+      "label": "The lender's funds were held; the platform reverses the settlement (5 Sep)",
+      "asOf": "2026-09-05T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "agent-update",
+      "label": "The agent still reports settlement; the seller's solicitor awaits a new time (8 Sep)",
+      "asOf": "2026-09-08T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "resettled",
+      "label": "The hold clears and a second settlement completes (11 Sep)",
+      "asOf": "2026-09-11T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "registered",
+      "label": "The registry records the transfer (15 Sep)",
+      "asOf": "2026-09-15T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

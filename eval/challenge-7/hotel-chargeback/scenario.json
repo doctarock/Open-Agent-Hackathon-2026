@@ -1,0 +1,165 @@
+{
+  "id": "c7-hotel-chargeback",
+  "caseId": "N7-HTL-01",
+  "title": "Did guest R. Lindqvist stay on 12-14 October?",
+  "question": "Did guest R. Lindqvist stay at the Harbourside Hotel on 12-14 Oct under booking BK-6620?",
+  "sources": {
+    "pms": {
+      "name": "Hotel property management system",
+      "reliability": 0.85
+    },
+    "ota": {
+      "name": "Online travel agency",
+      "reliability": 0.7
+    },
+    "locks": {
+      "name": "Door-lock audit log",
+      "reliability": 0.9
+    },
+    "card": {
+      "name": "Card network dispute",
+      "reliability": 0.6
+    },
+    "guest": {
+      "name": "Guest correspondence",
+      "reliability": 0.5
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-STAYED",
+      "statement": "R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "pms.checkin",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "locks.booking_key_used",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "pms.checkin",
+          "equals": "false",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "ota.status",
+          "equals": "no_show",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "card.claim",
+          "equals": "not_stayed",
+          "direction": "contradicts",
+          "strength": 0.3
+        },
+        {
+          "fact": "guest.says",
+          "equals": "not_stayed",
+          "direction": "contradicts",
+          "strength": 0.3
+        }
+      ]
+    },
+    {
+      "key": "H-NO-SHOW",
+      "statement": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "pms.checkin",
+          "equals": "false",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "ota.status",
+          "equals": "no_show",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "ota.status",
+          "equals": "refunded_no_show",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "card.claim",
+          "equals": "not_stayed",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "guest.says",
+          "equals": "not_stayed",
+          "direction": "supports",
+          "strength": 0.3
+        },
+        {
+          "fact": "pms.checkin",
+          "equals": "true",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "locks.booking_key_used",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-KEY",
+      "text": "Was the booking's key used on the room door?",
+      "answeredBy": "locks.booking_key_used"
+    }
+  ],
+  "stages": [
+    {
+      "id": "booked",
+      "label": "Booking confirmed for 12-14 Oct (11 Oct)",
+      "asOf": "2026-10-11T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "no-show",
+      "label": "The night audit shows no check-in; the agency records a no-show (13 Oct)",
+      "asOf": "2026-10-13T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "late-checkin",
+      "label": "A late check-in is found, with door-lock entries (15 Oct)",
+      "asOf": "2026-10-15T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "dispute",
+      "label": "The guest disputes the charge (28 Oct)",
+      "asOf": "2026-10-28T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "reattributed",
+      "label": "The check-in and the key entries are found to be another guest's (2 Nov)",
+      "asOf": "2026-11-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "refunded",
+      "label": "The agency refunds the booking as a no-show (5 Nov)",
+      "asOf": "2026-11-05T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

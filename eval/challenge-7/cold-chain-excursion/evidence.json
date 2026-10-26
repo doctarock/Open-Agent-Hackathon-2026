@@ -1,0 +1,238 @@
+{
+  "caseId": "N7-CCV-01",
+  "records": [
+    {
+      "id": "N7C-01",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier reefer telemetry"
+      },
+      "observedAt": "2026-11-02T01:00:00Z",
+      "content": "Reefer unit RF-12, consignment SH-7781: setpoint 5 °C held for the whole trip, no alarms raised.",
+      "facts": {
+        "carrier.setpoint_held": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier reefer telemetry",
+        "recordRef": "n7c-01",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-02",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "logger1",
+        "name": "Data logger DL-4402 (pallet face)"
+      },
+      "observedAt": "2026-11-02T04:30:00Z",
+      "content": "DL-4402 trip summary for SH-7781: maximum 12.4 °C, above 8 °C for 95 minutes (2 Nov 03:10-04:45).",
+      "facts": {
+        "dl4402.excursion": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Data logger DL-4402 (pallet face)",
+        "recordRef": "n7c-02",
+        "author": "logger1-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-03",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "clinic",
+        "name": "Receiving clinic"
+      },
+      "observedAt": "2026-11-02T06:00:00Z",
+      "content": "SH-7781 received and placed in quarantine at 2-8 °C pending a quality decision.",
+      "facts": {
+        "clinic.quarantine": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Receiving clinic",
+        "recordRef": "n7c-03",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-04",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "logger2",
+        "name": "Data logger DL-4419 (centre tote)"
+      },
+      "observedAt": "2026-11-03T02:00:00Z",
+      "content": "DL-4419 trip summary for SH-7781: maximum 7.6 °C, no reading above 8 °C.",
+      "facts": {
+        "dl4419.excursion": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Data logger DL-4419 (centre tote)",
+        "recordRef": "n7c-04",
+        "author": "logger2-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-05",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "clinic",
+        "name": "Receiving clinic"
+      },
+      "observedAt": "2026-11-03T05:00:00Z",
+      "content": "Clinic: both logger files for SH-7781 sent to the manufacturer; the stock stays in quarantine.",
+      "facts": {
+        "clinic.quarantine": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Receiving clinic",
+        "recordRef": "n7c-05",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-06",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "vendor",
+        "name": "Logger vendor service notices"
+      },
+      "observedAt": "2026-11-05T01:00:00Z",
+      "content": "Service notice SN-22: loggers DL-4400 to DL-4410 have a sensor fault that reads up to 6 °C high after a shock. Their readings for October and November shipments are void. Replaces the DL-4402 trip summary for SH-7781.",
+      "facts": {
+        "vendor.notice": "void"
+      },
+      "provenance": {
+        "systemOfRecord": "Logger vendor service notices",
+        "recordRef": "n7c-06",
+        "author": "vendor-feed",
+        "supersedes": [
+          "N7C-02"
+        ]
+      }
+    },
+    {
+      "id": "N7C-07",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "vendor",
+        "name": "Logger vendor service notices"
+      },
+      "observedAt": "2026-11-07T01:00:00Z",
+      "content": "Correction to service notice SN-22: the fault affects DL-4400 and DL-4401 only; DL-4402 is not affected and its readings stand. Replaces SN-22.",
+      "facts": {
+        "vendor.notice": "corrected"
+      },
+      "provenance": {
+        "systemOfRecord": "Logger vendor service notices",
+        "recordRef": "n7c-07",
+        "author": "vendor-feed",
+        "supersedes": [
+          "N7C-06"
+        ]
+      }
+    },
+    {
+      "id": "N7C-08",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "clinic",
+        "name": "Receiving clinic"
+      },
+      "observedAt": "2026-11-09T01:00:00Z",
+      "content": "Clinic's arrival log, now filed: probe check of three cartons on unpacking at 06:00 on 2 Nov read 9.8, 10.1 and 9.6 °C.",
+      "facts": {
+        "clinic.probe_high": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Receiving clinic",
+        "recordRef": "n7c-08",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-09",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "carrier",
+        "name": "Carrier reefer telemetry"
+      },
+      "observedAt": "2026-11-09T03:00:00Z",
+      "content": "Telemetry review for RF-12: the unit lost power from 03:05 to 04:50 on 2 Nov; the setpoint data for that window was interpolated, not measured. The setpoint was not held during the outage.",
+      "facts": {
+        "carrier.setpoint_held": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Carrier reefer telemetry",
+        "recordRef": "n7c-09",
+        "author": "carrier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-10",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "logger2",
+        "name": "Data logger DL-4419 (centre tote)"
+      },
+      "observedAt": "2026-11-09T04:00:00Z",
+      "content": "DL-4419 placement note: the backup logger was inside the insulated centre tote, not at the pallet face.",
+      "facts": {
+        "dl4419.placement": "centre_tote"
+      },
+      "provenance": {
+        "systemOfRecord": "Data logger DL-4419 (centre tote)",
+        "recordRef": "n7c-10",
+        "author": "logger2-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-11",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "maker",
+        "name": "Manufacturer quality assurance"
+      },
+      "observedAt": "2026-11-12T02:00:00Z",
+      "content": "Quality ruling on SH-7781: excursion confirmed (maximum 12.4 °C for 95 minutes). It is within the product's stability budget (up to 25 °C for 6 hours), so the stock is released for use with the excursion recorded.",
+      "facts": {
+        "maker.excursion_confirmed": "true",
+        "maker.disposition": "release"
+      },
+      "provenance": {
+        "systemOfRecord": "Manufacturer quality assurance",
+        "recordRef": "n7c-11",
+        "author": "maker-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7C-12",
+      "caseId": "N7-CCV-01",
+      "source": {
+        "system": "clinic",
+        "name": "Receiving clinic"
+      },
+      "observedAt": "2026-11-12T05:00:00Z",
+      "content": "Clinic: SH-7781 released from quarantine and added to stock, with the excursion noted on the batch record.",
+      "facts": {
+        "clinic.quarantine": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Receiving clinic",
+        "recordRef": "n7c-12",
+        "author": "clinic-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

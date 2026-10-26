@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CONCLUSION_RULES, loadConfig, loadDotEnv, ROOT_DIR, type ConclusionRule } from "../config.js";
-import { CHALLENGE5_DIR, CHALLENGE6_DIR, CHALLENGE_DIR, loadEvalCases } from "../eval/cases.js";
+import { CHALLENGE5_DIR, CHALLENGE6_DIR, CHALLENGE7_DIR, CHALLENGE_DIR, loadEvalCases } from "../eval/cases.js";
 import { verifyLock } from "../eval/cross-domain.js";
 import { runEvaluation, systemsFor, type EvalMode } from "../eval/harness.js";
 import { printReport } from "../eval/print.js";
@@ -11,7 +11,8 @@ import { modelConfigProblem } from "../reasoning/nemotron.js";
 // npm run eval:challenge                         deterministic (fact rules, no model)
 // npm run eval:challenge -- --live [--repeats N]  the configured Nemotron endpoint
 //   --set 5            the Build 5 set (eval/challenge-5/) instead of Build 4's
-//   --set 6            set 6, the harder cases (eval/challenge-6/)
+//   --set 6            set 6, the harder cases (eval/challenge-6/; abandoned)
+//   --set 7            set 7, conflicting receipts over time (eval/challenge-7/)
 //   --rule <rule>      the corroboration rule (default corroborated-1)
 //   --out <dir>        live: the directory for the repeats, under eval/results/experiments/
 //
@@ -26,12 +27,12 @@ const option = (name: string) => { const index = process.argv.indexOf(`--${name}
 const mode: EvalMode = process.argv.includes("--live") ? "live" : "fixture";
 const repeats = mode === "live" && option("repeats") ? Math.max(1, Number(option("repeats")) || 1) : 1;
 const set = option("set") ?? null;
-if (set !== null && set !== "5" && set !== "6") throw new Error("--set must be 5 or 6");
+if (set !== null && !["5", "6", "7"].includes(set)) throw new Error("--set must be 5, 6 or 7");
 const set5 = set === "5";
 const named = set ? ` (set ${set})` : "";
 const rule = (option("rule") ?? "corroborated-1") as ConclusionRule;
 if (!CONCLUSION_RULES.includes(rule)) throw new Error(`--rule must be one of ${CONCLUSION_RULES.join(", ")}`);
-const casesDir = set === "6" ? CHALLENGE6_DIR : set5 ? CHALLENGE5_DIR : CHALLENGE_DIR;
+const casesDir = set === "7" ? CHALLENGE7_DIR : set === "6" ? CHALLENGE6_DIR : set5 ? CHALLENGE5_DIR : CHALLENGE_DIR;
 const lock = verifyLock(casesDir, path.join(casesDir, "expectations.lock.json"));
 console.log(`Challenge cases${named}: ${lock.files} files verified against the lock written ${lock.lockedAt}. Rule ${rule}.`);
 

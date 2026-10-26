@@ -1,0 +1,220 @@
+{
+  "caseId": "N7-HTL-01",
+  "records": [
+    {
+      "id": "N7H-01",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "ota",
+        "name": "Online travel agency"
+      },
+      "observedAt": "2026-10-11T01:00:00Z",
+      "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+      "facts": {
+        "ota.status": "confirmed"
+      },
+      "provenance": {
+        "systemOfRecord": "Online travel agency",
+        "recordRef": "n7h-01",
+        "author": "ota-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-02",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "pms",
+        "name": "Hotel property management system"
+      },
+      "observedAt": "2026-10-13T00:10:00Z",
+      "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+      "facts": {
+        "pms.checkin": "false"
+      },
+      "provenance": {
+        "systemOfRecord": "Hotel property management system",
+        "recordRef": "n7h-02",
+        "author": "pms-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-03",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "ota",
+        "name": "Online travel agency"
+      },
+      "observedAt": "2026-10-13T02:00:00Z",
+      "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+      "facts": {
+        "ota.status": "no_show"
+      },
+      "provenance": {
+        "systemOfRecord": "Online travel agency",
+        "recordRef": "n7h-03",
+        "author": "ota-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-04",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "pms",
+        "name": "Hotel property management system"
+      },
+      "observedAt": "2026-10-15T01:00:00Z",
+      "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+      "facts": {
+        "pms.checkin": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Hotel property management system",
+        "recordRef": "n7h-04",
+        "author": "pms-feed",
+        "supersedes": [
+          "N7H-02"
+        ]
+      }
+    },
+    {
+      "id": "N7H-05",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "locks",
+        "name": "Door-lock audit log"
+      },
+      "observedAt": "2026-10-15T02:00:00Z",
+      "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+      "facts": {
+        "locks.booking_key_used": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Door-lock audit log",
+        "recordRef": "n7h-05",
+        "author": "locks-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-06",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "card",
+        "name": "Card network dispute"
+      },
+      "observedAt": "2026-10-28T01:00:00Z",
+      "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+      "facts": {
+        "card.claim": "not_stayed"
+      },
+      "provenance": {
+        "systemOfRecord": "Card network dispute",
+        "recordRef": "n7h-06",
+        "author": "card-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-07",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "guest",
+        "name": "Guest correspondence"
+      },
+      "observedAt": "2026-10-28T03:00:00Z",
+      "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+      "facts": {
+        "guest.says": "not_stayed"
+      },
+      "provenance": {
+        "systemOfRecord": "Guest correspondence",
+        "recordRef": "n7h-07",
+        "author": "guest-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-08",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "pms",
+        "name": "Hotel property management system"
+      },
+      "observedAt": "2026-10-30T02:00:00Z",
+      "content": "Front office: dispute CB-3302 noted; the hotel's response is due by 6 Nov.",
+      "facts": {
+        "pms.note": "dispute"
+      },
+      "provenance": {
+        "systemOfRecord": "Hotel property management system",
+        "recordRef": "n7h-08",
+        "author": "pms-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7H-09",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "locks",
+        "name": "Door-lock audit log"
+      },
+      "observedAt": "2026-11-02T01:00:00Z",
+      "content": "Audit correction: key K-6620 was re-encoded at 23:45 on 12 Oct for walk-in booking WK-118 in room 412; the four entries of 12-14 Oct belong to WK-118, not BK-6620. Replaces the room 412 key entries.",
+      "facts": {
+        "locks.key_reassigned": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Door-lock audit log",
+        "recordRef": "n7h-09",
+        "author": "locks-feed",
+        "supersedes": [
+          "N7H-05"
+        ]
+      }
+    },
+    {
+      "id": "N7H-10",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "pms",
+        "name": "Hotel property management system"
+      },
+      "observedAt": "2026-11-02T02:00:00Z",
+      "content": "Correction: the 23:40 check-in to room 412 on 12 Oct was walk-in WK-118 (guest R. Lindgren), keyed against BK-6620 by mistake. Replaces the night-audit correction of 15 Oct.",
+      "facts": {
+        "pms.checkin_reassigned": "true"
+      },
+      "provenance": {
+        "systemOfRecord": "Hotel property management system",
+        "recordRef": "n7h-10",
+        "author": "pms-feed",
+        "supersedes": [
+          "N7H-04"
+        ]
+      }
+    },
+    {
+      "id": "N7H-11",
+      "caseId": "N7-HTL-01",
+      "source": {
+        "system": "ota",
+        "name": "Online travel agency"
+      },
+      "observedAt": "2026-11-05T01:00:00Z",
+      "content": "Booking BK-6620: refunded to the guest as a no-show; the hotel accepts dispute CB-3302.",
+      "facts": {
+        "ota.status": "refunded_no_show"
+      },
+      "provenance": {
+        "systemOfRecord": "Online travel agency",
+        "recordRef": "n7h-11",
+        "author": "ota-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}

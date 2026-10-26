@@ -1,0 +1,64 @@
+{
+  "id": "cold-chain-excursion",
+  "family": null,
+  "order": "as recorded",
+  "domain": "vaccine cold chain",
+  "category": "conflicting loggers; a voiding notice that is itself corrected; later confirmation",
+  "description": "The pallet-face logger shows an excursion, the centre logger and the carrier do not. The vendor voids the pallet-face logger, then corrects its notice so the readings stand again. The clinic's probe check and the carrier's power loss then confirm the excursion, and the manufacturer confirms it while releasing the stock as within its stability budget: release for use is not the same as no excursion.",
+  "checkpoints": [
+    {
+      "afterStage": "arrival",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "second-logger",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "logger-voided",
+      "conclusion": "H-INTACT",
+      "notCurrent": [],
+      "unsupported": [
+        "H-EXCURSION"
+      ],
+      "invalidated": [
+        "N7C-02"
+      ]
+    },
+    {
+      "afterStage": "notice-corrected",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": [
+        "N7C-06"
+      ]
+    },
+    {
+      "afterStage": "probe-and-power",
+      "conclusion": "H-EXCURSION",
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": [
+        "N7C-06"
+      ]
+    },
+    {
+      "afterStage": "qa-ruling",
+      "conclusion": "H-EXCURSION",
+      "notCurrent": [
+        "H-INTACT"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7C-06"
+      ]
+    }
+  ]
+}

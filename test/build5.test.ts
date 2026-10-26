@@ -379,3 +379,18 @@ test("set 6 is locked and loads apart from every other suite", async () => {
   const others = ["scenarios", "regression", "cross-domain", "challenge", "challenge-5"].flatMap((dir) => fs.readdirSync(path.join(ROOT_DIR, "eval", dir)));
   assert.ok(cases.every((item) => !others.includes(item.id)));
 });
+
+test("set 7 is locked, loads apart from every other suite, and stays inside a small prompt", async () => {
+  const { verifyLock } = await import("../src/eval/cross-domain.js");
+  const { CHALLENGE7_DIR, loadEvalCases, leakage } = await import("../src/eval/cases.js");
+  const lock = verifyLock(CHALLENGE7_DIR, path.join(CHALLENGE7_DIR, "expectations.lock.json"));
+  assert.equal(lock.files, 12);
+  const cases = loadEvalCases(CHALLENGE7_DIR);
+  assert.deepEqual(leakage(cases), []);
+  const labels = cases.flatMap((item) => item.checkpoints.map((checkpoint) => checkpoint.conclusion));
+  assert.deepEqual([labels.length, labels.filter((label) => label === null).length], [25, 6]);
+  const others = ["scenarios", "regression", "cross-domain", "challenge", "challenge-5", "challenge-6"].flatMap((dir) => fs.readdirSync(path.join(ROOT_DIR, "eval", dir)));
+  assert.ok(cases.every((item) => !others.includes(item.id)));
+  // At most 15 records per case: no context effect, and one run assesses them all.
+  for (const item of cases) assert.ok(JSON.parse(fs.readFileSync(path.join(item.dir, "evidence.json"), "utf8")).records.length <= 15, item.id);
+});

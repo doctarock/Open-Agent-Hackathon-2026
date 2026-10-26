@@ -1,0 +1,18 @@
+{
+  "lockedAt": "2026-10-26T08:26:29.633Z",
+  "note": "Written before any system, model or deterministic, was run on these cases. Pre-registration: docs/set-7-conflicting-receipts.md.",
+  "files": {
+    "aircraft-release/scenario.json": "3a3ef9f2460640639d4f86e137dba475915a913c079b914ccbde63684944e436",
+    "aircraft-release/evidence.json": "64f3fab1cf4e983531d96c426a86fb503f1639f2bc220fb29662fe2e7970b423",
+    "aircraft-release/expected.json": "011b2b29e8f3b61d87df300f41dc34fe5b83636a8037d5e7e8795e32c449c8d5",
+    "cold-chain-excursion/scenario.json": "ff905b67e47fe9105513c254620acb439c4ab879d3d86e7f3370df0417068d10",
+    "cold-chain-excursion/evidence.json": "47d619592b2b1f7bcf13f7bdaee1c668ce042e951de146b7bed427058eb0b727",
+    "cold-chain-excursion/expected.json": "4df6789bc8241bed55d07fcef2769599d8c59cb418194cd19ea8e8159eb7894c",
+    "hotel-chargeback/scenario.json": "0cbc90032aa4ca37b01436476b2a378d279d51a2b70cbd080fab8b885c18d94c",
+    "hotel-chargeback/evidence.json": "6e25f841f7c5e60680b74a5bdb6e8f9f67ddf878d18aa2f033060349b61bb3b4",
+    "hotel-chargeback/expected.json": "3d78bc6f19fe18af3a4f53089a390c378d9b226012e47250e540ad8b95cb2f44",
+    "property-settlement/scenario.json": "62e966a653023c698f239fd144a5c9f00ae66d24e66a6837948489b511dea6f6",
+    "property-settlement/evidence.json": "f85c81ccd12696c7ef53ade0b09790e075088287e400907ce60f942a2779c113",
+    "property-settlement/expected.json": "4f2dc26fef2170d50521548151702e3e1107c0dcda231d9181e2d6bfdac4043c"
+  }
+}

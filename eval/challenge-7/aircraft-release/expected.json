@@ -1,0 +1,82 @@
+{
+  "id": "aircraft-release",
+  "family": null,
+  "order": "as recorded",
+  "domain": "aircraft maintenance",
+  "category": "a withdrawn release; a cleared part does not reinstate it",
+  "description": "The release certificate is withdrawn when the fitted pump falls in a suspect serial range. When the supplier clears that serial, the aircraft is still not validly released: the withdrawn certificate is not reinstated, and only the new certificate releases it. Operations' schedule is not evidence of a valid release, and a directive allowing 50 flight hours does not ground it.",
+  "checkpoints": [
+    {
+      "afterStage": "defect",
+      "conclusion": "H-GROUNDED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-RELEASED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "repaired",
+      "conclusion": "H-RELEASED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-GROUNDED"
+      ],
+      "invalidated": []
+    },
+    {
+      "afterStage": "part-notice",
+      "conclusion": null,
+      "notCurrent": [],
+      "unsupported": [],
+      "invalidated": []
+    },
+    {
+      "afterStage": "release-withdrawn",
+      "conclusion": "H-GROUNDED",
+      "notCurrent": [
+        "H-RELEASED"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7A-04"
+      ]
+    },
+    {
+      "afterStage": "notice-retracted",
+      "conclusion": "H-GROUNDED",
+      "notCurrent": [
+        "H-RELEASED"
+      ],
+      "unsupported": [],
+      "invalidated": [
+        "N7A-04",
+        "N7A-06"
+      ]
+    },
+    {
+      "afterStage": "new-release",
+      "conclusion": "H-RELEASED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-GROUNDED"
+      ],
+      "invalidated": [
+        "N7A-04",
+        "N7A-06"
+      ]
+    },
+    {
+      "afterStage": "directive",
+      "conclusion": "H-RELEASED",
+      "notCurrent": [],
+      "unsupported": [
+        "H-GROUNDED"
+      ],
+      "invalidated": [
+        "N7A-04",
+        "N7A-06"
+      ]
+    }
+  ]
+}

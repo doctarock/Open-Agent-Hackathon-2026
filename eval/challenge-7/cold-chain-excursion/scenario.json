@@ -1,0 +1,180 @@
+{
+  "id": "c7-cold-chain-excursion",
+  "caseId": "N7-CCV-01",
+  "title": "Did vaccine shipment SH-7781 have a temperature excursion?",
+  "question": "Vaccine shipment SH-7781 (1,200 doses, to be kept at 2-8 °C) arrived at Riverbend Clinic on 2 Nov. Did it go above 8 °C in transit?",
+  "sources": {
+    "logger1": {
+      "name": "Data logger DL-4402 (pallet face)",
+      "reliability": 0.85
+    },
+    "logger2": {
+      "name": "Data logger DL-4419 (centre tote)",
+      "reliability": 0.85
+    },
+    "carrier": {
+      "name": "Carrier reefer telemetry",
+      "reliability": 0.7
+    },
+    "vendor": {
+      "name": "Logger vendor service notices",
+      "reliability": 0.8
+    },
+    "clinic": {
+      "name": "Receiving clinic",
+      "reliability": 0.75
+    },
+    "maker": {
+      "name": "Manufacturer quality assurance",
+      "reliability": 0.95
+    }
+  },
+  "hypotheses": [
+    {
+      "key": "H-INTACT",
+      "statement": "Shipment SH-7781 stayed within 2-8 °C throughout transit.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "dl4419.excursion",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "dl4402.excursion",
+          "equals": "false",
+          "direction": "supports"
+        },
+        {
+          "fact": "carrier.setpoint_held",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "dl4402.excursion",
+          "equals": "true",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "dl4419.excursion",
+          "equals": "true",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "clinic.probe_high",
+          "equals": "true",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "carrier.setpoint_held",
+          "equals": "false",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "maker.excursion_confirmed",
+          "equals": "true",
+          "direction": "contradicts",
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "key": "H-EXCURSION",
+      "statement": "Shipment SH-7781 went above 8 °C in transit.",
+      "prior": 0.5,
+      "rules": [
+        {
+          "fact": "dl4402.excursion",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "dl4419.excursion",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "clinic.probe_high",
+          "equals": "true",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "carrier.setpoint_held",
+          "equals": "false",
+          "direction": "supports",
+          "strength": 0.5
+        },
+        {
+          "fact": "maker.excursion_confirmed",
+          "equals": "true",
+          "direction": "supports"
+        },
+        {
+          "fact": "dl4419.excursion",
+          "equals": "false",
+          "direction": "contradicts",
+          "strength": 0.5
+        },
+        {
+          "fact": "carrier.setpoint_held",
+          "equals": "true",
+          "direction": "contradicts",
+          "strength": 0.3
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-QA",
+      "text": "What has the manufacturer's quality assurance found?",
+      "answeredBy": "maker.excursion_confirmed"
+    }
+  ],
+  "stages": [
+    {
+      "id": "arrival",
+      "label": "Arrival: the pallet-face logger shows an excursion; the carrier reports the setpoint held (2 Nov)",
+      "asOf": "2026-11-02T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "second-logger",
+      "label": "The centre logger shows no excursion (3 Nov)",
+      "asOf": "2026-11-03T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "logger-voided",
+      "label": "The logger vendor voids the pallet-face logger's readings (5 Nov)",
+      "asOf": "2026-11-05T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "notice-corrected",
+      "label": "The vendor corrects its notice: the pallet-face logger is not affected (7 Nov)",
+      "asOf": "2026-11-07T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "probe-and-power",
+      "label": "The clinic's arrival probe check and the carrier's power-loss report (9 Nov)",
+      "asOf": "2026-11-09T12:00:00Z",
+      "description": ""
+    },
+    {
+      "id": "qa-ruling",
+      "label": "The manufacturer's quality assurance ruling (12 Nov)",
+      "asOf": "2026-11-12T12:00:00Z",
+      "description": ""
+    }
+  ]
+}

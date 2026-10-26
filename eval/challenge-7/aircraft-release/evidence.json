@@ -1,0 +1,275 @@
+{
+  "caseId": "N7-AIR-01",
+  "records": [
+    {
+      "id": "N7A-01",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "mx",
+        "name": "Maintenance tracking system"
+      },
+      "observedAt": "2026-10-02T01:00:00Z",
+      "content": "Defect D-77 on VH-QRK: number 2 fuel pump low pressure; aircraft unserviceable until rectified.",
+      "facts": {
+        "mx.defect": "open"
+      },
+      "provenance": {
+        "systemOfRecord": "Maintenance tracking system",
+        "recordRef": "n7a-01",
+        "author": "mx-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-02",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "ops",
+        "name": "Airline operations control"
+      },
+      "observedAt": "2026-10-02T02:00:00Z",
+      "content": "Operations: VH-QRK withdrawn from the schedule; sectors reassigned.",
+      "facts": {
+        "ops.status": "withdrawn"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline operations control",
+        "recordRef": "n7a-02",
+        "author": "ops-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-03",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "mx",
+        "name": "Maintenance tracking system"
+      },
+      "observedAt": "2026-10-03T03:00:00Z",
+      "content": "Defect D-77 closed: number 2 fuel pump replaced with part 3105-2, serial 88412; leak and pressure checks passed.",
+      "facts": {
+        "mx.defect": "closed"
+      },
+      "provenance": {
+        "systemOfRecord": "Maintenance tracking system",
+        "recordRef": "n7a-03",
+        "author": "mx-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-04",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "crs",
+        "name": "Certificate of release register"
+      },
+      "observedAt": "2026-10-03T04:00:00Z",
+      "content": "Certificate of release to service CRS-5512 issued for VH-QRK by licensed engineer L. Tran, covering defect D-77.",
+      "facts": {
+        "crs.status": "issued"
+      },
+      "provenance": {
+        "systemOfRecord": "Certificate of release register",
+        "recordRef": "n7a-04",
+        "author": "crs-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-05",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "ops",
+        "name": "Airline operations control"
+      },
+      "observedAt": "2026-10-03T05:00:00Z",
+      "content": "Operations: VH-QRK back on the schedule from 06:00 on 4 Oct.",
+      "facts": {
+        "ops.status": "flying"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline operations control",
+        "recordRef": "n7a-05",
+        "author": "ops-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-06",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "supplier",
+        "name": "Parts supplier notices"
+      },
+      "observedAt": "2026-10-05T00:30:00Z",
+      "content": "Unapproved-part notice UP-19: fuel pumps part 3105-2, serials 88400 to 88420, were shipped without a valid release certificate. Operators must review any installation.",
+      "facts": {
+        "supplier.part": "suspect"
+      },
+      "provenance": {
+        "systemOfRecord": "Parts supplier notices",
+        "recordRef": "n7a-06",
+        "author": "supplier-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-07",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "crs",
+        "name": "Certificate of release register"
+      },
+      "observedAt": "2026-10-05T03:00:00Z",
+      "content": "CRS-5512 for VH-QRK withdrawn: the fitted pump (serial 88412) is within the range of unapproved-part notice UP-19. Replaces CRS-5512.",
+      "facts": {
+        "crs.status": "withdrawn"
+      },
+      "provenance": {
+        "systemOfRecord": "Certificate of release register",
+        "recordRef": "n7a-07",
+        "author": "crs-feed",
+        "supersedes": [
+          "N7A-04"
+        ]
+      }
+    },
+    {
+      "id": "N7A-08",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "mx",
+        "name": "Maintenance tracking system"
+      },
+      "observedAt": "2026-10-05T04:00:00Z",
+      "content": "Defect D-77 reopened pending the part documentation review.",
+      "facts": {
+        "mx.defect": "open"
+      },
+      "provenance": {
+        "systemOfRecord": "Maintenance tracking system",
+        "recordRef": "n7a-08",
+        "author": "mx-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-09",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "ops",
+        "name": "Airline operations control"
+      },
+      "observedAt": "2026-10-05T05:00:00Z",
+      "content": "Operations: VH-QRK operating today's sectors as scheduled.",
+      "facts": {
+        "ops.status": "flying"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline operations control",
+        "recordRef": "n7a-09",
+        "author": "ops-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-10",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "supplier",
+        "name": "Parts supplier notices"
+      },
+      "observedAt": "2026-10-07T01:00:00Z",
+      "content": "Correction to UP-19: serial 88412 was shipped with a valid release certificate (RC-2201, attached); the affected range is 88400 to 88410 only. Replaces UP-19.",
+      "facts": {
+        "supplier.part": "cleared"
+      },
+      "provenance": {
+        "systemOfRecord": "Parts supplier notices",
+        "recordRef": "n7a-10",
+        "author": "supplier-feed",
+        "supersedes": [
+          "N7A-06"
+        ]
+      }
+    },
+    {
+      "id": "N7A-11",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "crs",
+        "name": "Certificate of release register"
+      },
+      "observedAt": "2026-10-08T02:00:00Z",
+      "content": "Certificate of release to service CRS-5530 issued for VH-QRK by licensed engineer L. Tran after review of release certificate RC-2201.",
+      "facts": {
+        "crs.status": "issued"
+      },
+      "provenance": {
+        "systemOfRecord": "Certificate of release register",
+        "recordRef": "n7a-11",
+        "author": "crs-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-12",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "mx",
+        "name": "Maintenance tracking system"
+      },
+      "observedAt": "2026-10-08T03:00:00Z",
+      "content": "Defect D-77 closed after the part documentation review.",
+      "facts": {
+        "mx.defect": "closed"
+      },
+      "provenance": {
+        "systemOfRecord": "Maintenance tracking system",
+        "recordRef": "n7a-12",
+        "author": "mx-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-13",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "regulator",
+        "name": "Aviation safety regulator"
+      },
+      "observedAt": "2026-10-10T01:00:00Z",
+      "content": "Airworthiness directive AD 2026-41: inspect the fuel-pump electrical connectors on all aircraft of this type within 50 flight hours.",
+      "facts": {
+        "regulator.ad": "inspect_within_50h"
+      },
+      "provenance": {
+        "systemOfRecord": "Aviation safety regulator",
+        "recordRef": "n7a-13",
+        "author": "regulator-feed",
+        "supersedes": []
+      }
+    },
+    {
+      "id": "N7A-14",
+      "caseId": "N7-AIR-01",
+      "source": {
+        "system": "ops",
+        "name": "Airline operations control"
+      },
+      "observedAt": "2026-10-10T03:00:00Z",
+      "content": "Operations: VH-QRK on the schedule; the AD 2026-41 inspection is planned for its overnight check on 12 Oct.",
+      "facts": {
+        "ops.status": "flying"
+      },
+      "provenance": {
+        "systemOfRecord": "Airline operations control",
+        "recordRef": "n7a-14",
+        "author": "ops-feed",
+        "supersedes": []
+      }
+    }
+  ]
+}
