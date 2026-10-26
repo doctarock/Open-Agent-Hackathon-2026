@@ -349,6 +349,7 @@ export function renderEvaluation(container, summary) {
   container.replaceChildren(
     el("p", {}, "The project's evaluation, read from the reports its commands wrote. Every figure is a count over these cases only, with its denominator; none is a general accuracy rate. Labels were written before any system ran on the cases."),
     el("p", { className: "meta" }, "Systems: Speck (persistent) is Evidence Desk as built; Speck (rebuilt each time) is the same pipeline on a fresh database at every checkpoint; Stateless is the baseline the comparison above uses. Persistence alone made no measurable difference: the two Speck systems agree."),
+    acrossModelsTable(summary.acrossModels ?? []),
     comparisonAggregates(summary.comparisons),
     ...reports.map((report) => el("details", { className: "eval-report", open: report.id === "fixture" ? "" : null },
       el("summary", {}, el("strong", {}, report.title), " ",
@@ -377,6 +378,28 @@ export function renderEvaluation(container, summary) {
         report.differences.length ? el("details", { className: "meta" }, el("summary", {}, "What differs between the systems"), el("ul", {}, report.differences.map((line) => el("li", {}, line)))) : null
       ] : null)),
     el("p", { className: "meta" }, `Read from ${summary.resultsDir}.`));
+}
+
+// The registered live experiments, per suite, model and system: what changes
+// when the model improves, and what does not.
+const MODEL_NAMES = { "nano-4b": "Nemotron 3 Nano 4B (local)", "bolt-e4b": "Nemotron 3.5 Bolt E4B (Nightshift)" };
+function acrossModelsTable(rows) {
+  if (!rows.length) return null;
+  const models = Object.keys(MODEL_NAMES);
+  const cell = (row, model, key) => { const value = row.models[model]; return el("td", {}, value ? show(value[key]) : "n/a"); };
+  return el("details", { className: "eval-report eval-models", open: "" },
+    el("summary", {}, el("strong", {}, "Results across models"), " ", badge("live model", "nemotron"), " three repeats per suite and model, from the registered experiment folders"),
+    el("p", { className: "meta" }, "The same cases, rules and labels on two models. The stateless call improves with the model; Speck's conclusions are set by its conclusion policy, so they barely move. Set 7 was written and locked to test receipts that conflict over time, with corrections that are themselves corrected."),
+    el("div", { className: "table-wrap" }, el("table", { className: "eval-table" },
+      el("thead", {},
+        el("tr", {}, el("th", { rowspan: "2" }, "Suite"), el("th", { rowspan: "2" }, "System"),
+          models.map((model) => el("th", { colspan: "4" }, MODEL_NAMES[model]))),
+        el("tr", {}, models.flatMap(() => ["Matches the label", "Concluded where waiting was right", "Concluded the wrong explanation", "Replaced evidence kept out of support"].map((label) => el("th", {}, label))))),
+      el("tbody", {}, rows.map((row, index) => el("tr", { className: row.suite.startsWith("Set 7") ? "eval-spotlight" : null },
+        index % 2 === 0 ? el("th", { scope: "row", rowspan: "2" }, row.suite) : null,
+        el("td", {}, row.system),
+        models.flatMap((model) => ["matches", "concludedWhereWaitingWasRight", "wrongExplanation", "replacedEvidenceKeptOut"].map((key) => cell(row, model, key)))))))),
+    el("p", { className: "meta" }, "On set 7 the better model's stateless call still concluded where it should have waited, concluded the wrong explanation, and leaned on replaced records; Speck did none of the last two on either model, but abstained so often where a conclusion was due that the stateless call matched the label more. Records: docs/set-7-conflicting-receipts.md, docs/bolt-e4b.md."));
 }
 
 function comparisonAggregates(groups) {

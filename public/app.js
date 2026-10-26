@@ -162,7 +162,7 @@ const TEMPLATE = `
   </section>
 
   <details class="panel evaluation" id="edk-evaluation-panel" hidden>
-    <summary><h2>Evaluation results</h2> <span class="muted">held-out cases, correction regressions, cross-domain suite, live samples and saved comparisons</span></summary>
+    <summary><h2>Evaluation results</h2> <span class="muted">results across models, held-out cases, correction regressions, cross-domain suite, live samples and saved comparisons</span></summary>
     <div id="edk-evaluation"><p class="muted">Loading…</p></div>
   </details>
 

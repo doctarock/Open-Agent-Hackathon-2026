@@ -73,7 +73,8 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
 
 **The page explains itself.**
 - On first open the Evidence tab offers *Start the guided demo*. It walks both cases with the
-  real buttons (the disputed delivery, then the bank return, which ends on the side-by-side comparison), then opens Speck's **World** view
+  real buttons (the disputed delivery, then the bank return, which ends on the side-by-side comparison), then opens
+  **Evaluation results** at *Results across models* (both models, set 7 highlighted), then Speck's **World** view
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
   conclude.
@@ -143,13 +144,18 @@ tab), "delivered" was held at 0.61 and is no longer held; the **History** tab ke
 revisions, badged *historical: belief since replaced*; the **Evidence** tab still
 lists `EV-CAR-003`, marked *no longer counts: replaced by EV-CAR-005*. Nothing is erased.
 
-**2:25 The sponsors, briefly (20 s).** Open **Audit**, then **Execution trace**.
+**2:25 The sponsors, briefly (10 s).** Open **Audit**, then **Execution trace**.
 - **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
 - **Zetaris, Nightshift and Nemotron:** with live services, four SELECTs with query tokens and,
   per chunk, the served model `nvidia/nemotron-3.5-bolt-e4b`, reached through Nightshift. Offline
   the trace says plainly FIXTURE FILE - NOT ZETARIS and that the rule assessor (no model) judged
   the evidence. In that case point at the saved sponsor receipt of 2026-10-26
   (`eval/results/sponsors/`), not at the page.
+
+**2:35 The measured results (15 s).** Open **Evaluation results** (beside the cases) at *Results
+across models*. Point at the set 7 rows: on conflicting receipts over time the better model's
+stateless call still concluded the wrong explanation and leaned on replaced records; Speck never
+did, on either model, but abstained so often that the stateless call matched the label more.
 
 **2:45 The advantage and the limitation (15 s).** "What this demonstrates is evidence-aware
 revision and traceability: what each conclusion rests on, what stopped counting when the evidence
@@ -238,17 +244,22 @@ a service is off.
    errored, and are shown as errors). With Bolt E4B on 2026-10-26 both reached "misdelivered" (6
    of 6) and only Speck recorded why: a stronger model fixed the baseline's reading, not its
    missing record of what changed.
-4. **Where Speck lost, and what changed** (the bank return): before Build 4 it stayed unresolved
+4. **Across models** (a screenshot of *Results across models*): from the 4B to Bolt E4B the
+   stateless call improves on every suite and Speck's accuracy does not move. On set 7, receipts
+   that conflict over time, Bolt's stateless call falls to 60% and still concludes wrongly where a
+   correction was itself corrected (3 of 57) or leans on a replaced record (9 of 48); Speck does
+   neither (0, 0) but abstains in 33 of 57 where a conclusion is due.
+5. **Where Speck lost, and what changed** (the bank return): before Build 4 it stayed unresolved
    after the return in all 12 live samples (the baseline: 11 of 12), because two capped model
    judgments could not reach its threshold and the ledger's stale "paid" still counted. Build 4:
    6 of 6, by corroboration. On five new locked cases, though, Build 4 scored 18/30, the same as
    before and the same as the baseline, and it concluded from weak agreement where it should wait.
-5. **Proof.** Deterministic evaluation (held-out, regression, cross-domain), the tests (including
+6. **Proof.** Deterministic evaluation (held-out, regression, cross-domain), the tests (including
    a crash at every Speck write), saved comparisons; persistence alone shows no accuracy gain.
-6. **Sponsors, as verified.** Zetaris (live SELECTs with query tokens), Meterless (engine runs
+7. **Sponsors, as verified.** Zetaris (live SELECTs with query tokens), Meterless (engine runs
    matched in its history), Nightshift (Bolt E4B, named in every response), Nemotron (served model on every call), Speck (host, state,
    world view, memory map, chat); Cursor as a development tool.
-7. **Impact.** Defensible decisions in investigations whose evidence changes: what a decision
+8. **Impact.** Defensible decisions in investigations whose evidence changes: what a decision
    rested on, what was corrected, and what was believed before.
 
 There is no recorded video in this repository; record one from this script if the submission
@@ -282,7 +293,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 | What does "by corroboration" mean? | Speck caps model-judged evidence at 0.4, so two records add at most +0.08 each and its own confidence rarely reaches 0.6 live. Since Build 4 Evidence Desk also concludes when two or more source systems support an explanation with nothing recorded against it and every rival ruled out or unsupported. Speck's own confidence is always shown beside it. Its weakness: it counts that sources agree, not how strongly. | `docs/build-4-bank-return.md` |
 | What does Meterless do here? | It runs each investigation: one bounded chunk per batch of evidence, with carryover between chunks, plus the reflection pass for the explanation. Recovery and recomputation are Evidence Desk's own code, and the trace labels them that way. | `vendor/meterless-markovian/NOTICE.md`, the trace |
 | What if the process crashes mid-run? | Judgments are saved per chunk before evidence enters Speck, and beliefs are reconciled on restart. A test kills the process at every write, and again during recovery, and checks the outcome is the same as an uninterrupted run. | `test/interruption.test.ts`, `test/recovery.test.ts` |
-| Is it better than a plain LLM? | Not in accuracy, on our evidence. Live, on five new cases locked before any run, Speck and the stateless call both scored 18/30, with opposite errors: the stateless call never abstained (wrong at all 12 checkpoint-samples where waiting was right) and Speck abstained where one authoritative record settled the case. The 4B stateless call cited the replaced delivery scan in all 12 live comparisons of 2026-10-25; Speck in none of the 9 that completed (in the 3 that errored, its unassessed state still rested on it). With Bolt E4B the stateless call did not cite it (0/6) and is ahead on both locked sets (21/30 and 42/45, against 18/30 and 36/45). Few cases, small models, three repeats: not a general result. | `docs/build-4-bank-return.md`, `docs/comparison.md`, `docs/bolt-e4b.md` |
+| Is it better than a plain LLM? | Not in accuracy, on our evidence. Live, on five new cases locked before any run, Speck and the stateless call both scored 18/30, with opposite errors: the stateless call never abstained (wrong at all 12 checkpoint-samples where waiting was right) and Speck abstained where one authoritative record settled the case. The 4B stateless call cited the replaced delivery scan in all 12 live comparisons of 2026-10-25; Speck in none of the 9 that completed (in the 3 that errored, its unassessed state still rested on it). With Bolt E4B the stateless call did not cite it (0/6) and is ahead on both locked sets (21/30 and 42/45, against 18/30 and 36/45). On set 7, receipts that conflict over time, it is still ahead (45/75 against 33/75) but concludes the wrong explanation 3/57 times and leans on replaced records 9/48 times; Speck 0 and 0, while abstaining in 33/57 where a conclusion was due. Few cases, small models, three repeats: not a general result. | `docs/build-4-bank-return.md`, `docs/comparison.md`, `docs/bolt-e4b.md` |
 | What did Build 5 change? | An opt-in successor rule, `corroborated-2`, pre-registered and tested on eight new locked cases. It met its criteria narrowly, but the old rule scored on the same judgments did as well, so the gain came with the changed prompt. Most remaining false conclusions there are Speck's own threshold concluding from one source's two records. On those cases Speck matched the label more often than the stateless call (37-39/45 against 27/45), mostly because the stateless call never abstains; the cases are the rule author's own. | `docs/build-5-corroboration.md` |
 | Did persistence help? | No measurable accuracy difference from recomputing from scratch. | README, *Evaluation* |
 | Can Speck's chat be trusted about a case? | It is given only the case summaries Evidence Desk published, and told to answer from them; without that, a small model invented details. The wording is still the model's, so the case page is the record. | Speck's `src/tests/investigations-component.test.ts`, `test/memory-links.test.ts` |

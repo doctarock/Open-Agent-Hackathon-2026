@@ -26,6 +26,15 @@ apart from every other suite. Pre-registration and predictions:
   counts against them. The lock proves only that the labels did not move after results were seen.
 - **25 checkpoints**: 19 labelled with a conclusion, 6 labelled abstain.
 
+## Results (2026-10-26)
+
+Live, 3 repeats per model, 75 checkpoint-samples per system: matches the label, Speck 32/75 (4B)
+and 33/75 (Bolt E4B), the stateless call 35/75 and 45/75. The stateless call concluded the wrong
+explanation in 20/57 and 3/57 checkpoint-samples and leaned on replaced records in 38/48 and 9/48;
+Speck in none, on both models, but it abstained in 33-34 of 57 where a conclusion was due. Per
+checkpoint and against each prediction: [docs/set-7-conflicting-receipts.md](../../docs/set-7-conflicting-receipts.md),
+section 6. Reports: `eval/results/experiments/challenge-7/`. These cases have now been seen.
+
 ## Cases
 
 | Case | Stages and labels |

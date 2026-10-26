@@ -5,7 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { comparisonFingerprint, loadComparisons, runComparison, saveComparison, type ComparisonReport } from "../src/compare/comparison.js";
-import { aggregateComparisons, evaluationSummary } from "../src/compare/evaluation.js";
+import { acrossModels, aggregateComparisons, evaluationSummary } from "../src/compare/evaluation.js";
 import { ROOT_DIR } from "../src/config.js";
 import { loadEvalCases } from "../src/eval/cases.js";
 import { writeReport } from "../src/eval/results.js";
@@ -272,3 +272,18 @@ async function standIn(reply: (prompt: string) => unknown): Promise<{ url: strin
   const { port } = server.address() as { port: number };
   return { url: `http://127.0.0.1:${port}/v1`, prompts, close: () => server.close() };
 }
+
+test("results across models are read from the registered experiment folders, as their records report them", () => {
+  const rows = acrossModels(path.join(ROOT_DIR, "eval", "results", "experiments"));
+  const at = (suite: string, system: string) => rows.find((row) => row.suite.startsWith(suite) && row.system === system)!;
+  const show = (rate: { count: number; of: number }) => `${rate.count}/${rate.of}`;
+  // docs/set-7-conflicting-receipts.md, section 6a.
+  assert.deepEqual([show(at("Set 7", "Stateless").models["bolt-e4b"]!.matches), show(at("Set 7", "Speck").models["bolt-e4b"]!.matches)], ["45/75", "33/75"]);
+  assert.deepEqual([show(at("Set 7", "Stateless").models["nano-4b"]!.wrongExplanation), show(at("Set 7", "Speck").models["nano-4b"]!.wrongExplanation)], ["20/57", "0/57"]);
+  assert.equal(show(at("Set 7", "Stateless").models["bolt-e4b"]!.replacedEvidenceKeptOut), "39/48");
+  // docs/build-5-corroboration.md, 6a: a failed reply is not a conclusion.
+  assert.equal(show(at("Set 5", "Stateless").models["nano-4b"]!.concludedWhereWaitingWasRight), "15/18");
+  // docs/bolt-e4b.md, 2b.
+  assert.deepEqual([show(at("Held-out", "Speck").models["bolt-e4b"]!.matches), show(at("Held-out", "Stateless").models["nano-4b"]!.matches)], ["42/48", "18/48"]);
+  assert.ok(rows.every((row) => Object.values(row.models).every((cell) => cell && cell.reports === 3 || cell?.reports === 6)), "three repeats per suite and model (six reports where held-out and regression are separate files)");
+});

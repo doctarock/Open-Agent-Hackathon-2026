@@ -356,16 +356,20 @@ and the *Start the guided demo* button at the end of the case picker starts or r
 2. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
    bank's return of the payment), a second run, and which record no longer counts. It ends on
    **Speck beside a stateless baseline**: the panel opens and runs the whole case both ways.
-3. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
+3. **What the evaluation found:** the demo opens **Evaluation results** and points at *Results
+   across models*, read from the registered experiment reports: the same cases on the 4B and
+   Bolt E4B, with set 7 (conflicting receipts over time) highlighted. It says what the table
+   shows and what it does not (see *Results across models* below).
+4. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
    actions (Hypothesis Proposed, Memory Recorded, Belief Revised, Association Reinforced) are laid
    out in time; right-drag travels back. The panel quotes Speck's own timeline status and each
    case's run count and current conclusion, read from the plugin's API.
-4. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
+5. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
    (below); the panel quotes Speck's own count of memories and associations.
-5. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
+6. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
    completes when Speck replies (Speck's `speck:reply` event); it does not judge the reply, and
    says to check it against the case page.
-6. **Your own investigation:** the new-investigation form opens, with what creating, running and
+7. **Your own investigation:** the new-investigation form opens, with what creating, running and
    correcting one does. This part does not wait for anything: it says the guided demo is
    complete, and the viewer can go on to create one.
 
@@ -1268,6 +1272,14 @@ repeats, 2026-10-26; every suite already seen, so a re-evaluation on another mod
 | ... concluded where abstaining was right | 9/18 | 3/18 | 3/18 |
 | ... correct where a conclusion was due | 27/27 | 19/27 | 27/27 |
 | Delivery comparison, after the correction: cites the replaced scan | 0/6 | | 0/6 |
+
+**Set 7, conflicting receipts over time** (four cases locked before any run, both models, 3
+repeats; [docs/set-7-conflicting-receipts.md](docs/set-7-conflicting-receipts.md)): matches the
+label, Speck 32/75 and 33/75, stateless 35/75 and 45/75 (4B, Bolt). The stateless call concluded
+the wrong explanation in 20/57 and 3/57 checkpoint-samples where one was due and leaned on replaced
+records in 38/48 and 9/48; Speck in 0 of each, on both models, but it abstained in 33-34 of 57
+where a conclusion was due. Every suite, both models: *Results across models*, below, and the
+**Evaluation results** page.
 
 Deterministically the two rules are identical on every suite. The Build 4 experiment folders
 are `eval/results/experiments/reasoning/2026-10-25-*` and

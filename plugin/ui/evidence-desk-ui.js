@@ -191,6 +191,7 @@ function renderCoach() {
     : part.id === "memory" ? document.querySelector(".world-mode-switch")
     : part.id === "chat" ? document.querySelector("#quickComposer")
     : part.id === "create" ? document.querySelector("form.new-case")
+    : part.id === "results" ? document.querySelector(".eval-models")
     : null);
   fitCoach();
 }
@@ -367,6 +368,8 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       } });
     } else if (part.id === "create") {
       openNewCase();
+    } else if (part.id === "results") {
+      openEvaluation();
     }
     renderOffer();
     renderCoach();
@@ -499,6 +502,8 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
       const summary = await response.json();
       if (!response.ok) throw new Error(summary.error ?? `HTTP ${response.status}`);
       if (current === "evaluation") renderEvaluation(holder, summary);
+      // The guided demo's results part points at the table once it is there.
+      if (currentPart()?.id === "results") renderCoach();
     } catch (failure) {
       holder.replaceChildren(el("p", { className: "error" }, `The evaluation results could not be loaded: ${failure.message}`));
     }

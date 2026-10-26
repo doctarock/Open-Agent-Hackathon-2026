@@ -1,7 +1,7 @@
 // The guided demo inside Speck: one journey across both prepared cases (the
 // disputed delivery, then the bank return, which ends on Speck beside a
-// stateless baseline once both cases have been seen to revise), then
-// Speck's own views of the same work (the world timeline, the memory map and
+// stateless baseline once both cases have been seen to revise), then what the
+// evaluation measured across models, then Speck's own views of the same work (the world timeline, the memory map and
 // the chat), then an investigation of the person's own. Pure definitions;
 // the Evidence tab (plugin/ui/evidence-desk-ui.js) drives Speck's interface
 // and renders them.
@@ -21,7 +21,7 @@ export const JOURNEY = [
     id: "delivery",
     kind: "case",
     caseId: "disputed-delivery",
-    label: "Part 1 of 6 · Disputed delivery",
+    label: "Part 1 of 7 · Disputed delivery",
     steps: ["case", "run", "conclusion", "record", "update", "rerun", "changed", "history"],
     finishLabel: "Next: the bank return"
   },
@@ -29,16 +29,34 @@ export const JOURNEY = [
     id: "bank",
     kind: "case",
     caseId: "bank-return",
-    label: "Part 2 of 6 · Bank return",
+    label: "Part 2 of 7 · Bank return",
     // The comparison comes last, on the deterministic case (it takes a second).
     steps: ["case", "run", "update", "rerun", "changed", "compare"],
-    finishLabel: "Next: Speck's world view"
+    finishLabel: "Next: what the evaluation found"
+  },
+  {
+    // Why here: the two cases are illustrations; this is the measurement, read
+    // from the registered experiment reports (src/compare/evaluation.ts).
+    id: "results",
+    kind: "results",
+    label: "Part 3 of 7 · What the evaluation found",
+    title: "What the measured results show",
+    body: () => [
+      "The two cases you just ran are illustrations. This page is the measurement: the same cases, rules and labels run on two models, three times each, read from the experiment reports in the repository.",
+      "The table at the top, Results across models, reads in three steps:",
+      [
+        "The stateless call improves with the model. On the earlier suites the better model's stateless call matches the label as often as Speck, or more often.",
+        "Set 7, highlighted, was written to test receipts that conflict over time. There the better model's stateless call still concludes where it should wait, concludes the wrong explanation, and leans on replaced records.",
+        "Speck does neither of the last two on either model, but it abstains so often where a conclusion is due that the stateless call matches the label more."
+      ],
+      "So what persistent evidence state adds here is that what it concludes holds up, with a record of why; not more correct answers. Every figure has its denominator."
+    ]
   },
   {
     id: "world",
     kind: "speck",
     view: "world",
-    label: "Part 3 of 6 · Speck's world view",
+    label: "Part 4 of 7 · Speck's world view",
     title: "The timeline of the work",
     body: (facts) => [
       "Each investigation is held by Speck as a task. What it did is laid out in time around it: Hypothesis Proposed, Memory Recorded, Belief Revised and Association Reinforced are the actions of the runs you just made.",
@@ -51,7 +69,7 @@ export const JOURNEY = [
     id: "memory",
     kind: "speck",
     view: "memory",
-    label: "Part 4 of 6 · The memory map",
+    label: "Part 5 of 7 · The memory map",
     title: "How the facts are linked",
     body: (facts) => [
       "Every evidence record and every run's assessment is a memory in Speck. Evidence Desk links them with Speck's own association kinds, so the lines here are the case's reasoning:",
@@ -69,7 +87,7 @@ export const JOURNEY = [
     kind: "speck",
     view: "world",
     action: "chat",
-    label: "Part 5 of 6 · Talk to Speck",
+    label: "Part 6 of 7 · Talk to Speck",
     title: "Ask Speck about an investigation",
     goal: (facts) => Boolean(facts.replied),
     body: () => [
@@ -85,7 +103,7 @@ export const JOURNEY = [
   {
     id: "create",
     kind: "yours",
-    label: "Part 6 of 6 · Your own investigation",
+    label: "Part 7 of 7 · Your own investigation",
     title: "Start an investigation of your own",
     body: () => [
       "This form starts an investigation of your own: a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases. Once the title and question are written, Suggest explanations has the model fill in the explanations for you to edit.",

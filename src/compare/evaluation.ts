@@ -42,6 +42,67 @@ const REPORTS = [
   { id: "live-regression", title: "Correction-sequence regression cases, live model", kind: "live", command: "npm run eval:live" }
 ] as const;
 
+// The registered live experiments, per suite and model: the folders the
+// result documents cite (docs/build-4-bank-return.md, docs/build-5-corroboration.md,
+// docs/bolt-e4b.md, docs/set-7-conflicting-receipts.md), every report in each.
+// Why a fixed list: these folders are tracked in git, so a fresh clone shows
+// them, and each is a run as registered (rule corroborated-1). Exploratory and
+// abandoned runs stay out (set 6, the reasoning-on experiment, corroborated-2).
+const ACROSS_MODELS = [
+  { suite: "Held-out and regression cases", runs: { "nano-4b": "reasoning/2026-10-25-build4-after", "bolt-e4b": "reasoning/2026-10-26-bolt-e4b" } },
+  { suite: "Build 4 challenge cases (locked)", runs: { "nano-4b": "challenge/2026-10-25-build4-after", "bolt-e4b": "challenge/2026-10-26-bolt-e4b" } },
+  { suite: "Set 5 (locked)", runs: { "nano-4b": "challenge-5/2026-10-26-reference", "bolt-e4b": "challenge-5/2026-10-26-bolt-e4b-reference" } },
+  { suite: "Set 7, conflicting receipts over time (locked)", runs: { "nano-4b": "challenge-7/nano-4b", "bolt-e4b": "challenge-7/bolt-e4b" } }
+] as const;
+export const MODELS = { "nano-4b": "Nemotron 3 Nano 4B (local Ollama)", "bolt-e4b": "Nemotron 3.5 Bolt E4B (through Nightshift)" } as const;
+const ACROSS_SYSTEMS = { "speck-desk/nemotron": "Speck", "baseline-stateless/nemotron": "Stateless" } as const;
+
+// One system on one suite and model, summed over the folder's repeats.
+export interface AcrossModelsCell {
+  reports: number;
+  matches: Rate;
+  // Of the checkpoint-samples labelled "no conclusion is justified".
+  concludedWhereWaitingWasRight: Rate;
+  // Of the checkpoint-samples labelled with a conclusion.
+  wrongExplanation: Rate;
+  // Of the checkpoint-samples with replaced or withdrawn records.
+  replacedEvidenceKeptOut: Rate;
+}
+export interface AcrossModelsRow { suite: string; system: string; models: Partial<Record<keyof typeof MODELS, AcrossModelsCell | null>>; folders: Partial<Record<keyof typeof MODELS, string>> }
+
+function reportFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory()
+    ? reportFiles(path.join(dir, entry.name))
+    : entry.name.endsWith(".json") ? [path.join(dir, entry.name)] : []);
+}
+const rate = (count: number, of: number): Rate => ({ count, of, rate: of ? count / of : 0 });
+
+export function acrossModels(experimentsDir: string): AcrossModelsRow[] {
+  return ACROSS_MODELS.flatMap(({ suite, runs }) => Object.entries(ACROSS_SYSTEMS).map(([system, name]) => {
+    const models: AcrossModelsRow["models"] = {};
+    for (const [model, folder] of Object.entries(runs) as Array<[keyof typeof MODELS, string]>) {
+      const systems = reportFiles(path.join(experimentsDir, folder)).map((file) => (JSON.parse(fs.readFileSync(file, "utf8")) as { systems?: SystemScoreLike[] }).systems?.find((item) => item.system === system)).filter((item): item is SystemScoreLike => Boolean(item));
+      if (!systems.length) { models[model] = null; continue; }
+      const sum = (key: string) => systems.reduce((total, item) => { const value = item.metrics[key] as Rate | undefined; return { count: total.count + (value?.count ?? 0), of: total.of + (value?.of ?? 0) }; }, { count: 0, of: 0 });
+      const checkpoints = systems.flatMap((item) => item.checkpoints).filter((item) => !item.expected?.startsWith("error:"));
+      const due = checkpoints.filter((item) => item.expected !== null);
+      // A failed call is neither a conclusion nor an abstention, so it is not
+      // counted as concluding where waiting was right.
+      const waiting = checkpoints.filter((item) => item.expected === null);
+      const kept = sum("invalidatedExcluded");
+      models[model] = {
+        reports: systems.length,
+        matches: rate(sum("correctness").count, sum("correctness").of),
+        concludedWhereWaitingWasRight: rate(waiting.filter((item) => item.concluded !== null && !item.error).length, waiting.length),
+        wrongExplanation: rate(due.filter((item) => item.concluded !== null && item.concluded !== item.expected && !item.error).length, due.length),
+        replacedEvidenceKeptOut: rate(kept.count, kept.of)
+      };
+    }
+    return { suite, system: name, models, folders: runs };
+  }));
+}
+
 interface SystemScoreLike {
   system: string;
   metrics: Record<string, unknown> & { model?: { servedModels: string[]; httpCalls: number; latencyMs: { mean: number; median: number; max: number } | null } | null };
@@ -60,6 +121,8 @@ export interface EvaluationSummary {
     differences: string[];
   }>;
   comparisons: ComparisonAggregate[];
+  // The registered live experiments, per suite, model and system.
+  acrossModels: AcrossModelsRow[];
 }
 
 // Saved side-by-side comparisons from npm run compare / compare:live,
@@ -138,7 +201,7 @@ export function evaluationSummary(rootDir: string): EvaluationSummary {
       differences: data.differences ?? []
     };
   });
-  return { resultsDir, reports, comparisons: aggregateComparisons(path.join(resultsDir, "comparisons")) };
+  return { resultsDir, reports, comparisons: aggregateComparisons(path.join(resultsDir, "comparisons")), acrossModels: acrossModels(path.join(resultsDir, "experiments")) };
 }
 
 // Reports saved before Build 4 carry no policy: they ran under Build 3.

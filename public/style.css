@@ -545,6 +545,8 @@ body.edk-standalone #app { max-width: 1440px; margin: 0 auto; }
 .edk .evaluation > summary h2 { display: inline; font-size: 1.15rem; }
 .edk .eval-report { margin: 10px 0; padding: 8px 10px; border: 1px solid var(--edk-border); border-radius: var(--edk-radius); }
 .edk .eval-report > summary { cursor: pointer; }
+/* Results across models: the set 7 rows, which the guided demo points at. */
+.edk .eval-models tr.eval-spotlight > * { background: var(--edk-accent-soft); }
 .edk .table-wrap { overflow-x: auto; max-width: 100%; }
 .edk .eval-table { border-collapse: collapse; width: 100%; font-size: 0.86rem; margin: 8px 0; }
 .edk .eval-table th, .edk .eval-table td { padding: 5px 8px; border-bottom: 1px solid var(--edk-border); text-align: left; vertical-align: top; }
