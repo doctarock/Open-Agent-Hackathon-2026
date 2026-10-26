@@ -5,6 +5,15 @@
 > Open the **Evidence** tab and take the guided demo. It includes **Speck beside a stateless
 > baseline**, a tab on each case: one click runs the same case, with the same
 > evidence and the same correction, through both, and shows what each actually did.
+> - **The correction, side by side:** on 2026-10-25 the stateless call kept "delivered" and cited
+>   the carrier's replaced scan in 12/12 live comparisons; Speck cited it in none of the 9 that
+>   completed (in the 3 that errored, the correction stayed unassessed). Every sample:
+>   [docs/comparison.md](docs/comparison.md).
+> - **What the evaluation shows, as three separate claims:** correction handling as above (two
+>   cases, an illustration, not a rate); no general accuracy advantage (18/30 for both on the
+>   locked Build 4 cases; on set 5, `corroborated-2`'s 39/45 equals the old rule on the same
+>   judgments); and Speck abstains more, which is sometimes wrong, and still concludes from weak
+>   or same-source agreement. See [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
 >   live, what changed, and the before-and-after evaluation, including where it got worse.
