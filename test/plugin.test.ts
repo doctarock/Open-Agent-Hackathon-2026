@@ -180,6 +180,8 @@ test("the installer copies the plugin into Speck's plugins folder and approves e
     "fixtures/scenarios/disputed-delivery/scenario.json", "eval/scenarios/correction-supersedes/scenario.json", "config/zetaris-queries.json", "public/tour.js", "public/status.js", "public/journey.js", "public/compare.js", "public/decisive.js"]) {
     assert.ok(fs.existsSync(path.join(target, file)), file);
   }
+  // Every prepared case's scenario is installed (the hotel chargeback's once was not).
+  for (const spec of CASES) assert.ok(fs.existsSync(path.join(target, spec.scenarioDir, "scenario.json")), `${spec.id}: ${spec.scenarioDir}`);
   // It records the repository it came from, where the evaluation reports are.
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(target, "install.json"), "utf8")), { repository: ROOT_DIR });
   // "#speck" now points at the stand-in Speck's own dist/index.js.

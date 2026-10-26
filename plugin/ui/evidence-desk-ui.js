@@ -333,6 +333,7 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
     notice.hidden = true;
     current = item.id;
     remember("case", item.id);
+    remember("case-lineup", cases[0]?.id ?? "");
     renderPicker();
     mounted = mountEvidenceDesk(page, {
       apiBase: `${API_BASE}/cases/${encodeURIComponent(item.id)}`, fetchImpl: fetcher, userCase: item.kind === "yours",
@@ -539,7 +540,10 @@ export async function mountPluginTab({ root, pluginAdminFetch }) {
   demo.mounted = true;
   if (part !== null && demo.journey.JOURNEY[part].kind !== "speck") openPart(part);
   else {
-    const remembered = recall("case");
+    // The case last viewed, kept only while the prepared cases still start
+    // with the same one. Why: when the lineup changes (the hotel chargeback
+    // was put first), a choice made before must not hide the new first case.
+    const remembered = recall("case-lineup") === (cases[0]?.id ?? "") ? recall("case") : null;
     show(cases.some((item) => item.id === remembered) ? remembered : cases[0]?.id);
     renderOffer();
     // On a page load in the middle of a part in Speck's own views, that view

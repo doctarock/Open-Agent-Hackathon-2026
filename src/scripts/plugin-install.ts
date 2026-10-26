@@ -13,7 +13,9 @@ import { ROOT_DIR } from "../config.js";
 //               the plugin shares the module instances of the Speck server it
 //               runs in, and still loads when Speck's tests copy plugins/
 //               elsewhere (reinstall if the repository moves)
-//   fixtures/, eval/scenarios/, config/   the cases' data
+//   fixtures/, eval/scenarios/, eval/challenge-7/, config/   the cases' data
+//               (every prepared case's scenarioDir must be under one of these;
+//               test/plugin.test.ts checks it against CASES)
 //   public/app.js, tour.js, status.js, journey.js, compare.js, decisive.js, style.css, plugin/ui/   the tab's page
 //   install.json the repository it came from: the plugin reads its settings
 //               from that repository's .env, and eval/results/ from there too
@@ -63,7 +65,7 @@ export function installPlugin(options: { rootDir?: string; speckDir?: string } =
     const rewritten = source.replace(/(["'])#speck\1/g, `"${specifier}"`);
     if (rewritten !== source) fs.writeFileSync(file, rewritten);
   }
-  for (const part of ["fixtures", path.join("eval", "scenarios"), "config", path.join("plugin", "ui")]) {
+  for (const part of ["fixtures", path.join("eval", "scenarios"), path.join("eval", "challenge-7"), "config", path.join("plugin", "ui")]) {
     copyTree(path.join(rootDir, part), path.join(target, part));
   }
   for (const file of ["app.js", "tour.js", "status.js", "journey.js", "compare.js", "decisive.js", "style.css"]) {
