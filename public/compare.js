@@ -69,8 +69,11 @@ export function findings(report) {
         ? `The stateless baseline commits where Speck does not: ${report.stages[0].speck.against.length ? `Speck counts ${list(report.stages[0].speck.against.map((ref) => ref.recordId))} against it` : "the evidence is not yet enough for Speck's threshold"}.`
         : null].filter(Boolean) });
 
-  const c = correctionIndex(report);
-  if (c > 0) {
+  // Every stage at which a record replaces an earlier one. Why all of them:
+  // in a case with several corrections (set 7's hotel chargeback) the one
+  // that separates the approaches can be a later one.
+  const corrections = report.stages.map((_, index) => index).filter((index) => index > 0 && report.stages[index].replaced.some((item) => !report.stages[index - 1].replaced.some((before) => before.recordId === item.recordId)));
+  for (const [n, c] of corrections.entries()) {
     const stage = report.stages[c];
     const newly = stage.replaced.filter((item) => !report.stages[c - 1].replaced.some((before) => before.recordId === item.recordId));
     const lines = [];
@@ -91,8 +94,9 @@ export function findings(report) {
     lines.push(speck.noLongerCounted.length || speck.revisions.length
       ? `Only Speck records why: ${list(speck.noLongerCounted.map((item) => `${item.recordId} no longer counts`))}${speck.revisions.length ? `; it rebuilt ${list([...new Set(speck.revisions.map((r) => r.key))])} from the evidence that still counts` : ""}. The stateless baseline keeps no record of its earlier answer.`
       : "Neither approach recorded why its conclusion changed.");
-    out.push({ id: "correction", title: `Then the correction arrives: ${list(newly.map((item) => `${item.by} replaces ${item.recordId}`))}`, lines });
-  } else {
+    out.push({ id: n === 0 ? "correction" : `correction-${n + 1}`, title: `${n === 0 ? "Then the correction arrives" : `Then a further correction (${stage.stage.label})`}: ${list(newly.map((item) => `${item.by} replaces ${item.recordId}`))}`, lines });
+  }
+  if (!corrections.length) {
     out.push({ id: "correction", title: "No record in this case replaces another", lines: ["The comparison shows how each approach weighs evidence that only accumulates."] });
   }
 

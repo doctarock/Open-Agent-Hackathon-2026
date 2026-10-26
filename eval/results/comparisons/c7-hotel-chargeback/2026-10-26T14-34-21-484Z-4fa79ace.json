@@ -1,0 +1,1714 @@
+{
+  "schema": "evidence-desk.comparison.v1",
+  "id": "2026-10-26T14-34-21-484Z-4fa79ace",
+  "startedAt": "2026-10-26T14:34:21.323Z",
+  "finishedAt": "2026-10-26T14:34:21.484Z",
+  "durationMs": 161,
+  "kind": "deterministic",
+  "case": {
+    "caseId": "N7-HTL-01",
+    "title": "Did guest R. Lindqvist stay on 12-14 October?",
+    "question": "Did guest R. Lindqvist stay at the Harbourside Hotel on 12-14 Oct under booking BK-6620?",
+    "hypotheses": [
+      {
+        "key": "H-STAYED",
+        "statement": "R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.",
+        "prior": 0.5
+      },
+      {
+        "key": "H-NO-SHOW",
+        "statement": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "prior": 0.5
+      }
+    ]
+  },
+  "configuration": {
+    "evidence": {
+      "mode": "fixture",
+      "label": "Local fixtures (not Zetaris)",
+      "target": "eval/challenge-7/hotel-chargeback/evidence.json",
+      "ready": true,
+      "problem": null
+    },
+    "assessor": {
+      "kind": "rules",
+      "model": null,
+      "endpoint": null,
+      "temperature": null,
+      "maxTokens": null,
+      "reasoningEffort": null
+    },
+    "speck": "Evidence Desk as built: one Speck case carried across the stages on a temporary Speck database (the case on the page is not touched). Each stage's new records are assessed and Speck's beliefs revised; a record replaced by a later one stops counting and the beliefs that rested on it are rebuilt.",
+    "stateless": "The evaluation's stateless rule baseline: at each stage, the same fact rules summed from scratch (reliability × strength, contradictions negative); the top positive score is its conclusion. It keeps nothing between stages and has no notion of a replaced record.",
+    "labels": "Pre-registered labels from the case's expected.json, written before any system was run on it.",
+    "policy": "build-4 (restatement, corroborated-1)"
+  },
+  "fingerprint": "d1651f9e7fe099ca",
+  "stages": [
+    {
+      "stage": {
+        "id": "booked",
+        "label": "Booking confirmed for 12-14 Oct (11 Oct)",
+        "asOf": "2026-10-11T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-01"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "unresolved",
+        "headline": "Unresolved: the assessed evidence does not establish any explanation.",
+        "concluded": null,
+        "route": null,
+        "tentative": null,
+        "confidence": null,
+        "reasons": [
+          "No assessed evidence supports H-STAYED; its 0.5 is its prior, not a finding.",
+          "Not corroborated (rule corroborated-1): no record that still counts supports it.",
+          "Unanswered: Was the booking's key used on the room door?"
+        ],
+        "support": [],
+        "against": [],
+        "ruledOut": [],
+        "noLongerCounted": [],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-STAYED",
+            "status": "proposed",
+            "confidence": 0.5
+          },
+          {
+            "key": "H-NO-SHOW",
+            "status": "proposed",
+            "confidence": 0.5
+          }
+        ],
+        "run": {
+          "runNumber": 1,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null,
+          "modelFailures": null,
+          "servedModels": []
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": null,
+        "cited": [],
+        "rationale": null,
+        "scores": {
+          "H-STAYED": 0,
+          "H-NO-SHOW": 0
+        },
+        "counted": [],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "first",
+          "recordsWhy": false
+        },
+        "stateless": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "first",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "booked",
+          "conclusion": null,
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED",
+            "H-NO-SHOW"
+          ],
+          "invalidated": []
+        },
+        "speck": {
+          "expected": null,
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "appropriate"
+        },
+        "stateless": {
+          "expected": null,
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "appropriate"
+        }
+      },
+      "disagreement": null
+    },
+    {
+      "stage": {
+        "id": "no-show",
+        "label": "The night audit shows no check-in; the agency records a no-show (13 Oct)",
+        "asOf": "2026-10-13T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-02",
+        "N7H-03"
+      ],
+      "replaced": [],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "concluded": "H-NO-SHOW",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.655,
+        "reasons": [
+          "Speck holds H-NO-SHOW as supported at 0.655, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-02",
+            "delta": 0.085,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact pms.checkin = false"
+          },
+          {
+            "recordId": "N7H-03",
+            "delta": 0.07,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ota.status = no_show"
+          }
+        ],
+        "against": [],
+        "ruledOut": [],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed.",
+            "consequences": []
+          }
+        ],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-NO-SHOW",
+            "status": "supported",
+            "confidence": 0.655
+          },
+          {
+            "key": "H-STAYED",
+            "status": "weakening",
+            "confidence": 0.345
+          }
+        ],
+        "run": {
+          "runNumber": 2,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null,
+          "modelFailures": null,
+          "servedModels": []
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-NO-SHOW",
+        "cited": [
+          "N7H-02",
+          "N7H-03"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-STAYED": -0.775,
+          "H-NO-SHOW": 0.775
+        },
+        "counted": [
+          "N7H-02",
+          "N7H-03"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-03"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "formed",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-03"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "formed",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "no-show",
+          "conclusion": null,
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED"
+          ],
+          "invalidated": []
+        },
+        "speck": {
+          "expected": null,
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": null,
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": null
+    },
+    {
+      "stage": {
+        "id": "late-checkin",
+        "label": "A late check-in is found, with door-lock entries (15 Oct)",
+        "asOf": "2026-10-15T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": "N7H-04",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-04",
+        "N7H-05"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-02",
+          "by": "N7H-04"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.",
+        "concluded": "H-STAYED",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.78,
+        "reasons": [
+          "Speck holds H-STAYED as supported at 0.78, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-04",
+            "delta": 0.17,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact pms.checkin = true"
+          },
+          {
+            "recordId": "N7H-05",
+            "delta": 0.18,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact locks.booking_key_used = true"
+          }
+        ],
+        "against": [
+          {
+            "recordId": "N7H-03",
+            "delta": -0.07,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ota.status = no_show"
+          }
+        ],
+        "ruledOut": [
+          {
+            "key": "H-NO-SHOW",
+            "refutedBy": [
+              "N7H-04",
+              "N7H-05"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-02",
+            "explanation": "N7H-04 replaces all of N7H-02, not only the facts it restates. No record that still counts states pms.checkin=false. Its judgments no longer apply: contradicts H-STAYED; supports H-NO-SHOW.",
+            "consequences": []
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.345
+            },
+            "cause": "N7H-02 superseded by N7H-04",
+            "dropped": [
+              "N7H-02 (N7H-02 superseded by N7H-04)"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "supported",
+              "confidence": 0.655
+            },
+            "cause": "N7H-02 superseded by N7H-04; support withheld: N7H-05 refutes H-NO-SHOW decisively",
+            "dropped": [
+              "N7H-02 (N7H-02 superseded by N7H-04)",
+              "N7H-03 (support withheld: N7H-05 refutes H-NO-SHOW decisively)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-STAYED",
+            "status": "supported",
+            "confidence": 0.78
+          },
+          {
+            "key": "H-NO-SHOW",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 3,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null,
+          "modelFailures": null,
+          "servedModels": []
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-STAYED",
+        "cited": [
+          "N7H-04",
+          "N7H-05"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-STAYED": 0.975,
+          "H-NO-SHOW": -0.55
+        },
+        "counted": [
+          "N7H-02",
+          "N7H-03",
+          "N7H-04",
+          "N7H-05"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "late-checkin",
+          "conclusion": "H-STAYED",
+          "notCurrent": [
+            "H-NO-SHOW"
+          ],
+          "unsupported": [],
+          "invalidated": [
+            "N7H-02"
+          ]
+        },
+        "speck": {
+          "expected": "H-STAYED",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": "H-STAYED",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": null
+    },
+    {
+      "stage": {
+        "id": "dispute",
+        "label": "The guest disputes the charge (28 Oct)",
+        "asOf": "2026-10-28T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": "N7H-04",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-06",
+          "source": "Card network dispute",
+          "observedAt": "2026-10-28T01:00:00.000Z",
+          "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-07",
+          "source": "Guest correspondence",
+          "observedAt": "2026-10-28T03:00:00.000Z",
+          "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-06",
+        "N7H-07"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-02",
+          "by": "N7H-04"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "leading",
+        "headline": "Leading, not established: R. Lindqvist stayed at the hotel on 12-14 Oct under booking BK-6620.",
+        "concluded": null,
+        "route": null,
+        "tentative": "H-STAYED",
+        "confidence": 0.714,
+        "reasons": [
+          "H-STAYED is at 0.714, at or above Speck's supported threshold of 0.6, but Speck holds it as weakening: the latest evidence applied to it counted against it, so it is not established.",
+          "Not corroborated (rule corroborated-1): N7H-03, N7H-06, N7H-07 are recorded against it.",
+          "N7H-03 (Online travel agency) counts against it.",
+          "N7H-06 (Card network dispute) counts against it.",
+          "N7H-07 (Guest correspondence) counts against it."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-04",
+            "delta": 0.17,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact pms.checkin = true"
+          },
+          {
+            "recordId": "N7H-05",
+            "delta": 0.18,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact locks.booking_key_used = true"
+          }
+        ],
+        "against": [
+          {
+            "recordId": "N7H-03",
+            "delta": -0.07,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ota.status = no_show"
+          },
+          {
+            "recordId": "N7H-06",
+            "delta": -0.036,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact card.claim = not_stayed"
+          },
+          {
+            "recordId": "N7H-07",
+            "delta": -0.03,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact guest.says = not_stayed"
+          }
+        ],
+        "ruledOut": [
+          {
+            "key": "H-NO-SHOW",
+            "refutedBy": [
+              "N7H-04",
+              "N7H-05"
+            ]
+          }
+        ],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-02",
+            "explanation": "N7H-04 replaces all of N7H-02, not only the facts it restates. No record that still counts states pms.checkin=false. Its judgments no longer apply: contradicts H-STAYED; supports H-NO-SHOW.",
+            "consequences": []
+          }
+        ],
+        "revisions": [],
+        "beliefs": [
+          {
+            "key": "H-STAYED",
+            "status": "weakening",
+            "confidence": 0.714
+          },
+          {
+            "key": "H-NO-SHOW",
+            "status": "rejected",
+            "confidence": 0.05
+          }
+        ],
+        "run": {
+          "runNumber": 4,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null,
+          "modelFailures": null,
+          "servedModels": []
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-STAYED",
+        "cited": [
+          "N7H-04",
+          "N7H-05"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-STAYED": 0.645,
+          "H-NO-SHOW": -0.22
+        },
+        "counted": [
+          "N7H-02",
+          "N7H-03",
+          "N7H-04",
+          "N7H-05",
+          "N7H-06",
+          "N7H-07"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": false,
+          "abstains": true,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "dispute",
+          "conclusion": "H-STAYED",
+          "notCurrent": [
+            "H-NO-SHOW"
+          ],
+          "unsupported": [],
+          "invalidated": [
+            "N7H-02"
+          ]
+        },
+        "speck": {
+          "expected": "H-STAYED",
+          "correct": false,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": "inappropriate"
+        },
+        "stateless": {
+          "expected": "H-STAYED",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": "Speck concludes nothing (it points to H-STAYED): Not corroborated (rule corroborated-1): N7H-03, N7H-06, N7H-07 are recorded against it; the stateless call concludes H-STAYED citing N7H-04, N7H-05."
+    },
+    {
+      "stage": {
+        "id": "reattributed",
+        "label": "The check-in and the key entries are found to be another guest's (2 Nov)",
+        "asOf": "2026-11-02T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-03",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": "N7H-10",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": "N7H-09",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-06",
+          "source": "Card network dispute",
+          "observedAt": "2026-10-28T01:00:00.000Z",
+          "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-07",
+          "source": "Guest correspondence",
+          "observedAt": "2026-10-28T03:00:00.000Z",
+          "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-08",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-30T02:00:00.000Z",
+          "content": "Front office: dispute CB-3302 noted; the hotel's response is due by 6 Nov.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-09",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-11-02T01:00:00.000Z",
+          "content": "Audit correction: key K-6620 was re-encoded at 23:45 on 12 Oct for walk-in booking WK-118 in room 412; the four entries of 12-14 Oct belong to WK-118, not BK-6620. Replaces the room 412 key entries.",
+          "supersedes": [
+            "N7H-05"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-10",
+          "source": "Hotel property management system",
+          "observedAt": "2026-11-02T02:00:00.000Z",
+          "content": "Correction: the 23:40 check-in to room 412 on 12 Oct was walk-in WK-118 (guest R. Lindgren), keyed against BK-6620 by mistake. Replaces the night-audit correction of 15 Oct.",
+          "supersedes": [
+            "N7H-04"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-08",
+        "N7H-09",
+        "N7H-10"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-04",
+          "by": "N7H-10"
+        },
+        {
+          "recordId": "N7H-05",
+          "by": "N7H-09"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "concluded": "H-NO-SHOW",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.721,
+        "reasons": [
+          "Speck holds H-NO-SHOW as supported at 0.721, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-02",
+            "delta": 0.085,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact pms.checkin = false"
+          },
+          {
+            "recordId": "N7H-03",
+            "delta": 0.07,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ota.status = no_show"
+          },
+          {
+            "recordId": "N7H-06",
+            "delta": 0.036,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact card.claim = not_stayed"
+          },
+          {
+            "recordId": "N7H-07",
+            "delta": 0.03,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact guest.says = not_stayed"
+          }
+        ],
+        "against": [],
+        "ruledOut": [],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → no_show in N7H-03), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-04",
+            "explanation": "N7H-10 replaces all of N7H-04, not only the facts it restates. No record that still counts states pms.checkin=true. Its judgments no longer apply: supports H-STAYED; contradicts H-NO-SHOW.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-05",
+            "explanation": "N7H-09 replaces all of N7H-05, not only the facts it restates. No record that still counts states locks.booking_key_used=true. Its judgments no longer apply: supports H-STAYED; contradicts H-NO-SHOW decisively. H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now supported at 0.721.",
+            "consequences": [
+              "H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now supported at 0.721."
+            ]
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.714
+            },
+            "cause": "N7H-05 superseded by N7H-09",
+            "dropped": [
+              "N7H-05 (N7H-05 superseded by N7H-09)"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "rejected",
+              "confidence": 0.05
+            },
+            "cause": "N7H-05 superseded by N7H-09",
+            "dropped": [
+              "N7H-05 (N7H-05 superseded by N7H-09)"
+            ]
+          },
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.534
+            },
+            "cause": "N7H-04 superseded by N7H-10",
+            "dropped": [
+              "N7H-04 (N7H-04 superseded by N7H-10)"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "active",
+              "confidence": 0.551
+            },
+            "cause": "N7H-04 superseded by N7H-10",
+            "dropped": [
+              "N7H-04 (N7H-04 superseded by N7H-10)"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-NO-SHOW",
+            "status": "supported",
+            "confidence": 0.721
+          },
+          {
+            "key": "H-STAYED",
+            "status": "weakening",
+            "confidence": 0.279
+          }
+        ],
+        "run": {
+          "runNumber": 5,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null,
+          "modelFailures": null,
+          "servedModels": []
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-STAYED",
+        "cited": [
+          "N7H-04",
+          "N7H-05"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-STAYED": 0.645,
+          "H-NO-SHOW": -0.22
+        },
+        "counted": [
+          "N7H-02",
+          "N7H-03",
+          "N7H-04",
+          "N7H-05",
+          "N7H-06",
+          "N7H-07"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-03",
+            "N7H-06",
+            "N7H-07"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "revised",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "reattributed",
+          "conclusion": "H-NO-SHOW",
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED"
+          ],
+          "invalidated": [
+            "N7H-04",
+            "N7H-05"
+          ]
+        },
+        "speck": {
+          "expected": "H-NO-SHOW",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": "H-NO-SHOW",
+          "correct": false,
+          "unsupportedClaim": true,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": "Speck concludes H-NO-SHOW; the stateless call concludes H-STAYED citing N7H-04, N7H-05, including N7H-04, N7H-05, which no longer count."
+    },
+    {
+      "stage": {
+        "id": "refunded",
+        "label": "The agency refunds the booking as a no-show (5 Nov)",
+        "asOf": "2026-11-05T12:00:00Z"
+      },
+      "visible": [
+        {
+          "id": "N7H-01",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-11T01:00:00.000Z",
+          "content": "Booking BK-6620 for R. Lindqvist, Harbourside Hotel, 12-14 Oct (2 nights), prepaid AUD 486, free cancellation until 11 Oct 18:00.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-11",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-02",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-13T00:10:00.000Z",
+          "content": "Night audit, 12 Oct: booking BK-6620 not checked in; flagged as a no-show.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-03",
+          "source": "Online travel agency",
+          "observedAt": "2026-10-13T02:00:00.000Z",
+          "content": "Booking BK-6620: the hotel reported the guest as a no-show for 12 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": "N7H-11",
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-04",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-15T01:00:00.000Z",
+          "content": "Correction to the night audit: BK-6620 was checked in at 23:40 on 12 Oct by the night manager (a late arrival) to room 412. Replaces the night-audit entry.",
+          "supersedes": [
+            "N7H-02"
+          ],
+          "replacedBy": "N7H-10",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-05",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-10-15T02:00:00.000Z",
+          "content": "Room 412: key K-6620, encoded for booking BK-6620, used 12 Oct 23:52, 13 Oct 08:10, 13 Oct 19:31 and 14 Oct 07:55.",
+          "supersedes": [],
+          "replacedBy": "N7H-09",
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-06",
+          "source": "Card network dispute",
+          "observedAt": "2026-10-28T01:00:00.000Z",
+          "content": "Dispute CB-3302 on AUD 486 (Harbourside Hotel): the cardholder states the stay did not take place.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-07",
+          "source": "Guest correspondence",
+          "observedAt": "2026-10-28T03:00:00.000Z",
+          "content": "R. Lindqvist: I never stayed at the hotel; I tried to cancel through the agency on 11 Oct.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-08",
+          "source": "Hotel property management system",
+          "observedAt": "2026-10-30T02:00:00.000Z",
+          "content": "Front office: dispute CB-3302 noted; the hotel's response is due by 6 Nov.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-09",
+          "source": "Door-lock audit log",
+          "observedAt": "2026-11-02T01:00:00.000Z",
+          "content": "Audit correction: key K-6620 was re-encoded at 23:45 on 12 Oct for walk-in booking WK-118 in room 412; the four entries of 12-14 Oct belong to WK-118, not BK-6620. Replaces the room 412 key entries.",
+          "supersedes": [
+            "N7H-05"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-10",
+          "source": "Hotel property management system",
+          "observedAt": "2026-11-02T02:00:00.000Z",
+          "content": "Correction: the 23:40 check-in to room 412 on 12 Oct was walk-in WK-118 (guest R. Lindgren), keyed against BK-6620 by mistake. Replaces the night-audit correction of 15 Oct.",
+          "supersedes": [
+            "N7H-04"
+          ],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        },
+        {
+          "id": "N7H-11",
+          "source": "Online travel agency",
+          "observedAt": "2026-11-05T01:00:00.000Z",
+          "content": "Booking BK-6620: refunded to the guest as a no-show; the hotel accepts dispute CB-3302.",
+          "supersedes": [],
+          "replacedBy": null,
+          "outdatedBy": null,
+          "retrieval": {
+            "mode": "fixture",
+            "location": "eval/challenge-7/hotel-chargeback/evidence.json",
+            "queryToken": null
+          }
+        }
+      ],
+      "arrived": [
+        "N7H-11"
+      ],
+      "replaced": [
+        {
+          "recordId": "N7H-04",
+          "by": "N7H-10"
+        },
+        {
+          "recordId": "N7H-05",
+          "by": "N7H-09"
+        }
+      ],
+      "speck": {
+        "error": null,
+        "state": "supported",
+        "headline": "R. Lindqvist did not stay; booking BK-6620 was a no-show.",
+        "concluded": "H-NO-SHOW",
+        "route": "speck-threshold",
+        "tentative": null,
+        "confidence": 0.721,
+        "reasons": [
+          "Speck holds H-NO-SHOW as supported at 0.721, at or above its supported threshold of 0.6."
+        ],
+        "support": [
+          {
+            "recordId": "N7H-02",
+            "delta": 0.085,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact pms.checkin = false"
+          },
+          {
+            "recordId": "N7H-06",
+            "delta": 0.036,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact card.claim = not_stayed"
+          },
+          {
+            "recordId": "N7H-07",
+            "delta": 0.03,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact guest.says = not_stayed"
+          },
+          {
+            "recordId": "N7H-11",
+            "delta": 0.07,
+            "basis": "rule",
+            "decisive": false,
+            "rationale": "fact ota.status = refunded_no_show"
+          }
+        ],
+        "against": [],
+        "ruledOut": [],
+        "noLongerCounted": [
+          {
+            "recordId": "N7H-01",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-01 (ota.status: confirmed → refunded_no_show in N7H-11), so N7H-01 no longer describes the current state. No record that still counts states ota.status=confirmed.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-03",
+            "explanation": "Online travel agency has since reported a newer value for every fact in N7H-03 (ota.status: no_show → refunded_no_show in N7H-11), so N7H-03 no longer describes the current state. No record that still counts states ota.status=no_show. Its judgments no longer apply: contradicts H-STAYED; supports H-NO-SHOW.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-04",
+            "explanation": "N7H-10 replaces all of N7H-04, not only the facts it restates. No record that still counts states pms.checkin=true. Its judgments no longer apply: supports H-STAYED; contradicts H-NO-SHOW.",
+            "consequences": []
+          },
+          {
+            "recordId": "N7H-05",
+            "explanation": "N7H-09 replaces all of N7H-05, not only the facts it restates. No record that still counts states locks.booking_key_used=true. Its judgments no longer apply: supports H-STAYED; contradicts H-NO-SHOW decisively. H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now supported at 0.721.",
+            "consequences": [
+              "H-NO-SHOW is no longer ruled out: N7H-05 was its decisive refutation, and it is now supported at 0.721."
+            ]
+          }
+        ],
+        "revisions": [
+          {
+            "key": "H-STAYED",
+            "mode": "replaced",
+            "before": {
+              "status": "weakening",
+              "confidence": 0.279
+            },
+            "cause": "N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show)",
+            "dropped": [
+              "N7H-03 (N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show))"
+            ]
+          },
+          {
+            "key": "H-NO-SHOW",
+            "mode": "replaced",
+            "before": {
+              "status": "supported",
+              "confidence": 0.721
+            },
+            "cause": "N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show)",
+            "dropped": [
+              "N7H-03 (N7H-03 out of date: its source now reports ota.status=refunded_no_show (N7H-11, was no_show))"
+            ]
+          }
+        ],
+        "beliefs": [
+          {
+            "key": "H-NO-SHOW",
+            "status": "supported",
+            "confidence": 0.721
+          },
+          {
+            "key": "H-STAYED",
+            "status": "weakening",
+            "confidence": 0.349
+          }
+        ],
+        "run": {
+          "runNumber": 6,
+          "status": "completed",
+          "unprocessed": [],
+          "modelCalls": null,
+          "modelFailures": null,
+          "servedModels": []
+        },
+        "explanation": null
+      },
+      "stateless": {
+        "method": "rules",
+        "error": null,
+        "concluded": "H-STAYED",
+        "cited": [
+          "N7H-04",
+          "N7H-05"
+        ],
+        "rationale": null,
+        "scores": {
+          "H-STAYED": 0.645,
+          "H-NO-SHOW": 0.13
+        },
+        "counted": [
+          "N7H-02",
+          "N7H-03",
+          "N7H-04",
+          "N7H-05",
+          "N7H-06",
+          "N7H-07",
+          "N7H-11"
+        ],
+        "model": null
+      },
+      "checks": {
+        "speck": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-02",
+            "N7H-06",
+            "N7H-07",
+            "N7H-11"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": true
+        },
+        "stateless": {
+          "commits": true,
+          "abstains": false,
+          "presentedSupport": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "unknownCitations": [],
+          "supportFromReplaced": [
+            "N7H-04",
+            "N7H-05"
+          ],
+          "supportFromOutdated": [],
+          "changed": "retained",
+          "recordsWhy": false
+        }
+      },
+      "label": {
+        "checkpoint": {
+          "afterStage": "refunded",
+          "conclusion": "H-NO-SHOW",
+          "notCurrent": [],
+          "unsupported": [
+            "H-STAYED"
+          ],
+          "invalidated": [
+            "N7H-04",
+            "N7H-05"
+          ]
+        },
+        "speck": {
+          "expected": "H-NO-SHOW",
+          "correct": true,
+          "unsupportedClaim": false,
+          "presentedRuledOut": [],
+          "abstention": null
+        },
+        "stateless": {
+          "expected": "H-NO-SHOW",
+          "correct": false,
+          "unsupportedClaim": true,
+          "presentedRuledOut": [],
+          "abstention": null
+        }
+      },
+      "disagreement": "Speck concludes H-NO-SHOW; the stateless call concludes H-STAYED citing N7H-04, N7H-05, including N7H-04, N7H-05, which no longer count."
+    }
+  ],
+  "notes": [
+    "Both approaches saw the same records at every stage, the same question and explanations, and the same assessor configuration.",
+    "Speck counts a conclusion only when it holds it as supported; a leading or pointed-to explanation is tentative. The stateless baseline has no such threshold beyond answering \"unresolved\" (model) or a tie or non-positive score (rules).",
+    "Differences come from Speck's explicit evidence and revision state and its conclusion policy (thresholds, decisive refutation, supersession), not from persistence alone: the evaluation's speck-fresh system, which rebuilds from scratch each time, reaches the same conclusions as speck-desk.",
+    "Deterministic: no model was called; the same inputs give the same result every time."
+  ]
+}

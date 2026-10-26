@@ -215,7 +215,7 @@ export const TOUR_STEPS = [
     actionLabel: "Run the side-by-side comparison",
     goal: (view) => Boolean(view.comparison?.current) && !view.comparison?.running,
     body: (view) => [
-      "You have seen Speck revise this case. The Speck vs. baseline tab runs the whole case again on the same records, stage by stage: once as a stateless baseline that answers from scratch each time (a model call when the case is live, the fact rules otherwise), and once through Speck, which keeps the evidence, its beliefs and every revision.",
+      `${runs(view).length ? "You have seen Speck revise this case. " : ""}The Speck vs. baseline tab runs the whole case${runs(view).length ? " again" : ""} on the same records, stage by stage: once as a stateless baseline that answers from scratch each time (a model call when the case is live, the fact rules otherwise), and once through Speck, which keeps the evidence, its beliefs and every revision.`,
       "Watch the correction stage: whether each approach changes its answer, whether it still leans on the record that was replaced, and whether it can say why it changed.",
       view.comparison?.willRun?.kind === "live"
         ? "This case is live: both approaches make real model calls, so it takes about 20-60 seconds and the result can differ from run to run."

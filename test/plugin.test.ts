@@ -231,7 +231,7 @@ test("a person creates an investigation through the plugin and adds evidence to 
     });
     assert.deepEqual(created, { status: 200, body: { id: "my-1", label: "Missing laptop return", kind: "yours" } });
     const cases = (await call(base, "/api/plugins/evidence-desk/cases")).body.cases;
-    assert.deepEqual(cases.map((item: any) => [item.id, item.kind]), [["disputed-delivery", "prepared"], ["bank-return", "prepared"], ["my-1", "yours"]]);
+    assert.deepEqual(cases.map((item: any) => [item.id, item.kind]), [["hotel-chargeback", "prepared"], ["disputed-delivery", "prepared"], ["bank-return", "prepared"], ["my-1", "yours"]]);
     const status = (await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).body;
     assert.deepEqual([status.case.caseId, status.evidence.mode, status.evidence.label], ["MY-1", "fixture", "Evidence you entered (stored locally, not Zetaris)"]);
     assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence")).body.pending, ["E-1"]);
@@ -268,7 +268,7 @@ test("a person deletes their investigation: it leaves the tab, Speck stops offer
     assert.equal(caseOf("SN-4471").length, 1);
 
     // The prepared demo cases cannot be deleted, and refusing touches nothing of theirs.
-    for (const prepared of ["disputed-delivery", "bank-return"]) {
+    for (const prepared of ["hotel-chargeback", "disputed-delivery", "bank-return"]) {
       assert.equal((await call(base, `/api/plugins/evidence-desk/cases/${prepared}/status`)).status, 200);
       const refused = await call(base, `/api/plugins/evidence-desk/cases/${prepared}/delete`, "POST");
       assert.deepEqual([refused.status, refused.body.error], [400, "Only an investigation you created can be deleted; the prepared cases can be reset instead"]);
@@ -279,7 +279,7 @@ test("a person deletes their investigation: it leaves the tab, Speck stops offer
     const deleted = await call(base, "/api/plugins/evidence-desk/cases/my-1/delete", "POST");
     assert.equal(deleted.status, 200);
     assert.deepEqual([deleted.body.deleted, deleted.body.label, deleted.body.suspendedWorkers], ["my-1", "Missing laptop return", 1]);
-    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.map((item: any) => item.id), ["disputed-delivery", "bank-return"]);
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.map((item: any) => item.id), ["hotel-chargeback", "disputed-delivery", "bank-return"]);
     assert.equal((await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).status, 404);
     // Kept, not erased: the files in deleted-cases/, the worker suspended in Speck.
     const [kept] = fs.readdirSync(path.join(path.dirname(own), "deleted-cases"));
@@ -288,7 +288,7 @@ test("a person deletes their investigation: it leaves the tab, Speck stops offer
 
     // A new investigation takes the free folder name my-1, but gets its own worker and no old evidence.
     await call(base, "/api/plugins/evidence-desk/cases", "POST", { title: "Second", question: "Was crate C-9 delivered?", explanations: ["Yes.", "No."] });
-    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.map((item: any) => item.id), ["disputed-delivery", "bank-return", "my-1"]);
+    assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases")).body.cases.map((item: any) => item.id), ["hotel-chargeback", "disputed-delivery", "bank-return", "my-1"]);
     assert.deepEqual((await call(base, "/api/plugins/evidence-desk/cases/my-1/evidence")).body.records, []);
     assert.equal((await call(base, "/api/plugins/evidence-desk/cases/my-1/status")).body.case.question, "Was crate C-9 delivered?");
     assert.deepEqual(caseOf("C-9").map((worker) => worker.status), ["waiting"]);

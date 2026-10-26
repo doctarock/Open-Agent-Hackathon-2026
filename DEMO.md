@@ -3,11 +3,14 @@
 Evidence Desk runs inside Speck as a plugin. The demo uses one Speck server and Speck's own
 interface. Each case page has a **Speck vs. baseline** tab: the same case, the same evidence and
 the same correction, run through both, with what each actually did. The **Evidence** tab in
-Speck's rail has two cases:
-- **Disputed delivery** carries the main point: its saved live comparisons show the stateless
-  call still citing the carrier's replaced scan, and Speck's recorded revision. It is also the
-  live sponsor stack: Zetaris, Meterless, local Nemotron and Speck, each visible in the Execution
-  trace.
+Speck's rail has three cases:
+- **Hotel chargeback** carries the main point, and comes first. It is set 7's case (receipts
+  that conflict over time) where the approaches part most clearly: after the check-in and the
+  door-lock entries are re-attributed to another guest, Speck follows the original no-show back
+  and the stateless side does not, in every run measured. Fixture evidence; the configured model
+  when one is set.
+- **Disputed delivery** is a correction worked by hand, and the live sponsor stack: Zetaris,
+  Meterless, Nemotron and Speck, each visible in the Execution trace.
 - **Bank return** lets the judge make a correction by hand. It is deterministic, instant and works
   offline (fixture evidence and the rule assessor, whatever the settings).
 
@@ -73,7 +76,7 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
 
 **The page explains itself.**
 - On first open the Evidence tab offers *Start the guided demo*. It walks both cases with the
-  real buttons (the disputed delivery, then the bank return, which ends on the side-by-side comparison), then opens
+  real buttons (first the hotel chargeback's side-by-side comparison, then the disputed delivery and the bank return worked by hand), then opens
   **Evaluation results** at *Results across models* (both models, set 7 highlighted), then Speck's **World** view
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
@@ -84,85 +87,82 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
   resetting a prepared case for the next person shows that introduction again. Each case's **Guide** button lists every feature, marking which ones
   that case has demonstrated.
 
-Optionally, before the judges arrive, run `npm run compare:live` once more: the disputed
-delivery's panel then opens on a fresh live comparison (labelled with its time) instead of waiting
-30-60 s for one. Never present a comparison as live unless its badge says LIVE MODEL CALLS.
+Optionally, before the judges arrive, run `npm run compare:live -- --only hotel-chargeback`:
+the hotel chargeback's panel then opens on a fresh live comparison (labelled with its time)
+instead of waiting about 100 s for one. Never present a comparison as live unless its badge says LIVE MODEL CALLS.
 
-## The script (about 3 minutes, one case, one correction)
+## The script (about 3 minutes)
 
-The demo follows the **Disputed delivery**: a carrier amends the delivery scan the "delivered"
-conclusion rested on. Read what the page says rather than predicting it. The outcomes quoted below
-are the offline ones (fixture evidence and fact rules, which give the same result every time);
-with a live model the conclusions vary between runs.
+The demo opens on the **Hotel chargeback**, the case where the two approaches part most clearly,
+then shows a correction by hand on the **Disputed delivery**. Read what the page says rather than
+predicting it. Outcomes quoted as "offline" use fixture evidence and fact rules, which give the
+same result every time; with a live model the conclusions can vary between runs.
 
 **0:00 The problem (15 s).** Evidence changes after the fact. A stateless model call answers from
 whatever it is handed; nothing ties its old answer to the record that was just replaced.
 
-**0:15 The original evidence and the first conclusion (30 s).** Select **Disputed delivery** and
-click **Run investigation**.
-- Offline: *Leading, not established*: delivered (0.61). It rests on the carrier's scan
-  `EV-CAR-003` "DELIVERED, left at front door" (+0.17), and the customer's "nothing arrived"
-  (`EV-SUP-004`) counts against it.
+**0:15 The hotel chargeback, side by side (70 s).** Select **Hotel chargeback** and open its
+**Speck vs. baseline** tab. Offline, click **Run the side-by-side comparison** (a second). With a
+model configured, open a saved live one from 2026-10-26 under **Other saved comparisons** (Bolt
+E4B, badge LIVE MODEL CALLS), or run one (about 100 s). Then walk the six stages:
+1. **Booked:** neither concludes.
+2. **No-show:** the night audit flags a no-show and the travel agency relays it. Both conclude
+   "no-show", where the label says wait: the agency's record is only the hotel's own report, and
+   the stay is not over. Say: "Both fall for it. Speck counted the relay as a second source."
+3. **Late check-in:** the night audit is corrected (a late arrival) and door-lock entries show the
+   booking's key in use. The stateless call says "stayed"; Speck leans to it without concluding
+   (live) or concludes it (offline).
+4. **Dispute:** the guest says they never stayed. The stateless call keeps "stayed", rightly; Speck
+   holds back, because something now counts against it. That is Speck's caution, and its cost.
+5. **Re-attributed:** the check-in and the key entries turn out to be a walk-in guest's; both
+   corrections replace the records that showed the stay, so the night audit's no-show counts
+   again. Point at the two columns:
+   - **Stateless:** offline it keeps "stayed", citing the two replaced records (badge *relies on
+     replaced record N7H-04, N7H-05*); live, it loses the thread and answers "unresolved".
+   - **Speck:** "no-show". *Why it changed*: `N7H-04` and `N7H-05` no longer count, and the belief
+     is rebuilt from what still does.
+6. **Refunded:** the agency refunds the booking as a no-show. Speck holds "no-show"; the stateless
+   side still does not.
 
-**0:45 The correction (30 s).** Click **Introduce prepared update**, then **Run investigation**.
-- The carrier's proof-of-delivery review `EV-CAR-005` replaces `EV-CAR-003`: the GPS fix was
-  380 m away, at No. 41 Lydiard St *North*, where the resident is holding the parcel (`EV-SUP-006`).
-- Offline: *supported*: delivered to the wrong address (0.70); delivered is rejected by
-  `EV-CAR-005`.
-- **Why this changed**: `EV-CAR-003` no longer counts, because its source replaced it.
+Say the counts: "At the re-attribution and after, Speck concluded no-show in every run we have:
+the fact rules, the 4B three times out of three and Bolt E4B three out of three, and in all three
+saved live comparisons. The stateless side never did." (`docs/set-7-conflicting-receipts.md`,
+section 6; the saved comparisons are in `eval/results/comparisons/c7-hotel-chargeback/`.)
 
-**1:15 The baseline beside Speck (50 s).** Open the case's **Speck vs. baseline** tab. Offline,
-the current comparison is deterministic, and there the rule baseline also moves to "misdelivered"
-without citing the old scan; only Speck records why. Under **Other saved comparisons** (newest
-first, each with its model and badge LIVE MODEL CALLS) are two kinds of live sample:
-- **Bolt E4B, 2026-10-26** (the six newest; the current model): both approaches reach
-  "misdelivered" and neither cites the replaced scan. Only Speck records why. Open one first.
-- **Nemotron 3 Nano 4B, 2026-10-25** (below them): the weaker model's stateless call kept
-  "delivered" on the replaced scan. Open the newest 4B one that completed (12:33 UTC); the 4B
-  entry above it is the sample in which the model's reply failed.
+**1:25 A correction by hand (35 s).** Select **Disputed delivery** and click **Run investigation**:
+offline, *Leading, not established*: delivered (0.61), resting on the carrier's scan `EV-CAR-003`.
+Click **Introduce prepared update**, then **Run investigation**: the carrier's review `EV-CAR-005`
+replaces the scan, and Speck holds *supported*: delivered to the wrong address (0.70). **Why this
+changed**: `EV-CAR-003` no longer counts, because its source replaced it.
 
-The page notes these were made with other settings; they are the saved reports, not replays. On
-the 4B sample:
-- **Stage 2:** the *correction* line, and `EV-CAR-003` struck through, *replaced by EV-CAR-005*.
-- **Stateless column:** still *concludes H-DELIVERED*, citing `EV-CAR-003`, with the badge
-  *relies on replaced record EV-CAR-003*, and "Why it changed: not recorded".
-- **Speck column:** in this sample Speck concluded "delivered" at stage 1 and concludes nothing
-  after the correction. *Why it changed (recorded by Speck)*: `EV-CAR-003` *no longer counts*,
-  and "delivered" rebuilt from its prior: was supported, 0.66.
-- **Why they differ**, under the columns: the stateless call cites `EV-CAR-003`, "which no longer
-  counts".
+**2:00 The history is kept (15 s).** The **History** tab keeps the earlier revisions, badged
+*historical: belief since replaced*; the **Evidence** tab still lists `EV-CAR-003`, marked *no
+longer counts: replaced by EV-CAR-005*. Nothing is erased.
 
-Say the counts, not just this sample: "With the 4B, in the 12 live comparisons of 2026-10-25, the
-stateless call cited the replaced scan 12 times; Speck in none of the 9 that completed (3 errored).
-With Bolt E4B, the stateless call cited it in none of 6: a stronger reading fixed that on its own.
-What stays is that Speck records which record stopped counting and why, and keeps withdrawn
-evidence out of its support every time; the Bolt baseline did not, in 3 of 15 held-out
-checkpoint-samples."
-
-**2:05 The history is kept (20 s).** Back on the case: under **Why this changed** (Conclusion
-tab), "delivered" was held at 0.61 and is no longer held; the **History** tab keeps the earlier
-revisions, badged *historical: belief since replaced*; the **Evidence** tab still
-lists `EV-CAR-003`, marked *no longer counts: replaced by EV-CAR-005*. Nothing is erased.
-
-**2:25 The sponsors, briefly (10 s).** Open **Audit**, then **Execution trace**.
-- **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
-- **Zetaris, Nightshift and Nemotron:** with live services, four SELECTs with query tokens and,
-  per chunk, the served model `nvidia/nemotron-3.5-bolt-e4b`, reached through Nightshift. Offline
-  the trace says plainly FIXTURE FILE - NOT ZETARIS and that the rule assessor (no model) judged
-  the evidence. In that case point at the saved sponsor receipt of 2026-10-26
-  (`eval/results/sponsors/`), not at the page.
-
-**2:35 The measured results (15 s).** Open **Evaluation results** (beside the cases) at *Results
-across models*. Point at the set 7 rows: on conflicting receipts over time the better model's
+**2:15 The measured results (20 s).** Open **Evaluation results** (beside the cases) at *Results
+across models*. Point at the set 7 rows: on receipts that conflict over time, the better model's
 stateless call still concluded the wrong explanation and leaned on replaced records; Speck never
 did, on either model, but abstained so often that the stateless call matched the label more.
 
-**2:45 The advantage and the limitation (15 s).** "What this demonstrates is evidence-aware
-revision and traceability: what each conclusion rests on, what stopped counting when the evidence
-changed, and what was believed before. It does not demonstrate better accuracy: on cases locked
-before any run, Speck and the stateless call both scored 18 of 30 with the 4B, and with Bolt E4B the
-stateless call is ahead; Speck still concludes from weak or same-source agreement, and our newer
-rule's gain was not the rule's own."
+**2:35 The sponsors, briefly (10 s).** Open **Audit**, then **Execution trace**.
+- **Meterless:** the engine's run id and chunks, "present in the engine's history.json".
+- **Zetaris, Nightshift and Nemotron:** with live services, the disputed delivery's four SELECTs
+  with query tokens and, per chunk, the served model `nvidia/nemotron-3.5-bolt-e4b`, reached
+  through Nightshift. Offline the trace says plainly FIXTURE FILE - NOT ZETARIS and that the rule
+  assessor (no model) judged the evidence; then point at the saved sponsor receipt of 2026-10-26
+  (`eval/results/sponsors/`), not at the page.
+
+**2:45 The advantage and the limitation (15 s).** "When receipts conflict over time, Speck keeps
+track of which ones still count, and when it concludes, it is never the wrong explanation and
+never rests on a replaced record. But it holds back too often: on the locked cases the stateless
+call still matched the label more often. What this demonstrates is evidence-aware revision and
+traceability, not better accuracy."
+
+**If asked: the disputed delivery's comparison.** With the 4B, in the 12 live comparisons of
+2026-10-25, the stateless call kept "delivered" on the replaced scan 12 times; Speck in none of the
+9 that completed (3 errored). With Bolt E4B the stateless call no longer did (0 of 6): a stronger
+reading fixed that case on its own, and only Speck recorded why. Both kinds of sample are under
+**Other saved comparisons** on that case, each labelled with its model.
 
 **If asked: the bank return.** It shows the same mechanism with a second kind of correction (a
 returned payment, and a ledger that restates its own "paid"), and it is where Speck lost: before
@@ -238,12 +238,12 @@ a service is off.
 2. **The approach.** Speck holds the case as state: evidence ledger, competing explanations,
    each judgment and its confidence change, every revision. Corrections rebuild the beliefs that
    rested on the replaced record; the old ones stay as history.
-3. **Side by side, live** (a screenshot of the disputed delivery's comparison panel). Same records,
-   same model. With the 4B on 2026-10-25 the stateless call kept "delivered" and cited the
-   replaced scan in 12 of 12 samples; Speck dropped it and recorded why in all 9 that completed (3
-   errored, and are shown as errors). With Bolt E4B on 2026-10-26 both reached "misdelivered" (6
-   of 6) and only Speck recorded why: a stronger model fixed the baseline's reading, not its
-   missing record of what changed.
+3. **Side by side, live** (a screenshot of the hotel chargeback's comparison panel at the
+   re-attribution). Same records, same model: once the check-in and key entries are found to be
+   another guest's, Speck concludes "no-show" and shows which records stopped counting; the
+   stateless call keeps "stayed" on the replaced records (fact rules, 4B) or cannot decide (Bolt
+   E4B), in every run measured. Earlier, both fell for a relayed no-show, and Speck held back at
+   the dispute where the stateless call was right.
 4. **Across models** (a screenshot of *Results across models*): from the 4B to Bolt E4B the
    stateless call improves on every suite and Speck's accuracy does not move. On set 7, receipts
    that conflict over time, Bolt's stateless call falls to 60% and still concludes wrongly where a
@@ -312,7 +312,7 @@ http://127.0.0.1:4320. It shows one case, chosen by `EVIDENCE_DESK_SCENARIO` (se
 - That Bolt E4B runs on the device. It is served by NVIDIA through Nightshift.
 - That Speck never relied on a replaced record. In 3 errored live samples its unassessed state still did; say "none of the 9 that completed".
 - That abstaining is always right. Speck also abstains where a conclusion was due.
-- That Speck is generally more accurate than a model call, or eliminates invented answers. The comparison shows behaviour on two cases, in both directions.
+- That Speck is generally more accurate than a model call, or eliminates invented answers. The comparison shows behaviour on three cases, in both directions.
 - That live reasoning is generally better.
 - That any evaluation number came from a hosted or larger Nemotron, or that the client's direct NVIDIA hosted-API path was used. Nightshift's routing to larger Nemotrons is a sponsor-check receipt only.
 - That Cursor is part of the running system. It is a development tool the team reports using.

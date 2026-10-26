@@ -54,7 +54,14 @@ const ASSETS: Record<string, { file: string; type: string }> = {
   "style.css": { file: path.join(PUBLIC_DIR, "style.css"), type: "text/css" }
 };
 
-// The cases the tab offers. The disputed delivery follows the plugin's
+// The cases the tab offers. The hotel chargeback comes first: it is set 7's
+// case (eval/challenge-7/, docs/set-7-conflicting-receipts.md) where the two
+// approaches part most clearly, in every mode measured: once a check-in and
+// door-lock entries are re-attributed to another guest, Speck follows the
+// night audit's no-show back while the stateless side keeps the stay or
+// loses the thread. Its evidence exists only as a fixture; the assessor
+// follows the plugin's settings, so it is live when a model is configured.
+// The disputed delivery follows the plugin's
 // settings (live Zetaris and Nemotron, or fixtures); the bank return is the
 // held-out correction case and always runs on its fixture with the rules.
 // Why the bank return is fixed: its evidence exists only as a fixture, and
@@ -69,6 +76,7 @@ export interface CaseSpec {
   yours?: boolean;
 }
 export const CASES: CaseSpec[] = [
+  { id: "hotel-chargeback", label: "Hotel chargeback", scenarioDir: "eval/challenge-7/hotel-chargeback", fixed: { evidenceMode: "fixture" } },
   { id: "disputed-delivery", label: "Disputed delivery", scenarioDir: "fixtures/scenarios/disputed-delivery" },
   { id: "bank-return", label: "Bank return", scenarioDir: "eval/scenarios/correction-supersedes", fixed: { evidenceMode: "fixture", reasoner: "rules" } }
 ];

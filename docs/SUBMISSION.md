@@ -43,7 +43,17 @@ Evidence Desk's code, and Speck's cognition, priors, cap and threshold are uncha
 
 ## Demonstration: a correction to evidence
 
-The disputed delivery, in the case's **Speck vs. baseline** tab:
+**The demo opens on the hotel chargeback** (set 7's case, receipts conflicting over six stages),
+in its **Speck vs. baseline** tab. A no-show is reported and relayed, then disproved by a late
+check-in and door-lock entries, disputed by the guest, and finally reinstated when both the
+check-in and the key entries turn out to be a walk-in guest's. At that re-attribution and after,
+Speck concludes "no-show" and shows which records stopped counting; the stateless side keeps
+"stayed" on the replaced records (fact rules, Nano 4B) or cannot decide (Bolt E4B), in every run
+measured (the evaluation's 3 repeats per model, and 3 saved live comparisons with Bolt). The same
+panel shows where Speck does worse: both fall for the relayed no-show, and Speck holds back at the
+dispute where the stateless call is right.
+
+Then a correction by hand, on the disputed delivery, in the case's **Speck vs. baseline** tab:
 1. The carrier's scan `EV-CAR-003` says "delivered", supporting *delivered*.
 2. The carrier's proof-of-delivery review `EV-CAR-005` replaces it: the parcel went to No. 41
    *North*, where the resident is holding it.
@@ -232,7 +242,8 @@ The submodule is pinned to upstream Speck.
    - A record whose assessment keeps failing can be withdrawn before assessment, without
      inventing a judgment.
 5. **It uses Speck's own views, and anyone can bring a case.**
-   - One guided demo walks both cases, then the measured results across models (set 7
+   - One guided demo opens on the hotel chargeback's comparison, walks the two other cases, then
+     the measured results across models (set 7
      highlighted), then Speck's World view (the runs' actions in time), its
      Memory map (the case's records and assessments linked with Speck's association kinds:
      derived-from, supports, contradicts, inhibitory for a correction) and its chat, which

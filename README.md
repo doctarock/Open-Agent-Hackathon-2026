@@ -4,7 +4,10 @@
 
 > Open the **Evidence** tab and take the guided demo. It includes **Speck beside a stateless
 > baseline**, a tab on each case: one click runs the same case, with the same
-> evidence and the same correction, through both, and shows what each actually did.
+> evidence and the same correction, through both, and shows what each actually did. It opens on
+> the **Hotel chargeback**, where a check-in and door-lock entries are later re-attributed to
+> another guest: Speck follows the original no-show back, and the stateless side does not, in
+> every run measured.
 > - **The correction, side by side:** on 2026-10-25 the stateless call kept "delivered" and cited
 >   the carrier's replaced scan in 12/12 live comparisons; Speck cited it in none of the 9 that
 >   completed (in the 3 that errored, the correction stayed unassessed). That was the 4B. With
@@ -347,29 +350,33 @@ The tour's step definitions are in `public/tour.js` and are tested against real 
 
 ### Inside Speck: the guided demo, Speck's views, and your own investigations
 
-Inside Speck the Evidence tab runs one **guided demo** across both cases and Speck's views. A
+Inside Speck the Evidence tab runs one **guided demo** across the prepared cases and Speck's views. A
 prepared case's introduction offers it (*Start the guided investigation* or *Explore on my own*),
 and the *Start the guided demo* button at the end of the case picker starts or resumes it.
 
-1. **Disputed delivery** (live when configured): the case tour above, without its comparison
+1. **Hotel chargeback** (set 7's case; the configured model, or the fact rules): the case and its
+   explanations, then straight to **Speck beside a stateless baseline**, which runs all six stages
+   both ways. Its findings describe every correction, including the re-attribution where the two
+   part.
+2. **Disputed delivery** (live when configured): the case tour above, without its comparison
    and last overview steps.
-2. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
+3. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
    bank's return of the payment), a second run, and which record no longer counts. It ends on
    **Speck beside a stateless baseline**: the panel opens and runs the whole case both ways.
-3. **What the evaluation found:** the demo opens **Evaluation results** and points at *Results
+4. **What the evaluation found:** the demo opens **Evaluation results** and points at *Results
    across models*, read from the registered experiment reports: the same cases on the 4B and
    Bolt E4B, with set 7 (conflicting receipts over time) highlighted. It says what the table
    shows and what it does not (see *Results across models* below).
-4. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
+5. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
    actions (Hypothesis Proposed, Memory Recorded, Belief Revised, Association Reinforced) are laid
    out in time; right-drag travels back. The panel quotes Speck's own timeline status and each
    case's run count and current conclusion, read from the plugin's API.
-5. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
+6. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
    (below); the panel quotes Speck's own count of memories and associations.
-6. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
+7. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
    completes when Speck replies (Speck's `speck:reply` event); it does not judge the reply, and
    says to check it against the case page.
-7. **Your own investigation:** the new-investigation form opens, with what creating, running and
+8. **Your own investigation:** the new-investigation form opens, with what creating, running and
    correcting one does. This part does not wait for anything: it says the guided demo is
    complete, and the viewer can go on to create one.
 
@@ -430,7 +437,7 @@ competing explanations (equal priors) and optionally the first evidence.
   - archives its chat summary;
   - moves its files to `data/deleted-cases/<time>-my-N/`, from which they can be restored.
 
-  The two prepared demo cases cannot be deleted, only reset: the button is not shown on them,
+  The prepared demo cases cannot be deleted, only reset: the button is not shown on them,
   and the server refuses them by name (HTTP 400), which a test checks for both. A later investigation may reuse the free name
   `my-N`, but each has its own scenario id, so it never attaches to a deleted case's worker.
 - The code is `src/investigation/user-cases.ts` and `retireCase` in `src/investigation/desk.ts`,
@@ -865,7 +872,9 @@ on fixtures with the rule assessor. `npm test` builds and runs every test, with 
   stores that under `speck/data/` by default; set `SPECK_DB_PATH` to use another file.
 - **Changing Evidence Desk's code.** Run `npm run plugin:install` again, then restart Speck.
 
-The tab offers two cases:
+The tab offers three cases:
+- **Hotel chargeback** (set 7's `hotel-chargeback`) runs on its fixture with the configured
+  assessor: the model when one is set, otherwise the fact rules.
 - **Disputed delivery** follows the plugin's settings (live Zetaris and Nemotron, or fixtures).
 - **Bank return** always runs on its fixture with the rule assessor.
 
@@ -968,7 +977,7 @@ showed this as one retry.
 | `npm run configure` | Choose the model (Meterless Runtime, local Ollama, NVIDIA's API, or rules) and the evidence source (fixtures, local Zetaris, another Zetaris address); checks each against the real service and writes `.env`. `--model`, `--evidence`, `--yes` skip the questions. |
 | `npm run speck` | Start Speck with Evidence Desk's Evidence tab as its home view (`SPECK_HOME_VIEW`; set it to `world` for Speck's default). Other `SPECK_*` settings pass through. A Speck already running on the same port is stopped first; anything else on the port is left alone and Speck does not start. Once Speck answers, it opens in the default browser (`SPECK_OPEN_BROWSER=0` to skip). |
 | `npm run investigate -- <case>` | One case from structured input to structured output, every stage, with the execution trace as JSON Lines on stdout and in `logs/`. Sample mode by default (no `.env`, credentials or network); `--live` uses `.env`; `--output <file>` writes the result. See *Command line*. |
-| `npm run compare` | Speck beside the stateless baseline on both prepared cases, deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
+| `npm run compare` | Speck beside the stateless baseline on the prepared cases (`-- --only <case>` for one), deterministic (fixtures, rules). Saves each report as a new file in `eval/results/comparisons/<scenario>/`; the page shows them. |
 | `npm run compare:live` | The same with the settings in `.env`: the configured model provider for both cases, and Zetaris for the disputed delivery. Exits 2 if no usable model is configured. |
 | `npm run eval:reasoning` | The live evaluation on local Ollama with the model's reasoning off and on (three repeats each, alternated); writes each report and a `summary.md` to `eval/results/experiments/reasoning/<time>/`, never `live.json`. Needs the 16K model: `ollama create nemotron-3-nano-4b-ctx16k -f config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile`. `-- --summarize <dir>` re-summarises a folder. |
 | `npm run eval:cross-domain` | The separate cross-domain suite (`eval/cross-domain/`): logistics, payment reversals, procurement; refuses to run if its locked expectations changed. Findings: `docs/cross-domain-evaluation.md` |
@@ -1667,8 +1676,9 @@ from a security review of this repository's code (Speck is reviewed separately).
 
 - **Restatement assumes one entity per fact key.** A source reporting the same fact for two different items in one case would wrongly make one out of date. No current case does this.
 
-- **The side-by-side comparison is two cases.** Six live samples each of a small local model show
-  behaviour on these cases, in both directions; they are not rates and no significance is claimed.
+- **The side-by-side comparison is three cases.** Six live samples per model of the delivery and
+  the bank return, and three with Bolt E4B of the hotel chargeback, show behaviour on these cases,
+  in both directions; they are not rates and no significance is claimed.
   The difference between the columns reflects Speck's whole policy (thresholds, decisive rules,
   supersession, the 0.4 cap), not persistence alone. The bank return's evidence exists only as a
   fixture, so its live comparison uses the model but not Zetaris. Inside Speck the panel polls

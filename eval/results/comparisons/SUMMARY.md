@@ -9,6 +9,224 @@ was labelled; "Abstained (right)" is abstaining where the label is no conclusion
 presented support includes a record its source replaced / later restated. "By corroboration": Speck conclusions reached by
 rule corroborated-1 while Speck's own confidence was below its threshold.
 
+## Did guest R. Lindqvist stay on 12-14 October?: deterministic, deterministic rules, evidence fixture file
+
+Policy: build-4 (restatement, corroborated-1). 1 sample(s), 2026-10-26T14:34 to 2026-10-26T14:34 UTC.
+
+**Booking confirmed for 12-14 Oct (11 Oct)** (label: no conclusion justified)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 1 | nothing 1 |
+| Matches label | 1/1 (100%) | 1/1 (100%) |
+| Unsupported conclusion | 0/1 (0%) | 0/1 (0%) |
+| Abstained (due) | 0/1 (0%) | 0/1 (0%) |
+| Abstained (right) | 1/1 (100%) | 1/1 (100%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/1 (0%) | 0/1 (0%) |
+| Support includes an out-of-date record | 0/1 (0%) | 0/1 (0%) |
+| Recorded why it changed | 0/1 (0%) | 0/1 (0%) |
+| By corroboration | 0/1 (0%) | – |
+| Errors | 0/1 (0%) | 0/1 (0%) |
+
+**The night audit shows no check-in; the agency records a no-show (13 Oct)** (label: no conclusion justified)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 1 | H-NO-SHOW 1 |
+| Matches label | 0/1 (0%) | 0/1 (0%) |
+| Unsupported conclusion | 0/1 (0%) | 0/1 (0%) |
+| Abstained (due) | 0/1 (0%) | 0/1 (0%) |
+| Abstained (right) | 0/1 (0%) | 0/1 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/1 (0%) | 0/1 (0%) |
+| Support includes an out-of-date record | 0/1 (0%) | 0/1 (0%) |
+| Recorded why it changed | 1/1 (100%) | 0/1 (0%) |
+| By corroboration | 0/1 (0%) | – |
+| Errors | 0/1 (0%) | 0/1 (0%) |
+
+**A late check-in is found, with door-lock entries (15 Oct)** (label: H-STAYED)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-STAYED 1 | H-STAYED 1 |
+| Matches label | 1/1 (100%) | 1/1 (100%) |
+| Unsupported conclusion | 0/1 (0%) | 0/1 (0%) |
+| Abstained (due) | 0/1 (0%) | 0/1 (0%) |
+| Abstained (right) | 0/1 (0%) | 0/1 (0%) |
+| Followed a labelled change | 1/1 (100%) | 1/1 (100%) |
+| Support includes a replaced record | 0/1 (0%) | 0/1 (0%) |
+| Support includes an out-of-date record | 0/1 (0%) | 0/1 (0%) |
+| Recorded why it changed | 1/1 (100%) | 0/1 (0%) |
+| By corroboration | 0/1 (0%) | – |
+| Errors | 0/1 (0%) | 0/1 (0%) |
+
+**The guest disputes the charge (28 Oct)** (label: H-STAYED)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 1 | H-STAYED 1 |
+| Matches label | 0/1 (0%) | 1/1 (100%) |
+| Unsupported conclusion | 0/1 (0%) | 0/1 (0%) |
+| Abstained (due) | 1/1 (100%) | 0/1 (0%) |
+| Abstained (right) | 0/1 (0%) | 0/1 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/1 (0%) | 0/1 (0%) |
+| Support includes an out-of-date record | 0/1 (0%) | 0/1 (0%) |
+| Recorded why it changed | 1/1 (100%) | 0/1 (0%) |
+| By corroboration | 0/1 (0%) | – |
+| Errors | 0/1 (0%) | 0/1 (0%) |
+
+**The check-in and the key entries are found to be another guest's (2 Nov)** (label: H-NO-SHOW)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 1 | H-STAYED 1 |
+| Matches label | 1/1 (100%) | 0/1 (0%) |
+| Unsupported conclusion | 0/1 (0%) | 1/1 (100%) |
+| Abstained (due) | 0/1 (0%) | 0/1 (0%) |
+| Abstained (right) | 0/1 (0%) | 0/1 (0%) |
+| Followed a labelled change | 1/1 (100%) | 0/1 (0%) |
+| Support includes a replaced record | 0/1 (0%) | 1/1 (100%) |
+| Support includes an out-of-date record | 0/1 (0%) | 0/1 (0%) |
+| Recorded why it changed | 1/1 (100%) | 0/1 (0%) |
+| By corroboration | 0/1 (0%) | – |
+| Errors | 0/1 (0%) | 0/1 (0%) |
+
+**The agency refunds the booking as a no-show (5 Nov)** (label: H-NO-SHOW)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 1 | H-STAYED 1 |
+| Matches label | 1/1 (100%) | 0/1 (0%) |
+| Unsupported conclusion | 0/1 (0%) | 1/1 (100%) |
+| Abstained (due) | 0/1 (0%) | 0/1 (0%) |
+| Abstained (right) | 0/1 (0%) | 0/1 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/1 (0%) | 1/1 (100%) |
+| Support includes an out-of-date record | 0/1 (0%) | 0/1 (0%) |
+| Recorded why it changed | 1/1 (100%) | 0/1 (0%) |
+| By corroboration | 0/1 (0%) | – |
+| Errors | 0/1 (0%) | 0/1 (0%) |
+
+<details><summary>Every sample</summary>
+
+| Sample | Models served | Booking confirmed for 12-14 Oct (11 Oct) | The night audit shows no check-in; the agency records a no-show (13 Oct) | A late check-in is found, with door-lock entries (15 Oct) | The guest disputes the charge (28 Oct) | The check-in and the key entries are found to be another guest's (2 Nov) | The agency refunds the booking as a no-show (5 Nov) |
+|---|---|---|---|---|---|---|---|
+| `2026-10-26T14-34-21-484Z-4fa79ace` | none (no model) | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S H-STAYED; B H-STAYED | S nothing (~H-STAYED 0.714); B H-STAYED | S H-NO-SHOW; B H-STAYED [cites replaced N7H-04,N7H-05] | S H-NO-SHOW; B H-STAYED [cites replaced N7H-04,N7H-05] |
+
+</details>
+
+## Did guest R. Lindqvist stay on 12-14 October?: live, Nemotron nvidia/nemotron-3.5-bolt-e4b, evidence fixture file
+
+Policy: build-4 (restatement, corroborated-1). 3 sample(s), 2026-10-26T14:36 to 2026-10-26T14:39 UTC.
+
+**Booking confirmed for 12-14 Oct (11 Oct)** (label: no conclusion justified)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 3 | nothing 3 |
+| Matches label | 3/3 (100%) | 3/3 (100%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 0/3 (0%) |
+| Abstained (right) | 3/3 (100%) | 3/3 (100%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 0/3 (0%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The night audit shows no check-in; the agency records a no-show (13 Oct)** (label: no conclusion justified)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 3 | H-NO-SHOW 3 |
+| Matches label | 0/3 (0%) | 0/3 (0%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 0/3 (0%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**A late check-in is found, with door-lock entries (15 Oct)** (label: H-STAYED)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 3 | H-STAYED 3 |
+| Matches label | 0/3 (0%) | 3/3 (100%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 3/3 (100%) | 0/3 (0%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | 0/3 (0%) | 3/3 (100%) |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The guest disputes the charge (28 Oct)** (label: H-STAYED)
+
+| | S | B |
+|---|---|---|
+| Concluded | nothing 3 | H-STAYED 3 |
+| Matches label | 0/3 (0%) | 3/3 (100%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 3/3 (100%) | 0/3 (0%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The check-in and the key entries are found to be another guest's (2 Nov)** (label: H-NO-SHOW)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 3 | nothing 3 |
+| Matches label | 3/3 (100%) | 0/3 (0%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 3/3 (100%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | 3/3 (100%) | 0/3 (0%) |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+**The agency refunds the booking as a no-show (5 Nov)** (label: H-NO-SHOW)
+
+| | S | B |
+|---|---|---|
+| Concluded | H-NO-SHOW 3 | nothing 3 |
+| Matches label | 3/3 (100%) | 0/3 (0%) |
+| Unsupported conclusion | 0/3 (0%) | 0/3 (0%) |
+| Abstained (due) | 0/3 (0%) | 3/3 (100%) |
+| Abstained (right) | 0/3 (0%) | 0/3 (0%) |
+| Followed a labelled change | – | – |
+| Support includes a replaced record | 0/3 (0%) | 0/3 (0%) |
+| Support includes an out-of-date record | 0/3 (0%) | 0/3 (0%) |
+| Recorded why it changed | 3/3 (100%) | 0/3 (0%) |
+| By corroboration | 0/3 (0%) | – |
+| Errors | 0/3 (0%) | 0/3 (0%) |
+
+<details><summary>Every sample</summary>
+
+| Sample | Models served | Booking confirmed for 12-14 Oct (11 Oct) | The night audit shows no check-in; the agency records a no-show (13 Oct) | A late check-in is found, with door-lock entries (15 Oct) | The guest disputes the charge (28 Oct) | The check-in and the key entries are found to be another guest's (2 Nov) | The agency refunds the booking as a no-show (5 Nov) |
+|---|---|---|---|---|---|---|---|
+| `2026-10-26T14-36-09-935Z-a5e4d46f` | nvidia/nemotron-3.5-bolt-e4b | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S nothing (~H-STAYED 0.58); B H-STAYED | S nothing (~H-STAYED 0.444); B H-STAYED | S H-NO-SHOW; B nothing | S H-NO-SHOW; B nothing |
+| `2026-10-26T14-37-46-358Z-60ce3aa8` | nvidia/nemotron-3.5-bolt-e4b | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S nothing (~H-STAYED 0.58); B H-STAYED | S nothing (~H-STAYED 0.444); B H-STAYED | S H-NO-SHOW; B nothing | S H-NO-SHOW; B nothing |
+| `2026-10-26T14-39-32-166Z-4a779ced` | nvidia/nemotron-3.5-bolt-e4b | S nothing; B nothing | S H-NO-SHOW; B H-NO-SHOW | S nothing (~H-STAYED 0.58); B H-STAYED | S nothing (~H-STAYED 0.444); B H-STAYED | S H-NO-SHOW; B nothing | S H-NO-SHOW; B nothing |
+
+</details>
+
 ## Disputed delivery of order ORD-1042: deterministic, deterministic rules, evidence fixture file
 
 Policy: build-4 (restatement, corroborated-1). 1 sample(s), 2026-10-25T13:01 to 2026-10-25T13:01 UTC.

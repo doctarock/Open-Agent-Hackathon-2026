@@ -5,20 +5,26 @@ import { publishedComparisonsDir, runComparison, saveComparison, type Comparison
 import { loadScenario } from "../scenario.js";
 import { createEvidenceProvider } from "../evidence/provider.js";
 
-// npm run compare        Speck beside the stateless baseline on both prepared
+// npm run compare        Speck beside the stateless baseline on the prepared
 //                        cases, deterministic (fixture evidence, rule assessor)
 // npm run compare:live   the same with the settings in .env: the configured
-//                        Nemotron endpoint for both cases, and the configured
+//                        Nemotron endpoint for every case, and the configured
 //                        evidence source (Zetaris) for the disputed delivery
+// -- --only <case id>    one case (hotel-chargeback, bank-return, disputed-delivery)
 //
 // Each report is saved as a new file under eval/results/comparisons/<scenario>/;
 // none is ever overwritten. The page shows the same reports per case.
 
 const live = process.argv.includes("--live");
+// --only <case id>: one case, so a new case's samples can be made without
+// adding samples to the others.
+const only = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
 if (live) loadDotEnv();
 
 
 const cases = [
+  // Set 7's hotel chargeback, the demo's first case; fixture evidence only.
+  { id: "hotel-chargeback", scenarioDir: "eval/challenge-7/hotel-chargeback", fixtureOnly: true },
   // The bank return's evidence exists only as a fixture file.
   { id: "bank-return", scenarioDir: "eval/scenarios/correction-supersedes", fixtureOnly: true },
   { id: "disputed-delivery", scenarioDir: "fixtures/scenarios/disputed-delivery", fixtureOnly: false }
@@ -39,7 +45,8 @@ if (live) {
 }
 
 let failed = false;
-for (const item of cases) {
+if (only && !cases.some((item) => item.id === only)) throw new Error(`--only must be one of ${cases.map((item) => item.id).join(", ")}`);
+for (const item of cases.filter((candidate) => !only || candidate.id === only)) {
   const config = configFor(item.scenarioDir, item.fixtureOnly);
   if (live) config.reasoner = "nemotron";
   const provider = createEvidenceProvider(config);

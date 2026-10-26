@@ -12,15 +12,17 @@ const tour = await import(pathToFileURL(path.join(ROOT_DIR, "public", "tour.js")
 const text = (items: unknown[]): string => items.flat(Infinity).filter(Boolean).join("\n");
 const part = (id: string) => journey.JOURNEY.find((item: any) => item.id === id);
 
-test("the demo runs both prepared cases (the disputed delivery, then the bank return, which ends on the side-by-side comparison), then what the evaluation found, then Speck's world view, memory map and chat, then the person's own investigation", () => {
-  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["delivery", "bank", "results", "world", "memory", "chat", "create"]);
+test("the demo opens on the hotel chargeback's side-by-side comparison, runs the two cases worked by hand (the disputed delivery, then the bank return, which ends on its comparison), then what the evaluation found, then Speck's world view, memory map and chat, then the person's own investigation", () => {
+  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["hotel", "delivery", "bank", "results", "world", "memory", "chat", "create"]);
   assert.ok(journey.JOURNEY.every((item: any, index: number) => item.label.startsWith(`Part ${index + 1} of ${journey.JOURNEY.length} `)), "the parts are numbered in order");
-  assert.deepEqual([part("bank").caseId, part("delivery").caseId], ["bank-return", "disputed-delivery"]);
+  assert.deepEqual([part("hotel").caseId, part("bank").caseId, part("delivery").caseId], ["hotel-chargeback", "bank-return", "disputed-delivery"]);
   const known = new Set(tour.TOUR_STEPS.map((step: any) => step.id));
   for (const item of journey.JOURNEY.filter((entry: any) => entry.kind === "case")) {
     for (const id of item.steps) assert.ok(known.has(id), `${item.id}: ${id} is a step of the case tour`);
-    for (const action of ["run", "update", "rerun"]) assert.ok(item.steps.includes(action), `${item.id} has the ${action} step`);
+    // The two cases worked by hand; the hotel chargeback goes straight to its comparison.
+    if (item.id !== "hotel") for (const action of ["run", "update", "rerun"]) assert.ok(item.steps.includes(action), `${item.id} has the ${action} step`);
   }
+  assert.deepEqual(part("hotel").steps, ["case", "compare"]);
   assert.ok(part("bank").steps.includes("changed"), "the bank return shows its correction");
 });
 
