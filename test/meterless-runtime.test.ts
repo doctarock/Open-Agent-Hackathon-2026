@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { loadConfig } from "../src/config.js";
 import { autoDetectMeterless, describeMeterlessModel, METERLESS_APP_ID, normaliseMeterlessUrl, parseConnectLink, probeMeterless } from "../src/reasoning/meterless.js";
 import { chatEndpoint, modelConfigProblem, NemotronProcessor } from "../src/reasoning/nemotron.js";
+import { parseModelCompletion } from "#speck";
 
 // A stand-in Meterless Runtime: it checks the bearer token on every call,
 // lists routing modes on /v1/models, and answers chat with a plain string. It
@@ -93,11 +94,16 @@ test("Auto Detect saves the first online or unauthorized candidate, skipping off
 
 test("Meterless is the default provider; its token comes from the settings, and rt-local is no token", () => {
   const meterless = loadConfig({ REASONER: "nemotron", meterless_runtime_token: TOKEN }).nemotron;
-  assert.deepEqual([meterless.provider, meterless.baseUrl, meterless.model, meterless.timeoutMs], ["meterless", "http://127.0.0.1:8088/v1", "meterless/auto", 180_000]);
+  assert.deepEqual([meterless.provider, meterless.baseUrl, meterless.model, meterless.timeoutMs], ["meterless", "http://127.0.0.1:8088/v1", "nvidia/nemotron-3.5-bolt-e4b", 180_000]);
   assert.equal(meterless.apiKey, TOKEN);
   assert.equal(modelConfigProblem(meterless), null);
   assert.match(modelConfigProblem(loadConfig({ meterless_runtime_token: "rt-local" }).nemotron) ?? "", /meterless_runtime_token is not set/);
-  assert.match(modelConfigProblem(loadConfig({ meterless_runtime_token: TOKEN, METERLESS_MODEL: "nemotron-3-nano:4b" }).nemotron) ?? "", /not a Meterless routing mode/);
+  assert.match(modelConfigProblem(loadConfig({ meterless_runtime_token: TOKEN, METERLESS_MODEL: "nemotron-3-nano:4b" }).nemotron) ?? "", /neither a Meterless routing mode/);
+  // A model the runtime lists by name is accepted if it is a Nemotron; a
+  // routing mode still is; another named model is not the assessor.
+  assert.equal(modelConfigProblem(loadConfig({ meterless_runtime_token: TOKEN, METERLESS_MODEL: "local-runtime/nemotron-3.5-bolt-e4b" }).nemotron), null);
+  assert.equal(modelConfigProblem(loadConfig({ meterless_runtime_token: TOKEN, METERLESS_MODEL: "meterless/auto" }).nemotron), null);
+  assert.match(modelConfigProblem(loadConfig({ meterless_runtime_token: TOKEN, METERLESS_MODEL: "local-runtime/gemma-4-e4b-it" }).nemotron) ?? "", /does not name a Nemotron model/);
   // An existing NEMOTRON_BASE_URL keeps its endpoint; local Ollama and NVIDIA have their own defaults.
   assert.equal(loadConfig({ NEMOTRON_BASE_URL: "http://127.0.0.1:11434/v1" }).nemotron.provider, "openai-compatible");
   assert.equal(loadConfig({ MODEL_PROVIDER: "ollama" }).nemotron.baseUrl, "http://127.0.0.1:11434/v1");
@@ -108,10 +114,27 @@ test("Meterless is the default provider; its token comes from the settings, and 
   assert.equal(chatEndpoint({ ...nvidia, ...loadConfig({ MODEL_PROVIDER: "nvidia", NEMOTRON_API_KEY: "k-1" }).nemotron }).headers.authorization, "Bearer k-1");
 });
 
+test("Nightshift is not asked for JSON mode; Speck's contract takes the JSON after the engine's '>> action' line", async () => {
+  const runtime = await standIn();
+  try {
+    const contract = { name: "check", required: ["ok"], properties: { ok: { type: "boolean" as const } } };
+    const request = { prompt: "p", temperature: 0, timeoutMs: 5000, contract } as any;
+    await new NemotronProcessor(loadConfig({ REASONER: "nemotron", METERLESS_BASE_URL: `${runtime.url}/v1`, meterless_runtime_token: TOKEN }).nemotron).infer(request);
+    await new NemotronProcessor(loadConfig({ REASONER: "nemotron", MODEL_PROVIDER: "openai-compatible", NEMOTRON_BASE_URL: `${runtime.url}/v1`, NEMOTRON_MODEL: "nemotron-x", NEMOTRON_API_KEY: TOKEN }).nemotron).infer(request);
+    const [throughNightshift, elsewhere] = runtime.seen.filter((call) => call.path === "/v1/chat/completions").map((call) => call.body);
+    assert.equal(throughNightshift.response_format, undefined);
+    assert.deepEqual(elsewhere.response_format, { type: "json_object" }, "other endpoints keep JSON mode");
+    // What Bolt E4B wrote on a first chunk: the engine's log line, then the JSON.
+    assert.deepEqual(parseModelCompletion(">> action\n{\"ok\": true}", contract).structured, { ok: true });
+  } finally {
+    runtime.close();
+  }
+});
+
 test("a plain text request on meterless/auto returns a string, with the token and app headers", async () => {
   const runtime = await standIn();
   try {
-    const config = loadConfig({ REASONER: "nemotron", METERLESS_BASE_URL: `${runtime.url}/v1/chat/completions`, meterless_runtime_token: TOKEN }).nemotron;
+    const config = loadConfig({ REASONER: "nemotron", METERLESS_BASE_URL: `${runtime.url}/v1/chat/completions`, METERLESS_MODEL: "meterless/auto", meterless_runtime_token: TOKEN }).nemotron;
     const processor = new NemotronProcessor(config);
     const completion = await processor.infer({ prompt: "Reply with the single word: ready", temperature: 0, timeoutMs: config.timeoutMs } as any);
     assert.equal(typeof completion.text, "string");

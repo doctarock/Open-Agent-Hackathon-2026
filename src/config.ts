@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, normaliseMeterlessUrl, usableToken } from "./reasoning/meterless.js";
+import { EVIDENCE_DESK_METERLESS_MODEL, METERLESS_TOKEN_KEY, normaliseMeterlessUrl, usableToken } from "./reasoning/meterless.js";
 
 // Configuration comes from the environment (and a local, git-ignored .env).
 // Nothing here has a credential default: a missing credential is reported
@@ -185,7 +185,7 @@ function modelConfig(env: NodeJS.ProcessEnv): NemotronConfig {
     return {
       provider, ...common,
       baseUrl: normaliseMeterlessUrl(env.METERLESS_BASE_URL ?? ""),
-      model: env.METERLESS_MODEL?.trim() || METERLESS_DEFAULT_MODEL,
+      model: env.METERLESS_MODEL?.trim() || EVIDENCE_DESK_METERLESS_MODEL,
       apiKeyEnv: METERLESS_TOKEN_KEY,
       apiKey: usableToken(secret(METERLESS_TOKEN_KEY))
     };

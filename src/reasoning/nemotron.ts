@@ -2,7 +2,7 @@ import { ModelRegistry, type ModelProcessor, type ModelProcessorDescriptor, type
 import type { NemotronConfig } from "../config.js";
 import type { EvidenceRecord } from "../evidence/types.js";
 import type { HypothesisSpec } from "../scenario.js";
-import { isMeterlessModel, meterlessHeaders, METERLESS_NAME } from "./meterless.js";
+import { isMeterlessPinnedModel, isMeterlessTarget, meterlessHeaders, METERLESS_NAME } from "./meterless.js";
 import { describeJudgments, ruleJudgments } from "./rules.js";
 import type { BatchAssessment, Explanation, ModelCallTrace, Reasoner, ReasonerDescription, ReasonerUsage, RelationJudgment } from "./types.js";
 
@@ -57,7 +57,8 @@ export function providerLabel(config: NemotronConfig): string {
 export function modelConfigProblem(config: NemotronConfig): string | null {
   if (!config.baseUrl) return "NEMOTRON_BASE_URL is not set";
   if (config.provider === "meterless") {
-    if (!isMeterlessModel(config.model)) return `METERLESS_MODEL "${config.model}" is not a Meterless routing mode (meterless/...)`;
+    if (!isMeterlessTarget(config.model)) return `METERLESS_MODEL "${config.model}" is neither a Meterless routing mode (meterless/...) nor a model the runtime lists (<provider>/<model>)`;
+    if (isMeterlessPinnedModel(config.model) && !/nemotron/i.test(config.model)) return `METERLESS_MODEL "${config.model}" does not name a Nemotron model`;
     if (!config.apiKey) return `${config.apiKeyEnv} is not set (the runtime writes its token to <stateDir>/proxy-token; run npm run configure)`;
     return null;
   }
@@ -145,6 +146,13 @@ export class NemotronProcessor implements ModelProcessor {
     const endpoint = chatEndpoint(this.config);
     const name = this.config.provider === "meterless" ? METERLESS_NAME : "Nemotron endpoint";
     const signals = [AbortSignal.timeout(request.timeoutMs), ...(request.signal ? [request.signal] : [])];
+    // Why not JSON mode through Nightshift: its json_object check rejects
+    // (HTTP 502, invalid_json_output) an answer that opens with the
+    // ">> action" line the Meterless engine's chunk prompt asks for, which
+    // Nemotron 3.5 Bolt E4B writes before the JSON of every first chunk
+    // (measured 2026-10-26). Speck's contract check takes the JSON object
+    // that follows, validates every field and retries, so it decides instead.
+    const jsonMode = Boolean(request.contract) && this.config.provider !== "meterless";
     let response: Response;
     try {
       response = await fetch(endpoint.url, {
@@ -156,7 +164,7 @@ export class NemotronProcessor implements ModelProcessor {
           temperature: request.temperature,
           max_tokens: this.config.maxTokens,
           ...(this.config.reasoningEffort ? { reasoning_effort: this.config.reasoningEffort } : {}),
-          ...(request.contract ? { response_format: { type: "json_object" } } : {})
+          ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         }),
         signal: AbortSignal.any(signals)
       });

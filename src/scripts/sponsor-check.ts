@@ -113,7 +113,7 @@ try {
     else if (calls.length && !identities.length) problems.push(`Nightshift only echoed the routing mode (${served.join(", ")}), not the model that served the call`);
     const unnamed = calls.filter((call) => !call.servedModels.some((name) => !/^meterless\//.test(name)));
     if (identities.length && unnamed.length) problems.push(`${unnamed.length} of ${calls.length} call(s) named no serving model`);
-    evidence.push(`${requests} HTTP request(s) in ${calls.length} model call(s) to ${config.nemotron.baseUrl}/chat/completions, routing mode ${config.nemotron.model}, sent as meterless-app evidence-desk; ${requests - unanswered} answered`);
+    evidence.push(`${requests} HTTP request(s) in ${calls.length} model call(s) to ${config.nemotron.baseUrl}/chat/completions, ${/^meterless\//.test(config.nemotron.model) ? "routing mode" : "pinned model"} ${config.nemotron.model}, sent as meterless-app evidence-desk; ${requests - unanswered} answered`);
     evidence.push(`model identity returned by Nightshift: ${served.join(", ") || "none"}`);
   }
   verdict("Meterless Nightshift (HTTP API, model provider)", evidence, problems, nightshift);
@@ -136,7 +136,7 @@ try {
     const overCap = modelEvidence.filter((object) => Number(object.data.reliability) > 0.4);
     if (!modelEvidence.length && calls.length) problems.push("no evidence in Speck carries model provenance");
     if (overCap.length) problems.push(`${overCap.length} model-judged evidence object(s) above Speck's 0.4 cap`);
-    evidence.push(`${calls.length} call(s) to ${providerLabel(config.nemotron)} at ${config.nemotron.baseUrl}${config.nemotron.provider === "meterless" ? ` (routing mode ${config.nemotron.model})` : ""}; endpoint reported serving ${served.join(", ") || "nothing"}`);
+    evidence.push(`${calls.length} call(s) to ${providerLabel(config.nemotron)} at ${config.nemotron.baseUrl}${config.nemotron.provider === "meterless" ? ` (${/^meterless\//.test(config.nemotron.model) ? "routing mode" : "pinned model"} ${config.nemotron.model})` : ""}; endpoint reported serving ${served.join(", ") || "nothing"}`);
     evidence.push(`${calls.reduce((sum, call) => sum + call.attempts, 0)} attempt(s): ${calls.reduce((sum, call) => sum + call.contractFailures, 0)} rejected by Speck's contract check, `
       + `${calls.reduce((sum, call) => sum + call.transportFailures, 0)} transport failure(s) (no usable answer), then retried; ${calls.filter((call) => call.outcome === "valid").length} of ${calls.length} call(s) ended with a valid reply`);
     evidence.push(`${modelEvidence.length} evidence object(s) in Speck with model provenance, all at reliability <= 0.4`);

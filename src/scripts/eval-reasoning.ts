@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CONCLUSION_RULES, loadConfig, ROOT_DIR, type ConclusionRule } from "../config.js";
+import { CONCLUSION_RULES, loadConfig, loadDotEnv, ROOT_DIR, type ConclusionRule } from "../config.js";
 import { loadEvalCases, REGRESSION_DIR } from "../eval/cases.js";
 import { runEvaluation, systemsFor, type EvalReport } from "../eval/harness.js";
 
@@ -10,22 +10,26 @@ import { runEvaluation, systemsFor, type EvalReport } from "../eval/harness.js";
 //   candidate rule (docs/build-5-corroboration.md); corroborated-1 is scored
 //   on the same judgments as well
 //
-// The live evaluation (held-out and regression groups) on local Ollama under
-// two assessor configurations, alternated and repeated, with every system
-// (Speck, Speck rebuilt from scratch, the stateless baseline) on the same
-// model:
+// The live evaluation (held-out and regression groups) under each assessor
+// configuration, alternated and repeated, with every system (Speck, Speck
+// rebuilt from scratch, the stateless baseline) on the same model:
 //   4k-noreason  nemotron-3-nano:4b, Ollama's default 4,096-token window,
 //                reasoning off, replies capped at 4,096 tokens (the default)
 //   16k-reason   the same weights in a 16,384-token window
 //                (config/ollama/nemotron-3-nano-4b-ctx16k.Modelfile), reasoning
 //                on (the model's default), replies capped at 12,288 tokens
+//   bolt-e4b     nvidia/nemotron-3.5-bolt-e4b through the Meterless Runtime
+//                (its address and token from .env), reasoning off, replies
+//                capped at 4,096 tokens: the project's model since 2026-10-26
+// The first two run on local Ollama.
 // Each report is written as its own file under
 // eval/results/experiments/reasoning/<timestamp>/, then summarised there
 // (summary.md). eval/results/live.json is not touched.
 
 const CONFIGS: Record<string, Record<string, string>> = {
   "4k-noreason": { NEMOTRON_MODEL: "nemotron-3-nano:4b", NEMOTRON_REASONING_EFFORT: "none", NEMOTRON_MAX_TOKENS: "4096" },
-  "16k-reason": { NEMOTRON_MODEL: "nemotron-3-nano-4b-ctx16k", NEMOTRON_REASONING_EFFORT: "", NEMOTRON_MAX_TOKENS: "12288" }
+  "16k-reason": { NEMOTRON_MODEL: "nemotron-3-nano-4b-ctx16k", NEMOTRON_REASONING_EFFORT: "", NEMOTRON_MAX_TOKENS: "12288" },
+  "bolt-e4b": { MODEL_PROVIDER: "meterless", METERLESS_MODEL: "nvidia/nemotron-3.5-bolt-e4b", NEMOTRON_REASONING_EFFORT: "none", NEMOTRON_MAX_TOKENS: "4096" }
 };
 const METRICS = [
   ["correctness", "conclusion correct"],
@@ -51,12 +55,16 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(ROOT_DIR, 
 }
 
 async function run(dir: string, repeats: number, only?: string): Promise<void> {
+  loadDotEnv();
   const rule = (option("rule") ?? "corroborated-1") as ConclusionRule;
   if (!CONCLUSION_RULES.includes(rule)) throw new Error(`--rule must be one of ${CONCLUSION_RULES.join(", ")}`);
   fs.mkdirSync(dir, { recursive: true });
   for (let repeat = 1; repeat <= repeats; repeat++) {
     for (const [name, settings] of Object.entries(CONFIGS).filter(([name]) => !only || name === only)) {
-      const nemotron = loadConfig({ REASONER: "nemotron", MODEL_PROVIDER: "ollama", NEMOTRON_TIMEOUT_MS: "300000", ...settings }).nemotron;
+      // Why the runtime's address and token are added here and not to the
+      // preset: the preset is saved in every report, and the token must not be.
+      const runtime = settings.MODEL_PROVIDER === "meterless" ? { METERLESS_BASE_URL: process.env.METERLESS_BASE_URL, meterless_runtime_token: process.env.meterless_runtime_token } : {};
+      const nemotron = loadConfig({ REASONER: "nemotron", MODEL_PROVIDER: "ollama", NEMOTRON_TIMEOUT_MS: "300000", ...settings, ...runtime }).nemotron;
       for (const group of [{ id: "held-out", cases: loadEvalCases() }, { id: "regression", cases: loadEvalCases(REGRESSION_DIR) }]) {
         const began = Date.now();
         const report = await runEvaluation("live", group.cases, systemsFor("live", nemotron, rule));

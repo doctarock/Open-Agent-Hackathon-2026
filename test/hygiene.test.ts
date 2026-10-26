@@ -19,8 +19,9 @@ test("configuration needs no secrets and has no credential defaults", () => {
   assert.equal(config.reasoner, "rules");
   assert.equal(config.zetaris.username, "");
   assert.equal(config.zetaris.password, "");
-  // The default provider is a Meterless Runtime on this machine, with no token.
-  assert.deepEqual([config.nemotron.provider, config.nemotron.baseUrl, config.nemotron.model], ["meterless", "http://127.0.0.1:8088/v1", "meterless/auto"]);
+  // The default provider is a Meterless Runtime on this machine, with no token,
+  // asked for the project's pinned model.
+  assert.deepEqual([config.nemotron.provider, config.nemotron.baseUrl, config.nemotron.model], ["meterless", "http://127.0.0.1:8088/v1", "nvidia/nemotron-3.5-bolt-e4b"]);
   assert.equal(config.nemotron.apiKey, "");
   assert.equal(loadConfig({ MODEL_PROVIDER: "openai-compatible" }).nemotron.baseUrl, "");
   assert.equal(loadConfig({ MODEL_PROVIDER: "nvidia" }).nemotron.apiKey, "");

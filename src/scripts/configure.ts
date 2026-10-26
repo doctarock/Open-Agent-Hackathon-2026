@@ -7,7 +7,7 @@ import { parseEnv } from "node:util";
 import { loadConfig, ROOT_DIR, updateEnvText, type AppConfig } from "../config.js";
 import { EvidenceProviderError } from "../evidence/types.js";
 import { ZetarisEvidenceProvider } from "../evidence/zetaris-provider.js";
-import { AUTO_DETECT_PORTS, autoDetectMeterless, describeMeterlessModel, METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, parseConnectLink, probeMeterless, usableToken } from "../reasoning/meterless.js";
+import { AUTO_DETECT_PORTS, autoDetectMeterless, describeMeterlessModel, EVIDENCE_DESK_METERLESS_MODEL, METERLESS_DEFAULT_MODEL, METERLESS_TOKEN_KEY, parseConnectLink, probeMeterless, usableToken } from "../reasoning/meterless.js";
 import { plainTextCheck, providerLabel } from "../reasoning/nemotron.js";
 import { loadScenario } from "../scenario.js";
 
@@ -163,13 +163,17 @@ async function configureMeterless(): Promise<boolean> {
       continue;
     }
     ok(`Meterless Runtime online at ${probe.baseUrl}`);
-    const fallback = probe.models.includes(METERLESS_DEFAULT_MODEL) ? METERLESS_DEFAULT_MODEL : probe.models[0]!;
+    // Its routing modes, then the Nemotron models it serves by name; the
+    // project's own default (Bolt E4B) when the runtime lists it.
+    const choices = [...probe.models, ...probe.pinned.filter((id) => /nemotron/i.test(id))];
+    const fallback = choices.includes(EVIDENCE_DESK_METERLESS_MODEL) ? EVIDENCE_DESK_METERLESS_MODEL
+      : probe.models.includes(METERLESS_DEFAULT_MODEL) ? METERLESS_DEFAULT_MODEL : probe.models[0]!;
     let model = fallback;
-    if (!assumeDefaults && probe.models.length > 1) {
-      console.log("  Routing modes it offers:");
-      probe.models.forEach((id, index) => console.log(`    ${index + 1}. ${id}  (${describeMeterlessModel(id)})`));
-      const answer = await ask("  Routing mode", String(probe.models.indexOf(current("METERLESS_MODEL") || fallback) + 1 || 1));
-      model = probe.models[Number(answer) - 1] ?? (probe.models.includes(answer) ? answer : fallback);
+    if (!assumeDefaults && choices.length > 1) {
+      console.log("  Routing modes and Nemotron models it offers:");
+      choices.forEach((id, index) => console.log(`    ${index + 1}. ${id}  (${describeMeterlessModel(id)})`));
+      const answer = await ask("  Routing mode or model", String(choices.indexOf(current("METERLESS_MODEL") || fallback) + 1 || choices.indexOf(fallback) + 1));
+      model = choices[Number(answer) - 1] ?? (choices.includes(answer) ? answer : fallback);
     }
     Object.assign(values, { REASONER: "nemotron", MODEL_PROVIDER: "meterless", METERLESS_BASE_URL: probe.baseUrl, METERLESS_MODEL: model, [METERLESS_TOKEN_KEY]: token });
     if (!(await checkModel())) return false;

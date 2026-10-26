@@ -1,5 +1,5 @@
 diff --git a/public/ui/system.js b/public/ui/system.js
-index 9ac8f16..950ce04 100644
+index 9ac8f16..69328e0 100644
 --- a/public/ui/system.js
 +++ b/public/ui/system.js
 @@ -318,15 +318,20 @@ export function brainEditor(processor = {}) {
@@ -54,7 +54,7 @@ index 9ac8f16..950ce04 100644
 +    field("model").placeholder = meterless ? "meterless/auto" : "qwen3:14b";
 +    if (meterless) {
 +      if (/:11434\/?$/.test(field("baseUrl").value.trim()) || !field("baseUrl").value.trim()) field("baseUrl").value = "http://127.0.0.1:8088/v1";
-+      if (!/^meterless\//.test(field("model").value.trim())) field("model").value = "meterless/auto";
++      if (!/^[A-Za-z0-9][\w.-]*\/\S+$/.test(field("model").value.trim())) field("model").value = "meterless/auto";
 +      field("hardware").value = field("hardware").value.trim() || "local";
 +    }
      if (select.value === "nli") {
@@ -73,9 +73,9 @@ index 9ac8f16..950ce04 100644
 +  tokenRow.hidden = result.status !== "unauthorized";
 +  if (result.status === "online") {
 +    status.innerHTML = `<span class="status-pill">online</span> ${escapeHtml(result.baseUrl)}: ${result.modes.length} routing mode${result.modes.length === 1 ? "" : "s"}.`;
-+    $("#discoveredBrainModels").innerHTML = result.modes.map((mode) => `<option value="${escapeHtml(mode.id)}">${escapeHtml(mode.description)}</option>`).join("");
++    $("#discoveredBrainModels").innerHTML = [...result.modes, ...(result.pinned ?? []).map((id) => ({ id, description: "pinned model" }))].map((mode) => `<option value="${escapeHtml(mode.id)}">${escapeHtml(mode.description)}</option>`).join("");
 +    const model = $('[data-brain-field="model"]', editor);
-+    if (!result.models.includes(model.value.trim())) model.value = result.models.includes("meterless/auto") ? "meterless/auto" : result.models[0];
++    if (![...result.models, ...(result.pinned ?? [])].includes(model.value.trim())) model.value = result.models.includes("meterless/auto") ? "meterless/auto" : result.models[0];
 +  } else if (result.status === "unauthorized") {
 +    status.innerHTML = `<span class="status-pill">unauthorized</span> ${escapeHtml(result.baseUrl)} is running but did not accept the token. Paste the one in its &lt;stateDir&gt;/proxy-token.`;
 +    $("[data-meterless-token]", editor).focus();
@@ -129,14 +129,14 @@ index 9ac8f16..950ce04 100644
    try {
      const result = await adminJson("/api/brains/discover", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ baseUrl, provider }) });
 diff --git a/src/config.ts b/src/config.ts
-index ea9086b..2b67ba2 100644
+index ea9086b..10b2e47 100644
 --- a/src/config.ts
 +++ b/src/config.ts
 @@ -1,6 +1,7 @@
  import path from "node:path";
  import fs from "node:fs";
  import { judgmentOnly, type ConfiguredModelProcessor } from "./models/types.js";
-+import { isMeterlessModel, normaliseMeterlessUrl } from "./models/meterless.js";
++import { isMeterlessTarget, normaliseMeterlessUrl } from "./models/meterless.js";
  
  export interface SpeckConfig {
    databasePath: string;
@@ -156,7 +156,7 @@ index ea9086b..2b67ba2 100644
 -    if (!["ollama", "openai-compatible", "llama.cpp", "nli"].includes(provider)) throw new TypeError(`processor ${id} has an unsupported provider`);
 +    if (!["ollama", "openai-compatible", "llama.cpp", "nli", "meterless"].includes(provider)) throw new TypeError(`processor ${id} has an unsupported provider`);
      if (!model) throw new TypeError(`processor ${id} requires a model`);
-+    if (provider === "meterless" && !isMeterlessModel(model)) throw new TypeError(`processor ${id} needs a Meterless routing mode (meterless/...), not ${model}`);
++    if (provider === "meterless" && !isMeterlessTarget(model)) throw new TypeError(`processor ${id} needs a Meterless routing mode (meterless/...) or a model the runtime lists (<provider>/<model>), not ${model}`);
      if (!/^https?:\/\//i.test(baseUrl)) throw new TypeError(`processor ${id} requires an HTTP(S) base URL`);
      if (![1, 2, 3, 4].includes(tier)) throw new TypeError(`processor ${id} tier must be 1 through 4`);
      if (!Number.isInteger(contextSize) || contextSize < 256) throw new TypeError(`processor ${id} requires a valid context size`);
@@ -252,13 +252,15 @@ index 82e1a7c..c4fa413 100644
  export * from "./tools/types.js";
 diff --git a/src/models/meterless.ts b/src/models/meterless.ts
 new file mode 100644
-index 0000000..68398a8
+index 0000000..5c0c3d7
 --- /dev/null
 +++ b/src/models/meterless.ts
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,119 @@
 +// Meterless Runtime (1.4, provider contract v4): an OpenAI-compatible
 +// endpoint whose model ids are routing modes (meterless/auto, meterless/deep,
-+// meterless/<class>.<disposition>, ...), not models. The runtime writes its
++// meterless/<class>.<disposition>, ...), not models. It also serves a model it
++// lists by name (nvidia/nemotron-3.5-bolt-e4b, local-runtime/...): a pinned
++// model, sent as the model id and answered by that model. The runtime writes its
 +// token to <stateDir>/proxy-token; Speck keeps it in the secret store under
 +// METERLESS_TOKEN_HANDLE and sends it on every call.
 +
@@ -302,9 +304,14 @@ index 0000000..68398a8
 +}
 +
 +export const isMeterlessModel = (id: string) => /^meterless\/\S+$/.test(id);
++// A model the runtime lists by name (<provider>/<model>), not a routing mode.
++export const isMeterlessPinnedModel = (id: string) => /^[A-Za-z0-9][\w.-]*\/\S+$/.test(id) && !isMeterlessModel(id);
++// Either one is a model id a Meterless processor can send.
++export const isMeterlessTarget = (id: string) => isMeterlessModel(id) || isMeterlessPinnedModel(id);
 +
 +// What a routing id selects. Ids this version does not know are kept, never dropped.
 +export function describeMeterlessModel(id: string): string {
++  if (isMeterlessPinnedModel(id)) return "pinned model";
 +  const mode = id.replace(/^meterless\//, "");
 +  const dispositions: readonly string[] = METERLESS_DISPOSITIONS;
 +  if (dispositions.includes(mode)) return `${mode} routing`;
@@ -323,13 +330,14 @@ index 0000000..68398a8
 +}
 +
 +export type MeterlessStatus = "online" | "unauthorized" | "offline";
-+export interface MeterlessProbe { status: MeterlessStatus; baseUrl: string; models: string[]; detail: string }
++// models: its routing modes; pinned: the models it lists by name.
++export interface MeterlessProbe { status: MeterlessStatus; baseUrl: string; models: string[]; pinned: string[]; detail: string }
 +
 +// /healthz only proves the process is up; /v1/models decides. 401 or 403 is
 +// unauthorized, 200 listing meterless ids is online, anything else offline.
 +export async function probeMeterless(baseUrl: string, token: string, options: { app?: string; timeoutMs?: number } = {}): Promise<MeterlessProbe> {
 +  let base: string;
-+  try { base = normaliseMeterlessUrl(baseUrl); } catch { return { status: "offline", baseUrl: String(baseUrl), models: [], detail: "not a valid address" }; }
++  try { base = normaliseMeterlessUrl(baseUrl); } catch { return { status: "offline", baseUrl: String(baseUrl), models: [], pinned: [], detail: "not a valid address" }; }
 +  let response: Response;
 +  try {
 +    response = await fetch(`${base}/models`, {
@@ -337,15 +345,17 @@ index 0000000..68398a8
 +      signal: AbortSignal.timeout(options.timeoutMs ?? 3000)
 +    });
 +  } catch (error) {
-+    return { status: "offline", baseUrl: base, models: [], detail: error instanceof Error ? error.message : String(error) };
++    return { status: "offline", baseUrl: base, models: [], pinned: [], detail: error instanceof Error ? error.message : String(error) };
 +  }
-+  if (response.status === 401 || response.status === 403) return { status: "unauthorized", baseUrl: base, models: [], detail: `HTTP ${response.status}` };
-+  if (response.status !== 200) return { status: "offline", baseUrl: base, models: [], detail: `HTTP ${response.status}` };
++  if (response.status === 401 || response.status === 403) return { status: "unauthorized", baseUrl: base, models: [], pinned: [], detail: `HTTP ${response.status}` };
++  if (response.status !== 200) return { status: "offline", baseUrl: base, models: [], pinned: [], detail: `HTTP ${response.status}` };
 +  const body = await response.json().catch(() => null) as { data?: Array<{ id?: unknown }> } | null;
-+  const models = (body?.data ?? []).flatMap((model) => (typeof model.id === "string" && isMeterlessModel(model.id) ? [model.id] : []));
++  const ids = (body?.data ?? []).flatMap((model) => (typeof model.id === "string" ? [model.id] : []));
++  const models = ids.filter(isMeterlessModel);
++  const pinned = ids.filter(isMeterlessPinnedModel);
 +  return models.length
-+    ? { status: "online", baseUrl: base, models, detail: `${models.length} routing mode(s)` }
-+    : { status: "offline", baseUrl: base, models: [], detail: "answered, but lists no meterless/* models (another server on this port)" };
++    ? { status: "online", baseUrl: base, models, pinned, detail: `${models.length} routing mode(s)` }
++    : { status: "offline", baseUrl: base, models: [], pinned: [], detail: "answered, but lists no meterless/* models (another server on this port)" };
 +}
 +
 +// Tries each port on each host; the first online or unauthorized one, in
@@ -514,10 +524,10 @@ index 0bef59c..16a9867 100644
  }
 diff --git a/src/tests/meterless-provider.test.ts b/src/tests/meterless-provider.test.ts
 new file mode 100644
-index 0000000..bd48347
+index 0000000..ce7485b
 --- /dev/null
 +++ b/src/tests/meterless-provider.test.ts
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,116 @@
 +// The Meterless Runtime provider (Evidence Desk project patch): provider
 +// contract v4 against a stand-in runtime that checks the token on every call.
 +
@@ -565,6 +575,23 @@ index 0000000..bd48347
 +  assert.equal(processor!.baseUrl, "http://127.0.0.1:8088/v1");
 +  assert.ok(createConfiguredProcessor(processor!) instanceof MeterlessProcessor);
 +  assert.throws(() => validateModelProcessors([{ id: "m", provider: "meterless", model: "qwen3:14b", baseUrl: "http://127.0.0.1:8088", tier: 2, contextSize: 32768 }]), /routing mode/);
++});
++
++test("a model the runtime lists by name is a pinned model: accepted, and listed apart from the routing modes", async () => {
++  const [processor] = validateModelProcessors([{ id: "bolt", provider: "meterless", model: "nvidia/nemotron-3.5-bolt-e4b", baseUrl: "127.0.0.1:8088", tier: 2, contextSize: 32768 }]);
++  assert.equal(processor!.model, "nvidia/nemotron-3.5-bolt-e4b");
++  assert.equal(describeMeterlessModel("local-runtime/nemotron-3.5-bolt-e4b"), "pinned model");
++  assert.throws(() => validateModelProcessors([{ id: "m", provider: "meterless", model: "qwen3:14b", baseUrl: "http://127.0.0.1:8088", tier: 2, contextSize: 32768 }]), /<provider>\/<model>/);
++  const runtime = await standIn(["meterless/auto", "nvidia/nemotron-3.5-bolt-e4b", "local-runtime/gemma-4-e4b-it"]);
++  const ollama = await standIn(["hf.co/bartowski/model:Q4_K_M"]);
++  try {
++    const probe = await probeMeterless(runtime.url, TOKEN);
++    assert.deepEqual([probe.status, probe.models, probe.pinned], ["online", ["meterless/auto"], ["nvidia/nemotron-3.5-bolt-e4b", "local-runtime/gemma-4-e4b-it"]]);
++    assert.equal((await probeMeterless(ollama.url, TOKEN)).status, "offline", "named models alone do not make a server a Meterless Runtime");
++  } finally {
++    runtime.close();
++    ollama.close();
++  }
 +});
 +
 +test("a wrong token is unauthorized, not offline; Auto Detect finds the runtime and skips other servers", async () => {
