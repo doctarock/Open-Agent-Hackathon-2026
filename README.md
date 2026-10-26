@@ -833,7 +833,8 @@ answer against the real service before saving it to `.env`:
 1. **Which model weighs the evidence:**
    - **Meterless Runtime** (the default). It finds a runtime on this machine (ports 8088, 8090,
      8787 and 11434), or takes a pasted address or connect link. It asks for the token if the
-     runtime wants one, and offers its routing modes.
+     runtime wants one, and uses `nvidia/nemotron-3.5-bolt-e4b` without asking when the runtime
+     serves it (otherwise it offers its routing modes and Nemotron models).
    - **Nemotron on local Ollama.** It lists your Nemotron models and offers to download
      `nemotron-3-nano:4b` if there are none.
    - **Nemotron on NVIDIA's hosted API.** It takes your key and lists the Nemotron models

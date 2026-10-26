@@ -163,13 +163,15 @@ async function configureMeterless(): Promise<boolean> {
       continue;
     }
     ok(`Meterless Runtime online at ${probe.baseUrl}`);
-    // Its routing modes, then the Nemotron models it serves by name; the
-    // project's own default (Bolt E4B) when the runtime lists it.
+    // The project's model (Bolt E4B) whenever the runtime serves it, without
+    // asking; otherwise its routing modes and the Nemotron models it serves by name.
     const choices = [...probe.models, ...probe.pinned.filter((id) => /nemotron/i.test(id))];
-    const fallback = choices.includes(EVIDENCE_DESK_METERLESS_MODEL) ? EVIDENCE_DESK_METERLESS_MODEL
+    const pinned = choices.includes(EVIDENCE_DESK_METERLESS_MODEL);
+    const fallback = pinned ? EVIDENCE_DESK_METERLESS_MODEL
       : probe.models.includes(METERLESS_DEFAULT_MODEL) ? METERLESS_DEFAULT_MODEL : probe.models[0]!;
     let model = fallback;
-    if (!assumeDefaults && choices.length > 1) {
+    if (pinned) ok(`model: ${model}`);
+    else if (!assumeDefaults && choices.length > 1) {
       console.log("  Routing modes and Nemotron models it offers:");
       choices.forEach((id, index) => console.log(`    ${index + 1}. ${id}  (${describeMeterlessModel(id)})`));
       const answer = await ask("  Routing mode or model", String(choices.indexOf(current("METERLESS_MODEL") || fallback) + 1 || choices.indexOf(fallback) + 1));

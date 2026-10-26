@@ -25,7 +25,8 @@ The 4B results stay as recorded; the two models' results are never pooled.
     test: "a model the runtime lists by name is a pinned model". Speck's cognition is untouched.
   - Evidence Desk: the default `METERLESS_MODEL` is `nvidia/nemotron-3.5-bolt-e4b`
     (`EVIDENCE_DESK_METERLESS_MODEL`); a pinned assessor model must name a Nemotron; `npm run
-    configure` offers the runtime's Nemotron models after its routing modes, and points Speck's
+    configure` picks it without asking when the runtime serves it (otherwise offers the runtime's
+    routing modes and Nemotron models), and points Speck's
     chat at the same model; `npm run eval:reasoning -- --only bolt-e4b` runs the held-out and
     regression groups on it.
 - **A failure found and fixed before any counted run.** In the first live comparisons, Speck's
