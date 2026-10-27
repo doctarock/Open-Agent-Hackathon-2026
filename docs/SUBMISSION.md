@@ -248,12 +248,12 @@ The submodule is pinned to upstream Speck.
    - A record whose assessment keeps failing can be withdrawn before assessment, without
      inventing a judgment.
 5. **It uses Speck's own views, and anyone can bring a case.**
-   - One guided demo opens on the hotel chargeback, worked stage by stage and then compared, walks the two other cases, then
-     the measured results across models (set 7
-     highlighted), then Speck's World view (the runs' actions in time), its
+   - One guided demo works the hotel chargeback stage by stage and compares it, then opens
+     Speck's World view (the runs' actions in time), its
      Memory map (the case's records and assessments linked with Speck's association kinds:
      derived-from, supports, contradicts, inhibitory for a correction) and its chat, which
-     answers from the published case summary.
+     answers from the published case summary, then the measured results across models (set 7
+     highlighted).
    - It ends on the form for an investigation of the judge's own: a question, competing
      explanations and free-text evidence, weighed by the configured model, with corrections.
 
@@ -360,8 +360,8 @@ history are in [build-3-revision.md](build-3-revision.md).
 
 ## Known limits
 
-- **Three prepared cases.** The demo's cases are a set 7 case, the development scenario and a
-  held-out case; the fact rules are hand-written.
+- **Three prepared cases.** The tab's prepared cases are a set 7 case (the only one in the guided
+  demo), the development scenario and a held-out case; the fact rules are hand-written.
 - **Few cases.** Seven held-out cases, three regression cases, ten cross-domain cases, five Build 4
   challenge cases, eight Build 5 cases and four set 7 cases; live results are three repeats on each
   of two small models (the local 4B, then Bolt E4B through Nightshift), never pooled.

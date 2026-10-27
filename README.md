@@ -336,35 +336,31 @@ The tour's step definitions are in `public/tour.js` and are tested against real 
 
 ### Inside Speck: the guided demo, Speck's views, and your own investigations
 
-Inside Speck the Evidence tab runs one **guided demo** across the prepared cases and Speck's views. A
+Inside Speck the Evidence tab runs one **guided demo** through the hotel chargeback and Speck's views. A
 prepared case's introduction offers it (*Start the guided investigation* or *Explore on my own*),
-and the *Start the guided demo* button at the end of the case picker starts or resumes it.
+and the *Start the guided demo* button at the end of the case picker starts or resumes it. The
+disputed delivery and the bank return stay in the case picker, with their own tours, but are
+left out of the demo: worked through all six stages, the hotel chargeback is long enough.
 
-1. **Hotel chargeback** (set 7's case; the configured evidence source and assessor, as for the
-   disputed delivery): the case and its
+1. **Hotel chargeback** (set 7's case; the configured evidence source and assessor): the case and its
    explanations, a run, its conclusion, then each of the five prepared updates followed by a run
    (the coach says which button is next), which records no longer count, and finally **Speck beside
    a stateless baseline**, which runs all six stages both ways. Its findings describe every
    correction, including the re-attribution where the two part.
-2. **Disputed delivery** (live when configured): the case tour above, without its comparison
-   and last overview steps.
-3. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
-   bank's return of the payment), a second run, and which record no longer counts. It ends on
-   **Speck beside a stateless baseline**: the panel opens and runs the whole case both ways.
-4. **What the evaluation found:** the demo opens **Evaluation results** and points at *Results
-   across models*, read from the registered experiment reports: the same cases on the 4B and
-   Bolt E4B, with set 7 (conflicting receipts over time) highlighted. It says what the table
-   shows and what it does not (see *Results across models* below).
-5. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
+2. **Speck's world view:** the demo opens it. Each investigation is a Speck task, and its runs'
    actions (Hypothesis Proposed, Memory Recorded, Belief Revised, Association Reinforced) are laid
    out in time; right-drag travels back. The panel quotes Speck's own timeline status and each
    case's run count and current conclusion, read from the plugin's API.
-6. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
+3. **The memory map:** the demo switches to it. The lines are the links Evidence Desk makes
    (below); the panel quotes Speck's own count of memories and associations.
-7. **Talk to Speck:** a question about the bank return is put in Speck's message bar. The step
+4. **Talk to Speck:** a question about the hotel chargeback is put in Speck's message bar. The step
    completes when Speck replies (Speck's `speck:reply` event); it does not judge the reply, and
    says to check it against the case page.
-8. **Your own investigation:** the new-investigation form opens, with what creating, running and
+5. **What the evaluation found:** the demo opens **Evaluation results** and points at *Results
+   across models*, read from the registered experiment reports: the same cases on the 4B and
+   Bolt E4B, with set 7 (conflicting receipts over time) highlighted. It says what the table
+   shows and what it does not (see *Results across models* below).
+6. **Your own investigation:** the new-investigation form opens, with what creating, running and
    correcting one does. This part does not wait for anything: it says the guided demo is
    complete, and the viewer can go on to create one.
 

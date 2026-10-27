@@ -4,8 +4,8 @@
 // investigation of the person's own. Requests go through Speck's
 // admin-authorised fetch, as Speck requires for plugin routes.
 //
-// It also runs the guided demo (public/journey.js): the three prepared cases,
-// then the evaluation results, Speck's world view, memory map and chat, then
+// It also runs the guided demo (public/journey.js): the hotel chargeback,
+// then Speck's world view, memory map and chat, the evaluation results, then
 // an investigation of the person's own. Speck mounts the tab afresh each time its view opens, and the
 // demo continues into Speck's own views, so the demo's state lives in this
 // module and in browser storage, not in one mount.

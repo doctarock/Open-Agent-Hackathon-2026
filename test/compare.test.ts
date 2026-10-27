@@ -208,10 +208,9 @@ test("the page's findings and sequence are built from the report", async () => {
   assert.equal(tour.stepDone(step, { comparison: { current: report, running: null } }), true);
   assert.equal(tour.stepDone(step, { comparison: { current: report, running: { startedAt: "now" } } }), false, "not done while a new one is running");
   assert.match(step.after({ comparison: { current: report } }).flat().join("\n"), /EV-BNK-103 replaces EV-BNK-101/);
-  // The hotel chargeback and the bank return, both worked by hand, end on it;
-  // the disputed delivery has none.
+  // The demo's one case, the hotel chargeback, ends on it.
   const cases = journey.JOURNEY.filter((part: any) => part.kind === "case");
-  assert.deepEqual(cases.map((part: any) => part.steps.indexOf("compare")), [cases[0].steps.length - 1, -1, cases[2].steps.length - 1]);
+  assert.deepEqual(cases.map((part: any) => part.steps.indexOf("compare")), [cases[0].steps.length - 1]);
   assert.equal(tour.TOUR_STEPS.at(-2).id, "compare", "in the case tour it is the last step before the summary");
 });
 

@@ -4,26 +4,23 @@ import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { ROOT_DIR } from "../src/config.js";
 
-// The guided demo inside Speck (public/journey.js): both prepared cases, then
-// Speck's own views, then an investigation of the person's own.
+// The guided demo inside Speck (public/journey.js): the hotel chargeback, then
+// Speck's own views, the evaluation, then an investigation of the person's own.
 
 const journey = await import(pathToFileURL(path.join(ROOT_DIR, "public", "journey.js")).href) as any;
 const tour = await import(pathToFileURL(path.join(ROOT_DIR, "public", "tour.js")).href) as any;
 const text = (items: unknown[]): string => items.flat(Infinity).filter(Boolean).join("\n");
 const part = (id: string) => journey.JOURNEY.find((item: any) => item.id === id);
 
-test("the demo opens on the hotel chargeback, worked through all its stages and then compared, runs the disputed delivery and the bank return by hand (the bank return ends on its comparison), then what the evaluation found, then Speck's world view, memory map and chat, then the person's own investigation", () => {
-  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["hotel", "delivery", "bank", "results", "world", "memory", "chat", "create"]);
+test("the demo works the hotel chargeback through all its stages and compares it, then shows Speck's world view, memory map and chat, then what the evaluation found, then the person's own investigation", () => {
+  assert.deepEqual(journey.JOURNEY.map((item: any) => item.id), ["hotel", "world", "memory", "chat", "results", "create"]);
   assert.ok(journey.JOURNEY.every((item: any, index: number) => item.label.startsWith(`Part ${index + 1} of ${journey.JOURNEY.length} `)), "the parts are numbered in order");
-  assert.deepEqual([part("hotel").caseId, part("bank").caseId, part("delivery").caseId], ["hotel-chargeback", "bank-return", "disputed-delivery"]);
+  const cases = journey.JOURNEY.filter((entry: any) => entry.kind === "case");
+  assert.deepEqual(cases.map((item: any) => item.caseId), ["hotel-chargeback"], "the other prepared cases are left out: the hotel chargeback is long enough");
   const known = new Set(tour.TOUR_STEPS.map((step: any) => step.id));
-  for (const item of journey.JOURNEY.filter((entry: any) => entry.kind === "case")) {
-    for (const id of item.steps) assert.ok(known.has(id), `${item.id}: ${id} is a step of the case tour`);
-    // The two cases with one update; the hotel chargeback walks its stages instead.
-    if (item.id !== "hotel") for (const action of ["run", "update", "rerun"]) assert.ok(item.steps.includes(action), `${item.id} has the ${action} step`);
-  }
+  for (const id of part("hotel").steps) assert.ok(known.has(id), `${id} is a step of the case tour`);
   assert.deepEqual(part("hotel").steps, ["case", "run", "conclusion", "walk", "changed", "compare"]);
-  assert.ok(part("bank").steps.includes("changed"), "the bank return shows its correction");
+  assert.match(journey.SUGGESTED_QUESTION, /hotel chargeback/, "the chat asks about the case just worked");
 });
 
 test("the Speck parts describe real state, and the action parts wait for it", () => {

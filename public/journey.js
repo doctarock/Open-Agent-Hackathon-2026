@@ -1,10 +1,10 @@
 // The guided demo inside Speck: first the hotel chargeback, worked through
 // its stages and then set beside a stateless baseline (the case where they
-// part most clearly), then
-// the two cases worked by hand (the disputed delivery, then the bank return,
-// which ends on its own comparison), then what the
-// evaluation measured across models, then Speck's own views of the same work (the world timeline, the memory map and
-// the chat), then an investigation of the person's own. Pure definitions;
+// part most clearly), then Speck's own views of that work (the world
+// timeline, the memory map and the chat), then what the evaluation measured
+// across models, then an investigation of the person's own. The other
+// prepared cases stay in the tab, outside the demo: the hotel chargeback
+// alone is long enough. Pure definitions;
 // the Evidence tab (plugin/ui/evidence-desk-ui.js) drives Speck's interface
 // and renders them.
 //
@@ -16,7 +16,7 @@ const casesLine = (facts) => (facts.cases ?? []).map((item) => item.runs
   ? `${item.label}: ${item.runs} run(s); now ${item.headline}`
   : `${item.label}: not run yet.`);
 
-export const SUGGESTED_QUESTION = "What did the bank return investigation conclude, and why did it change?";
+export const SUGGESTED_QUESTION = "What did the hotel chargeback investigation conclude, and why did it change?";
 
 export const JOURNEY = [
   {
@@ -26,50 +26,15 @@ export const JOURNEY = [
     id: "hotel",
     kind: "case",
     caseId: "hotel-chargeback",
-    label: "Part 1 of 8 · Hotel chargeback",
+    label: "Part 1 of 6 · Hotel chargeback",
     steps: ["case", "run", "conclusion", "walk", "changed", "compare"],
-    finishLabel: "Next: the disputed delivery"
-  },
-  {
-    id: "delivery",
-    kind: "case",
-    caseId: "disputed-delivery",
-    label: "Part 2 of 8 · Disputed delivery",
-    steps: ["case", "run", "conclusion", "record", "update", "rerun", "changed", "history"],
-    finishLabel: "Next: the bank return"
-  },
-  {
-    id: "bank",
-    kind: "case",
-    caseId: "bank-return",
-    label: "Part 3 of 8 · Bank return",
-    // The comparison comes last, on the deterministic case (it takes a second).
-    steps: ["case", "run", "update", "rerun", "changed", "compare"],
-    finishLabel: "Next: what the evaluation found"
-  },
-  {
-    // Why here: the three cases are illustrations; this is the measurement, read
-    // from the registered experiment reports (src/compare/evaluation.ts).
-    id: "results",
-    kind: "results",
-    label: "Part 4 of 8 · What the evaluation found",
-    title: "What the measured results show",
-    body: () => [
-      "The three cases you just ran are illustrations. This page is the measurement: the same cases, rules and labels run on two models, three times each, read from the experiment reports in the repository.",
-      "The table at the top, Results across models, reads in three steps:",
-      [
-        "The stateless call improves with the model. On the earlier suites the better model's stateless call matches the label as often as Speck, or more often.",
-        "Set 7, highlighted, was written to test receipts that conflict over time. There the better model's stateless call still concludes where it should wait, concludes the wrong explanation, and leans on replaced records.",
-        "Speck does neither of the last two on either model, but it abstains so often where a conclusion is due that the stateless call matches the label more."
-      ],
-      "So what persistent evidence state adds here is that what it concludes holds up, with a record of why; not more correct answers. Every figure has its denominator."
-    ]
+    finishLabel: "Next: Speck's world view"
   },
   {
     id: "world",
     kind: "speck",
     view: "world",
-    label: "Part 5 of 8 · Speck's world view",
+    label: "Part 2 of 6 · Speck's world view",
     title: "The timeline of the work",
     body: (facts) => [
       "Each investigation is held by Speck as a task. What it did is laid out in time around it: Hypothesis Proposed, Memory Recorded, Belief Revised and Association Reinforced are the actions of the runs you just made.",
@@ -82,7 +47,7 @@ export const JOURNEY = [
     id: "memory",
     kind: "speck",
     view: "memory",
-    label: "Part 6 of 8 · The memory map",
+    label: "Part 3 of 6 · The memory map",
     title: "How the facts are linked",
     body: (facts) => [
       "Every evidence record and every run's assessment is a memory in Speck. Evidence Desk links them with Speck's own association kinds, so the lines here are the case's reasoning:",
@@ -100,7 +65,7 @@ export const JOURNEY = [
     kind: "speck",
     view: "world",
     action: "chat",
-    label: "Part 7 of 8 · Talk to Speck",
+    label: "Part 4 of 6 · Talk to Speck",
     title: "Ask Speck about an investigation",
     goal: (facts) => Boolean(facts.replied),
     body: () => [
@@ -109,14 +74,33 @@ export const JOURNEY = [
       "A model writes the answer, so check it against the case pages: it should match the conclusion, the records and the correction."
     ],
     after: () => [
-      "Speck answered. Compare it with the bank return's conclusion and its \"why it changed\" section.",
+      "Speck answered. Compare it with the hotel chargeback's conclusion and its \"why it changed\" section.",
       "Ask a follow-up if you like, then continue."
+    ]
+  },
+
+  {
+    // Why here: the case is an illustration; this is the measurement, read
+    // from the registered experiment reports (src/compare/evaluation.ts).
+    id: "results",
+    kind: "results",
+    label: "Part 5 of 6 · What the evaluation found",
+    title: "What the measured results show",
+    body: () => [
+      "The case you just worked is an illustration. This page is the measurement: the same cases, rules and labels run on two models, three times each, read from the experiment reports in the repository.",
+      "The table at the top, Results across models, reads in three steps:",
+      [
+        "The stateless call improves with the model. On the earlier suites the better model's stateless call matches the label as often as Speck, or more often.",
+        "Set 7, highlighted, was written to test receipts that conflict over time. There the better model's stateless call still concludes where it should wait, concludes the wrong explanation, and leans on replaced records.",
+        "Speck does neither of the last two on either model, but it abstains so often where a conclusion is due that the stateless call matches the label more."
+      ],
+      "So what persistent evidence state adds here is that what it concludes holds up, with a record of why; not more correct answers. Every figure has its denominator."
     ]
   },
   {
     id: "create",
     kind: "yours",
-    label: "Part 8 of 8 · Your own investigation",
+    label: "Part 6 of 6 · Your own investigation",
     title: "Start an investigation of your own",
     body: () => [
       "This form starts an investigation of your own: a question, two to five explanations that compete to answer it, and any evidence you already have. It is investigated like the prepared cases. Once the title and question are written, Suggest explanations has the model fill in the explanations for you to edit.",

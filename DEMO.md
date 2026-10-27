@@ -79,10 +79,10 @@ Open http://127.0.0.1:4310. Speck opens on the **Evidence** tab, first in its ra
 other views (World, Queue and the rest) stay available, and the Speck logo returns to Evidence.
 
 **The page explains itself.**
-- On first open the Evidence tab offers *Start the guided demo*. It walks the three prepared cases with the
-  real buttons (first the hotel chargeback, worked through all six stages and then compared with the stateless baseline, then the disputed delivery and the bank return), then opens
-  **Evaluation results** at *Results across models* (both models, set 7 highlighted), then Speck's **World** view
-  and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
+- On first open the Evidence tab offers *Start the guided demo*. It works the hotel chargeback with the
+  real buttons (all six stages, then compared with the stateless baseline), then opens Speck's **World** view
+  and **Memory map**, puts a question about the case in Speck's message bar, opens
+  **Evaluation results** at *Results across models* (both models, set 7 highlighted), and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually
   conclude.
 - A judge can follow it unaided. The **Start the guided demo** button (or **Resume the guided
