@@ -8,24 +8,6 @@
 > the **Hotel chargeback**, where a check-in and door-lock entries are later re-attributed to
 > another guest: Speck follows the original no-show back, and the stateless side does not, in
 > every run measured.
-> - **The correction, side by side:** on 2026-10-25 the stateless call kept "delivered" and cited
->   the carrier's replaced scan in 12/12 live comparisons; Speck cited it in none of the 9 that
->   completed (in the 3 that errored, the correction stayed unassessed). That was the 4B. With
->   Nemotron 3.5 Bolt E4B, the model since 2026-10-26, the stateless call did not cite it (0/6):
->   both reached "misdelivered", and only Speck recorded why. Every sample:
->   [docs/comparison.md](docs/comparison.md), [docs/bolt-e4b.md](docs/bolt-e4b.md).
-> - **What the evaluation shows, as three separate claims:** correction handling as above and on
->   the hotel chargeback (a few cases, an illustration, not a rate); no general accuracy advantage
->   (18/30 for both on the locked Build 4 cases; on set 5, `corroborated-2`'s 39/45 equals the old
->   rule on the same judgments); and Speck abstains more, which is sometimes wrong, and still concludes from weak
->   or same-source agreement. With Bolt E4B the stateless call is ahead on both locked sets
->   (21/30 and 42/45, against Speck's 18/30 and 36/45). See
->   [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
-> - **Across models:** each model change made the stateless call better on every suite; Speck's
->   accuracy stayed where its conclusion policy holds it. On set 7, written to test conflicting
->   receipts over time, the better model's stateless call fell from 93% to 60% and still concluded
->   wrongly where corrections were themselves corrected; Speck never did, but abstained too often
->   to match the label more. See [Results across models](#results-across-models).
 > - [docs/SUBMISSION.md](docs/SUBMISSION.md): problem, approach, proof and sponsor use, in one page.
 > - [docs/build-4-bank-return.md](docs/build-4-bank-return.md): why Speck failed the bank return
 >   live, what changed, and the before-and-after evaluation, including where it got worse.
@@ -1865,6 +1847,25 @@ corrections that are themselves corrected
   one run ([docs/set-6-harder-cases.md](docs/set-6-harder-cases.md)).
 
 ## Conclusion
+
+> - **The correction, side by side:** on 2026-10-25 the stateless call kept "delivered" and cited
+>   the carrier's replaced scan in 12/12 live comparisons; Speck cited it in none of the 9 that
+>   completed (in the 3 that errored, the correction stayed unassessed). That was the 4B. With
+>   Nemotron 3.5 Bolt E4B, the model since 2026-10-26, the stateless call did not cite it (0/6):
+>   both reached "misdelivered", and only Speck recorded why. Every sample:
+>   [docs/comparison.md](docs/comparison.md), [docs/bolt-e4b.md](docs/bolt-e4b.md).
+> - **What the evaluation shows, as three separate claims:** correction handling as above and on
+>   the hotel chargeback (a few cases, an illustration, not a rate); no general accuracy advantage
+>   (18/30 for both on the locked Build 4 cases; on set 5, `corroborated-2`'s 39/45 equals the old
+>   rule on the same judgments); and Speck abstains more, which is sometimes wrong, and still concludes from weak
+>   or same-source agreement. With Bolt E4B the stateless call is ahead on both locked sets
+>   (21/30 and 42/45, against Speck's 18/30 and 36/45). See
+>   [docs/SUBMISSION.md](docs/SUBMISSION.md#proof).
+> - **Across models:** each model change made the stateless call better on every suite; Speck's
+>   accuracy stayed where its conclusion policy holds it. On set 7, written to test conflicting
+>   receipts over time, the better model's stateless call fell from 93% to 60% and still concluded
+>   wrongly where corrections were themselves corrected; Speck never did, but abstained too often
+>   to match the label more. See [Results across models](#results-across-models).
 
 The project is investigating a real question: can persistent cognitive state make small language
 models more reliable, and under what conditions?
