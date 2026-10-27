@@ -1,5 +1,6 @@
-// The guided demo inside Speck: first the hotel chargeback, straight to Speck
-// beside a stateless baseline (the case where they part most clearly), then
+// The guided demo inside Speck: first the hotel chargeback, worked through
+// its stages and then set beside a stateless baseline (the case where they
+// part most clearly), then
 // the two cases worked by hand (the disputed delivery, then the bank return,
 // which ends on its own comparison), then what the
 // evaluation measured across models, then Speck's own views of the same work (the world timeline, the memory map and
@@ -19,14 +20,14 @@ export const SUGGESTED_QUESTION = "What did the bank return investigation conclu
 
 export const JOURNEY = [
   {
-    // Why first, and straight to the comparison: it is set 7's case where the
-    // approaches part most clearly in every mode measured, at its last
-    // corrections; stepping through its six stages by hand would bury that.
+    // Why first: it is set 7's case where the approaches part most clearly in
+    // every mode measured, at its last corrections. It is worked by hand
+    // through all six stages, then compared with the stateless baseline.
     id: "hotel",
     kind: "case",
     caseId: "hotel-chargeback",
     label: "Part 1 of 8 · Hotel chargeback",
-    steps: ["case", "compare"],
+    steps: ["case", "run", "conclusion", "walk", "changed", "compare"],
     finishLabel: "Next: the disputed delivery"
   },
   {

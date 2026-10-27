@@ -248,7 +248,7 @@ The submodule is pinned to upstream Speck.
    - A record whose assessment keeps failing can be withdrawn before assessment, without
      inventing a judgment.
 5. **It uses Speck's own views, and anyone can bring a case.**
-   - One guided demo opens on the hotel chargeback's comparison, walks the two other cases, then
+   - One guided demo opens on the hotel chargeback, worked stage by stage and then compared, walks the two other cases, then
      the measured results across models (set 7
      highlighted), then Speck's World view (the runs' actions in time), its
      Memory map (the case's records and assessments linked with Speck's association kinds:

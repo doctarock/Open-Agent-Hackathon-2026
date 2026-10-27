@@ -11,7 +11,7 @@
 // guided tour and the feature guide (./tour.js) read the same state the page
 // renders, and open the tab that holds what they point at.
 
-import { CONFIDENCE_MEANING, FEATURES, STATE_MEANING, TOUR_STEPS, featureStatus, progressStore, recordToInspect, stepDone } from "./tour.js";
+import { CONFIDENCE_MEANING, FEATURES, STATE_MEANING, TOUR_STEPS, actionOf, featureStatus, progressStore, recordToInspect, stepDone, targetOf } from "./tour.js";
 import { describeFailure, describeProgress, describeRun } from "./status.js";
 import { decisiveSwitch, jumpToRecord, renderComparison, renderEvaluation } from "./compare.js";
 import { decisivePreference, decisiveReading, opinionCurrent } from "./decisive.js";
@@ -203,7 +203,7 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
   try { storage = window.localStorage; } catch { storage = null; }
   // A guided part has its own steps, so its place is kept apart from the case's own tour.
   const progress = progressStore(storage, guided ? `${apiBase}#guided` : apiBase);
-  const steps = guided?.steps ? TOUR_STEPS.filter((step) => guided.steps.includes(step.id)) : TOUR_STEPS;
+  const steps = guided?.steps ? TOUR_STEPS.filter((step) => guided.steps.includes(step.id)) : TOUR_STEPS.filter((step) => !step.guidedOnly);
 
   $("evidence-help").replaceChildren(help("What do these labels mean?", ...HELP.evidence));
   $("timeline-help").replaceChildren(help("What is this?", ...HELP.timeline));
@@ -1283,8 +1283,10 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
     if (tourStep === null) { coach.hidden = true; spotlight(null); scrolledFor = null; return; }
     const step = steps[tourStep];
     const done = stepDone(step, view);
-    const waiting = step.action && !done;
-    const working = step.action === "compare" ? Boolean(view.comparison?.running) || comparisonState.starting : busy === step.action;
+    const action = actionOf(step, view);
+    const target = targetOf(step, view);
+    const waiting = action && !done;
+    const working = action === "compare" ? Boolean(view.comparison?.running) || comparisonState.starting : busy === action;
     if (step.id === "record") {
       const target = TARGETS.record();
       const details = target?.querySelector?.("details.record-details");
@@ -1298,13 +1300,13 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
         el("p", { className: "eyebrow" }, `${guided?.label ?? "Guided investigation"} · step ${tourStep + 1} of ${steps.length}`),
         el("button", { type: "button", className: "link", "data-tour": "collapse", "aria-expanded": String(!coachCollapsed) }, coachCollapsed ? "Expand" : "Minimise")),
       el("h2", { id: "edk-coach-title", tabindex: "-1" }, step.title),
-      coachCollapsed ? null : el("div", { className: "coach-body" }, paragraphs(done && step.after ? [...(step.action ? [] : step.body(view)), ...step.after(view)] : step.body(view))),
-      step.action && !coachCollapsed ? el("p", { className: `coach-status ${working ? "working" : done ? "done" : "waiting"}`, role: "status" },
+      coachCollapsed ? null : el("div", { className: "coach-body" }, paragraphs(done && step.after ? [...(action ? [] : step.body(view)), ...step.after(view)] : step.body(view))),
+      action && !coachCollapsed ? el("p", { className: `coach-status ${working ? "working" : done ? "done" : "waiting"}`, role: "status" },
         working ? (workingText || "Working… the page updates when it finishes.")
           : done ? "Done. This is the real result, read from Speck."
-          : step.action === "run" && view.investigation?.latestRun && (view.listing?.pending?.length ?? 0) && view.investigation.latestRun.stage.id === view.status?.stage.id
+          : action === "run" && view.investigation?.latestRun && (view.listing?.pending?.length ?? 0) && view.investigation.latestRun.stage.id === view.status?.stage.id
             ? `Not done yet: ${view.listing.pending.length} record(s) are still pending after run ${view.investigation.latestRun.runNumber}. Click Run investigation again to retry them.`
-            : `Waiting for you: click ${step.actionLabel ?? (step.action === "run" ? "Run investigation" : "Introduce prepared update")} on the page.`) : null,
+            : `Waiting for you: click ${step.actionLabel ?? (action === "run" ? "Run investigation" : "Introduce prepared update")} on the page.`) : null,
       coachCollapsed ? null : el("div", { className: "coach-actions" },
         el("button", { type: "button", className: "secondary", "data-tour": "back", disabled: tourStep === 0 && !guided?.onBack ? "" : null }, "Back"),
         waiting ? el("button", { type: "button", className: "link", "data-tour": "skip" }, "Skip this step") : null,
@@ -1312,10 +1314,10 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
           tourStep === steps.length - 1 ? guided?.finishLabel ?? "Finish" : "Next"),
         el("button", { type: "button", className: "link", "data-tour": "exit" }, guided ? "Exit the demo" : "Exit tour"))).childNodes);
     fitCoachToHost();
-    const key = `${tourStep}:${step.id === "record" ? recordToInspect(view)?.id : ""}`;
+    const key = `${tourStep}:${step.id === "record" ? recordToInspect(view)?.id : target}`;
     // Only on arriving at a step, so a refresh never takes away a tab the person chose.
-    if (scrolledFor !== key) openTabFor(step.target);
-    spotlight(TARGETS[step.target]?.(), scrolledFor !== key);
+    if (scrolledFor !== key) openTabFor(target);
+    spotlight(TARGETS[target]?.(), scrolledFor !== key);
     scrolledFor = key;
   }
 

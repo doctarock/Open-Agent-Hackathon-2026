@@ -80,7 +80,7 @@ other views (World, Queue and the rest) stay available, and the Speck logo retur
 
 **The page explains itself.**
 - On first open the Evidence tab offers *Start the guided demo*. It walks the three prepared cases with the
-  real buttons (first the hotel chargeback's side-by-side comparison, then the disputed delivery and the bank return worked by hand), then opens
+  real buttons (first the hotel chargeback, worked through all six stages and then compared with the stateless baseline, then the disputed delivery and the bank return), then opens
   **Evaluation results** at *Results across models* (both models, set 7 highlighted), then Speck's **World** view
   and **Memory map**, puts a question in Speck's message bar, and ends on the form for an
   investigation of the judge's own, which the judge can go on to create and run. It describes whatever the live runs actually

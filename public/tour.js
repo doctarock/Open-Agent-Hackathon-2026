@@ -15,6 +15,12 @@ const pending = (view) => view.listing?.pending ?? [];
 const stages = (view) => view.status?.stages ?? [];
 const stageMoved = (view) => Boolean(view.status && stages(view).length && view.status.stage.id !== stages(view)[0].id);
 const records = (view) => view.listing?.records ?? [];
+// The current stage still needs a run: nothing run yet, records waiting, or
+// the last run was at an earlier stage.
+const needsRun = (view) => !runs(view).length || pending(view).length > 0 || latestRun(view)?.stage?.id !== view.status?.stage.id;
+// A step's action and target may follow the state.
+export const actionOf = (step, view) => typeof step.action === "function" ? step.action(view) : step.action;
+export const targetOf = (step, view) => typeof step.target === "function" ? step.target(view) : step.target;
 
 // The explanation the conclusion is about: the conclusion itself, or the one
 // the evidence points to while it is not yet established.
@@ -173,6 +179,35 @@ export const TOUR_STEPS = [
         previous ? `Before this run, run ${previous.runNumber} had concluded: ${previous.conclusion}${previous.hypothesis ? ` ${previous.hypothesis}` : ""}.` : null
       ].filter(Boolean);
     }
+  },
+  {
+    // The guided demo's walk through a case with many stages: each update,
+    // then a run, until the last stage is assessed. Its action and target
+    // follow the state: run while the stage has records waiting, else update.
+    id: "walk",
+    guidedOnly: true,
+    title: "Bring in each update, and run again",
+    target: (view) => needsRun(view) ? "run-button" : "update-button",
+    action: (view) => needsRun(view) ? "run" : "update",
+    goal: (view) => runs(view).length >= 1 && !view.status?.nextStage && !needsRun(view),
+    body: (view) => {
+      const next = view.status?.nextStage;
+      const nextStage = stages(view).find((stage) => stage.id === next?.id);
+      return [
+        "The case's evidence arrives over time. Bring in each update as it arrived, and run the investigation after each, to see how Speck's conclusion moves.",
+        view.status ? `Stage now: ${view.status.stage.label}.` : null,
+        current(view) ? `Speck's conclusion now: ${current(view).headline}` : null,
+        runs(view).length ? ["So far:", runs(view).map((run) => `Run ${run.runNumber}, at "${run.stage.label}": ${run.conclusion}${run.hypothesis ? ` ${run.hypothesis}` : ""}.`)] : null,
+        needsRun(view)
+          ? `${pending(view).length ? `Waiting to be assessed: ${pending(view).join(", ")}. ` : ""}Click Run investigation.`
+          : next ? `Next: "${next.label}"${nextStage?.description ? `: ${nextStage.description}` : "."} Click Introduce prepared update.` : null
+      ].filter(Boolean);
+    },
+    after: (view) => [
+      "Every stage is in and assessed. How the conclusion moved:",
+      runs(view).map((run) => `Run ${run.runNumber}, at "${run.stage.label}": ${run.conclusion}${run.hypothesis ? ` ${run.hypothesis}` : ""}.`),
+      current(view) ? `Speck's conclusion now: ${current(view).headline}` : null
+    ].filter(Boolean)
   },
   {
     id: "changed",

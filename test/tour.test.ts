@@ -108,7 +108,10 @@ test("every step renders on an empty view, and every target exists on the page",
   }
   const app = fs.readFileSync(path.join(ROOT_DIR, "public", "app.js"), "utf8");
   const targets = app.slice(app.indexOf("const TARGETS = {"), app.indexOf("};", app.indexOf("const TARGETS = {")));
-  for (const target of new Set([...tour.TOUR_STEPS, ...tour.FEATURES].map((item: any) => item.target))) {
+  // A target that follows the state: every value it can take.
+  const ran = { ...empty, status: { stage: { id: "s1" }, nextStage: { id: "s2" } }, investigation: { runs: [{ stage: { id: "s1" } }], latestRun: { stage: { id: "s1" } } }, listing: { pending: [] } };
+  const targetsOf = (item: any) => typeof item.target === "function" ? [item.target(empty), item.target(ran)] : [item.target];
+  for (const target of new Set([...tour.TOUR_STEPS, ...tour.FEATURES].flatMap(targetsOf))) {
     assert.match(targets, new RegExp(`(^|\\s|")${target}"?:`, "m"), target);
   }
 });
@@ -120,4 +123,22 @@ test("a leading explanation at or above the threshold says why it is not establi
     assert.doesNotMatch(reasons, /\b0 short\b/);
     assert.match(reasons, /H-DELIVERED is at 0\.61, at or above Speck's supported threshold of 0\.6, but Speck holds it as weakening/);
   });
+});
+
+test("the guided walk alternates update and run through every stage, and only the guided demo has it", () => {
+  const walk = step("walk");
+  const at = (stage: string, next: string | null, runStage: string | null, pending: string[] = []) => ({
+    status: { stage: { id: stage, label: stage }, nextStage: next ? { id: next, label: next } : null, stages: [] },
+    investigation: { runs: runStage ? [{ runNumber: 1, stage: { id: runStage, label: runStage }, conclusion: "unresolved", hypothesis: null }] : [], latestRun: runStage ? { stage: { id: runStage } } : null, current: null },
+    listing: { pending }
+  });
+  assert.equal(tour.actionOf(walk, at("s1", "s2", null)), "run");
+  assert.equal(tour.actionOf(walk, at("s1", "s2", "s1")), "update");
+  assert.equal(tour.targetOf(walk, at("s1", "s2", "s1")), "update-button");
+  assert.equal(tour.actionOf(walk, at("s2", "s3", "s1", ["EV-1"])), "run");
+  assert.equal(tour.targetOf(walk, at("s2", "s3", "s1", ["EV-1"])), "run-button");
+  assert.equal(tour.stepDone(walk, at("s2", "s3", "s2")), false, "a stage is still to come");
+  assert.equal(tour.stepDone(walk, at("s3", null, "s2")), false, "the last stage is not run yet");
+  assert.equal(tour.stepDone(walk, at("s3", null, "s3")), true);
+  assert.equal(walk.guidedOnly, true, "the case's own tour leaves it out");
 });

@@ -360,9 +360,10 @@ and the *Start the guided demo* button at the end of the case picker starts or r
 
 1. **Hotel chargeback** (set 7's case; the configured evidence source and assessor, as for the
    disputed delivery): the case and its
-   explanations, then straight to **Speck beside a stateless baseline**, which runs all six stages
-   both ways. Its findings describe every correction, including the re-attribution where the two
-   part.
+   explanations, a run, its conclusion, then each of the five prepared updates followed by a run
+   (the coach says which button is next), which records no longer count, and finally **Speck beside
+   a stateless baseline**, which runs all six stages both ways. Its findings describe every
+   correction, including the re-attribution where the two part.
 2. **Disputed delivery** (live when configured): the case tour above, without its comparison
    and last overview steps.
 3. **Bank return** (deterministic, instant): the explanations, a run, the prepared update (the
