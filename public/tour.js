@@ -62,7 +62,9 @@ function runSummary(view) {
 
 const describeInvalidation = (item) => item.invalidation.kind === "superseded"
   ? `its source replaced it with ${item.invalidation.by}`
-  : `it was withdrawn (${item.invalidation.reason})`;
+  : item.invalidation.kind === "restated"
+    ? `it is out of date: its source now reports ${item.invalidation.facts.map((fact) => `${fact.fact}=${fact.now}`).join(", ")} (${item.invalidation.by})`
+    : `it was withdrawn (${item.invalidation.reason})`;
 
 // The record the tour opens: the first one currently supporting the subject,
 // or else the first assessed record.
@@ -313,7 +315,7 @@ export const FEATURES = [
     text: "Supported, leading or unresolved, with Speck's confidence score. The score is not a calibrated probability." },
   { id: "supersession", title: "Replaced evidence and why a conclusion changed", target: "why",
     text: "When a source corrects a record, the old one stops counting and the beliefs that rested on it are rebuilt.",
-    demonstrated: (view) => (current(view)?.noLongerCounted ?? []).some((item) => item.invalidation.kind === "superseded") },
+    demonstrated: (view) => (current(view)?.noLongerCounted ?? []).some((item) => item.invalidation.kind === "superseded" || item.invalidation.kind === "restated") },
   { id: "withdraw", title: "Withdraw a record", target: "evidence",
     text: "Removes a record from the case; beliefs that rested on it are recomputed. Cannot be undone from this page.",
     demonstrated: (view) => records(view).some((record) => record.invalidation?.kind === "withdrawn" || record.status === "withdrawn") },

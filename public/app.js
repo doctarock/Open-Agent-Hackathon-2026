@@ -490,7 +490,9 @@ export function mountEvidenceDesk(root, { apiBase = "/api", fetchImpl = fetch, e
       help("How corrections work", ...HELP.changes),
       c.noLongerCounted?.length
         ? el("ul", {}, c.noLongerCounted.map((item) => el("li", {}, el("code", {}, item.recordId), " no longer counts: ",
-            item.invalidation.kind === "superseded" ? `its source superseded it with ${item.invalidation.by}.` : `withdrawn (${item.invalidation.reason}).`,
+            item.invalidation.kind === "superseded" ? `its source superseded it with ${item.invalidation.by}.`
+              : item.invalidation.kind === "restated" ? `out of date: its source now reports ${item.invalidation.facts.map((fact) => `${fact.fact}=${fact.now}`).join(", ")} (${item.invalidation.by}).`
+              : `withdrawn (${item.invalidation.reason}).`,
             // A record is replaced whole: say which of its facts went with it, and what that changed.
             item.unrestatedFacts?.length ? el("div", { className: "meta" }, `Facts it stated that no counting record restates: ${item.unrestatedFacts.map((f) => `${f.fact}=${f.value}`).join(", ")}.`) : null,
             item.lostJudgments?.length ? el("div", { className: "meta" }, `Judgments no longer applied: ${item.lostJudgments.map((j) => `${j.direction} ${j.hypothesisKey}${j.decisive ? " decisively" : ""}`).join("; ")}.`) : null,

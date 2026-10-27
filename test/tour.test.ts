@@ -142,3 +142,21 @@ test("the guided walk alternates update and run through every stage, and only th
   assert.equal(tour.stepDone(walk, at("s3", null, "s3")), true);
   assert.equal(walk.guidedOnly, true, "the case's own tour leaves it out");
 });
+
+test("the hotel chargeback's walk ends with every stage assessed, and its restated records say what their source now reports", async () => {
+  const config = testConfig({ scenarioDir: path.join(ROOT_DIR, "eval", "challenge-7", "hotel-chargeback") });
+  await withDesk(config, async (desk) => {
+    const api = deskApi(desk, config, "test");
+    await desk.run();
+    while ((await snapshot(api)).status.nextStage) {
+      assert.equal(tour.stepDone(step("walk"), await snapshot(api)), false);
+      await desk.introduceNextUpdate();
+      await desk.run();
+    }
+    const done = await snapshot(api);
+    assert.equal(tour.stepDone(step("walk"), done), true);
+    const changed = text(step("changed").body(done));
+    assert.match(changed, /N7H-01 no longer counts: it is out of date: its source now reports .+=/);
+    assert.doesNotMatch(changed + text(step("walk").after(done)), /undefined/);
+  });
+});
